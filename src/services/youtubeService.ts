@@ -106,14 +106,38 @@ export class YouTubeService {
       throw new Error('User ID of the creator is required.');
     }
 
-    // Step 1: Create or update the video entry in match_video_settings
+    // Step 1: Get video information first
+    let videoInfo: YouTubeVideoInfo | null = null;
+    try {
+      videoInfo = await this.getVideoInfo(videoUrl);
+    } catch (error) {
+      console.warn('Could not fetch video info, proceeding without details:', error);
+    }
+
+    // Step 2: Create or update the video entry in match_video_settings
     const videoSetting = await this.addVideoToMatch(matchId, videoUrl, createdById);
     if (!videoSetting || !videoSetting.id) {
       throw new Error('Failed to save video settings for the match.');
     }
     const matchVideoId = videoSetting.id;
 
-    // Step 2: Clear existing assignments for this match_video_id
+    // Step 3: Get match information for notifications
+    let matchInfo: any = null;
+    try {
+      const { data: match, error: matchError } = await (supabase as any)
+        .from('matches')
+        .select('name, home_team_name, away_team_name')
+        .eq('id', matchId)
+        .single();
+      
+      if (!matchError && match) {
+        matchInfo = match;
+      }
+    } catch (error) {
+      console.warn('Could not fetch match info for notifications:', error);
+    }
+
+    // Step 4: Clear existing assignments for this match_video_id
     try {
       await (supabase as any)
         .from('video_tracker_assignments')
@@ -123,7 +147,7 @@ export class YouTubeService {
       console.error('Error clearing previous video tracker assignments:', deleteError);
     }
 
-    // Step 3: Insert new assignments
+    // Step 5: Insert new assignments and send notifications
     let assignmentResults: any[] = [];
     if (assignments && assignments.length > 0) {
       const newAssignmentsData = assignments.map(assignment => ({
@@ -146,6 +170,53 @@ export class YouTubeService {
 
         assignmentResults = data || [];
         console.log('Video tracker assignments saved:', assignmentResults);
+
+        // Step 6: Send notifications to assigned trackers with video information
+        for (const assignment of assignments) {
+          const matchName = matchInfo?.name || `${matchInfo?.home_team_name || 'Team 1'} vs ${matchInfo?.away_team_name || 'Team 2'}`;
+          const videoTitle = videoInfo?.title || 'Video Assignment';
+          
+          const notificationTitle = 'New Video Tracking Assignment';
+          const notificationMessage = `You've been assigned to track video "${videoTitle}" for match: ${matchName}. Please access the Video Tracker to begin.`;
+          
+          const notificationData = {
+            match_id: matchId,
+            match_video_id: matchVideoId,
+            video_url: videoUrl,
+            video_title: videoInfo?.title || 'Unknown Video',
+            video_description: videoInfo?.description || '',
+            video_duration: videoInfo?.duration || '',
+            video_thumbnail: videoInfo?.thumbnail || '',
+            video_id: videoInfo?.id || '',
+            match_name: matchName,
+            assigned_event_types: assignment.assigned_event_types,
+            assignment_type: 'video_tracking',
+            with_sound: true // Enable sound for video assignments
+          };
+
+          try {
+            const { error: notificationError } = await (supabase as any)
+              .from('notifications')
+              .insert({
+                user_id: assignment.tracker_id,
+                match_id: matchId,
+                title: notificationTitle,
+                message: notificationMessage,
+                type: 'video_assignment',
+                notification_data: notificationData,
+                is_read: false
+              });
+
+            if (notificationError) {
+              console.error('Error sending notification to tracker:', assignment.tracker_id, notificationError);
+            } else {
+              console.log('Video assignment notification sent to tracker:', assignment.tracker_id);
+            }
+          } catch (notificationErr) {
+            console.error('Exception while sending notification:', notificationErr);
+          }
+        }
+
       } catch (insertError) {
         console.error('Error inserting video tracker assignments:', insertError);
       }

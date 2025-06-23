@@ -17,6 +17,15 @@ interface NotificationData {
   assignment_type?: string;
   with_sound?: boolean;
   timestamp?: string;
+  // Video-specific data
+  video_url?: string;
+  video_title?: string;
+  video_description?: string;
+  video_duration?: string;
+  video_thumbnail?: string;
+  video_id?: string;
+  match_video_id?: string;
+  match_name?: string;
 }
 
 interface MatchInfo {
@@ -285,19 +294,20 @@ const TrackerNotifications: React.FC = () => {
     }
   };
 
-  const handleViewVideoTracker = (matchId: string | null, notificationId: string) => {
-    if (matchId && matchId.length > 0) {
-      markAsRead(notificationId);
-      navigate(`/video-tracker?matchId=${matchId}`); // Or simply /video-tracker/${matchId} if routes are set up that way
-    } else {
-      // Fallback or error if matchId is crucial and missing for a video assignment
-      // For now, let's navigate to a generic video tracker page if no matchId
-      // This might need adjustment based on how VideoTrackerPage handles missing matchId
-      markAsRead(notificationId);
-      navigate('/video-tracker');
-      console.warn('Match ID is missing for video assignment notification:', notificationId, '. Navigating to generic video tracker page.');
-      // toast.warn('Match context might be unavailable for this video assignment.');
-    }
+  const handleViewVideoTracker = (matchId: string | null, notificationId: string, notificationData?: NotificationData) => {
+    markAsRead(notificationId);
+    
+    // Construct video tracker URL with video information
+    const params = new URLSearchParams();
+    if (matchId) params.append('matchId', matchId);
+    if (notificationData?.video_url) params.append('videoUrl', notificationData.video_url);
+    if (notificationData?.match_video_id) params.append('matchVideoId', notificationData.match_video_id);
+    if (notificationData?.video_id) params.append('videoId', notificationData.video_id);
+    
+    const queryString = params.toString();
+    const url = queryString ? `/video-tracker?${queryString}` : '/video-tracker';
+    
+    navigate(url);
   };
 
   useEffect(() => {
@@ -433,6 +443,8 @@ const TrackerNotifications: React.FC = () => {
                           ? 'destructive'
                           : notification.type === 'match_assignment'
                           ? 'default'
+                          : notification.type === 'video_assignment'
+                          ? 'secondary'
                           : 'secondary'
                       }
                       className="text-xs capitalize"
@@ -450,11 +462,32 @@ const TrackerNotifications: React.FC = () => {
                     </div>
                   )}
 
+                  {/* Video assignment specific information */}
+                  {notification.type === 'video_assignment' && notification.notification_data && (
+                    <div className="mb-2 p-2 bg-purple-50 rounded-md border border-purple-200">
+                      {notification.notification_data.video_title && (
+                        <div className="text-sm font-medium text-purple-900 mb-1">
+                          📹 {notification.notification_data.video_title}
+                        </div>
+                      )}
+                      {notification.notification_data.match_name && (
+                        <div className="text-xs text-purple-700">
+                          Match: {notification.notification_data.match_name}
+                        </div>
+                      )}
+                      {notification.notification_data.video_duration && (
+                        <div className="text-xs text-purple-600">
+                          Duration: {notification.notification_data.video_duration}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <p className="text-xs sm:text-sm text-muted-foreground mb-2 line-clamp-2">
                     {notification.message}
                   </p>
 
-                  {notification.notification_data && (
+                  {notification.notification_data && notification.type !== 'video_assignment' && (
                     <div className="text-xs space-y-1 mb-2 bg-muted/50 p-2 rounded-md border">
                       {notification.notification_data.assigned_event_types && (
                         <div className="break-words">
@@ -488,7 +521,7 @@ const TrackerNotifications: React.FC = () => {
                   {notification.type === 'video_assignment' && (
                     <Button
                       size="sm"
-                      onClick={() => handleViewVideoTracker(notification.match_id, notification.id)}
+                      onClick={() => handleViewVideoTracker(notification.match_id, notification.id, notification.notification_data)}
                       className="h-8 sm:h-9 text-xs bg-purple-600 hover:bg-purple-700 text-white"
                     >
                       <Video className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
