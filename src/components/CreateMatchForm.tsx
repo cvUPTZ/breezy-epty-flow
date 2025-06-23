@@ -298,7 +298,7 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
 
       console.log('Match saved:', savedMatch);
 
-      // Step 2: Handle tracker assignments
+      // Step 2: Handle tracker assignments with improved notification system
       if (trackerAssignments.length > 0) {
         // Clear existing assignments
         if (matchId) {
@@ -350,7 +350,7 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
 
         console.log('Tracker assignments saved:', assignmentData);
 
-        // Send notifications to assigned trackers (regular match assignments)
+        // Send notifications to assigned trackers with better error handling
         for (const assignment of trackerAssignments) {
           const notificationData = {
             match_id: savedMatch.id,
@@ -360,6 +360,8 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
           };
 
           try {
+            console.log('Attempting to send notification to tracker:', assignment.tracker_user_id);
+            
             const { error: notificationError } = await supabase
               .from('notifications')
               .insert({
@@ -374,8 +376,13 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
 
             if (notificationError) {
               console.error('Error sending tracker notification:', notificationError);
+              console.error('Notification error details:', {
+                code: notificationError.code,
+                message: notificationError.message,
+                details: notificationError.details
+              });
             } else {
-              console.log('Match assignment notification sent to tracker:', assignment.tracker_user_id);
+              console.log('Match assignment notification sent successfully to tracker:', assignment.tracker_user_id);
             }
           } catch (notificationErr) {
             console.error('Exception while sending tracker notification:', notificationErr);
