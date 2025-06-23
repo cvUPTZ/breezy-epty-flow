@@ -308,7 +308,7 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
             .eq('match_id', matchId);
         }
 
-        // Insert new assignments - Fix the constraint violation with proper typing
+        // Insert new assignments with proper TypeScript handling
         const assignmentData: AssignmentData[] = [];
         
         for (const assignment of trackerAssignments) {
@@ -350,7 +350,7 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
 
         console.log('Tracker assignments saved:', assignmentData);
 
-        // Send notifications to assigned trackers with better error handling
+        // Send notifications to assigned trackers with comprehensive error handling
         for (const assignment of trackerAssignments) {
           const notificationData = {
             match_id: savedMatch.id,
@@ -361,6 +361,8 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
 
           try {
             console.log('Attempting to send notification to tracker:', assignment.tracker_user_id);
+            console.log('Current user session:', user);
+            console.log('Auth status:', await supabase.auth.getSession());
             
             const { error: notificationError } = await supabase
               .from('notifications')
@@ -379,7 +381,8 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
               console.error('Notification error details:', {
                 code: notificationError.code,
                 message: notificationError.message,
-                details: notificationError.details
+                details: notificationError.details,
+                hint: notificationError.hint
               });
             } else {
               console.log('Match assignment notification sent successfully to tracker:', assignment.tracker_user_id);
