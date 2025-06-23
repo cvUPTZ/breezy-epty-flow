@@ -12,6 +12,7 @@ import VideoSetupSection from './match/form/VideoSetupSection';
 import { Button } from './ui/button';
 
 type MatchStatus = 'draft' | 'scheduled' | 'live' | 'completed';
+type Formation = '4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '5-3-2' | '3-4-3';
 
 interface MatchFormData {
   name: string;
@@ -24,6 +25,10 @@ interface MatchFormData {
   matchType: string;
   status: MatchStatus;
   notes: string;
+  homeTeamFormation: Formation;
+  awayTeamFormation: Formation;
+  homeTeamFlagUrl: string;
+  awayTeamFlagUrl: string;
 }
 
 interface Player {
@@ -68,6 +73,10 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
     matchType: 'regular',
     status: 'draft',
     notes: '',
+    homeTeamFormation: '4-4-2',
+    awayTeamFormation: '4-3-3',
+    homeTeamFlagUrl: '',
+    awayTeamFlagUrl: '',
   });
   const [homeTeamPlayers, setHomeTeamPlayers] = useState<Player[]>([]);
   const [awayTeamPlayers, setAwayTeamPlayers] = useState<Player[]>([]);
@@ -106,14 +115,18 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
             matchType: data.match_type || 'regular',
             status: (data.status as MatchStatus) || 'draft',
             notes: data.notes || '',
+            homeTeamFormation: (data.home_team_formation as Formation) || '4-4-2',
+            awayTeamFormation: (data.away_team_formation as Formation) || '4-3-3',
+            homeTeamFlagUrl: data.home_team_flag_url || '',
+            awayTeamFlagUrl: data.away_team_flag_url || '',
           });
           
           // Properly cast the player arrays from JSON
           const homeTeamPlayersData = Array.isArray(data.home_team_players) 
-            ? data.home_team_players as Player[]
+            ? (data.home_team_players as unknown) as Player[]
             : [];
           const awayTeamPlayersData = Array.isArray(data.away_team_players)
-            ? data.away_team_players as Player[]
+            ? (data.away_team_players as unknown) as Player[]
             : [];
             
           setHomeTeamPlayers(homeTeamPlayersData);
@@ -177,12 +190,24 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
     setFormData({ ...formData, [field]: value });
   };
 
-  const handleHomeTeamPlayersChange = (players: Player[]) => {
-    setHomeTeamPlayers(players);
+  const handlePlayersChange = (team: 'home' | 'away', players: Player[]) => {
+    if (team === 'home') {
+      setHomeTeamPlayers(players);
+    } else {
+      setAwayTeamPlayers(players);
+    }
   };
 
-  const handleAwayTeamPlayersChange = (players: Player[]) => {
-    setAwayTeamPlayers(players);
+  const handleFlagChange = (e: React.ChangeEvent<HTMLInputElement>, team: 'home' | 'away') => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const url = URL.createObjectURL(file);
+      if (team === 'home') {
+        setFormData({ ...formData, homeTeamFlagUrl: url });
+      } else {
+        setFormData({ ...formData, awayTeamFlagUrl: url });
+      }
+    }
   };
 
   const handleTrackerAssignmentsChange = (assignments: TrackerAssignment[]) => {
@@ -219,6 +244,10 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
         match_type: formData.matchType,
         status: formData.status,
         notes: formData.notes,
+        home_team_formation: formData.homeTeamFormation,
+        away_team_formation: formData.awayTeamFormation,
+        home_team_flag_url: formData.homeTeamFlagUrl,
+        away_team_flag_url: formData.awayTeamFlagUrl,
         home_team_players: homeTeamPlayers as any,
         away_team_players: awayTeamPlayers as any,
         updated_at: new Date().toISOString(),
@@ -378,8 +407,10 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
       <TeamSetupSection
         homeTeamPlayers={homeTeamPlayers}
         awayTeamPlayers={awayTeamPlayers}
-        onHomeTeamChange={handleHomeTeamPlayersChange}
-        onAwayTeamChange={handleAwayTeamPlayersChange}
+        formData={formData}
+        onFormDataChange={handleFormDataChange}
+        onPlayersChange={handlePlayersChange}
+        onFlagChange={handleFlagChange}
       />
       <TrackerAssignmentSection
         trackers={trackers}
