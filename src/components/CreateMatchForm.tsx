@@ -120,12 +120,23 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
             awayTeamFlagUrl: data.away_team_flag_url || '',
           });
           
-          // Properly cast the player arrays from JSON
           const homeTeamPlayersData = Array.isArray(data.home_team_players) 
-            ? (data.home_team_players as unknown) as Player[]
+            ? (data.home_team_players as any[]).map((player: any) => ({
+                id: player.id || 0,
+                name: player.name || '',
+                number: player.number || null,
+                position: player.position || '',
+                isSubstitute: player.isSubstitute || false
+              }))
             : [];
           const awayTeamPlayersData = Array.isArray(data.away_team_players)
-            ? (data.away_team_players as unknown) as Player[]
+            ? (data.away_team_players as any[]).map((player: any) => ({
+                id: player.id || 0,
+                name: player.name || '',
+                number: player.number || null,
+                position: player.position || '',
+                isSubstitute: player.isSubstitute || false
+              }))
             : [];
             
           setHomeTeamPlayers(homeTeamPlayersData);
@@ -288,14 +299,34 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
             .eq('match_id', matchId);
         }
 
-        // Insert new assignments
-        const assignmentData = trackerAssignments.map(assignment => ({
-          match_id: savedMatch.id,
-          tracker_user_id: assignment.tracker_user_id,
-          assigned_event_types: assignment.assigned_event_types,
-          player_id: assignment.player_ids.length > 0 ? assignment.player_ids[0] : null,
-          player_team_id: assignment.player_ids.length > 0 ? 'both' : 'both'
-        }));
+        // Insert new assignments - Fix the constraint violation
+        const assignmentData = trackerAssignments.flatMap(assignment => {
+          // If there are specific player IDs, create assignments for each player
+          if (assignment.player_ids.length > 0) {
+            return assignment.player_ids.map(playerId => {
+              // Determine which team the player belongs to
+              const isHomePlayer = homeTeamPlayers.some(p => p.id === playerId);
+              const playerTeamId = isHomePlayer ? 'home' : 'away';
+              
+              return {
+                match_id: savedMatch.id,
+                tracker_user_id: assignment.tracker_user_id,
+                assigned_event_types: assignment.assigned_event_types,
+                player_id: playerId,
+                player_team_id: playerTeamId
+              };
+            });
+          } else {
+            // If no specific players, create a general assignment for both teams
+            return [{
+              match_id: savedMatch.id,
+              tracker_user_id: assignment.tracker_user_id,
+              assigned_event_types: assignment.assigned_event_types,
+              player_id: null,
+              player_team_id: 'home' // Default to home, could be 'both' if supported
+            }];
+          }
+        });
 
         const { error: assignmentError } = await supabase
           .from('match_tracker_assignments')
