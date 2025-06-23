@@ -49,6 +49,7 @@ export type Database = {
           coordinates: Json | null
           created_at: string
           created_by: string
+          details: Json
           event_data: Json | null
           event_type: string
           id: string
@@ -62,6 +63,7 @@ export type Database = {
           coordinates?: Json | null
           created_at?: string
           created_by: string
+          details?: Json
           event_data?: Json | null
           event_type: string
           id?: string
@@ -75,6 +77,7 @@ export type Database = {
           coordinates?: Json | null
           created_at?: string
           created_by?: string
+          details?: Json
           event_data?: Json | null
           event_type?: string
           id?: string
