@@ -9,39 +9,80 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      event_types: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_types_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_roles_view"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       match_events: {
         Row: {
           coordinates: Json | null
           created_at: string
           created_by: string
+          event_data: Json | null
           event_type: string
           id: string
           match_id: string
           player_id: number | null
           team: string | null
           timestamp: number | null
+          updated_at: string | null
         }
         Insert: {
           coordinates?: Json | null
           created_at?: string
           created_by: string
+          event_data?: Json | null
           event_type: string
           id?: string
           match_id: string
           player_id?: number | null
           team?: string | null
           timestamp?: number | null
+          updated_at?: string | null
         }
         Update: {
           coordinates?: Json | null
           created_at?: string
           created_by?: string
+          event_data?: Json | null
           event_type?: string
           id?: string
           match_id?: string
           player_id?: number | null
           team?: string | null
           timestamp?: number | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -91,6 +132,39 @@ export type Database = {
           },
         ]
       }
+      match_tracker_activity: {
+        Row: {
+          last_active_at: string
+          match_id: string
+          user_id: string
+        }
+        Insert: {
+          last_active_at?: string
+          match_id: string
+          user_id: string
+        }
+        Update: {
+          last_active_at?: string
+          match_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_tracker_activity_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_tracker_activity_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_roles_view"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       match_tracker_assignments: {
         Row: {
           assigned_event_types: string[] | null
@@ -130,6 +204,27 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_tracker_user_id"
+            columns: ["tracker_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_tracker_user_id"
+            columns: ["tracker_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_tracker_user_id"
+            columns: ["tracker_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_permissions_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "match_tracker_assignments_match_id_fkey"
             columns: ["match_id"]
             isOneToOne: false
@@ -147,6 +242,7 @@ export type Database = {
       }
       matches: {
         Row: {
+          away_team_flag_url: string | null
           away_team_formation: string | null
           away_team_name: string
           away_team_players: Json | null
@@ -156,6 +252,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           description: string | null
+          home_team_flag_url: string | null
           home_team_formation: string | null
           home_team_name: string
           home_team_players: Json | null
@@ -174,6 +271,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          away_team_flag_url?: string | null
           away_team_formation?: string | null
           away_team_name: string
           away_team_players?: Json | null
@@ -183,6 +281,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          home_team_flag_url?: string | null
           home_team_formation?: string | null
           home_team_name: string
           home_team_players?: Json | null
@@ -201,6 +300,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          away_team_flag_url?: string | null
           away_team_formation?: string | null
           away_team_name?: string
           away_team_players?: Json | null
@@ -210,6 +310,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          home_team_flag_url?: string | null
           home_team_formation?: string | null
           home_team_name?: string
           home_team_players?: Json | null
@@ -273,9 +374,94 @@ export type Database = {
         }
         Relationships: []
       }
+      playlist_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_order: number
+          playlist_id: string
+          tagged_event_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_order: number
+          playlist_id: string
+          tagged_event_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_order?: number
+          playlist_id?: string
+          tagged_event_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playlist_items_playlist_id_fkey"
+            columns: ["playlist_id"]
+            isOneToOne: false
+            referencedRelation: "playlists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "playlist_items_tagged_event_id_fkey"
+            columns: ["tagged_event_id"]
+            isOneToOne: false
+            referencedRelation: "tagged_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playlists: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+          video_job_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+          video_job_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+          video_job_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playlists_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_roles_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "playlists_video_job_id_fkey"
+            columns: ["video_job_id"]
+            isOneToOne: false
+            referencedRelation: "video_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
+          custom_permissions: Json | null
           email: string | null
           full_name: string | null
           id: string
@@ -284,6 +470,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custom_permissions?: Json | null
           email?: string | null
           full_name?: string | null
           id: string
@@ -292,6 +479,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custom_permissions?: Json | null
           email?: string | null
           full_name?: string | null
           id?: string
@@ -305,6 +493,86 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "user_roles_view"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      realtime_transient_messages: {
+        Row: {
+          created_at: string
+          id: number
+          message_type: string
+          payload: Json | null
+          room_id: string
+          sender_id: string
+          to_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          message_type: string
+          payload?: Json | null
+          room_id: string
+          sender_id: string
+          to_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          message_type?: string
+          payload?: Json | null
+          room_id?: string
+          sender_id?: string
+          to_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_receiver"
+            columns: ["to_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_receiver"
+            columns: ["to_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_receiver"
+            columns: ["to_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_permissions_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_room"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "voice_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_sender"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_sender"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_sender"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "user_permissions_view"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -332,6 +600,54 @@ export type Database = {
         }
         Relationships: []
       }
+      tagged_events: {
+        Row: {
+          annotations: Json | null
+          created_at: string
+          event_type_id: string
+          id: string
+          notes: string | null
+          timestamp: number
+          updated_at: string
+          video_job_id: string
+        }
+        Insert: {
+          annotations?: Json | null
+          created_at?: string
+          event_type_id: string
+          id?: string
+          notes?: string | null
+          timestamp: number
+          updated_at?: string
+          video_job_id: string
+        }
+        Update: {
+          annotations?: Json | null
+          created_at?: string
+          event_type_id?: string
+          id?: string
+          notes?: string | null
+          timestamp?: number
+          updated_at?: string
+          video_job_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tagged_events_event_type_id_fkey"
+            columns: ["event_type_id"]
+            isOneToOne: false
+            referencedRelation: "event_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tagged_events_video_job_id_fkey"
+            columns: ["video_job_id"]
+            isOneToOne: false
+            referencedRelation: "video_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       timeline_events: {
         Row: {
           category: string
@@ -343,6 +659,7 @@ export type Database = {
           location: string
           title: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           category: string
@@ -354,6 +671,7 @@ export type Database = {
           location: string
           title: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           category?: string
@@ -365,8 +683,17 @@ export type Database = {
           location?: string
           title?: string
           updated_at?: string
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "timeline_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_roles_view"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       tracker_assignments: {
         Row: {
@@ -410,6 +737,35 @@ export type Database = {
           },
         ]
       }
+      tracker_device_status: {
+        Row: {
+          battery_level: number | null
+          id: string
+          last_updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          battery_level?: number | null
+          id?: string
+          last_updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          battery_level?: number | null
+          id?: string
+          last_updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_device_status_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_roles_view"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_event_assignments: {
         Row: {
           created_at: string | null
@@ -434,8 +790,22 @@ export type Database = {
             foreignKeyName: "user_event_assignments_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "user_roles_view"
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_event_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_permissions"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_event_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_permissions_view"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -471,6 +841,174 @@ export type Database = {
           },
         ]
       }
+      video_jobs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          input_video_path: string
+          job_config: Json | null
+          progress: number | null
+          result_data: Json | null
+          status: Database["public"]["Enums"]["job_status"] | null
+          updated_at: string | null
+          user_id: string | null
+          video_duration: number | null
+          video_title: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          input_video_path: string
+          job_config?: Json | null
+          progress?: number | null
+          result_data?: Json | null
+          status?: Database["public"]["Enums"]["job_status"] | null
+          updated_at?: string | null
+          user_id?: string | null
+          video_duration?: number | null
+          video_title?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          input_video_path?: string
+          job_config?: Json | null
+          progress?: number | null
+          result_data?: Json | null
+          status?: Database["public"]["Enums"]["job_status"] | null
+          updated_at?: string | null
+          user_id?: string | null
+          video_duration?: number | null
+          video_title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_jobs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_roles_view"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      voice_room_participants: {
+        Row: {
+          connection_quality: string | null
+          id: string
+          is_muted: boolean | null
+          is_speaking: boolean | null
+          joined_at: string | null
+          last_activity: string | null
+          room_id: string | null
+          user_id: string | null
+          user_role: string
+        }
+        Insert: {
+          connection_quality?: string | null
+          id?: string
+          is_muted?: boolean | null
+          is_speaking?: boolean | null
+          joined_at?: string | null
+          last_activity?: string | null
+          room_id?: string | null
+          user_id?: string | null
+          user_role: string
+        }
+        Update: {
+          connection_quality?: string | null
+          id?: string
+          is_muted?: boolean | null
+          is_speaking?: boolean | null
+          joined_at?: string | null
+          last_activity?: string | null
+          room_id?: string | null
+          user_id?: string | null
+          user_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_room_participants_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "voice_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_room_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_room_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "voice_room_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_permissions_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_rooms: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_private: boolean | null
+          match_id: string | null
+          max_participants: number | null
+          name: string
+          permissions: string[] | null
+          priority: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_private?: boolean | null
+          match_id?: string | null
+          max_participants?: number | null
+          name: string
+          permissions?: string[] | null
+          priority?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_private?: boolean | null
+          match_id?: string | null
+          max_participants?: number | null
+          name?: string
+          permissions?: string[] | null
+          priority?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_rooms_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       match_tracker_assignments_view: {
@@ -489,6 +1027,27 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_tracker_user_id"
+            columns: ["tracker_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_tracker_user_id"
+            columns: ["tracker_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_tracker_user_id"
+            columns: ["tracker_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_permissions_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "match_tracker_assignments_match_id_fkey"
             columns: ["match_id"]
             isOneToOne: false
@@ -499,6 +1058,88 @@ export type Database = {
             foreignKeyName: "match_tracker_assignments_tracker_user_id_fkey"
             columns: ["tracker_user_id"]
             isOneToOne: false
+            referencedRelation: "user_roles_view"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      profiles_with_permissions: {
+        Row: {
+          created_at: string | null
+          custom_permissions: Json | null
+          effective_permissions: Json | null
+          has_custom_permissions: boolean | null
+          updated_at: string | null
+          user_email: string | null
+          user_full_name: string | null
+          user_id: string | null
+          user_role: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_permissions?: Json | null
+          effective_permissions?: never
+          has_custom_permissions?: never
+          updated_at?: string | null
+          user_email?: string | null
+          user_full_name?: string | null
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_permissions?: Json | null
+          effective_permissions?: never
+          has_custom_permissions?: never
+          updated_at?: string | null
+          user_email?: string | null
+          user_full_name?: string | null
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_roles_view"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_permissions_view: {
+        Row: {
+          custom_permissions: Json | null
+          effective_permissions: Json | null
+          email: string | null
+          full_name: string | null
+          has_custom_permissions: boolean | null
+          id: string | null
+          role: string | null
+        }
+        Insert: {
+          custom_permissions?: Json | null
+          effective_permissions?: never
+          email?: string | null
+          full_name?: string | null
+          has_custom_permissions?: never
+          id?: string | null
+          role?: string | null
+        }
+        Update: {
+          custom_permissions?: Json | null
+          effective_permissions?: never
+          email?: string | null
+          full_name?: string | null
+          has_custom_permissions?: never
+          id?: string | null
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
             referencedRelation: "user_roles_view"
             referencedColumns: ["user_id"]
           },
@@ -543,6 +1184,14 @@ export type Database = {
         Args: { match_uuid: string }
         Returns: boolean
       }
+      check_tracker_activity: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      find_replacement_tracker: {
+        Args: { p_match_id: string; p_absent_tracker_id: string }
+        Returns: string
+      }
       get_all_users_with_metadata: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -551,6 +1200,10 @@ export type Database = {
           raw_user_meta_data: Json
           created_at: string
         }[]
+      }
+      get_room_participant_count: {
+        Args: { room_id_param: string }
+        Returns: number
       }
       get_tracker_profiles: {
         Args: Record<PropertyKey, never>
@@ -578,6 +1231,14 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_user_effective_permissions: {
+        Args: { user_id: string }
+        Returns: Json
+      }
+      get_user_permissions: {
+        Args: { user_id: string }
+        Returns: Json
+      }
       get_user_role: {
         Args: { user_id_param: string }
         Returns: string
@@ -590,6 +1251,14 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: Database["public"]["Enums"]["user_role"][]
       }
+      handle_tracker_absence: {
+        Args: {
+          p_absent_tracker_user_id: string
+          p_match_id: string
+          p_replacement_tracker_user_id: string
+        }
+        Returns: undefined
+      }
       has_elevated_access: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -597,6 +1266,17 @@ export type Database = {
       has_role: {
         Args: { _user_id: string; _role: string }
         Returns: boolean
+      }
+      insert_notification: {
+        Args: {
+          p_user_id: string
+          p_match_id: string
+          p_type: string
+          p_title: string
+          p_message: string
+          p_data?: Json
+        }
+        Returns: undefined
       }
       is_admin: {
         Args: Record<PropertyKey, never> | { p_user_id: string }
@@ -621,6 +1301,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      reset_user_permissions_to_defaults: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
+      schedule_match_reminders: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       update_user_metadata: {
         Args: { user_id: string; metadata_updates: Json }
         Returns: undefined
@@ -636,7 +1324,14 @@ export type Database = {
       }
     }
     Enums: {
-      user_role: "admin" | "teacher" | "user" | "tracker"
+      job_status: "pending" | "processing" | "completed" | "failed"
+      user_role:
+        | "admin"
+        | "teacher"
+        | "user"
+        | "tracker"
+        | "manager"
+        | "special"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -752,7 +1447,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      user_role: ["admin", "teacher", "user", "tracker"],
+      job_status: ["pending", "processing", "completed", "failed"],
+      user_role: ["admin", "teacher", "user", "tracker", "manager", "special"],
     },
   },
 } as const

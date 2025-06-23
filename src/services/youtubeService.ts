@@ -15,6 +15,11 @@ export interface YouTubeVideoInfo {
   }>;
 }
 
+interface VideoTrackerAssignmentPayload {
+  tracker_id: string;
+  assigned_event_types: string[]; // Assuming event keys are strings
+}
+
 export class YouTubeService {
   // Get YouTube API key from Supabase secrets
   private static async getApiKey(): Promise<string> {
@@ -87,15 +92,6 @@ export class YouTubeService {
 
     return data.filePath; // Path in Supabase Storage
   }
-
-  // Placeholder for saving video match setup
-interface VideoTrackerAssignmentPayload {
-  tracker_id: string;
-  assigned_event_types: string[]; // Assuming event keys are strings
-}
-
-export class YouTubeService {
-  // ... (other methods remain the same)
 
   static async saveVideoMatchSetup(
     matchId: string,
