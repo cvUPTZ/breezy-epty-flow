@@ -110,6 +110,7 @@ export class YouTubeService {
     let videoInfo: YouTubeVideoInfo | null = null;
     try {
       videoInfo = await this.getVideoInfo(videoUrl);
+      console.log('Video info retrieved:', videoInfo);
     } catch (error) {
       console.warn('Could not fetch video info, proceeding without details:', error);
     }
@@ -132,6 +133,7 @@ export class YouTubeService {
       
       if (!matchError && match) {
         matchInfo = match;
+        console.log('Match info retrieved:', matchInfo);
       }
     } catch (error) {
       console.warn('Could not fetch match info for notifications:', error);
@@ -171,7 +173,7 @@ export class YouTubeService {
         assignmentResults = data || [];
         console.log('Video tracker assignments saved:', assignmentResults);
 
-        // Step 6: Send notifications to assigned trackers with video information
+        // Step 6: Send notifications to assigned trackers with complete video information
         for (const assignment of assignments) {
           const matchName = matchInfo?.name || `${matchInfo?.home_team_name || 'Team 1'} vs ${matchInfo?.away_team_name || 'Team 2'}`;
           const videoTitle = videoInfo?.title || 'Video Assignment';
@@ -189,12 +191,14 @@ export class YouTubeService {
             video_thumbnail: videoInfo?.thumbnail || '',
             video_id: videoInfo?.id || '',
             match_name: matchName,
-            assigned_event_types: assignment.assigned_event_types,
+            assigned_event_types: assignment.assigned_event_types || [],
             assignment_type: 'video_tracking',
             with_sound: true // Enable sound for video assignments
           };
 
           try {
+            console.log('Sending notification to tracker:', assignment.tracker_id, 'with data:', notificationData);
+            
             const { error: notificationError } = await (supabase as any)
               .from('notifications')
               .insert({
@@ -209,16 +213,19 @@ export class YouTubeService {
 
             if (notificationError) {
               console.error('Error sending notification to tracker:', assignment.tracker_id, notificationError);
+              throw new Error(`Failed to send notification: ${notificationError.message}`);
             } else {
-              console.log('Video assignment notification sent to tracker:', assignment.tracker_id);
+              console.log('Video assignment notification sent successfully to tracker:', assignment.tracker_id);
             }
           } catch (notificationErr) {
             console.error('Exception while sending notification:', notificationErr);
+            throw notificationErr;
           }
         }
 
       } catch (insertError) {
         console.error('Error inserting video tracker assignments:', insertError);
+        throw insertError;
       }
     }
 
