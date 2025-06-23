@@ -114,16 +114,17 @@ export class YouTubeService {
     const matchVideoId = videoSetting.id;
 
     // Step 2: Clear existing assignments for this match_video_id
-    const { error: deleteError } = await supabase
-      .from('video_tracker_assignments')
-      .delete()
-      .eq('match_video_id', matchVideoId);
-
-    if (deleteError) {
+    try {
+      await (supabase as any)
+        .from('video_tracker_assignments')
+        .delete()
+        .eq('match_video_id', matchVideoId);
+    } catch (deleteError) {
       console.error('Error clearing previous video tracker assignments:', deleteError);
     }
 
     // Step 3: Insert new assignments
+    let assignmentResults: any[] = [];
     if (assignments && assignments.length > 0) {
       const newAssignmentsData = assignments.map(assignment => ({
         match_video_id: matchVideoId,
@@ -133,58 +134,72 @@ export class YouTubeService {
         status: 'pending',
       }));
 
-      const { data: assignmentResults, error: insertAssignmentsError } = await supabase
-        .from('video_tracker_assignments')
-        .insert(newAssignmentsData)
-        .select();
+      try {
+        const { data, error } = await (supabase as any)
+          .from('video_tracker_assignments')
+          .insert(newAssignmentsData)
+          .select();
 
-      if (insertAssignmentsError) {
-        throw new Error(`Failed to save video tracker assignments: ${insertAssignmentsError.message}`);
+        if (error) {
+          throw new Error(`Failed to save video tracker assignments: ${error.message}`);
+        }
+
+        assignmentResults = data || [];
+        console.log('Video tracker assignments saved:', assignmentResults);
+      } catch (insertError) {
+        console.error('Error inserting video tracker assignments:', insertError);
       }
-
-      console.log('Video tracker assignments saved:', assignmentResults);
-      return { videoSetting, assignmentResults: assignmentResults || [] };
     }
 
-    return { videoSetting, assignmentResults: [] };
+    return { videoSetting, assignmentResults };
   }
 
   static async getVideoMatchSetup(matchId: string): Promise<any | null> {
     console.log('Getting video match setup for matchId:', matchId);
     
-    const { data, error } = await supabase
-      .from('match_video_settings')
-      .select(`
-        *,
-        video_tracker_assignments (*)
-      `)
-      .eq('match_id', matchId)
-      .maybeSingle();
-      
-    if (error) throw error;
-    return data;
+    try {
+      const { data, error } = await (supabase as any)
+        .from('match_video_settings')
+        .select(`
+          *,
+          video_tracker_assignments (*)
+        `)
+        .eq('match_id', matchId)
+        .maybeSingle();
+        
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error getting video match setup:', error);
+      return null;
+    }
   }
 
   static async getTrackerVideoAssignments(trackerId: string): Promise<any[]> {
     console.log('Getting video assignments for trackerId:', trackerId);
     
-    const { data, error } = await supabase
-      .from('video_tracker_assignments')
-      .select(`
-        *,
-        match_video_settings (
-          video_url,
-          video_title,
-          video_description,
-          duration_seconds,
-          match_id,
-          matches (name, home_team_name, away_team_name)
-        )
-      `)
-      .eq('tracker_id', trackerId);
-      
-    if (error) throw error;
-    return data || [];
+    try {
+      const { data, error } = await (supabase as any)
+        .from('video_tracker_assignments')
+        .select(`
+          *,
+          match_video_settings (
+            video_url,
+            video_title,
+            video_description,
+            duration_seconds,
+            match_id,
+            matches (name, home_team_name, away_team_name)
+          )
+        `)
+        .eq('tracker_id', trackerId);
+        
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error getting tracker video assignments:', error);
+      return [];
+    }
   }
 
   static async addVideoToMatch(
@@ -213,7 +228,7 @@ export class YouTubeService {
     };
 
     if (existingVideoSettingId) {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('match_video_settings')
         .update(videoData)
         .eq('id', existingVideoSettingId)
@@ -224,7 +239,7 @@ export class YouTubeService {
       console.log('Video setting updated for match:', matchId, data);
       return data;
     } else {
-      const { data: existing, error: fetchError } = await supabase
+      const { data: existing, error: fetchError } = await (supabase as any)
         .from('match_video_settings')
         .select('id')
         .eq('match_id', matchId)
@@ -235,7 +250,7 @@ export class YouTubeService {
       }
 
       if (existing) {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('match_video_settings')
           .update(videoData)
           .eq('id', existing.id)
@@ -245,7 +260,7 @@ export class YouTubeService {
         console.log('Video setting updated (via upsert logic) for match:', matchId, data);
         return data;
       } else {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('match_video_settings')
           .insert({ ...videoData, created_at: new Date().toISOString() })
           .select()
