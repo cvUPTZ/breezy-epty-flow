@@ -199,6 +199,7 @@ export class YouTubeService {
           try {
             console.log('Sending notification to tracker:', assignment.tracker_id, 'with data:', notificationData);
             
+            // Fixed: Remove 'created_by' field since it doesn't exist in the notifications table
             const { error: notificationError } = await (supabase as any)
               .from('notifications')
               .insert({
