@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +11,8 @@ import TrackerAssignmentSection from './match/form/TrackerAssignmentSection';
 import VideoSetupSection from './match/form/VideoSetupSection';
 import { Button } from './ui/button';
 
+type MatchStatus = 'draft' | 'scheduled' | 'live' | 'completed';
+
 interface MatchFormData {
   name: string;
   description: string;
@@ -19,7 +22,7 @@ interface MatchFormData {
   location: string;
   competition: string;
   matchType: string;
-  status: 'draft' | 'scheduled' | 'live' | 'completed';
+  status: MatchStatus;
   notes: string;
 }
 
@@ -101,11 +104,20 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
             location: data.location || '',
             competition: data.competition || '',
             matchType: data.match_type || 'regular',
-            status: data.status || 'draft',
+            status: (data.status as MatchStatus) || 'draft',
             notes: data.notes || '',
           });
-          setHomeTeamPlayers(data.home_team_players || []);
-          setAwayTeamPlayers(data.away_team_players || []);
+          
+          // Properly cast the player arrays from JSON
+          const homeTeamPlayersData = Array.isArray(data.home_team_players) 
+            ? data.home_team_players as Player[]
+            : [];
+          const awayTeamPlayersData = Array.isArray(data.away_team_players)
+            ? data.away_team_players as Player[]
+            : [];
+            
+          setHomeTeamPlayers(homeTeamPlayersData);
+          setAwayTeamPlayers(awayTeamPlayersData);
         }
       }
     };
@@ -150,7 +162,7 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
           setTrackerAssignments(assignmentsData.map(assignment => ({
             tracker_user_id: assignment.tracker_user_id,
             assigned_event_types: assignment.assigned_event_types || [],
-            player_ids: assignment.player_ids || [],
+            player_ids: assignment.player_id ? [assignment.player_id] : [],
           })));
         }
       }
@@ -207,9 +219,8 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
         match_type: formData.matchType,
         status: formData.status,
         notes: formData.notes,
-        home_team_players: homeTeamPlayers,
-        away_team_players: awayTeamPlayers,
-        created_by: user.id,
+        home_team_players: homeTeamPlayers as any,
+        away_team_players: awayTeamPlayers as any,
         updated_at: new Date().toISOString(),
       };
 
@@ -226,7 +237,11 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
       } else {
         const { data, error } = await supabase
           .from('matches')
-          .insert({ ...matchData, created_at: new Date().toISOString() })
+          .insert({ 
+            ...matchData, 
+            created_by: user.id,
+            created_at: new Date().toISOString() 
+          })
           .select()
           .single();
         if (error) throw error;
@@ -250,7 +265,7 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
           match_id: savedMatch.id,
           tracker_user_id: assignment.tracker_user_id,
           assigned_event_types: assignment.assigned_event_types,
-          player_ids: assignment.player_ids,
+          player_id: assignment.player_ids.length > 0 ? assignment.player_ids[0] : null,
           player_team_id: assignment.player_ids.length > 0 ? 'both' : 'both'
         }));
 
@@ -363,8 +378,8 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
       <TeamSetupSection
         homeTeamPlayers={homeTeamPlayers}
         awayTeamPlayers={awayTeamPlayers}
-        onHomeTeamPlayersChange={handleHomeTeamPlayersChange}
-        onAwayTeamPlayersChange={handleAwayTeamPlayersChange}
+        onHomeTeamChange={handleHomeTeamPlayersChange}
+        onAwayTeamChange={handleAwayTeamPlayersChange}
       />
       <TrackerAssignmentSection
         trackers={trackers}
