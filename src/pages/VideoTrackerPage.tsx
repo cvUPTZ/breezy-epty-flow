@@ -1,7 +1,8 @@
+
 import React, { useEffect, useState } from 'react';
 import TrackerVideoInterface from '@/components/video/TrackerVideoInterface';
 import { useLocation } from 'react-router-dom';
-import { YouTubeService } from '@/services/youtubeService'; // To fetch video URL if only matchId is provided
+import { YouTubeService } from '@/services/youtubeService';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, AlertTriangle } from 'lucide-react';
@@ -15,7 +16,7 @@ const VideoTrackerPage: React.FC = () => {
   const query = useQuery();
   const { user } = useAuth();
   const [matchId, setMatchId] = useState<string | null>(query.get('matchId'));
-  const [videoId, setVideoId] = useState<string | null>(query.get('videoId')); // Can be direct videoId or extracted
+  const [videoId, setVideoId] = useState<string | null>(query.get('videoId'));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,26 +25,22 @@ const VideoTrackerPage: React.FC = () => {
       setLoading(true);
       setError(null);
       let currentMatchId = query.get('matchId');
-      let currentVideoId = query.get('videoId'); // This might be a full URL or just an ID
+      let currentVideoId = query.get('videoId');
 
       if (!currentMatchId && !currentVideoId) {
-         // Scenario: No parameters, maybe fetch user's latest video assignment?
-         // For now, require at least one.
         setError("Match ID or Video ID is required to load the video tracker.");
         setLoading(false);
         return;
       }
 
-      setMatchId(currentMatchId); // Set matchId if present
+      setMatchId(currentMatchId);
 
       if (currentVideoId) {
         const extractedId = YouTubeService.extractVideoId(currentVideoId);
         if (extractedId) {
           setVideoId(extractedId);
         } else {
-          // If it's not a URL, assume it's an ID already
-          // Add more robust validation if necessary
-          if (currentVideoId.length === 11) { // Basic check for YouTube ID length
+          if (currentVideoId.length === 11) {
              setVideoId(currentVideoId);
           } else {
             setError(`Invalid YouTube Video ID or URL format: ${currentVideoId}`);
@@ -53,22 +50,26 @@ const VideoTrackerPage: React.FC = () => {
           }
         }
       } else if (currentMatchId) {
-        // If only matchId is provided, try to fetch the video URL/ID associated with this match
-        // This requires the database schema and service methods to be implemented (Step 4)
+        // Fetch video configuration from the database
         try {
-          // Placeholder: In a real scenario, you'd fetch this from your backend/Supabase
-          // For example: const videoConfig = await YouTubeService.getVideoMatchSetup(currentMatchId);
-          // if (videoConfig && videoConfig.videoUrl) {
-          //   const extracted = YouTubeService.extractVideoId(videoConfig.videoUrl);
-          //   setVideoId(extracted);
-          // } else {
-          //   setError(`No video configured for match ID: ${currentMatchId}`);
-          // }
-          console.warn("Video ID not provided directly, fetching from match config is not yet implemented. Using placeholder.");
-          // Fallback to a placeholder or error if not implemented
-           setError(`Video ID not provided and fetching by Match ID (${currentMatchId}) is not fully implemented yet.`);
-           setVideoId(null);
+          console.log('Fetching video configuration for match:', currentMatchId);
+          const videoConfig = await YouTubeService.getVideoMatchSetup(currentMatchId);
+          
+          if (videoConfig && videoConfig.video_url) {
+            const extracted = YouTubeService.extractVideoId(videoConfig.video_url);
+            if (extracted) {
+              console.log('Found video configuration:', { videoUrl: videoConfig.video_url, extractedId: extracted });
+              setVideoId(extracted);
+            } else {
+              setError(`Invalid video URL found for match ${currentMatchId}: ${videoConfig.video_url}`);
+              setVideoId(null);
+            }
+          } else {
+            setError(`No video configured for match ID: ${currentMatchId}. Please configure a video for this match first.`);
+            setVideoId(null);
+          }
         } catch (e: any) {
+          console.error('Error fetching video configuration:', e);
           setError(`Failed to fetch video for match ${currentMatchId}: ${e.message}`);
           setVideoId(null);
         }
@@ -76,16 +77,11 @@ const VideoTrackerPage: React.FC = () => {
       setLoading(false);
     };
 
-    if (user) { // Ensure user is loaded before trying to fetch anything that might be user-specific
+    if (user) {
         loadVideoInfo();
-    } else {
-        // Handle case where user is not yet available, might show loading or redirect
-        // For now, assume user context will eventually provide the user
-        // setLoading(true); // Keep loading until user is available
     }
 
   }, [query, user]);
-
 
   if (loading || !user) {
     return (
@@ -122,7 +118,6 @@ const VideoTrackerPage: React.FC = () => {
   }
 
   if (!videoId || !matchId) {
-    // This case should ideally be caught by the error state, but as a fallback:
      return (
       <div className="flex items-center justify-center h-screen bg-background text-destructive">
          <Card className="w-full max-w-md p-8 shadow-xl border-destructive">
