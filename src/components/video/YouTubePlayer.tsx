@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import YouTube, { YouTubeProps, YouTubePlayer as TYPlayer } from 'react-youtube';
 import { supabase } from '@/integrations/supabase/client';
@@ -5,19 +6,19 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface YouTubePlayerComponentProps {
   videoId: string;
-  matchId: string; // Used for Supabase channel scoping
+  matchId: string;
   isAdmin: boolean;
   onPlayerReady?: (player: TYPlayer) => void;
-  onStateChange?: (event: any) => void; // Replace 'any' with proper event type from react-youtube if needed
+  onStateChange?: (event: any) => void;
 }
 
-type PlayerState = -1 | 0 | 1 | 2 | 3 | 5; // Unstarted, Ended, Playing, Paused, Buffering, Video Cued
+type PlayerState = -1 | 0 | 1 | 2 | 3 | 5;
 
 interface PlayerControlEvent {
   type: 'PLAY' | 'PAUSE' | 'SEEK' | 'LOAD_VIDEO';
-  videoId?: string; // For LOAD_VIDEO
-  currentTime?: number; // For PLAY and SEEK
-  timestamp: number; // To order events and prevent stale updates
+  videoId?: string;
+  currentTime?: number;
+  timestamp: number;
 }
 
 const YouTubePlayerComponent: React.FC<YouTubePlayerComponentProps> = ({
@@ -35,7 +36,7 @@ const YouTubePlayerComponent: React.FC<YouTubePlayerComponentProps> = ({
   const broadcastChannelId = `video-control-${matchId}`;
 
   useEffect(() => {
-    setCurrentVideoId(videoId); // Update currentVideoId if prop changes
+    setCurrentVideoId(videoId);
   }, [videoId]);
 
   useEffect(() => {
@@ -50,7 +51,7 @@ const YouTubePlayerComponent: React.FC<YouTubePlayerComponentProps> = ({
     });
 
     channel.on('broadcast', { event: 'player-control' }, ({ payload }: { payload: PlayerControlEvent }) => {
-      if (isAdmin) return; // Admin doesn't react to its own broadcasts echoed back or other admin actions
+      if (isAdmin) return;
 
       if (payload.timestamp <= lastEventTimestampRef.current) {
         console.log('Skipping stale event:', payload);
@@ -67,8 +68,7 @@ const YouTubePlayerComponent: React.FC<YouTubePlayerComponentProps> = ({
         case 'LOAD_VIDEO':
           if (payload.videoId && player.loadVideoById && payload.videoId !== currentVideoId) {
             console.log(`Tracker loading video: ${payload.videoId}`);
-            setCurrentVideoId(payload.videoId); // Update state to reflect new video
-            // player.loadVideoById(payload.videoId); // This will be handled by currentVideoId change if key is set on YouTube component
+            setCurrentVideoId(payload.videoId);
           }
           break;
         case 'PLAY':
@@ -108,7 +108,7 @@ const YouTubePlayerComponent: React.FC<YouTubePlayerComponentProps> = ({
         channelRef.current = null;
       }
     };
-  }, [matchId, isAdmin, currentVideoId]); // currentVideoId added to re-evaluate if needed on video change
+  }, [matchId, isAdmin, currentVideoId]);
 
   const sendPlayerControlEvent = (event: Omit<PlayerControlEvent, 'timestamp'>) => {
     if (!isAdmin || !channelRef.current || channelRef.current.state !== 'joined') {
@@ -137,59 +137,51 @@ const YouTubePlayerComponent: React.FC<YouTubePlayerComponentProps> = ({
 
     if (!isAdmin || !playerRef.current) return;
 
-    const player = playerRef.current;
     const playerState = event.data as PlayerState;
-
-    // More precise handling to avoid event loops from seekTo->playing
-    // We only send PLAY/PAUSE when user explicitly clicks, not from programmatic changes
-    // SEEK is handled by VideoPlayerControls component.
-    // LOAD_VIDEO is handled by VideoPlayerControls component changing the videoId prop.
-
-    // Example: if admin manually plays video
+    
+    // Handle state changes for admin control
     if (playerState === 1) { // PLAYING
-        // This might be triggered programmatically. Consider if this is desired.
-        // sendPlayerControlEvent({ type: 'PLAY', currentTime: player.getCurrentTime() });
-    }
-    // Example: if admin manually pauses video
-    else if (playerState === 2) { // PAUSED
-        // sendPlayerControlEvent({ type: 'PAUSE' });
+      // Could send PLAY event if needed
+    } else if (playerState === 2) { // PAUSED
+      // Could send PAUSE event if needed
     }
   };
 
-  // Effect to handle video changes by admin
   useEffect(() => {
     if (isAdmin && videoId !== currentVideoId) {
-      // If admin changes the videoId prop
       console.log(`Admin changed video to: ${videoId}. Broadcasting...`);
       setCurrentVideoId(videoId);
       sendPlayerControlEvent({ type: 'LOAD_VIDEO', videoId: videoId });
       if (playerRef.current) {
-         // playerRef.current.loadVideoById(videoId); // Let key prop handle re-render
+        // Let key prop handle re-render
       }
     }
   }, [videoId, isAdmin, currentVideoId]);
 
+  const handleError = (error: any) => {
+    console.error('YouTube Player Error:', error);
+  };
 
   const opts: YouTubeProps['opts'] = {
     height: '390',
     width: '640',
     playerVars: {
-      autoplay: 0, // Admin controls autoplay
-      controls: isAdmin ? 1 : 0, // Show controls only for admin
-      rel: 0, // No related videos at the end
+      autoplay: 0,
+      controls: isAdmin ? 1 : 0,
+      rel: 0,
       modestbranding: 1,
-      disablekb: isAdmin ? 0 : 1, // Disable keyboard for trackers
+      disablekb: isAdmin ? 0 : 1,
     },
   };
 
   return (
     <YouTube
-      key={currentVideoId} // Important: Re-mounts component when videoId changes, ensuring new video loads
+      key={currentVideoId}
       videoId={currentVideoId}
       opts={opts}
       onReady={handlePlayerReady}
       onStateChange={handlePlayerStateChange}
-      onError={(e) => console.error('YouTube Player Error:', e)}
+      onError={handleError}
       className={isAdmin ? "youtube-admin-player" : "youtube-tracker-player"}
     />
   );

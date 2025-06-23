@@ -240,6 +240,57 @@ export type Database = {
           },
         ]
       }
+      match_video_settings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          duration_seconds: number | null
+          id: string
+          match_id: string | null
+          updated_at: string
+          video_description: string | null
+          video_title: string | null
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          duration_seconds?: number | null
+          id?: string
+          match_id?: string | null
+          updated_at?: string
+          video_description?: string | null
+          video_title?: string | null
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          duration_seconds?: number | null
+          id?: string
+          match_id?: string | null
+          updated_at?: string
+          video_description?: string | null
+          video_title?: string | null
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_video_settings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_roles_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "match_video_settings_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           away_team_flag_url: string | null
@@ -888,6 +939,58 @@ export type Database = {
           {
             foreignKeyName: "video_jobs_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_roles_view"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      video_tracker_assignments: {
+        Row: {
+          assigned_by: string | null
+          assigned_event_types: Json | null
+          created_at: string
+          id: string
+          match_video_id: string
+          status: string | null
+          tracker_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          assigned_event_types?: Json | null
+          created_at?: string
+          id?: string
+          match_video_id: string
+          status?: string | null
+          tracker_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          assigned_event_types?: Json | null
+          created_at?: string
+          id?: string
+          match_video_id?: string
+          status?: string | null
+          tracker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_tracker_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "user_roles_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "video_tracker_assignments_match_video_id_fkey"
+            columns: ["match_video_id"]
+            isOneToOne: false
+            referencedRelation: "match_video_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_tracker_assignments_tracker_id_fkey"
+            columns: ["tracker_id"]
             isOneToOne: false
             referencedRelation: "user_roles_view"
             referencedColumns: ["user_id"]

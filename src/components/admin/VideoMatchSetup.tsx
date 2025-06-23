@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -21,9 +22,6 @@ interface EventType {
   name: string;
 }
 
-// REFACTORED: Props are updated for the Controlled Component pattern.
-// 'initialVideoUrl' is now 'videoUrl' to represent the current value.
-// 'onVideoUrlChange' is now required as it's the only way to update the URL.
 interface VideoMatchSetupProps {
   simplifiedView?: boolean;
   videoUrl: string;
@@ -32,14 +30,11 @@ interface VideoMatchSetupProps {
 
 const VideoMatchSetup: React.FC<VideoMatchSetupProps> = ({
   simplifiedView = false,
-  videoUrl, // Use the prop directly
+  videoUrl,
   onVideoUrlChange,
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-
-  // REMOVED: No longer using local state for the video URL.
-  // const [videoUrl, setVideoUrl] = useState(initialVideoUrl);
 
   const [allMatches, setAllMatches] = useState<Match[]>([]);
   const [allTrackers, setAllTrackers] = useState<TrackerUser[]>([]);
@@ -57,17 +52,7 @@ const VideoMatchSetup: React.FC<VideoMatchSetupProps> = ({
     { id: 'goal', name: 'Goal' }
   ];
 
-  // REMOVED: This effect was an anti-pattern (derived state).
-  // The component is now fully controlled by its parent via props.
-  /*
   useEffect(() => {
-    setVideoUrl(initialVideoUrl);
-  }, [initialVideoUrl]);
-  */
-
-  // REFACTORED: Data fetching effect is now safer.
-  useEffect(() => {
-    // 1. A flag to prevent state updates if the component has unmounted.
     let isMounted = true;
 
     const fetchData = async () => {
@@ -81,7 +66,6 @@ const VideoMatchSetup: React.FC<VideoMatchSetupProps> = ({
         
         if (matchesError) throw matchesError;
         
-        // Only update state if the component is still mounted
         if (isMounted) {
           setAllMatches(matchesData.map(m => ({ 
             id: m.id, 
@@ -117,24 +101,16 @@ const VideoMatchSetup: React.FC<VideoMatchSetupProps> = ({
       }
     };
     
-    // Only fetch data if not in simplified view
     if (!simplifiedView) {
       fetchData();
     }
 
-    // 2. The cleanup function: runs when the component unmounts or
-    // before the effect runs again.
     return () => {
       isMounted = false;
     };
-
-    // 3. Dependency Array: `toast` is included. For this to be performant,
-    // the `useToast` hook MUST return a memoized `toast` function (using useCallback).
-    // Otherwise, this effect will re-run on every render.
   }, [simplifiedView, toast]);
 
   const handleVideoUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Directly call the parent's handler. No local state update needed.
     onVideoUrlChange(e.target.value);
   };
 
@@ -176,7 +152,7 @@ const VideoMatchSetup: React.FC<VideoMatchSetupProps> = ({
         user.id
       );
 
-      // Send notifications to assigned trackers
+      // Send notifications to assigned trackers with video information
       if (result.videoSetting && result.assignmentResults.length > 0) {
         const matchName = allMatches.find(m => m.id === selectedMatch)?.name || 'Selected Match';
         const notifications = result.assignmentResults.map((assignment: any) => ({
@@ -185,12 +161,14 @@ const VideoMatchSetup: React.FC<VideoMatchSetupProps> = ({
           type: 'video_assignment',
           title: `New Video Assignment: ${result.videoSetting.video_title || 'Video'} for ${matchName}`,
           message: `You have been assigned to track video: "${result.videoSetting.video_title || videoUrl}" for match "${matchName}". Events: ${assignment.assigned_event_types.join(', ') || 'All'}`,
-          data: {
+          notification_data: {
             match_id: selectedMatch,
             match_video_setting_id: result.videoSetting.id,
             video_tracker_assignment_id: assignment.id,
             video_url: result.videoSetting.video_url,
             video_title: result.videoSetting.video_title,
+            video_description: result.videoSetting.video_description,
+            duration_seconds: result.videoSetting.duration_seconds,
             assigned_event_types: assignment.assigned_event_types,
           },
           created_by: user.id,
@@ -203,7 +181,7 @@ const VideoMatchSetup: React.FC<VideoMatchSetupProps> = ({
             toast({ 
               title: "Notification Error", 
               description: "Video setup saved, but failed to send notifications.", 
-              variant: "warning" 
+              variant: "destructive" 
             });
           } else {
             console.log(`${notifications.length} direct video assignment notifications sent.`);
@@ -226,29 +204,29 @@ const VideoMatchSetup: React.FC<VideoMatchSetupProps> = ({
   };
 
   return (
-    <div>
-      {!simplifiedView && <h3>Video Match Setup</h3>}
+    <div className="space-y-4">
+      {!simplifiedView && <h3 className="text-lg font-semibold">Video Match Setup</h3>}
       
-      <div>
-        <label htmlFor="videoUrlInput">YouTube Video URL:</label>
+      <div className="space-y-2">
+        <label htmlFor="videoUrlInput" className="block text-sm font-medium">YouTube Video URL:</label>
         <input
           id="videoUrlInput"
           type="text"
-          value={videoUrl} // The input value is now controlled directly by the prop
+          value={videoUrl}
           onChange={handleVideoUrlChange}
           placeholder="e.g., https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-          className="w-full p-2 border rounded"
+          className="w-full p-2 border rounded-md"
         />
       </div>
 
       {!simplifiedView && (
         <>
-          <div className="mt-4">
-            <label>Select Match:</label>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Select Match:</label>
             <select
               onChange={(e) => setSelectedMatch(e.target.value)}
               value={selectedMatch || ''}
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded-md"
               disabled={loadingData}
             >
               <option value="" disabled>
@@ -260,57 +238,65 @@ const VideoMatchSetup: React.FC<VideoMatchSetupProps> = ({
             </select>
           </div>
 
-          <div className="mt-4">
-            <label>Assign Trackers:</label>
-            {loadingData && <p>Loading trackers...</p>}
-            {!loadingData && allTrackers.map(tracker => (
-              <div key={tracker.id}>
-                <input
-                  type="checkbox"
-                  id={`tracker-${tracker.id}`}
-                  value={tracker.id}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setAssignedTrackers([...assignedTrackers, tracker.id]);
-                    } else {
-                      setAssignedTrackers(assignedTrackers.filter(id => id !== tracker.id));
-                    }
-                  }}
-                />
-                <label htmlFor={`tracker-${tracker.id}`}>
-                  {tracker.full_name || tracker.email} ({tracker.id.substring(0,6)})
-                </label>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Assign Trackers:</label>
+            {loadingData && <p className="text-sm text-gray-500">Loading trackers...</p>}
+            {!loadingData && (
+              <div className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-2">
+                {allTrackers.map(tracker => (
+                  <div key={tracker.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`tracker-${tracker.id}`}
+                      value={tracker.id}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setAssignedTrackers([...assignedTrackers, tracker.id]);
+                        } else {
+                          setAssignedTrackers(assignedTrackers.filter(id => id !== tracker.id));
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    <label htmlFor={`tracker-${tracker.id}`} className="text-sm">
+                      {tracker.full_name || tracker.email} ({tracker.id.substring(0,6)})
+                    </label>
+                  </div>
+                ))}
+                {allTrackers.length === 0 && (
+                  <p className="text-sm text-gray-500">No trackers found.</p>
+                )}
               </div>
-            ))}
-            {!loadingData && allTrackers.length === 0 && (
-              <p className="text-sm text-gray-500">No trackers found.</p>
             )}
           </div>
 
-          <div className="mt-4">
-            <label>Select Events:</label>
-            {eventTypes.map(event => (
-              <div key={event.id}>
-                <input
-                  type="checkbox"
-                  id={`event-${event.id}`}
-                  value={event.id}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedEvents([...selectedEvents, event.id]);
-                    } else {
-                      setSelectedEvents(selectedEvents.filter(id => id !== event.id));
-                    }
-                  }}
-                />
-                <label htmlFor={`event-${event.id}`}>{event.name}</label>
-              </div>
-            ))}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Select Events to Track:</label>
+            <div className="space-y-2 border rounded-md p-2">
+              {eventTypes.map(event => (
+                <div key={event.id} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`event-${event.id}`}
+                    value={event.id}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedEvents([...selectedEvents, event.id]);
+                      } else {
+                        setSelectedEvents(selectedEvents.filter(id => id !== event.id));
+                      }
+                    }}
+                    className="rounded"
+                  />
+                  <label htmlFor={`event-${event.id}`} className="text-sm">{event.name}</label>
+                </div>
+              ))}
+            </div>
           </div>
 
           <button
             onClick={handleSubmit}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+            className="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             disabled={isSubmitting || loadingData}
           >
             {isSubmitting ? 'Saving...' : 'Save Full Setup & Notify Trackers'}

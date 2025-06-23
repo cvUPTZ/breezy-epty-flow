@@ -5,7 +5,7 @@ export interface YouTubeVideoInfo {
   id: string;
   title: string;
   description: string;
-  duration: string; // ISO 8601 format (PT1M35S)
+  duration: string;
   thumbnail: string;
   url: string;
   formats: Array<{
@@ -17,7 +17,7 @@ export interface YouTubeVideoInfo {
 
 interface VideoTrackerAssignmentPayload {
   tracker_id: string;
-  assigned_event_types: string[]; // Assuming event keys are strings
+  assigned_event_types: string[];
 }
 
 export class YouTubeService {
@@ -90,14 +90,14 @@ export class YouTubeService {
       throw new Error(`Download failed: ${error.message}`);
     }
 
-    return data.filePath; // Path in Supabase Storage
+    return data.filePath;
   }
 
   static async saveVideoMatchSetup(
     matchId: string,
     videoUrl: string,
     assignments: VideoTrackerAssignmentPayload[],
-    createdById: string // User ID of the admin creating this setup
+    createdById: string
   ): Promise<{ videoSetting: any; assignmentResults: any[] }> {
     if (!matchId || !videoUrl) {
       throw new Error('Match ID and Video URL are required for video setup.');
@@ -106,17 +106,14 @@ export class YouTubeService {
       throw new Error('User ID of the creator is required.');
     }
 
-    // Step 1: Create or update the video entry in match_video_settings.
-    // The addVideoToMatch method already handles upsert logic based on matchId.
+    // Step 1: Create or update the video entry in match_video_settings
     const videoSetting = await this.addVideoToMatch(matchId, videoUrl, createdById);
     if (!videoSetting || !videoSetting.id) {
       throw new Error('Failed to save video settings for the match.');
     }
     const matchVideoId = videoSetting.id;
 
-    // Step 2: Clear existing assignments for this match_video_id to handle updates.
-    // Note: This means re-assigning will replace all previous assignments for this specific video.
-    // If merging is desired, the logic would be more complex.
+    // Step 2: Clear existing assignments for this match_video_id
     const { error: deleteError } = await supabase
       .from('video_tracker_assignments')
       .delete()
@@ -124,8 +121,6 @@ export class YouTubeService {
 
     if (deleteError) {
       console.error('Error clearing previous video tracker assignments:', deleteError);
-      // Decide if this is a critical error. For now, we'll log and continue.
-      // throw new Error(`Failed to clear previous assignments: ${deleteError.message}`);
     }
 
     // Step 3: Insert new assignments
@@ -133,9 +128,9 @@ export class YouTubeService {
       const newAssignmentsData = assignments.map(assignment => ({
         match_video_id: matchVideoId,
         tracker_id: assignment.tracker_id,
-        assigned_event_types: assignment.assigned_event_types, // Ensure this is valid JSONB or TEXT[]
+        assigned_event_types: assignment.assigned_event_types,
         assigned_by: createdById,
-        status: 'pending', // Default status
+        status: 'pending',
       }));
 
       const { data: assignmentResults, error: insertAssignmentsError } = await supabase
@@ -151,55 +146,52 @@ export class YouTubeService {
       return { videoSetting, assignmentResults: assignmentResults || [] };
     }
 
-    // If no assignments, just return the video setting
     return { videoSetting, assignmentResults: [] };
   }
 
-  // Placeholder for retrieving video match setup for a specific match
-  // This should now fetch from match_video_settings and join video_tracker_assignments
   static async getVideoMatchSetup(matchId: string): Promise<any | null> {
     console.log('Getting video match setup for matchId:', matchId);
-    // This will query `match_video_settings` and `video_tracker_assignments`
-    // Example:
-    // const { data, error } = await supabase
-    //   .from('match_video_settings')
-    //   .select(`
-    //     *,
-    //     video_tracker_assignments (*)
-    //   `)
-    //   .eq('match_id', matchId)
-    //   .maybeSingle();
-    // if (error) throw error;
-    // return data;
-    return { videoUrl: `https://youtube.com/watch?v=exampleForMatch_${matchId}`, assignments: [] }; // Placeholder data
+    
+    const { data, error } = await supabase
+      .from('match_video_settings')
+      .select(`
+        *,
+        video_tracker_assignments (*)
+      `)
+      .eq('match_id', matchId)
+      .maybeSingle();
+      
+    if (error) throw error;
+    return data;
   }
 
-  // Placeholder for retrieving video assignments for a tracker
   static async getTrackerVideoAssignments(trackerId: string): Promise<any[]> {
     console.log('Getting video assignments for trackerId:', trackerId);
-    // This will query `video_tracker_assignments` and join with `match_video_settings` and `matches`
-    // Example:
-    // const { data, error } = await supabase
-    //   .from('video_tracker_assignments')
-    //   .select(`
-    //     *,
-    //     match_video_settings (
-    //       video_url,
-    //       match_id,
-    //       matches (name, home_team_name, away_team_name)
-    //     )
-    //   `)
-    //   .eq('tracker_id', trackerId);
-    // if (error) throw error;
-    // return data;
-    return []; // Placeholder data
+    
+    const { data, error } = await supabase
+      .from('video_tracker_assignments')
+      .select(`
+        *,
+        match_video_settings (
+          video_url,
+          video_title,
+          video_description,
+          duration_seconds,
+          match_id,
+          matches (name, home_team_name, away_team_name)
+        )
+      `)
+      .eq('tracker_id', trackerId);
+      
+    if (error) throw error;
+    return data || [];
   }
 
   static async addVideoToMatch(
     matchId: string,
     videoUrl: string,
-    userId?: string, // Optional: Who is adding/updating this video
-    existingVideoSettingId?: string | null // Optional: if updating an existing one
+    userId?: string,
+    existingVideoSettingId?: string | null
   ): Promise<any> {
     if (!matchId || !videoUrl) {
       throw new Error('Match ID and Video URL are required.');
@@ -221,33 +213,28 @@ export class YouTubeService {
     };
 
     if (existingVideoSettingId) {
-      // Update existing record
       const { data, error } = await supabase
         .from('match_video_settings')
         .update(videoData)
         .eq('id', existingVideoSettingId)
-        .eq('match_id', matchId) // Ensure it's for the correct match
+        .eq('match_id', matchId)
         .select()
         .single();
       if (error) throw error;
       console.log('Video setting updated for match:', matchId, data);
       return data;
     } else {
-      // Upsert: Create new or update if one already exists for this match_id (preferring a single video per match for simplicity here)
-      // More robust upsert might involve checking if a record for match_id already exists first
       const { data: existing, error: fetchError } = await supabase
         .from('match_video_settings')
         .select('id')
         .eq('match_id', matchId)
         .maybeSingle();
 
-      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116: '0 rows' - not an error for maybeSingle
+      if (fetchError && fetchError.code !== 'PGRST116') {
          console.error('Error checking for existing video setting:', fetchError);
-         // Decide if to throw or proceed with insert
       }
 
       if (existing) {
-         // Update existing if found
         const { data, error } = await supabase
           .from('match_video_settings')
           .update(videoData)
@@ -258,7 +245,6 @@ export class YouTubeService {
         console.log('Video setting updated (via upsert logic) for match:', matchId, data);
         return data;
       } else {
-        // Insert new record
         const { data, error } = await supabase
           .from('match_video_settings')
           .insert({ ...videoData, created_at: new Date().toISOString() })
