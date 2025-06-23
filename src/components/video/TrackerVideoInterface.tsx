@@ -1,8 +1,10 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { YouTubePlayer, YouTubePlayerInstance, PlayerControlEvent } from './YouTubePlayer';
 import VideoPlayerControls from './VideoPlayerControls';
 import TrackerPianoInput, { PlayerForPianoInput } from '../TrackerPianoInput'; // Assuming this component exists and exports PlayerForPianoInput
 import { EnhancedVoiceChat } from '../voice/EnhancedVoiceChat'; // Assuming this component exists
+import { VoiceCollaborationProvider } from '@/context/VoiceCollaborationContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client'; // For recording events
 import { useToast } from '@/hooks/use-toast';
@@ -105,54 +107,55 @@ const TrackerVideoInterface: React.FC<TrackerVideoInterfaceProps> = ({ initialVi
     }
   };
 
-
   return (
-    <div className="flex flex-col lg:flex-row gap-4 p-4 h-full max-h-screen overflow-hidden">
-      {/* Video Player and Controls Section */}
-      <div className="flex-grow lg:w-2/3 flex flex-col gap-2">
-        <div className="aspect-video bg-black rounded-lg shadow-lg overflow-hidden">
-          {currentVideoId && matchId ? (
-            <YouTubePlayer
-              videoId={currentVideoId}
-              matchId={matchId}
-              isAdmin={isAdminView}
-              onPlayerReady={handlePlayerReady}
-              // onStateChange can be added if needed for specific logic here
+    <VoiceCollaborationProvider>
+      <div className="flex flex-col lg:flex-row gap-4 p-4 h-full max-h-screen overflow-hidden">
+        {/* Video Player and Controls Section */}
+        <div className="flex-grow lg:w-2/3 flex flex-col gap-2">
+          <div className="aspect-video bg-black rounded-lg shadow-lg overflow-hidden">
+            {currentVideoId && matchId ? (
+              <YouTubePlayer
+                videoId={currentVideoId}
+                matchId={matchId}
+                isAdmin={isAdminView}
+                onPlayerReady={handlePlayerReady}
+                // onStateChange can be added if needed for specific logic here
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                  Select a video to start.
+              </div>
+            )}
+          </div>
+          {isAdminView && playerRef.current && (
+            <VideoPlayerControls
+              player={playerRef.current}
+              initialVideoId={currentVideoId}
+              onSendEvent={sendAdminPlayerEvent}
             />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                Select a video to start.
-            </div>
           )}
         </div>
-        {isAdminView && playerRef.current && (
-          <VideoPlayerControls
-            player={playerRef.current}
-            initialVideoId={currentVideoId}
-            onSendEvent={sendAdminPlayerEvent}
-          />
-        )}
-      </div>
 
-      {/* Piano Input and Voice Chat Section */}
-      <div className="lg:w-1/3 flex flex-col gap-4 overflow-y-auto">
-        {matchId && user && (
-          <TrackerPianoInput
-            matchId={matchId}
-            onRecordEvent={handleRecordEventWithVideoTime}
-          />
-        )}
+        {/* Piano Input and Voice Chat Section */}
+        <div className="lg:w-1/3 flex flex-col gap-4 overflow-y-auto">
+          {matchId && user && (
+            <TrackerPianoInput
+              matchId={matchId}
+              onRecordEvent={handleRecordEventWithVideoTime}
+            />
+          )}
 
-        {matchId && user && userRole && (
-          <EnhancedVoiceChat
-            matchId={`video-${matchId}`} // Or just matchId if rooms are shared
-            userId={user.id}
-            userRole={userRole}
-            userName={user.email || user.id} // Or a display name if available
-          />
-        )}
+          {matchId && user && userRole && (
+            <EnhancedVoiceChat
+              matchId={`video-${matchId}`} // Or just matchId if rooms are shared
+              userId={user.id}
+              userRole={userRole}
+              userName={user.email || user.id} // Or a display name if available
+            />
+          )}
+        </div>
       </div>
-    </div>
+    </VoiceCollaborationProvider>
   );
 };
 
