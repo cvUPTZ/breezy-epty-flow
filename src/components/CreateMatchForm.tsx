@@ -56,6 +56,15 @@ interface CreateMatchFormProps {
   onMatchSubmit: (match: any) => void;
 }
 
+// Define the assignment data interface to match the database schema
+interface AssignmentData {
+  match_id: string;
+  tracker_user_id: string;
+  assigned_event_types: string[];
+  player_id: number | null;
+  player_team_id: string;
+}
+
 const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmit }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -299,34 +308,36 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
             .eq('match_id', matchId);
         }
 
-        // Insert new assignments - Fix the constraint violation
-        const assignmentData = trackerAssignments.flatMap(assignment => {
+        // Insert new assignments - Fix the constraint violation with proper typing
+        const assignmentData: AssignmentData[] = [];
+        
+        for (const assignment of trackerAssignments) {
           // If there are specific player IDs, create assignments for each player
           if (assignment.player_ids.length > 0) {
-            return assignment.player_ids.map(playerId => {
+            for (const playerId of assignment.player_ids) {
               // Determine which team the player belongs to
               const isHomePlayer = homeTeamPlayers.some(p => p.id === playerId);
               const playerTeamId = isHomePlayer ? 'home' : 'away';
               
-              return {
+              assignmentData.push({
                 match_id: savedMatch.id,
                 tracker_user_id: assignment.tracker_user_id,
                 assigned_event_types: assignment.assigned_event_types,
                 player_id: playerId,
                 player_team_id: playerTeamId
-              };
-            });
+              });
+            }
           } else {
-            // If no specific players, create a general assignment for both teams
-            return [{
+            // If no specific players, create a general assignment for home team
+            assignmentData.push({
               match_id: savedMatch.id,
               tracker_user_id: assignment.tracker_user_id,
               assigned_event_types: assignment.assigned_event_types,
               player_id: null,
-              player_team_id: 'home' // Default to home, could be 'both' if supported
-            }];
+              player_team_id: 'home' // Default to home
+            });
           }
-        });
+        }
 
         const { error: assignmentError } = await supabase
           .from('match_tracker_assignments')
