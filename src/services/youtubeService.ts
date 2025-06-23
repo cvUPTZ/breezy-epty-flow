@@ -106,6 +106,8 @@ export class YouTubeService {
       throw new Error('User ID of the creator is required.');
     }
 
+    console.log('Starting video setup for match:', matchId, 'with', assignments.length, 'assignments');
+
     // Step 1: Get video information first
     let videoInfo: YouTubeVideoInfo | null = null;
     try {
@@ -121,6 +123,7 @@ export class YouTubeService {
       throw new Error('Failed to save video settings for the match.');
     }
     const matchVideoId = videoSetting.id;
+    console.log('Video setting saved, ID:', matchVideoId);
 
     // Step 3: Get match information for notifications
     let matchInfo: any = null;
@@ -141,10 +144,16 @@ export class YouTubeService {
 
     // Step 4: Clear existing assignments for this match_video_id
     try {
-      await (supabase as any)
+      const { error: deleteError } = await (supabase as any)
         .from('video_tracker_assignments')
         .delete()
         .eq('match_video_id', matchVideoId);
+      
+      if (deleteError) {
+        console.error('Error clearing previous assignments:', deleteError);
+      } else {
+        console.log('Previous video tracker assignments cleared');
+      }
     } catch (deleteError) {
       console.error('Error clearing previous video tracker assignments:', deleteError);
     }
@@ -167,6 +176,7 @@ export class YouTubeService {
           .select();
 
         if (error) {
+          console.error('Failed to save video tracker assignments:', error);
           throw new Error(`Failed to save video tracker assignments: ${error.message}`);
         }
 
@@ -197,9 +207,8 @@ export class YouTubeService {
           };
 
           try {
-            console.log('Sending notification to tracker:', assignment.tracker_id, 'with data:', notificationData);
+            console.log('Sending video notification to tracker:', assignment.tracker_id, 'with data:', notificationData);
             
-            // Fixed: Remove 'created_by' field since it doesn't exist in the notifications table
             const { error: notificationError } = await (supabase as any)
               .from('notifications')
               .insert({
@@ -213,13 +222,13 @@ export class YouTubeService {
               });
 
             if (notificationError) {
-              console.error('Error sending notification to tracker:', assignment.tracker_id, notificationError);
-              throw new Error(`Failed to send notification: ${notificationError.message}`);
+              console.error('Error sending video notification to tracker:', assignment.tracker_id, notificationError);
+              throw new Error(`Failed to send video notification: ${notificationError.message}`);
             } else {
               console.log('Video assignment notification sent successfully to tracker:', assignment.tracker_id);
             }
           } catch (notificationErr) {
-            console.error('Exception while sending notification:', notificationErr);
+            console.error('Exception while sending video notification:', notificationErr);
             throw notificationErr;
           }
         }
@@ -230,6 +239,7 @@ export class YouTubeService {
       }
     }
 
+    console.log('Video setup completed successfully');
     return { videoSetting, assignmentResults };
   }
 

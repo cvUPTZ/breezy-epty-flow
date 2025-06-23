@@ -139,6 +139,8 @@ const TrackerNotifications: React.FC = () => {
       return;
     }
 
+    console.log('Fetching notifications for user:', user.id);
+
     try {
       const { data, error } = await supabase
         .from('notifications')
@@ -156,15 +158,23 @@ const TrackerNotifications: React.FC = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching notifications:', error);
+        throw error;
+      }
+      
+      console.log('Raw notifications data:', data);
       
       // Get match information for notifications with match_id
       const notificationsWithMatches: Notification[] = [];
       
       for (const notification of data || []) {
+        console.log('Processing notification:', notification.id, 'type:', notification.type);
+        
         // Check if notification should play sound
         const notificationData = notification.notification_data as any;
         if (notificationData?.with_sound && !notification.is_read) {
+          console.log('Playing notification sound for:', notification.id);
           playNotificationSound();
           
           // Show browser notification if permission granted
@@ -202,6 +212,19 @@ const TrackerNotifications: React.FC = () => {
               const matchName = matchData.name || `${matchData.home_team_name} vs ${matchData.away_team_name}`;
               PushNotificationService.sendMatchAssignmentNotification(matchName, ['Urgent Replacement']);
             }
+          } else {
+            console.warn('Could not fetch match data for notification:', notification.id, matchError);
+            // Still add the notification even without match data
+            notificationsWithMatches.push({
+              id: notification.id,
+              match_id: notification.match_id,
+              title: notification.title || '',
+              message: notification.message || '',
+              type: notification.type || 'general',
+              is_read: notification.is_read || false,
+              created_at: notification.created_at || new Date().toISOString(),
+              notification_data: notification.notification_data as NotificationData,
+            });
           }
         } else {
           notificationsWithMatches.push({
@@ -217,6 +240,7 @@ const TrackerNotifications: React.FC = () => {
         }
       }
       
+      console.log('Processed notifications:', notificationsWithMatches.length);
       setNotifications(notificationsWithMatches);
     } catch (error: any) {
       console.error('Error fetching notifications:', error);
@@ -317,6 +341,7 @@ const TrackerNotifications: React.FC = () => {
     }
 
     if (user?.id) {
+      console.log('User logged in, setting up notifications for:', user.id);
       fetchNotifications();
 
       // Subscribe to real-time notifications
@@ -335,6 +360,7 @@ const TrackerNotifications: React.FC = () => {
             fetchNotifications();
             if (payload.eventType === 'INSERT') {
               const newNotification = payload.new as any;
+              console.log('New notification received:', newNotification);
               
               // Play sound for urgent notifications
               if (newNotification?.notification_data?.with_sound) {
@@ -364,6 +390,7 @@ const TrackerNotifications: React.FC = () => {
         }
       };
     } else {
+      console.log('No user logged in, clearing notifications');
       setNotifications([]);
       setLoading(false);
     }
