@@ -46,9 +46,9 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className="absolute bottom-20 left-4 right-4 max-w-4xl mx-auto"
+      className="absolute bottom-4 left-4 right-4 max-w-4xl mx-auto z-[9999]"
     >
-      <div className="bg-black/80 backdrop-blur-md rounded-xl border border-white/20 p-4 text-white shadow-2xl">
+      <div className="bg-black/30 backdrop-blur-sm rounded-xl border border-white/10 p-4 text-white shadow-2xl">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -74,7 +74,7 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
                   key={event.key}
                   onClick={() => handleEventClick(event.key)}
                   disabled={isRecording}
-                  className="flex flex-col items-center p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-200 disabled:opacity-50 relative border border-white/30 group"
+                  className="flex flex-col items-center p-3 bg-white/5 hover:bg-white/15 rounded-xl transition-all duration-200 disabled:opacity-50 relative border border-white/20 group"
                 >
                   <div className="w-8 h-8 mb-2 relative">
                     <EventTypeSvg eventType={event.key} size="md" />
@@ -106,7 +106,7 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
                   key={event.key}
                   onClick={() => handleEventClick(event.key)}
                   disabled={isRecording}
-                  className="flex flex-col items-center p-2 bg-white/5 hover:bg-white/15 rounded-lg transition-all duration-200 disabled:opacity-50 relative group"
+                  className="flex flex-col items-center p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all duration-200 disabled:opacity-50 relative group"
                 >
                   <div className="w-5 h-5 mb-1 relative">
                     <EventTypeSvg eventType={event.key} size="sm" />

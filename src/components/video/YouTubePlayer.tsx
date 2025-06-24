@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import YouTube, { YouTubeProps, YouTubePlayer as TYPlayer } from 'react-youtube';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,12 +36,23 @@ const YouTubePlayerComponent: React.FC<YouTubePlayerComponentProps> = ({
   const lastEventTimestampRef = useRef<number>(0);
   const [volume, setVolume] = useState(100);
   const [isMuted, setIsMuted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const broadcastChannelId = `video-control-${matchId}`;
 
   useEffect(() => {
     setCurrentVideoId(videoId);
   }, [videoId]);
+
+  // Handle fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   useEffect(() => {
     if (!matchId) return;
@@ -195,8 +207,14 @@ const YouTubePlayerComponent: React.FC<YouTubePlayerComponentProps> = ({
 
   const handleFullscreen = () => {
     if (containerRef.current) {
-      if (containerRef.current.requestFullscreen) {
-        containerRef.current.requestFullscreen();
+      if (!isFullscreen) {
+        if (containerRef.current.requestFullscreen) {
+          containerRef.current.requestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
       }
     }
   };
@@ -206,10 +224,10 @@ const YouTubePlayerComponent: React.FC<YouTubePlayerComponentProps> = ({
     height: '100%',
     playerVars: {
       autoplay: 0,
-      controls: isAdmin ? 1 : 0,
+      controls: 1, // Always show YouTube controls
       rel: 0,
       modestbranding: 1,
-      disablekb: isAdmin ? 0 : 1,
+      disablekb: 0, // Enable keyboard controls
     },
   };
 
@@ -222,11 +240,11 @@ const YouTubePlayerComponent: React.FC<YouTubePlayerComponentProps> = ({
         onReady={handlePlayerReady}
         onStateChange={handlePlayerStateChange}
         onError={handleError}
-        className={`w-full h-full ${isAdmin ? "youtube-admin-player" : "youtube-tracker-player"}`}
+        className="w-full h-full"
       />
       
       {/* Custom Volume and Fullscreen Controls */}
-      <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2 z-40">
+      <div className={`absolute top-4 right-4 flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2 z-40 ${isFullscreen ? 'z-[10000]' : ''}`}>
         <button
           onClick={handleVolumeToggle}
           className="text-white hover:text-gray-300 transition-colors"
@@ -248,7 +266,7 @@ const YouTubePlayerComponent: React.FC<YouTubePlayerComponentProps> = ({
         <button
           onClick={handleFullscreen}
           className="text-white hover:text-gray-300 transition-colors ml-2"
-          title="Fullscreen"
+          title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
         >
           <Maximize size={20} />
         </button>

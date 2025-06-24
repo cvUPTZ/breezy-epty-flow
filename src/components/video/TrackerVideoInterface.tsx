@@ -24,6 +24,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const [isAdminView, setIsAdminView] = useState(false);
   const [showPianoOverlay, setShowPianoOverlay] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     setIsAdminView(userRole === 'admin');
@@ -32,6 +33,16 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   useEffect(() => {
     setCurrentVideoId(initialVideoId);
   }, [initialVideoId]);
+
+  // Monitor fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   const handlePlayerReady = (playerInstance: YouTubePlayerInstance) => {
     playerRef.current = playerInstance;
@@ -117,7 +128,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     <div className="flex flex-col lg:flex-row gap-4 p-4 h-screen overflow-hidden">
       {/* Video Player and Controls Section */}
       <div className="flex-grow lg:w-2/3 flex flex-col gap-2 min-h-0 max-w-full">
-        <div className="relative flex-grow bg-black rounded-lg shadow-lg overflow-hidden w-full aspect-video">
+        <div className="relative flex-grow bg-black rounded-lg shadow-lg overflow-hidden w-full">
           {currentVideoId && matchId ? (
             <>
               <YouTubePlayer
@@ -127,23 +138,27 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
                 onPlayerReady={handlePlayerReady}
               />
               
-              {/* Event Tracker Overlay - Embedded within video player */}
+              {/* Event Tracker Overlay - Show in fullscreen too */}
               {showPianoOverlay && (
-                <SimplePianoOverlay
-                  onRecordEvent={handleRecordEvent}
-                  onClose={togglePianoOverlay}
-                  isRecording={isRecording}
-                />
+                <div className={isFullscreen ? 'fixed inset-0 z-[10000] pointer-events-none' : ''}>
+                  <div className={isFullscreen ? 'pointer-events-auto' : ''}>
+                    <SimplePianoOverlay
+                      onRecordEvent={handleRecordEvent}
+                      onClose={togglePianoOverlay}
+                      isRecording={isRecording}
+                    />
+                  </div>
+                </div>
               )}
               
-              {/* Event Tracker Toggle Button - Styled to match video player controls */}
+              {/* Event Tracker Toggle Button */}
               <button
                 onClick={togglePianoOverlay}
-                className={`absolute bottom-4 left-4 px-4 py-2 rounded-lg shadow-lg transition-all duration-200 z-40 flex items-center gap-2 text-sm font-medium ${
+                className={`absolute bottom-4 left-4 px-4 py-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
                   showPianoOverlay 
-                    ? 'bg-red-600 hover:bg-red-700 text-white' 
-                    : 'bg-black/70 hover:bg-black/90 text-white backdrop-blur-sm border border-white/20'
-                }`}
+                    ? 'bg-red-600 hover:bg-red-700 text-white z-[10001]' 
+                    : 'bg-black/70 hover:bg-black/90 text-white backdrop-blur-sm border border-white/20 z-40'
+                } ${isFullscreen ? 'z-[10001]' : ''}`}
               >
                 <span className="text-lg">⚽</span>
                 {showPianoOverlay ? 'Close Tracker' : 'Event Tracker'}
@@ -155,7 +170,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
             </div>
           )}
         </div>
-        {isAdminView && playerRef.current && (
+        {isAdminView && playerRef.current && !isFullscreen && (
           <div className="flex-shrink-0 w-full">
             <VideoPlayerControls
               player={playerRef.current}
@@ -166,18 +181,20 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
         )}
       </div>
 
-      {/* Voice Chat Section */}
-      <div className="lg:w-1/3 flex flex-col gap-4 overflow-y-auto min-h-0 min-w-0">
-        {matchId && user && userRole && (
-          <EnhancedVoiceChat
-            matchId={`video-${matchId}`}
-            userId={user.id}
-            userRole={userRole}
-            userName={user.email || user.id}
-            voiceCollabCtx={voiceCollabCtx}
-          />
-        )}
-      </div>
+      {/* Voice Chat Section - Hide in fullscreen */}
+      {!isFullscreen && (
+        <div className="lg:w-1/3 flex flex-col gap-4 overflow-y-auto min-h-0 min-w-0">
+          {matchId && user && userRole && (
+            <EnhancedVoiceChat
+              matchId={`video-${matchId}`}
+              userId={user.id}
+              userRole={userRole}
+              userName={user.email || user.id}
+              voiceCollabCtx={voiceCollabCtx}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 };
