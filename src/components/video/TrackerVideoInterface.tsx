@@ -2,14 +2,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { YouTubePlayer, YouTubePlayerInstance, PlayerControlEvent } from './YouTubePlayer';
 import VideoPlayerControls from './VideoPlayerControls';
-import EnhancedPianoInput from '../match/EnhancedPianoInput';
 import { EnhancedVoiceChat } from '../voice/EnhancedVoiceChat';
 import { VoiceCollaborationProvider, useVoiceCollaborationContext } from '@/context/VoiceCollaborationContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { EventType } from '@/types';
-import TrackerPianoInput from '../TrackerPianoInput';
+import SimplePianoOverlay from './SimplePianoOverlay';
 
 interface TrackerVideoInterfaceProps {
   initialVideoId: string;
@@ -25,6 +23,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const [currentVideoId, setCurrentVideoId] = useState(initialVideoId);
   const [isAdminView, setIsAdminView] = useState(false);
   const [showPianoOverlay, setShowPianoOverlay] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
   useEffect(() => {
     setIsAdminView(userRole === 'admin');
@@ -56,40 +55,36 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     }
   };
 
-  const handleRecordEventWithVideoTime = async (
-    eventTypeKey: string,
-    playerId?: number,
-    teamContext?: 'home' | 'away',
-    details?: Record<string, any>
-  ): Promise<any | null> => {
+  const handleRecordEvent = async (eventType: string): Promise<void> => {
     if (!playerRef.current) {
       toast({ title: "Player Error", description: "YouTube player is not available.", variant: "destructive" });
-      return null;
+      return;
     }
     if (!user) {
-        toast({ title: "Auth Error", description: "User not authenticated.", variant: "destructive" });
-        return null;
+      toast({ title: "Auth Error", description: "User not authenticated.", variant: "destructive" });
+      return;
     }
 
-    const videoTimestamp = playerRef.current.getCurrentTime();
-
-    const eventToInsert = {
-      match_id: matchId,
-      event_type: eventTypeKey,
-      player_id: playerId || null,
-      team: teamContext || null,
-      coordinates: null,
-      details: {
-        video_timestamp: videoTimestamp,
-        recorded_by_video_tracker: true,
-        ...details
-      },
-      created_by: user.id,
-    };
-
-    console.log("Recording event with video time:", eventToInsert);
-
+    setIsRecording(true);
+    
     try {
+      const videoTimestamp = playerRef.current.getCurrentTime();
+
+      const eventToInsert = {
+        match_id: matchId,
+        event_type: eventType,
+        player_id: null,
+        team: null,
+        coordinates: null,
+        details: {
+          video_timestamp: videoTimestamp,
+          recorded_by_video_tracker: true,
+        },
+        created_by: user.id,
+      };
+
+      console.log("Recording event with video time:", eventToInsert);
+
       const { data, error } = await supabase
         .from('match_events')
         .insert(eventToInsert)
@@ -98,12 +93,19 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
       if (error) throw error;
 
-      toast({ title: "Event Recorded", description: `${eventTypeKey} at ${videoTimestamp.toFixed(2)}s (video time).` });
-      return data;
+      toast({ 
+        title: "Event Recorded", 
+        description: `${eventType} recorded at ${videoTimestamp.toFixed(2)}s (video time).` 
+      });
     } catch (error: any) {
       console.error('Error recording video event:', error);
-      toast({ title: "Recording Error", description: `Failed to record event: ${error.message}`, variant: "destructive" });
-      return null;
+      toast({ 
+        title: "Recording Error", 
+        description: `Failed to record event: ${error.message}`, 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsRecording(false);
     }
   };
 
@@ -125,24 +127,14 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
                 onPlayerReady={handlePlayerReady}
               />
               
-              {/* Piano Input Overlay */}
+              {/* Simplified Piano Input Overlay */}
               {showPianoOverlay && (
                 <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
-                  <div className="bg-white rounded-lg p-4 max-w-4xl max-h-[80vh] overflow-y-auto shadow-2xl">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-semibold">Event Tracker</h3>
-                      <button
-                        onClick={togglePianoOverlay}
-                        className="text-gray-500 hover:text-gray-700 text-xl font-bold"
-                      >
-                        ×
-                      </button>
-                    </div>
-                    <TrackerPianoInput
-                      matchId={matchId}
-                      onRecordEvent={handleRecordEventWithVideoTime}
-                    />
-                  </div>
+                  <SimplePianoOverlay
+                    onRecordEvent={handleRecordEvent}
+                    onClose={togglePianoOverlay}
+                    isRecording={isRecording}
+                  />
                 </div>
               )}
               
@@ -151,7 +143,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
                 onClick={togglePianoOverlay}
                 className="absolute bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition-colors z-20"
               >
-                🎹 Piano
+                🎹 Events
               </button>
             </>
           ) : (
