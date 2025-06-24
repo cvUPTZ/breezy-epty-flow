@@ -46,7 +46,7 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className="absolute bottom-16 left-4 right-4 bg-black/90 backdrop-blur-sm rounded-lg border border-white/20 p-4 text-white z-30"
+      className="absolute bottom-16 left-4 right-4 backdrop-blur-sm rounded-lg p-4 text-white z-30"
     >
       {/* Header */}
       <div className="flex justify-between items-center mb-3">
@@ -72,7 +72,7 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
                 key={event.key}
                 onClick={() => handleEventClick(event.key)}
                 disabled={isRecording}
-                className="flex flex-col items-center p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-200 disabled:opacity-50 relative border border-white/20"
+                className="flex flex-col items-center p-2 bg-black/30 hover:bg-black/50 rounded-lg transition-all duration-200 disabled:opacity-50 relative border border-white/30"
               >
                 <div className="w-6 h-6 mb-1 relative">
                   <EventTypeSvg eventType={event.key} size="sm" />
@@ -100,7 +100,7 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
               key={event.key}
               onClick={() => handleEventClick(event.key)}
               disabled={isRecording}
-              className="flex flex-col items-center p-1.5 bg-white/5 hover:bg-white/15 rounded transition-all duration-200 disabled:opacity-50 relative"
+              className="flex flex-col items-center p-1.5 bg-black/20 hover:bg-black/40 rounded transition-all duration-200 disabled:opacity-50 relative"
             >
               <div className="w-4 h-4 mb-0.5 relative">
                 <EventTypeSvg eventType={event.key} size="xs" />
