@@ -2,13 +2,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { YouTubePlayer, YouTubePlayerInstance, PlayerControlEvent } from './YouTubePlayer';
 import VideoPlayerControls from './VideoPlayerControls';
-import { EnhancedPianoInput } from '../match/EnhancedPianoInput';
+import EnhancedPianoInput from '../match/EnhancedPianoInput';
 import { EnhancedVoiceChat } from '../voice/EnhancedVoiceChat';
 import { VoiceCollaborationProvider, useVoiceCollaborationContext } from '@/context/VoiceCollaborationContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { EventType } from '@/types/eventData';
+import { EventType } from '@/types';
+import TrackerPianoInput from '../TrackerPianoInput';
 
 interface TrackerVideoInterfaceProps {
   initialVideoId: string;
@@ -23,6 +24,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const playerRef = useRef<YouTubePlayerInstance | null>(null);
   const [currentVideoId, setCurrentVideoId] = useState(initialVideoId);
   const [isAdminView, setIsAdminView] = useState(false);
+  const [showPianoOverlay, setShowPianoOverlay] = useState(false);
 
   useEffect(() => {
     setIsAdminView(userRole === 'admin');
@@ -54,7 +56,12 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     }
   };
 
-  const handleRecordEventWithVideoTime = async (eventType: EventType): Promise<any | null> => {
+  const handleRecordEventWithVideoTime = async (
+    eventTypeKey: string,
+    playerId?: number,
+    teamContext?: 'home' | 'away',
+    details?: Record<string, any>
+  ): Promise<any | null> => {
     if (!playerRef.current) {
       toast({ title: "Player Error", description: "YouTube player is not available.", variant: "destructive" });
       return null;
@@ -68,13 +75,14 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
     const eventToInsert = {
       match_id: matchId,
-      event_type: eventType,
-      player_id: null,
-      team: null,
+      event_type: eventTypeKey,
+      player_id: playerId || null,
+      team: teamContext || null,
       coordinates: null,
       details: {
         video_timestamp: videoTimestamp,
-        recorded_by_video_tracker: true
+        recorded_by_video_tracker: true,
+        ...details
       },
       created_by: user.id,
     };
@@ -90,7 +98,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
       if (error) throw error;
 
-      toast({ title: "Event Recorded", description: `${eventType} at ${videoTimestamp.toFixed(2)}s (video time).` });
+      toast({ title: "Event Recorded", description: `${eventTypeKey} at ${videoTimestamp.toFixed(2)}s (video time).` });
       return data;
     } catch (error: any) {
       console.error('Error recording video event:', error);
@@ -99,18 +107,53 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     }
   };
 
+  const togglePianoOverlay = () => {
+    setShowPianoOverlay(!showPianoOverlay);
+  };
+
   return (
     <div className="flex flex-col lg:flex-row gap-4 p-4 h-full max-h-screen overflow-hidden">
       {/* Video Player and Controls Section */}
       <div className="flex-grow lg:w-2/3 flex flex-col gap-2">
-        <div className="aspect-video bg-black rounded-lg shadow-lg overflow-hidden">
+        <div className="relative aspect-video bg-black rounded-lg shadow-lg overflow-hidden">
           {currentVideoId && matchId ? (
-            <YouTubePlayer
-              videoId={currentVideoId}
-              matchId={matchId}
-              isAdmin={isAdminView}
-              onPlayerReady={handlePlayerReady}
-            />
+            <>
+              <YouTubePlayer
+                videoId={currentVideoId}
+                matchId={matchId}
+                isAdmin={isAdminView}
+                onPlayerReady={handlePlayerReady}
+              />
+              
+              {/* Piano Input Overlay */}
+              {showPianoOverlay && (
+                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+                  <div className="bg-white rounded-lg p-4 max-w-4xl max-h-[80vh] overflow-y-auto shadow-2xl">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold">Event Tracker</h3>
+                      <button
+                        onClick={togglePianoOverlay}
+                        className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <TrackerPianoInput
+                      matchId={matchId}
+                      onRecordEvent={handleRecordEventWithVideoTime}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Piano Toggle Button */}
+              <button
+                onClick={togglePianoOverlay}
+                className="absolute bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition-colors z-20"
+              >
+                🎹 Piano
+              </button>
+            </>
           ) : (
             <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                 Select a video to start.
@@ -126,15 +169,8 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
         )}
       </div>
 
-      {/* Piano Input and Voice Chat Section */}
+      {/* Voice Chat Section */}
       <div className="lg:w-1/3 flex flex-col gap-4 overflow-y-auto">
-        {matchId && user && (
-          <EnhancedPianoInput
-            onEventRecord={handleRecordEventWithVideoTime}
-            matchId={matchId}
-          />
-        )}
-
         {matchId && user && userRole && (
           <EnhancedVoiceChat
             matchId={`video-${matchId}`}
