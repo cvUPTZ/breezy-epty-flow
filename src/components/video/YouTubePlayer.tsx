@@ -163,8 +163,8 @@ const YouTubePlayerComponent: React.FC<YouTubePlayerComponentProps> = ({
   };
 
   const opts: YouTubeProps['opts'] = {
-    height: '390',
-    width: '640',
+    width: '100%',
+    height: '100%',
     playerVars: {
       autoplay: 0,
       controls: isAdmin ? 1 : 0,
@@ -175,15 +175,17 @@ const YouTubePlayerComponent: React.FC<YouTubePlayerComponentProps> = ({
   };
 
   return (
-    <YouTube
-      key={currentVideoId}
-      videoId={currentVideoId}
-      opts={opts}
-      onReady={handlePlayerReady}
-      onStateChange={handlePlayerStateChange}
-      onError={handleError}
-      className={isAdmin ? "youtube-admin-player" : "youtube-tracker-player"}
-    />
+    <div className="w-full h-full">
+      <YouTube
+        key={currentVideoId}
+        videoId={currentVideoId}
+        opts={opts}
+        onReady={handlePlayerReady}
+        onStateChange={handlePlayerStateChange}
+        onError={handleError}
+        className={`w-full h-full ${isAdmin ? "youtube-admin-player" : "youtube-tracker-player"}`}
+      />
+    </div>
   );
 };
 

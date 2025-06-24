@@ -114,10 +114,10 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 p-4 h-full max-h-screen overflow-hidden">
+    <div className="flex flex-col lg:flex-row gap-4 p-4 h-screen overflow-hidden">
       {/* Video Player and Controls Section */}
-      <div className="flex-grow lg:w-2/3 flex flex-col gap-2">
-        <div className="relative aspect-video bg-black rounded-lg shadow-lg overflow-hidden">
+      <div className="flex-grow lg:w-2/3 flex flex-col gap-2 min-h-0">
+        <div className="relative flex-grow bg-black rounded-lg shadow-lg overflow-hidden">
           {currentVideoId && matchId ? (
             <>
               <YouTubePlayer
@@ -156,16 +156,18 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
           )}
         </div>
         {isAdminView && playerRef.current && (
-          <VideoPlayerControls
-            player={playerRef.current}
-            initialVideoId={currentVideoId}
-            onSendEvent={sendAdminPlayerEvent}
-          />
+          <div className="flex-shrink-0">
+            <VideoPlayerControls
+              player={playerRef.current}
+              initialVideoId={currentVideoId}
+              onSendEvent={sendAdminPlayerEvent}
+            />
+          </div>
         )}
       </div>
 
       {/* Voice Chat Section */}
-      <div className="lg:w-1/3 flex flex-col gap-4 overflow-y-auto">
+      <div className="lg:w-1/3 flex flex-col gap-4 overflow-y-auto min-h-0">
         {matchId && user && userRole && (
           <EnhancedVoiceChat
             matchId={`video-${matchId}`}
