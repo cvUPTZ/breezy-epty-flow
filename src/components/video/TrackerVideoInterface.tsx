@@ -45,6 +45,14 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  // Debug voice collaboration context
+  useEffect(() => {
+    console.log('TrackerVideoInterface - Voice collaboration context:', voiceCollabCtx);
+    console.log('TrackerVideoInterface - Match ID for voice chat:', matchId);
+    console.log('TrackerVideoInterface - User for voice chat:', user);
+    console.log('TrackerVideoInterface - User role for voice chat:', userRole);
+  }, [voiceCollabCtx, matchId, user, userRole]);
+
   const handlePlayerReady = (playerInstance: YouTubePlayerInstance) => {
     playerRef.current = playerInstance;
     console.log('Player is ready:', playerInstance);
@@ -195,13 +203,21 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
       {!isFullscreen && (
         <div className="lg:w-1/3 flex flex-col gap-4 overflow-y-auto min-h-0 min-w-0">
           {matchId && user && userRole && (
-            <EnhancedVoiceChat
-              matchId={matchId}
-              userId={user.id}
-              userRole={userRole}
-              userName={user.email || user.id}
-              voiceCollabCtx={voiceCollabCtx}
-            />
+            <div className="bg-card border rounded-lg p-4">
+              <h3 className="text-lg font-semibold mb-4">Voice Chat</h3>
+              <div className="text-sm text-muted-foreground mb-2">
+                <p>Match ID: {matchId}</p>
+                <p>User: {user.email || user.id}</p>
+                <p>Role: {userRole}</p>
+              </div>
+              <EnhancedVoiceChat
+                matchId={matchId}
+                userId={user.id}
+                userRole={userRole}
+                userName={user.email || user.id}
+                voiceCollabCtx={voiceCollabCtx}
+              />
+            </div>
           )}
         </div>
       )}
