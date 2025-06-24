@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import EventTypeSvg from '@/components/match/EventTypeSvg';
 
@@ -44,95 +43,94 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      className="bg-white rounded-lg p-4 max-w-md shadow-2xl"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      className="absolute bottom-16 left-4 right-4 bg-black/90 backdrop-blur-sm rounded-lg border border-white/20 p-4 text-white z-30"
     >
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Quick Event Tracker</h3>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+          Event Tracker
+        </h3>
         <button
           onClick={onClose}
-          className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+          className="text-white/70 hover:text-white text-lg font-bold transition-colors"
         >
           ×
         </button>
       </div>
 
-      <div className="space-y-4">
-        {/* Primary Events */}
-        <div>
-          <h4 className="text-sm font-medium text-gray-600 mb-2">Primary Events</h4>
-          <div className="grid grid-cols-2 gap-2">
-            {primaryEvents.map(event => {
-              const isRecordingThis = recordingEventType === event.key;
-              return (
-                <button
-                  key={event.key}
-                  onClick={() => handleEventClick(event.key)}
-                  disabled={isRecording}
-                  className="flex flex-col items-center p-3 border rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-                >
-                  <div className="w-8 h-8 mb-1 relative">
-                    <EventTypeSvg eventType={event.key} size="sm" />
-                    {isRecordingThis && (
-                      <motion.div
-                        className="absolute inset-0 border-2 border-green-500 rounded-full"
-                        animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
-                        transition={{ duration: 0.8, repeat: Infinity }}
-                      />
-                    )}
-                  </div>
-                  <span className="text-xs font-medium">{event.label}</span>
-                </button>
-              );
-            })}
-          </div>
+      {/* Primary Events - Larger buttons */}
+      <div className="mb-3">
+        <div className="grid grid-cols-4 gap-2">
+          {primaryEvents.map(event => {
+            const isRecordingThis = recordingEventType === event.key;
+            return (
+              <button
+                key={event.key}
+                onClick={() => handleEventClick(event.key)}
+                disabled={isRecording}
+                className="flex flex-col items-center p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-200 disabled:opacity-50 relative border border-white/20"
+              >
+                <div className="w-6 h-6 mb-1 relative">
+                  <EventTypeSvg eventType={event.key} size="sm" />
+                  {isRecordingThis && (
+                    <motion.div
+                      className="absolute inset-0 border border-green-400 rounded-full"
+                      animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
+                      transition={{ duration: 0.8, repeat: Infinity }}
+                    />
+                  )}
+                </div>
+                <span className="text-xs font-medium text-white">{event.label}</span>
+              </button>
+            );
+          })}
         </div>
-
-        {/* Secondary Events */}
-        <div>
-          <h4 className="text-sm font-medium text-gray-600 mb-2">Secondary Events</h4>
-          <div className="grid grid-cols-4 gap-2">
-            {secondaryEvents.map(event => {
-              const isRecordingThis = recordingEventType === event.key;
-              return (
-                <button
-                  key={event.key}
-                  onClick={() => handleEventClick(event.key)}
-                  disabled={isRecording}
-                  className="flex flex-col items-center p-2 border rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-                >
-                  <div className="w-6 h-6 mb-1 relative">
-                    <EventTypeSvg eventType={event.key} size="xs" />
-                    {isRecordingThis && (
-                      <motion.div
-                        className="absolute inset-0 border-2 border-green-500 rounded-full"
-                        animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
-                        transition={{ duration: 0.8, repeat: Infinity }}
-                      />
-                    )}
-                  </div>
-                  <span className="text-xs">{event.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {isRecording && (
-          <div className="text-center py-2">
-            <div className="inline-flex items-center gap-2 text-green-600 font-medium">
-              <motion.div
-                className="w-2 h-2 bg-green-600 rounded-full"
-                animate={{ scale: [1, 1.5, 1] }}
-                transition={{ duration: 0.5, repeat: Infinity }}
-              />
-              Recording...
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Secondary Events - Smaller buttons */}
+      <div className="grid grid-cols-8 gap-1">
+        {secondaryEvents.map(event => {
+          const isRecordingThis = recordingEventType === event.key;
+          return (
+            <button
+              key={event.key}
+              onClick={() => handleEventClick(event.key)}
+              disabled={isRecording}
+              className="flex flex-col items-center p-1.5 bg-white/5 hover:bg-white/15 rounded transition-all duration-200 disabled:opacity-50 relative"
+            >
+              <div className="w-4 h-4 mb-0.5 relative">
+                <EventTypeSvg eventType={event.key} size="xs" />
+                {isRecordingThis && (
+                  <motion.div
+                    className="absolute inset-0 border border-green-400 rounded-full"
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
+                    transition={{ duration: 0.8, repeat: Infinity }}
+                  />
+                )}
+              </div>
+              <span className="text-xs text-white/80">{event.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Recording Status */}
+      {isRecording && (
+        <div className="mt-3 text-center">
+          <div className="inline-flex items-center gap-2 text-green-400 font-medium text-sm">
+            <motion.div
+              className="w-2 h-2 bg-green-400 rounded-full"
+              animate={{ scale: [1, 1.5, 1] }}
+              transition={{ duration: 0.5, repeat: Infinity }}
+            />
+            Recording event...
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 };

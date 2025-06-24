@@ -127,23 +127,26 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
                 onPlayerReady={handlePlayerReady}
               />
               
-              {/* Simplified Piano Input Overlay */}
+              {/* Event Tracker Overlay - Embedded within video player */}
               {showPianoOverlay && (
-                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
-                  <SimplePianoOverlay
-                    onRecordEvent={handleRecordEvent}
-                    onClose={togglePianoOverlay}
-                    isRecording={isRecording}
-                  />
-                </div>
+                <SimplePianoOverlay
+                  onRecordEvent={handleRecordEvent}
+                  onClose={togglePianoOverlay}
+                  isRecording={isRecording}
+                />
               )}
               
-              {/* Piano Toggle Button */}
+              {/* Event Tracker Toggle Button - Styled to match video player controls */}
               <button
                 onClick={togglePianoOverlay}
-                className="absolute bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition-colors z-20"
+                className={`absolute bottom-4 right-4 px-3 py-2 rounded-lg shadow-lg transition-all duration-200 z-40 flex items-center gap-2 text-sm font-medium ${
+                  showPianoOverlay 
+                    ? 'bg-red-600 hover:bg-red-700 text-white' 
+                    : 'bg-black/70 hover:bg-black/90 text-white backdrop-blur-sm border border-white/20'
+                }`}
               >
-                🎹 Events
+                <span className="text-lg">⚽</span>
+                {showPianoOverlay ? 'Close Tracker' : 'Event Tracker'}
               </button>
             </>
           ) : (
