@@ -41,14 +41,22 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
     }
   };
 
+  // Check if we're in fullscreen mode
+  const isFullscreen = !!document.fullscreenElement;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className="absolute bottom-4 left-4 right-4 max-w-4xl mx-auto z-[9999]"
+      className={`${
+        isFullscreen 
+          ? 'fixed bottom-4 left-4 right-4 z-[2147483647]' 
+          : 'absolute bottom-4 left-4 right-4 z-[9999]'
+      } max-w-4xl mx-auto pointer-events-auto`}
+      style={isFullscreen ? { zIndex: 2147483647 } : {}}
     >
-      <div className="bg-black/30 backdrop-blur-sm rounded-xl border border-white/10 p-4 text-white shadow-2xl">
+      <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-4 text-white shadow-2xl">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-bold text-white flex items-center gap-2">

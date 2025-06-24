@@ -138,19 +138,6 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
                 onPlayerReady={handlePlayerReady}
               />
               
-              {/* Event Tracker Overlay - Show in fullscreen too */}
-              {showPianoOverlay && (
-                <div className={isFullscreen ? 'fixed inset-0 z-[10000] pointer-events-none' : ''}>
-                  <div className={isFullscreen ? 'pointer-events-auto' : ''}>
-                    <SimplePianoOverlay
-                      onRecordEvent={handleRecordEvent}
-                      onClose={togglePianoOverlay}
-                      isRecording={isRecording}
-                    />
-                  </div>
-                </div>
-              )}
-              
               {/* Event Tracker Toggle Button */}
               <button
                 onClick={togglePianoOverlay}
@@ -158,7 +145,8 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
                   showPianoOverlay 
                     ? 'bg-red-600 hover:bg-red-700 text-white z-[10001]' 
                     : 'bg-black/70 hover:bg-black/90 text-white backdrop-blur-sm border border-white/20 z-40'
-                } ${isFullscreen ? 'z-[10001]' : ''}`}
+                } ${isFullscreen ? 'z-[2147483646]' : ''}`}
+                style={isFullscreen ? { zIndex: 2147483646 } : {}}
               >
                 <span className="text-lg">⚽</span>
                 {showPianoOverlay ? 'Close Tracker' : 'Event Tracker'}
@@ -194,6 +182,15 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
             />
           )}
         </div>
+      )}
+
+      {/* Event Tracker Overlay - Portal to document body for fullscreen */}
+      {showPianoOverlay && (
+        <SimplePianoOverlay
+          onRecordEvent={handleRecordEvent}
+          onClose={togglePianoOverlay}
+          isRecording={isRecording}
+        />
       )}
     </div>
   );
