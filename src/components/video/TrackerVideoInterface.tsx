@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { YouTubePlayer, YouTubePlayerInstance, PlayerControlEvent } from './YouTubePlayer';
@@ -195,7 +196,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
         <div className="lg:w-1/3 flex flex-col gap-4 overflow-y-auto min-h-0 min-w-0">
           {matchId && user && userRole && (
             <EnhancedVoiceChat
-              matchId={`video-${matchId}`}
+              matchId={matchId}
               userId={user.id}
               userRole={userRole}
               userName={user.email || user.id}
