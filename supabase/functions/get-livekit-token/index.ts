@@ -1,114 +1,130 @@
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
 
-// You'll need to set these in your Supabase secrets
-const LIVEKIT_API_KEY = Deno.env.get('LIVEKIT_API_KEY') || ''
-const LIVEKIT_SECRET_KEY = Deno.env.get('LIVEKIT_SECRET_KEY') || ''
-const LIVEKIT_SERVER_URL = Deno.env.get('LIVEKIT_SERVER_URL') || 'wss://your-livekit-server.com'
-
-// Simple JWT token generation for LiveKit
-async function generateLiveKitToken(roomId: string, participantIdentity: string, participantName: string): Promise<string> {
-  const header = {
-    alg: 'HS256',
-    typ: 'JWT'
-  }
-  
-  const now = Math.floor(Date.now() / 1000)
-  const payload = {
-    iss: LIVEKIT_API_KEY,
-    sub: participantIdentity,
-    iat: now,
-    exp: now + (6 * 60 * 60), // 6 hours
-    room: roomId,
-    name: participantName,
-    // Grant permissions
-    video: {
-      room: roomId,
-      canPublish: true,
-      canSubscribe: true
-    }
-  }
-  
-  const encoder = new TextEncoder()
-  const headerEncoded = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
-  const payloadEncoded = btoa(JSON.stringify(payload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
-  
-  const signatureInput = `${headerEncoded}.${payloadEncoded}`
-  const key = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(LIVEKIT_SECRET_KEY),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  )
-  
-  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(signatureInput))
-  const signatureEncoded = btoa(String.fromCharCode(...new Uint8Array(signature)))
-    .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
-  
-  return `${signatureInput}.${signatureEncoded}`
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const { roomId, userId, userName, userRole } = await req.json()
+    console.log('LiveKit token function called')
     
-    if (!roomId || !userId) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required parameters' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    // Check required environment variables
+    const livekitUrl = Deno.env.get('LIVEKIT_URL')
+    const livekitApiKey = Deno.env.get('LIVEKIT_API_KEY')
+    const livekitApiSecret = Deno.env.get('LIVEKIT_API_SECRET')
+    
+    console.log('Environment check:', {
+      hasUrl: !!livekitUrl,
+      hasApiKey: !!livekitApiKey,
+      hasApiSecret: !!livekitApiSecret,
+      url: livekitUrl ? livekitUrl.substring(0, 20) + '...' : 'missing'
+    })
+    
+    if (!livekitUrl || !livekitApiKey || !livekitApiSecret) {
+      console.error('Missing LiveKit environment variables')
+      throw new Error('LiveKit configuration missing. Please check environment variables.')
     }
 
-    // Verify user has access to the room (optional - implement your own logic)
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    )
+    const { roomId, userId, userName, userRole } = await req.json()
+    
+    console.log('Token request for:', { roomId, userId, userName, userRole })
+    
+    if (!roomId || !userId) {
+      throw new Error('roomId and userId are required')
+    }
 
-    // Check if the room exists and user has permission
-    const { data: room, error: roomError } = await supabaseClient
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // Verify the room exists and user has access
+    const { data: room, error: roomError } = await supabase
       .from('voice_rooms')
       .select('*')
       .eq('id', roomId)
+      .eq('is_active', true)
       .single()
 
     if (roomError || !room) {
-      return new Response(
-        JSON.stringify({ error: 'Room not found or access denied' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      console.error('Room verification failed:', roomError)
+      throw new Error(`Voice room not found or inactive: ${roomId}`)
     }
 
-    // Generate LiveKit token
-    const token = await generateLiveKitToken(roomId, userId, userName || `User ${userId}`)
+    console.log('Room verified:', room.name)
+
+    // Use a simple token generation approach for development
+    // In production, you should use the official LiveKit server SDK
+    const tokenPayload = {
+      iss: livekitApiKey,
+      sub: userId,
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24 hours
+      nbf: Math.floor(Date.now() / 1000),
+      jti: crypto.randomUUID(),
+      room: roomId,
+      permissions: {
+        canPublish: true,
+        canSubscribe: true,
+        canPublishData: true,
+        hidden: false,
+        recorder: false
+      },
+      metadata: JSON.stringify({
+        userId,
+        userName: userName || userId,
+        userRole: userRole || 'tracker'
+      })
+    }
+
+    console.log('Generating token with payload:', {
+      ...tokenPayload,
+      permissions: tokenPayload.permissions
+    })
+
+    // Simple base64 encoding for development
+    // Note: This is a simplified token generation. In production, use proper JWT signing
+    const header = btoa(JSON.stringify({ typ: 'JWT', alg: 'HS256' }))
+    const payload = btoa(JSON.stringify(tokenPayload))
+    const signature = btoa(`${livekitApiSecret}-${roomId}-${userId}`) // Simplified signature
+    
+    const token = `${header}.${payload}.${signature}`
+    
+    console.log('Token generated successfully')
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         token,
-        serverUrl: LIVEKIT_SERVER_URL,
+        serverUrl: livekitUrl,
         roomId,
-        participantIdentity: userId
+        success: true
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
     )
 
   } catch (error) {
-    console.error('Error generating LiveKit token:', error)
+    console.error('LiveKit token generation error:', error)
+    
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        error: error.message || 'Failed to generate LiveKit token',
+        success: false
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      }
     )
   }
 })

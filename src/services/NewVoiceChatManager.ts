@@ -95,13 +95,20 @@ export class NewVoiceChatManager {
 
   async listAvailableRooms(matchId: string): Promise<VoiceRoomDetails[]> {
     try {
+      console.log('[NewVoiceChatManager] Fetching rooms for match:', matchId);
+      
       const { data, error } = await supabase
         .from('voice_rooms')
         .select('id, name, max_participants')
         .eq('match_id', matchId)
         .eq('is_active', true);
 
-      if (error) throw error;
+      if (error) {
+        console.error('[NewVoiceChatManager] Supabase error:', error);
+        throw error;
+      }
+
+      console.log('[NewVoiceChatManager] Raw rooms data:', data);
 
       return data?.map(room => ({
         id: room.id,
@@ -116,9 +123,11 @@ export class NewVoiceChatManager {
 
   async joinRoom(roomId: string, userId: string, userRole: string, userName: string): Promise<boolean> {
     try {
-      console.log('[NewVoiceChatManager] Joining room:', roomId);
+      console.log('[NewVoiceChatManager] Joining room:', { roomId, userId, userRole, userName });
 
       // Get LiveKit token from Supabase edge function
+      console.log('[NewVoiceChatManager] Calling edge function...');
+      
       const { data: tokenData, error: tokenError } = await supabase.functions.invoke('get-livekit-token', {
         body: {
           roomId,
@@ -128,12 +137,22 @@ export class NewVoiceChatManager {
         }
       });
 
-      if (tokenError || !tokenData?.token) {
-        throw new Error(`Failed to get LiveKit token: ${tokenError?.message || 'No token received'}`);
+      console.log('[NewVoiceChatManager] Edge function response:', { tokenData, tokenError });
+
+      if (tokenError) {
+        console.error('[NewVoiceChatManager] Edge function error:', tokenError);
+        throw new Error(`Failed to get LiveKit token: ${tokenError.message}`);
+      }
+
+      if (!tokenData?.token) {
+        console.error('[NewVoiceChatManager] No token in response:', tokenData);
+        throw new Error('No token received from edge function');
       }
 
       // Connect to LiveKit
       const serverUrl = tokenData.serverUrl || 'wss://your-livekit-server.com';
+      console.log('[NewVoiceChatManager] Connecting to LiveKit:', serverUrl);
+      
       await this.liveKitService.connect(tokenData.token, serverUrl, roomId);
 
       // Enable microphone by default
