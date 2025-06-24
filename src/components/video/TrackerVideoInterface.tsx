@@ -24,6 +24,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const [currentVideoId, setCurrentVideoId] = useState(initialVideoId);
   const [isAdminView, setIsAdminView] = useState(false);
   const [showPianoOverlay, setShowPianoOverlay] = useState(false);
+  const [showVoiceChat, setShowVoiceChat] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -133,6 +134,10 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     setShowPianoOverlay(!showPianoOverlay);
   };
 
+  const toggleVoiceChat = () => {
+    setShowVoiceChat(!showVoiceChat);
+  };
+
   const renderEventTracker = () => {
     if (!showPianoOverlay) return null;
 
@@ -152,10 +157,50 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     return overlay;
   };
 
+  const renderVoiceChat = () => {
+    if (!showVoiceChat || !matchId || !user || !userRole) return null;
+
+    const voiceChatOverlay = (
+      <div className="absolute top-16 right-4 w-80 max-h-96 bg-white/95 backdrop-blur-lg border border-gray-200 rounded-lg shadow-xl overflow-hidden"
+           style={{ zIndex: isFullscreen ? 2147483647 : 50 }}>
+        <div className="p-3 border-b bg-gray-50 flex justify-between items-center">
+          <h3 className="font-semibold text-gray-800">Voice Chat</h3>
+          <button
+            onClick={toggleVoiceChat}
+            className="text-gray-500 hover:text-gray-700 text-lg font-bold"
+          >
+            ×
+          </button>
+        </div>
+        <div className="p-3 max-h-80 overflow-y-auto">
+          <div className="text-xs text-gray-600 mb-2">
+            <p>Match: {matchId}</p>
+            <p>User: {user.email || user.id}</p>
+            <p>Role: {userRole}</p>
+          </div>
+          <EnhancedVoiceChat
+            matchId={matchId}
+            userId={user.id}
+            userRole={userRole}
+            userName={user.email || user.id}
+            voiceCollabCtx={voiceCollabCtx}
+          />
+        </div>
+      </div>
+    );
+
+    // Render in portal when in fullscreen to ensure it appears above the video
+    if (isFullscreen) {
+      return createPortal(voiceChatOverlay, document.body);
+    }
+
+    return voiceChatOverlay;
+  };
+
   return (
-    <div className="flex flex-col lg:flex-row gap-4 p-4 h-screen overflow-hidden">
+    <div className="flex flex-col gap-4 p-4 h-screen overflow-hidden">
       {/* Video Player and Controls Section */}
-      <div className="flex-grow lg:w-2/3 flex flex-col gap-2 min-h-0 max-w-full">
+      <div className="flex-grow flex flex-col gap-2 min-h-0 max-w-full">
         <div className="relative flex-grow bg-black rounded-lg shadow-lg overflow-hidden w-full">
           {currentVideoId && matchId ? (
             <>
@@ -166,21 +211,42 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
                 onPlayerReady={handlePlayerReady}
               />
               
-              {/* Event Tracker Toggle Button */}
-              <button
-                onClick={togglePianoOverlay}
-                className={`absolute bottom-4 left-4 px-4 py-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
-                  showPianoOverlay 
-                    ? 'bg-red-600 hover:bg-red-700 text-white' 
-                    : 'bg-black/70 hover:bg-black/90 text-white backdrop-blur-sm border border-white/20'
-                }`}
-                style={{ 
-                  zIndex: isFullscreen ? 2147483646 : 40 
-                }}
-              >
-                <span className="text-lg">⚽</span>
-                {showPianoOverlay ? 'Close Tracker' : 'Event Tracker'}
-              </button>
+              {/* Control Buttons */}
+              <div className="absolute bottom-4 left-4 flex gap-2">
+                {/* Event Tracker Toggle Button */}
+                <button
+                  onClick={togglePianoOverlay}
+                  className={`px-4 py-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
+                    showPianoOverlay 
+                      ? 'bg-red-600 hover:bg-red-700 text-white' 
+                      : 'bg-black/70 hover:bg-black/90 text-white backdrop-blur-sm border border-white/20'
+                  }`}
+                  style={{ 
+                    zIndex: isFullscreen ? 2147483646 : 40 
+                  }}
+                >
+                  <span className="text-lg">⚽</span>
+                  {showPianoOverlay ? 'Close Tracker' : 'Event Tracker'}
+                </button>
+
+                {/* Voice Chat Toggle Button */}
+                {matchId && user && userRole && (
+                  <button
+                    onClick={toggleVoiceChat}
+                    className={`px-4 py-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
+                      showVoiceChat 
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                        : 'bg-black/70 hover:bg-black/90 text-white backdrop-blur-sm border border-white/20'
+                    }`}
+                    style={{ 
+                      zIndex: isFullscreen ? 2147483646 : 40 
+                    }}
+                  >
+                    <span className="text-lg">🎤</span>
+                    {showVoiceChat ? 'Close Voice' : 'Voice Chat'}
+                  </button>
+                )}
+              </div>
             </>
           ) : (
             <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -199,31 +265,11 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
         )}
       </div>
 
-      {/* Voice Chat Section - Hide in fullscreen */}
-      {!isFullscreen && (
-        <div className="lg:w-1/3 flex flex-col gap-4 overflow-y-auto min-h-0 min-w-0">
-          {matchId && user && userRole && (
-            <div className="bg-card border rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-4">Voice Chat</h3>
-              <div className="text-sm text-muted-foreground mb-2">
-                <p>Match ID: {matchId}</p>
-                <p>User: {user.email || user.id}</p>
-                <p>Role: {userRole}</p>
-              </div>
-              <EnhancedVoiceChat
-                matchId={matchId}
-                userId={user.id}
-                userRole={userRole}
-                userName={user.email || user.id}
-                voiceCollabCtx={voiceCollabCtx}
-              />
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Event Tracker Overlay */}
       {renderEventTracker()}
+
+      {/* Voice Chat Overlay */}
+      {renderVoiceChat()}
     </div>
   );
 };
