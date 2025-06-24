@@ -1,5 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { YouTubePlayer, YouTubePlayerInstance, PlayerControlEvent } from './YouTubePlayer';
 import VideoPlayerControls from './VideoPlayerControls';
 import { EnhancedVoiceChat } from '../voice/EnhancedVoiceChat';
@@ -124,6 +124,25 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     setShowPianoOverlay(!showPianoOverlay);
   };
 
+  const renderEventTracker = () => {
+    if (!showPianoOverlay) return null;
+
+    const overlay = (
+      <SimplePianoOverlay
+        onRecordEvent={handleRecordEvent}
+        onClose={togglePianoOverlay}
+        isRecording={isRecording}
+      />
+    );
+
+    // Render in portal when in fullscreen to ensure it appears above the video
+    if (isFullscreen) {
+      return createPortal(overlay, document.body);
+    }
+
+    return overlay;
+  };
+
   return (
     <div className="flex flex-col lg:flex-row gap-4 p-4 h-screen overflow-hidden">
       {/* Video Player and Controls Section */}
@@ -143,10 +162,12 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
                 onClick={togglePianoOverlay}
                 className={`absolute bottom-4 left-4 px-4 py-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
                   showPianoOverlay 
-                    ? 'bg-red-600 hover:bg-red-700 text-white z-[10001]' 
-                    : 'bg-black/70 hover:bg-black/90 text-white backdrop-blur-sm border border-white/20 z-40'
-                } ${isFullscreen ? 'z-[2147483646]' : ''}`}
-                style={isFullscreen ? { zIndex: 2147483646 } : {}}
+                    ? 'bg-red-600 hover:bg-red-700 text-white' 
+                    : 'bg-black/70 hover:bg-black/90 text-white backdrop-blur-sm border border-white/20'
+                }`}
+                style={{ 
+                  zIndex: isFullscreen ? 2147483646 : 40 
+                }}
               >
                 <span className="text-lg">⚽</span>
                 {showPianoOverlay ? 'Close Tracker' : 'Event Tracker'}
@@ -184,14 +205,8 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
         </div>
       )}
 
-      {/* Event Tracker Overlay - Portal to document body for fullscreen */}
-      {showPianoOverlay && (
-        <SimplePianoOverlay
-          onRecordEvent={handleRecordEvent}
-          onClose={togglePianoOverlay}
-          isRecording={isRecording}
-        />
-      )}
+      {/* Event Tracker Overlay */}
+      {renderEventTracker()}
     </div>
   );
 };

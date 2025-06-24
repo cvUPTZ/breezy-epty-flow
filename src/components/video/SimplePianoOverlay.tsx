@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import EventTypeSvg from '@/components/match/EventTypeSvg';
 
@@ -15,6 +15,17 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
   isRecording
 }) => {
   const [recordingEventType, setRecordingEventType] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Monitor fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   const primaryEvents = [
     { key: 'goal', label: 'Goal' },
@@ -41,9 +52,6 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
     }
   };
 
-  // Check if we're in fullscreen mode
-  const isFullscreen = !!document.fullscreenElement;
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -51,10 +59,13 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
       exit={{ opacity: 0, y: 20 }}
       className={`${
         isFullscreen 
-          ? 'fixed bottom-4 left-4 right-4 z-[2147483647]' 
-          : 'absolute bottom-4 left-4 right-4 z-[9999]'
+          ? 'fixed bottom-4 left-4 right-4' 
+          : 'absolute bottom-4 left-4 right-4'
       } max-w-4xl mx-auto pointer-events-auto`}
-      style={isFullscreen ? { zIndex: 2147483647 } : {}}
+      style={{ 
+        zIndex: isFullscreen ? 2147483647 : 9999,
+        position: isFullscreen ? 'fixed' : 'absolute'
+      }}
     >
       <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-4 text-white shadow-2xl">
         {/* Header */}
