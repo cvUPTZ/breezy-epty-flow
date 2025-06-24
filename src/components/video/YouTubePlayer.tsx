@@ -1,8 +1,8 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import YouTube, { YouTubeProps, YouTubePlayer as TYPlayer } from 'react-youtube';
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { Volume2, VolumeX, Maximize } from 'lucide-react';
 
 interface YouTubePlayerComponentProps {
   videoId: string;
@@ -29,9 +29,12 @@ const YouTubePlayerComponent: React.FC<YouTubePlayerComponentProps> = ({
   onStateChange,
 }) => {
   const playerRef = useRef<TYPlayer | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const [currentVideoId, setCurrentVideoId] = useState(videoId);
   const lastEventTimestampRef = useRef<number>(0);
+  const [volume, setVolume] = useState(100);
+  const [isMuted, setIsMuted] = useState(false);
 
   const broadcastChannelId = `video-control-${matchId}`;
 
@@ -125,6 +128,8 @@ const YouTubePlayerComponent: React.FC<YouTubePlayerComponentProps> = ({
 
   const handlePlayerReady: YouTubeProps['onReady'] = (event) => {
     playerRef.current = event.target;
+    setVolume(event.target.getVolume());
+    setIsMuted(event.target.isMuted());
     if (onPlayerReady) {
       onPlayerReady(event.target);
     }
@@ -162,6 +167,40 @@ const YouTubePlayerComponent: React.FC<YouTubePlayerComponentProps> = ({
     console.error('YouTube Player Error:', error);
   };
 
+  const handleVolumeToggle = () => {
+    if (!playerRef.current) return;
+    
+    if (isMuted) {
+      playerRef.current.unMute();
+      setIsMuted(false);
+    } else {
+      playerRef.current.mute();
+      setIsMuted(true);
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!playerRef.current) return;
+    
+    const newVolume = parseInt(e.target.value);
+    playerRef.current.setVolume(newVolume);
+    setVolume(newVolume);
+    
+    if (newVolume === 0) {
+      setIsMuted(true);
+    } else if (isMuted) {
+      setIsMuted(false);
+    }
+  };
+
+  const handleFullscreen = () => {
+    if (containerRef.current) {
+      if (containerRef.current.requestFullscreen) {
+        containerRef.current.requestFullscreen();
+      }
+    }
+  };
+
   const opts: YouTubeProps['opts'] = {
     width: '100%',
     height: '100%',
@@ -175,7 +214,7 @@ const YouTubePlayerComponent: React.FC<YouTubePlayerComponentProps> = ({
   };
 
   return (
-    <div className="w-full h-full">
+    <div ref={containerRef} className="relative w-full h-full">
       <YouTube
         key={currentVideoId}
         videoId={currentVideoId}
@@ -185,6 +224,35 @@ const YouTubePlayerComponent: React.FC<YouTubePlayerComponentProps> = ({
         onError={handleError}
         className={`w-full h-full ${isAdmin ? "youtube-admin-player" : "youtube-tracker-player"}`}
       />
+      
+      {/* Custom Volume and Fullscreen Controls */}
+      <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2 z-40">
+        <button
+          onClick={handleVolumeToggle}
+          className="text-white hover:text-gray-300 transition-colors"
+          title={isMuted ? "Unmute" : "Mute"}
+        >
+          {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+        </button>
+        
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value={isMuted ? 0 : volume}
+          onChange={handleVolumeChange}
+          className="w-20 h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer slider"
+          title="Volume"
+        />
+        
+        <button
+          onClick={handleFullscreen}
+          className="text-white hover:text-gray-300 transition-colors ml-2"
+          title="Fullscreen"
+        >
+          <Maximize size={20} />
+        </button>
+      </div>
     </div>
   );
 };

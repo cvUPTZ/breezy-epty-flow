@@ -116,8 +116,8 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   return (
     <div className="flex flex-col lg:flex-row gap-4 p-4 h-screen overflow-hidden">
       {/* Video Player and Controls Section */}
-      <div className="flex-grow lg:w-2/3 flex flex-col gap-2 min-h-0">
-        <div className="relative flex-grow bg-black rounded-lg shadow-lg overflow-hidden">
+      <div className="flex-grow lg:w-2/3 flex flex-col gap-2 min-h-0 max-w-full">
+        <div className="relative flex-grow bg-black rounded-lg shadow-lg overflow-hidden w-full aspect-video">
           {currentVideoId && matchId ? (
             <>
               <YouTubePlayer
@@ -139,7 +139,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
               {/* Event Tracker Toggle Button - Styled to match video player controls */}
               <button
                 onClick={togglePianoOverlay}
-                className={`absolute bottom-4 right-4 px-3 py-2 rounded-lg shadow-lg transition-all duration-200 z-40 flex items-center gap-2 text-sm font-medium ${
+                className={`absolute bottom-4 left-4 px-4 py-2 rounded-lg shadow-lg transition-all duration-200 z-40 flex items-center gap-2 text-sm font-medium ${
                   showPianoOverlay 
                     ? 'bg-red-600 hover:bg-red-700 text-white' 
                     : 'bg-black/70 hover:bg-black/90 text-white backdrop-blur-sm border border-white/20'
@@ -156,7 +156,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
           )}
         </div>
         {isAdminView && playerRef.current && (
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 w-full">
             <VideoPlayerControls
               player={playerRef.current}
               initialVideoId={currentVideoId}
@@ -167,7 +167,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
       </div>
 
       {/* Voice Chat Section */}
-      <div className="lg:w-1/3 flex flex-col gap-4 overflow-y-auto min-h-0">
+      <div className="lg:w-1/3 flex flex-col gap-4 overflow-y-auto min-h-0 min-w-0">
         {matchId && user && userRole && (
           <EnhancedVoiceChat
             matchId={`video-${matchId}`}
