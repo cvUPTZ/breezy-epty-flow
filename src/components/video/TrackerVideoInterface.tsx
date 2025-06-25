@@ -1,6 +1,8 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { YouTubePlayer, YouTubePlayerInstance, PlayerControlEvent } from './YouTubePlayer';
+import { YouTubePlayerWithDetection } from './YouTubePlayerWithDetection';
+import { YouTubePlayerInstance } from './YouTubePlayer';
 import VideoPlayerControls from './VideoPlayerControls';
 import { CompactVoiceChat } from '../voice/CompactVoiceChat';
 import { VoiceCollaborationProvider, useVoiceCollaborationContext } from '@/context/VoiceCollaborationContext';
@@ -8,12 +10,18 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import SimplePianoOverlay from './SimplePianoOverlay';
-import { RoboflowVideoDetectionOverlay } from './RoboflowVideoDetectionOverlay';
 import { ProcessedDetectionResult } from '@/services/roboflowDetectionService';
 
 interface TrackerVideoInterfaceProps {
   initialVideoId: string;
   matchId: string;
+}
+
+interface PlayerControlEvent {
+  type: 'PLAY' | 'PAUSE' | 'SEEK' | 'LOAD_VIDEO';
+  videoId?: string;
+  currentTime?: number;
+  timestamp: number;
 }
 
 // Create a separate component that uses the context
@@ -26,7 +34,6 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const [isAdminView, setIsAdminView] = useState(false);
   const [showPianoOverlay, setShowPianoOverlay] = useState(false);
   const [showVoiceChat, setShowVoiceChat] = useState(false);
-  const [showDetection, setShowDetection] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [detectionResults, setDetectionResults] = useState<ProcessedDetectionResult[]>([]);
@@ -48,14 +55,6 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
-
-  // Debug voice collaboration context
-  useEffect(() => {
-    console.log('TrackerVideoInterface - Voice collaboration context:', voiceCollabCtx);
-    console.log('TrackerVideoInterface - Match ID for voice chat:', matchId);
-    console.log('TrackerVideoInterface - User for voice chat:', user);
-    console.log('TrackerVideoInterface - User role for voice chat:', userRole);
-  }, [voiceCollabCtx, matchId, user, userRole]);
 
   const handlePlayerReady = (playerInstance: YouTubePlayerInstance) => {
     playerRef.current = playerInstance;
@@ -134,7 +133,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   };
 
   const handleDetectionResults = (results: ProcessedDetectionResult[]) => {
-    console.log('Received Roboflow detection results:', results);
+    console.log('Received AI detection results:', results);
     setDetectionResults(results);
     toast({
       title: 'AI Detection Complete',
@@ -148,10 +147,6 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
   const toggleVoiceChat = () => {
     setShowVoiceChat(!showVoiceChat);
-  };
-
-  const toggleDetection = () => {
-    setShowDetection(!showDetection);
   };
 
   const renderEventTracker = () => {
@@ -171,20 +166,6 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     }
 
     return overlay;
-  };
-
-  const renderDetectionOverlay = () => {
-    if (!showDetection) return null;
-
-    return (
-      <RoboflowVideoDetectionOverlay
-        videoId={currentVideoId}
-        isVisible={showDetection}
-        onClose={toggleDetection}
-        onDetectionResults={handleDetectionResults}
-        isFullscreen={isFullscreen}
-      />
-    );
   };
 
   const renderVoiceChat = () => {
@@ -229,11 +210,12 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
         <div className="relative flex-grow bg-black rounded-lg shadow-lg overflow-hidden w-full">
           {currentVideoId && matchId ? (
             <>
-              <YouTubePlayer
+              <YouTubePlayerWithDetection
                 videoId={currentVideoId}
                 matchId={matchId}
                 isAdmin={isAdminView}
                 onPlayerReady={handlePlayerReady}
+                onDetectionResults={handleDetectionResults}
               />
               
               {/* Control Buttons */}
@@ -252,22 +234,6 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
                 >
                   <span className="text-lg">⚽</span>
                   {showPianoOverlay ? 'Close Tracker' : 'Event Tracker'}
-                </button>
-
-                {/* Roboflow AI Detection Toggle Button */}
-                <button
-                  onClick={toggleDetection}
-                  className={`px-4 py-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
-                    showDetection 
-                      ? 'bg-purple-600 hover:bg-purple-700 text-white' 
-                      : 'bg-black/70 hover:bg-black/90 text-white backdrop-blur-sm border border-white/20'
-                  }`}
-                  style={{ 
-                    zIndex: isFullscreen ? 2147483646 : 40 
-                  }}
-                >
-                  <span className="text-lg">🤖</span>
-                  {showDetection ? 'Close AI' : 'Roboflow AI'}
                 </button>
 
                 {/* Voice Chat Toggle Button */}
@@ -308,9 +274,6 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
       {/* Event Tracker Overlay */}
       {renderEventTracker()}
-
-      {/* Roboflow AI Detection Overlay */}
-      {renderDetectionOverlay()}
 
       {/* Voice Chat Overlay */}
       {renderVoiceChat()}
