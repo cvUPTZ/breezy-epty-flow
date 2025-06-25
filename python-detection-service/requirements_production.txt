@@ -1,5 +1,5 @@
 
-# Production Requirements for Football Detection Service
+# Production Requirements for Football Detection Service with Real ML
 
 # FastAPI and server
 fastapi==0.104.1
@@ -21,7 +21,7 @@ pydantic==2.4.2
 httpx==0.25.1
 
 # Database
-sqlite3  # Built into Python
+# sqlite3 is built into Python
 
 # Logging and monitoring
 python-json-logger==2.0.7
@@ -29,17 +29,41 @@ python-json-logger==2.0.7
 # Security
 cryptography==41.0.7
 
-# Optional: Real ML models (uncomment when ready)
-# torch==2.1.0
-# torchvision==0.16.0
-# ultralytics==8.0.200  # For YOLOv8
+# REAL ML MODELS - Core dependencies
+torch==2.1.0+cpu  # Use CPU version for better compatibility
+torchvision==0.16.0+cpu
+torchaudio==2.1.0+cpu
+
+# YOLOv8 and object detection
+ultralytics==8.0.200
+supervision==0.15.0
+
+# Additional ML utilities
+scipy==1.11.4
+scikit-learn==1.3.2
+
+# Image processing enhancements
+albumentations==1.3.1
+
+# Performance monitoring
+psutil==5.9.6
+
+# Optional: GPU support (uncomment for CUDA systems)
+# torch==2.1.0+cu118
+# torchvision==0.16.0+cu118
+# torchaudio==2.1.0+cu118
 
 # Optional: Advanced video processing
 # ffmpeg-python==0.2.0
 
-# Optional: Performance monitoring
-# psutil==5.9.6
-
 # Optional: Background task queue (for scaling)
 # celery==5.3.3
 # redis==5.0.1
+
+# Optional: Advanced model optimization
+# onnx==1.14.1
+# onnxruntime==1.16.3
+
+# Development and testing (remove in production)
+# jupyter==1.0.0
+# matplotlib==3.7.2
