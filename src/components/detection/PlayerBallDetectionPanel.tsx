@@ -1,13 +1,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Play, Square, Eye, Settings } from 'lucide-react';
+import { Loader2, Play, Square, Settings, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { pythonDetectionService, DetectionJob, DetectionResult } from '@/services/pythonDetectionService';
 
@@ -31,6 +30,7 @@ export const PlayerBallDetectionPanel: React.FC<PlayerBallDetectionPanelProps> =
     trackBall: true,
   });
   const [serviceStatus, setServiceStatus] = useState<'unknown' | 'online' | 'offline'>('unknown');
+  const [showSettings, setShowSettings] = useState(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check service health on mount
@@ -159,144 +159,157 @@ export const PlayerBallDetectionPanel: React.FC<PlayerBallDetectionPanelProps> =
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Eye className="h-5 w-5" />
-          Player & Ball Detection
-          <Badge variant={serviceStatus === 'online' ? 'default' : 'destructive'}>
-            {serviceStatus === 'online' ? 'Service Online' : 'Service Offline'}
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Video URL Input */}
-        <div className="space-y-2">
-          <Label htmlFor="video-url">Video URL</Label>
-          <Input
-            id="video-url"
-            placeholder="https://www.youtube.com/watch?v=..."
-            value={videoUrl}
-            onChange={(e) => setVideoUrl(e.target.value)}
-            disabled={isDetecting}
-          />
-        </div>
-
-        {/* Configuration */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="frame-rate">Frame Rate (fps)</Label>
-            <Input
-              id="frame-rate"
-              type="number"
-              min="1"
-              max="30"
-              value={config.frameRate}
-              onChange={(e) => setConfig(prev => ({ ...prev, frameRate: parseInt(e.target.value) || 5 }))}
-              disabled={isDetecting}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confidence">Confidence Threshold</Label>
-            <Input
-              id="confidence"
-              type="number"
-              min="0.1"
-              max="1"
-              step="0.1"
-              value={config.confidenceThreshold}
-              onChange={(e) => setConfig(prev => ({ ...prev, confidenceThreshold: parseFloat(e.target.value) || 0.5 }))}
-              disabled={isDetecting}
-            />
-          </div>
-        </div>
-
-        {/* Detection Options */}
-        <div className="flex gap-6">
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="track-players"
-              checked={config.trackPlayers}
-              onCheckedChange={(checked) => setConfig(prev => ({ ...prev, trackPlayers: checked }))}
-              disabled={isDetecting}
-            />
-            <Label htmlFor="track-players">Track Players</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="track-ball"
-              checked={config.trackBall}
-              onCheckedChange={(checked) => setConfig(prev => ({ ...prev, trackBall: checked }))}
-              disabled={isDetecting}
-            />
-            <Label htmlFor="track-ball">Track Ball</Label>
-          </div>
-        </div>
-
-        {/* Job Status */}
-        {currentJob && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Job Status:</span>
-              <Badge variant={getStatusBadgeVariant(currentJob.status)}>
-                {currentJob.status}
-              </Badge>
-            </div>
-            {currentJob.progress !== undefined && (
-              <Progress value={currentJob.progress} className="w-full" />
-            )}
-            {currentJob.status === 'processing' && (
-              <p className="text-xs text-muted-foreground">
-                Processing frames... This may take several minutes depending on video length.
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex gap-2">
-          {!isDetecting ? (
-            <Button
-              onClick={startDetection}
-              disabled={!videoUrl || serviceStatus === 'offline'}
-              className="flex items-center gap-2"
-            >
-              <Play className="h-4 w-4" />
-              Start Detection
-            </Button>
-          ) : (
-            <Button
-              onClick={stopDetection}
-              variant="destructive"
-              className="flex items-center gap-2"
-            >
-              {currentJob?.status === 'processing' ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Square className="h-4 w-4" />
-              )}
-              {currentJob?.status === 'processing' ? 'Processing...' : 'Cancel'}
-            </Button>
-          )}
-          <Button
-            onClick={checkServiceHealth}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
+    <div className="space-y-3">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Eye className="h-4 w-4 text-white/70" />
+          <span className="font-medium text-white text-sm">AI Detection</span>
+          <Badge 
+            variant={serviceStatus === 'online' ? 'default' : 'destructive'}
+            className="text-xs"
           >
-            <Settings className="h-4 w-4" />
-            Check Service
-          </Button>
+            {serviceStatus === 'online' ? 'Online' : 'Offline'}
+          </Badge>
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowSettings(!showSettings)}
+          className="text-white/70 hover:text-white h-6 w-6 p-0"
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
+      </div>
 
-        {serviceStatus === 'offline' && (
-          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-            <p className="text-sm text-yellow-800">
-              Detection service is offline. Please ensure your Python service is deployed and running on PythonAnywhere.
-            </p>
+      {/* Video URL Input */}
+      <div className="space-y-1">
+        <Input
+          placeholder="YouTube video URL..."
+          value={videoUrl}
+          onChange={(e) => setVideoUrl(e.target.value)}
+          disabled={isDetecting}
+          className="bg-white/10 border-white/20 text-white placeholder:text-white/50 text-sm h-8"
+        />
+      </div>
+
+      {/* Settings Panel (collapsible) */}
+      {showSettings && (
+        <div className="space-y-2 bg-black/20 rounded-lg p-2">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-white/70 text-xs">Frame Rate</Label>
+              <Input
+                type="number"
+                min="1"
+                max="30"
+                value={config.frameRate}
+                onChange={(e) => setConfig(prev => ({ ...prev, frameRate: parseInt(e.target.value) || 5 }))}
+                disabled={isDetecting}
+                className="bg-white/10 border-white/20 text-white text-xs h-6"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-white/70 text-xs">Confidence</Label>
+              <Input
+                type="number"
+                min="0.1"
+                max="1"
+                step="0.1"
+                value={config.confidenceThreshold}
+                onChange={(e) => setConfig(prev => ({ ...prev, confidenceThreshold: parseFloat(e.target.value) || 0.5 }))}
+                disabled={isDetecting}
+                className="bg-white/10 border-white/20 text-white text-xs h-6"
+              />
+            </div>
           </div>
+
+          <div className="flex gap-3">
+            <div className="flex items-center space-x-1">
+              <Switch
+                id="track-players"
+                checked={config.trackPlayers}
+                onCheckedChange={(checked) => setConfig(prev => ({ ...prev, trackPlayers: checked }))}
+                disabled={isDetecting}
+                className="scale-75"
+              />
+              <Label htmlFor="track-players" className="text-white/70 text-xs">Players</Label>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Switch
+                id="track-ball"
+                checked={config.trackBall}
+                onCheckedChange={(checked) => setConfig(prev => ({ ...prev, trackBall: checked }))}
+                disabled={isDetecting}
+                className="scale-75"
+              />
+              <Label htmlFor="track-ball" className="text-white/70 text-xs">Ball</Label>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Job Status */}
+      {currentJob && (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-white/70">Status:</span>
+            <Badge variant={getStatusBadgeVariant(currentJob.status)} className="text-xs">
+              {currentJob.status}
+            </Badge>
+          </div>
+          {currentJob.progress !== undefined && (
+            <Progress value={currentJob.progress} className="h-1" />
+          )}
+          {currentJob.status === 'processing' && (
+            <p className="text-xs text-white/50">
+              Processing frames...
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Action Button */}
+      <div className="flex gap-2">
+        {!isDetecting ? (
+          <Button
+            onClick={startDetection}
+            disabled={!videoUrl || serviceStatus === 'offline'}
+            className="flex items-center gap-1 bg-purple-600 hover:bg-purple-700 text-white text-xs h-7 px-3"
+          >
+            <Play className="h-3 w-3" />
+            Start Detection
+          </Button>
+        ) : (
+          <Button
+            onClick={stopDetection}
+            variant="destructive"
+            className="flex items-center gap-1 text-xs h-7 px-3"
+          >
+            {currentJob?.status === 'processing' ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Square className="h-3 w-3" />
+            )}
+            {currentJob?.status === 'processing' ? 'Processing...' : 'Cancel'}
+          </Button>
         )}
-      </CardContent>
-    </Card>
+        <Button
+          onClick={checkServiceHealth}
+          variant="ghost"
+          size="sm"
+          className="text-white/70 hover:text-white text-xs h-7 px-2"
+        >
+          Check
+        </Button>
+      </div>
+
+      {/* Offline Warning */}
+      {serviceStatus === 'offline' && (
+        <div className="p-2 bg-yellow-500/20 border border-yellow-500/30 rounded text-xs text-yellow-200">
+          Detection service offline. Deploy to PythonAnywhere first.
+        </div>
+      )}
+    </div>
   );
 };
