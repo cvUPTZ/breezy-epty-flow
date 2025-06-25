@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,14 +49,16 @@ export const RoboflowVideoDetectionOverlay: React.FC<RoboflowVideoDetectionOverl
 
   const initializeRoboflow = async () => {
     try {
+      console.log('Initializing HTTP-based Roboflow detection service...');
       toast.info('Initializing Roboflow AI detection...');
       const success = await roboflowDetectionService.initialize(modelUrl);
       if (success) {
         setIsInitialized(true);
         toast.success('Roboflow AI detection ready!');
+        console.log('HTTP-based Roboflow service initialized successfully');
       }
     } catch (error) {
-      console.error('Failed to initialize Roboflow:', error);
+      console.error('Failed to initialize Roboflow HTTP service:', error);
       toast.error('Failed to initialize AI detection');
     }
   };
@@ -73,6 +74,7 @@ export const RoboflowVideoDetectionOverlay: React.FC<RoboflowVideoDetectionOverl
     setResults([]);
 
     try {
+      console.log('Starting HTTP-based detection...');
       const detectionResults = await roboflowDetectionService.processVideoInBatches(
         videoRef.current,
         {
@@ -185,7 +187,7 @@ export const RoboflowVideoDetectionOverlay: React.FC<RoboflowVideoDetectionOverl
           </div>
           <div>
             <h2 className="text-white font-semibold">Roboflow AI Detection</h2>
-            <p className="text-white/70 text-sm">Client-side video analysis</p>
+            <p className="text-white/70 text-sm">HTTP-based browser detection</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
