@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import SimplePianoOverlay from './SimplePianoOverlay';
 import { ProcessedDetectionResult } from '@/services/roboflowDetectionService';
+import { useUnifiedTrackerConnection } from '@/hooks/useUnifiedTrackerConnection';
 
 interface TrackerVideoInterfaceProps {
   initialVideoId: string;
@@ -38,6 +39,9 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [detectionResults, setDetectionResults] = useState<ProcessedDetectionResult[]>([]);
 
+  // Initialize unified tracker connection for status reporting
+  const { isConnected, broadcastStatus } = useUnifiedTrackerConnection(matchId, user?.id);
+
   useEffect(() => {
     setIsAdminView(userRole === 'admin');
   }, [userRole]);
@@ -56,9 +60,55 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  // Broadcast initial connection and periodic activity updates
+  useEffect(() => {
+    if (!user?.id || !matchId) return;
+
+    // Broadcast initial active status when component mounts
+    const initialBroadcast = () => {
+      broadcastStatus({
+        status: 'active',
+        timestamp: Date.now(),
+        action: 'video_tracker_loaded'
+      });
+    };
+
+    // Delay initial broadcast to ensure connection is established
+    const initialTimer = setTimeout(initialBroadcast, 1000);
+
+    // Set up periodic activity updates every 30 seconds
+    const activityInterval = setInterval(() => {
+      broadcastStatus({
+        status: 'active',
+        timestamp: Date.now(),
+        action: 'tracker_heartbeat'
+      });
+    }, 30000);
+
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(activityInterval);
+      // Broadcast inactive status when leaving
+      broadcastStatus({
+        status: 'inactive',
+        timestamp: Date.now(),
+        action: 'video_tracker_unmounted'
+      });
+    };
+  }, [user?.id, matchId, broadcastStatus]);
+
   const handlePlayerReady = (playerInstance: YouTubePlayerInstance) => {
     playerRef.current = playerInstance;
     console.log('Player is ready:', playerInstance);
+    
+    // Broadcast player ready status
+    if (user?.id) {
+      broadcastStatus({
+        status: 'active',
+        timestamp: Date.now(),
+        action: 'player_ready'
+      });
+    }
   };
 
   const sendAdminPlayerEvent = (event: Omit<PlayerControlEvent, 'timestamp'>) => {
@@ -90,6 +140,13 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
     setIsRecording(true);
     
+    // Broadcast recording status
+    broadcastStatus({
+      status: 'recording',
+      timestamp: Date.now(),
+      action: `recording_${eventType}`
+    });
+    
     try {
       const videoTimestamp = playerRef.current.getCurrentTime();
 
@@ -120,6 +177,13 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
         title: "Event Recorded", 
         description: `${eventType} recorded at ${videoTimestamp.toFixed(2)}s (video time).` 
       });
+
+      // Broadcast successful event recording
+      broadcastStatus({
+        status: 'active',
+        timestamp: Date.now(),
+        action: `event_recorded_${eventType}`
+      });
     } catch (error: any) {
       console.error('Error recording video event:', error);
       toast({ 
@@ -143,10 +207,28 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
   const togglePianoOverlay = () => {
     setShowPianoOverlay(!showPianoOverlay);
+    
+    // Broadcast action
+    if (user?.id) {
+      broadcastStatus({
+        status: 'active',
+        timestamp: Date.now(),
+        action: showPianoOverlay ? 'event_tracker_closed' : 'event_tracker_opened'
+      });
+    }
   };
 
   const toggleVoiceChat = () => {
     setShowVoiceChat(!showVoiceChat);
+    
+    // Broadcast action
+    if (user?.id) {
+      broadcastStatus({
+        status: 'active',
+        timestamp: Date.now(),
+        action: showVoiceChat ? 'voice_chat_closed' : 'voice_chat_opened'
+      });
+    }
   };
 
   const renderEventTracker = () => {
@@ -205,6 +287,13 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
   return (
     <div className="flex flex-col gap-4 p-4 h-screen overflow-hidden">
+      {/* Connection Status Indicator for Debugging */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed top-2 right-2 z-50 bg-black/70 text-white px-2 py-1 rounded text-xs">
+          Connection: {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
+        </div>
+      )}
+
       {/* Video Player and Controls Section */}
       <div className="flex-grow flex flex-col gap-2 min-h-0 max-w-full">
         <div className="relative flex-grow bg-black rounded-lg shadow-lg overflow-hidden w-full">
