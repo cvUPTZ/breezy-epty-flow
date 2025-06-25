@@ -8,8 +8,8 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import SimplePianoOverlay from './SimplePianoOverlay';
-import { EnhancedVideoDetectionOverlay } from './EnhancedVideoDetectionOverlay';
-import { DetectionResult } from '@/services/enhancedPythonDetectionService';
+import { RoboflowVideoDetectionOverlay } from './RoboflowVideoDetectionOverlay';
+import { ProcessedDetectionResult } from '@/services/roboflowDetectionService';
 
 interface TrackerVideoInterfaceProps {
   initialVideoId: string;
@@ -29,7 +29,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const [showDetection, setShowDetection] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [detectionResults, setDetectionResults] = useState<DetectionResult[]>([]);
+  const [detectionResults, setDetectionResults] = useState<ProcessedDetectionResult[]>([]);
 
   useEffect(() => {
     setIsAdminView(userRole === 'admin');
@@ -133,12 +133,12 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     }
   };
 
-  const handleDetectionResults = (results: DetectionResult[]) => {
-    console.log('Received detection results:', results);
+  const handleDetectionResults = (results: ProcessedDetectionResult[]) => {
+    console.log('Received Roboflow detection results:', results);
     setDetectionResults(results);
     toast({
-      title: 'Detection Complete',
-      description: `Detected ${results.length} frames with player/ball data.`,
+      title: 'AI Detection Complete',
+      description: `Analyzed ${results.length} frames. Found ${results.reduce((sum, r) => sum + r.players.length, 0)} player detections.`,
     });
   };
 
@@ -177,7 +177,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     if (!showDetection) return null;
 
     return (
-      <EnhancedVideoDetectionOverlay
+      <RoboflowVideoDetectionOverlay
         videoId={currentVideoId}
         isVisible={showDetection}
         onClose={toggleDetection}
@@ -254,7 +254,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
                   {showPianoOverlay ? 'Close Tracker' : 'Event Tracker'}
                 </button>
 
-                {/* AI Detection Toggle Button */}
+                {/* Roboflow AI Detection Toggle Button */}
                 <button
                   onClick={toggleDetection}
                   className={`px-4 py-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
@@ -267,7 +267,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
                   }}
                 >
                   <span className="text-lg">🤖</span>
-                  {showDetection ? 'Close AI' : 'AI Detection'}
+                  {showDetection ? 'Close AI' : 'Roboflow AI'}
                 </button>
 
                 {/* Voice Chat Toggle Button */}
@@ -309,7 +309,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
       {/* Event Tracker Overlay */}
       {renderEventTracker()}
 
-      {/* AI Detection Overlay */}
+      {/* Roboflow AI Detection Overlay */}
       {renderDetectionOverlay()}
 
       {/* Voice Chat Overlay */}
