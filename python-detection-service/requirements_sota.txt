@@ -1,0 +1,65 @@
+
+# State-of-the-Art Requirements for Football Detection Service
+
+# FastAPI and server
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Computer Vision and ML - SOTA Models
+opencv-python==4.8.1.78
+numpy==1.24.3
+pillow==10.0.1
+
+# Video processing
+yt-dlp==2023.10.13
+
+# Data validation (lightweight alternative to pydantic)
+msgspec==0.18.4
+
+# HTTP requests
+httpx==0.25.1
+
+# Logging
+python-json-logger==2.0.7
+
+# Security
+cryptography==41.0.7
+
+# SOTA ML MODELS - Latest and Greatest
+torch==2.1.0+cpu
+torchvision==0.16.0+cpu
+torchaudio==2.1.0+cpu
+
+# YOLOv11 (Latest YOLO) and advanced detection
+ultralytics==8.0.220
+# RT-DETR (Real-Time Detection Transformer) - SOTA transformer model
+# supervision==0.17.0
+
+# Advanced ML utilities
+scipy==1.11.4
+scikit-learn==1.3.2
+
+# Advanced image processing
+albumentations==1.3.1
+
+# Performance optimization
+numba==0.58.1
+tensorrt==8.6.1  # For NVIDIA optimization (optional)
+
+# Advanced tracking algorithms
+filterpy==1.4.5  # For Kalman filtering
+lap==0.4.0  # For Hungarian algorithm in tracking
+
+# Memory optimization
+psutil==5.9.6
+
+# Optional: Advanced model optimization
+onnx==1.14.1
+onnxruntime==1.16.3
+
+# Optional: TensorRT for NVIDIA acceleration
+# tensorrt==8.6.1
+
+# Optional: OpenVINO for Intel optimization
+# openvino==2023.1.0
