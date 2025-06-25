@@ -218,9 +218,9 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
                 onDetectionResults={handleDetectionResults}
               />
               
-              {/* Control Buttons */}
+              {/* Control Buttons - Only show event tracker for all users */}
               <div className="absolute bottom-4 left-4 flex gap-2">
-                {/* Event Tracker Toggle Button */}
+                {/* Event Tracker Toggle Button - Always available */}
                 <button
                   onClick={togglePianoOverlay}
                   className={`px-4 py-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
@@ -261,6 +261,8 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
             </div>
           )}
         </div>
+        
+        {/* Admin-only Video Player Controls */}
         {isAdminView && playerRef.current && !isFullscreen && (
           <div className="flex-shrink-0 w-full">
             <VideoPlayerControls

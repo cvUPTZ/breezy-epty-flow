@@ -4,7 +4,7 @@ import { YouTubePlayer, YouTubePlayerInstance } from './YouTubePlayer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Settings, Play, Square, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Settings, Play, Square, Eye, EyeOff, AlertCircle, Volume2, VolumeX } from 'lucide-react';
 import { toast } from 'sonner';
 import { ProcessedDetectionResult } from '@/services/roboflowDetectionService';
 import { RoboflowVideoDetectionOverlay } from './RoboflowVideoDetectionOverlay';
@@ -36,11 +36,19 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
   const [showOverlays, setShowOverlays] = useState(true);
   const [showDetectionControls, setShowDetectionControls] = useState(false);
   
+  // Volume controls for trackers
+  const [volume, setVolume] = useState(100);
+  const [isMuted, setIsMuted] = useState(false);
+  
   // Detection configuration
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.5);
 
   const handlePlayerReady = (player: YouTubePlayerInstance) => {
     playerRef.current = player;
+    
+    // Initialize volume state
+    setVolume(player.getVolume());
+    setIsMuted(player.isMuted());
     
     // Get the actual video element from the YouTube player
     const iframe = player.getIframe();
@@ -60,6 +68,33 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
     setResults(detectionResults);
     if (onDetectionResults) {
       onDetectionResults(detectionResults);
+    }
+  };
+
+  // Volume controls for trackers
+  const handleVolumeToggle = () => {
+    if (!playerRef.current) return;
+    
+    if (isMuted) {
+      playerRef.current.unMute();
+      setIsMuted(false);
+    } else {
+      playerRef.current.mute();
+      setIsMuted(true);
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!playerRef.current) return;
+    
+    const newVolume = parseInt(e.target.value);
+    playerRef.current.setVolume(newVolume);
+    setVolume(newVolume);
+    
+    if (newVolume === 0) {
+      setIsMuted(true);
+    } else if (isMuted) {
+      setIsMuted(false);
     }
   };
 
@@ -142,9 +177,9 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
         />
       )}
       
-      {/* Detection Controls */}
+      {/* Controls positioned based on user role */}
       <div className="absolute bottom-4 right-4 flex flex-col gap-2">
-        {/* AI Detection Toggle */}
+        {/* AI Detection Toggle - Available to both roles */}
         <Button
           onClick={() => setShowDetectionControls(!showDetectionControls)}
           variant={showDetectionControls ? "default" : "secondary"}
@@ -153,6 +188,29 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
         >
           🤖 AI Detection
         </Button>
+        
+        {/* Volume Controls for Trackers */}
+        {!isAdmin && (
+          <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2">
+            <button
+              onClick={handleVolumeToggle}
+              className="text-white hover:text-gray-300 transition-colors"
+              title={isMuted ? "Unmute" : "Mute"}
+            >
+              {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+            </button>
+            
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={isMuted ? 0 : volume}
+              onChange={handleVolumeChange}
+              className="w-20 h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer slider"
+              title="Volume"
+            />
+          </div>
+        )}
         
         {showDetectionControls && (
           <RoboflowVideoDetectionOverlay
