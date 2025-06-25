@@ -23,7 +23,7 @@ interface ErrorResponse {
 
 // TODO: Replace with your specific frontend domain(s) for production security.
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://REPLACE_WITH_YOUR_ACTUAL_DOMAIN.com',
+  'Access-Control-Allow-Origin': 'https://preview--match-scribe-analytics.lovable.app',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
