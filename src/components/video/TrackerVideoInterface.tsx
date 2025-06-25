@@ -8,6 +8,8 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import SimplePianoOverlay from './SimplePianoOverlay';
+import { VideoDetectionOverlay } from './VideoDetectionOverlay';
+import { DetectionResult } from '@/services/pythonDetectionService';
 
 interface TrackerVideoInterfaceProps {
   initialVideoId: string;
@@ -24,8 +26,10 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const [isAdminView, setIsAdminView] = useState(false);
   const [showPianoOverlay, setShowPianoOverlay] = useState(false);
   const [showVoiceChat, setShowVoiceChat] = useState(false);
+  const [showDetection, setShowDetection] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [detectionResults, setDetectionResults] = useState<DetectionResult[]>([]);
 
   useEffect(() => {
     setIsAdminView(userRole === 'admin');
@@ -129,12 +133,25 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     }
   };
 
+  const handleDetectionResults = (results: DetectionResult[]) => {
+    console.log('Received detection results:', results);
+    setDetectionResults(results);
+    toast({
+      title: 'Detection Complete',
+      description: `Detected ${results.length} frames with player/ball data.`,
+    });
+  };
+
   const togglePianoOverlay = () => {
     setShowPianoOverlay(!showPianoOverlay);
   };
 
   const toggleVoiceChat = () => {
     setShowVoiceChat(!showVoiceChat);
+  };
+
+  const toggleDetection = () => {
+    setShowDetection(!showDetection);
   };
 
   const renderEventTracker = () => {
@@ -154,6 +171,20 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     }
 
     return overlay;
+  };
+
+  const renderDetectionOverlay = () => {
+    if (!showDetection) return null;
+
+    return (
+      <VideoDetectionOverlay
+        videoId={currentVideoId}
+        isVisible={showDetection}
+        onClose={toggleDetection}
+        onDetectionResults={handleDetectionResults}
+        isFullscreen={isFullscreen}
+      />
+    );
   };
 
   const renderVoiceChat = () => {
@@ -223,6 +254,22 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
                   {showPianoOverlay ? 'Close Tracker' : 'Event Tracker'}
                 </button>
 
+                {/* AI Detection Toggle Button */}
+                <button
+                  onClick={toggleDetection}
+                  className={`px-4 py-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
+                    showDetection 
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                      : 'bg-black/70 hover:bg-black/90 text-white backdrop-blur-sm border border-white/20'
+                  }`}
+                  style={{ 
+                    zIndex: isFullscreen ? 2147483646 : 40 
+                  }}
+                >
+                  <span className="text-lg">🤖</span>
+                  {showDetection ? 'Close AI' : 'AI Detection'}
+                </button>
+
                 {/* Voice Chat Toggle Button */}
                 {matchId && user && userRole && (
                   <button
@@ -261,6 +308,9 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
       {/* Event Tracker Overlay */}
       {renderEventTracker()}
+
+      {/* AI Detection Overlay */}
+      {renderDetectionOverlay()}
 
       {/* Voice Chat Overlay */}
       {renderVoiceChat()}
