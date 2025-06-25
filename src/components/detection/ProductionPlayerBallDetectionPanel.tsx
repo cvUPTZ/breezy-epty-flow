@@ -35,6 +35,9 @@ export const ProductionPlayerBallDetectionPanel: React.FC<ProductionPlayerBallDe
   const [showSettings, setShowSettings] = useState(false);
   const [serviceHealth, setServiceHealth] = useState<'online' | 'offline' | 'checking'>('checking');
   
+  // Automatically construct YouTube URL from videoId
+  const videoUrl = videoId ? `https://www.youtube.com/watch?v=${videoId}` : '';
+  
   // Enhanced configuration with real ML options
   const [config, setConfig] = useState({
     frameRate: 2,
@@ -110,8 +113,6 @@ export const ProductionPlayerBallDetectionPanel: React.FC<ProductionPlayerBallDe
     try {
       setIsProcessing(true);
       setProgress(0);
-      
-      const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
       
       // Validate video first
       const validation = await enhancedPythonDetectionService.validateVideoUrl(videoUrl);
@@ -223,6 +224,12 @@ export const ProductionPlayerBallDetectionPanel: React.FC<ProductionPlayerBallDe
             {currentJob.video_metadata && (
               <span className="ml-2">• {Math.round(currentJob.video_metadata.duration / 60)}min video</span>
             )}
+          </div>
+        )}
+        {/* Show current video URL */}
+        {videoUrl && (
+          <div className="text-xs text-white/50 truncate">
+            Video: {videoUrl}
           </div>
         )}
       </CardHeader>
@@ -431,6 +438,13 @@ export const ProductionPlayerBallDetectionPanel: React.FC<ProductionPlayerBallDe
             : 'Mock detection mode (for testing)'
           }
         </div>
+
+        {/* Video Not Available Warning */}
+        {!videoId && (
+          <div className="p-2 bg-yellow-500/20 border border-yellow-500/30 rounded text-xs text-yellow-200">
+            No video loaded. Please select a YouTube video to analyze.
+          </div>
+        )}
       </CardContent>
     </Card>
   );
