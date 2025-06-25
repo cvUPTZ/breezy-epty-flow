@@ -54,23 +54,55 @@ export class ProductionDetectionService {
   private static baseUrl = process.env.VITE_PYTHON_DETECTION_API_URL || 'https://zackbeg.pythonanywhere.com/api';
   private static apiKey = process.env.VITE_PYTHON_DETECTION_API_KEY || 'your-secure-detection-key-2024';
 
-  static async startDetection(config: ServerDetectionConfig): Promise<string> {
+  private static async makeRequest(url: string, options: RequestInit = {}): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
     try {
-      console.log('Starting production detection with config:', config);
-      
-      const response = await fetch(`${this.baseUrl}/detect/start`, {
-        method: 'POST',
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.apiKey}`,
-          'X-API-Key': this.apiKey
-        },
+          'X-API-Key': this.apiKey,
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key',
+          ...options.headers
+        }
+      });
+
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout - server took too long to respond');
+      }
+      throw error;
+    }
+  }
+
+  static async startDetection(config: ServerDetectionConfig): Promise<string> {
+    try {
+      console.log('Starting production detection with config:', config);
+      console.log('API URL:', this.baseUrl);
+      
+      const response = await this.makeRequest(`${this.baseUrl}/detect/start`, {
+        method: 'POST',
         body: JSON.stringify(config)
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Server error ${response.status}: ${errorData.message || 'Unknown error'}`);
+        let errorMessage = `Server error ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.detail || errorMessage;
+        } catch {
+          errorMessage = `${errorMessage}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -79,21 +111,25 @@ export class ProductionDetectionService {
       return data.job_id;
     } catch (error: any) {
       console.error('Failed to start detection:', error);
+      
+      // Provide more specific error messages
+      if (error.message.includes('Failed to fetch')) {
+        throw new Error('Cannot connect to detection service. Please check if the API is running and accessible.');
+      }
+      if (error.message.includes('CORS')) {
+        throw new Error('CORS error - detection service may not be configured properly.');
+      }
+      
       throw new Error(`Failed to start detection: ${error.message}`);
     }
   }
 
   static async getJobStatus(jobId: string): Promise<ServerDetectionJob> {
     try {
-      const response = await fetch(`${this.baseUrl}/detect/status/${jobId}`, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'X-API-Key': this.apiKey
-        }
-      });
+      const response = await this.makeRequest(`${this.baseUrl}/detect/status/${jobId}`);
 
       if (!response.ok) {
-        throw new Error(`Status check failed: ${response.status}`);
+        throw new Error(`Status check failed: ${response.status} ${response.statusText}`);
       }
 
       return await response.json();
@@ -105,15 +141,10 @@ export class ProductionDetectionService {
 
   static async getJobResults(jobId: string): Promise<ServerDetectionResult[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/detect/results/${jobId}`, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'X-API-Key': this.apiKey
-        }
-      });
+      const response = await this.makeRequest(`${this.baseUrl}/detect/results/${jobId}`);
 
       if (!response.ok) {
-        throw new Error(`Results fetch failed: ${response.status}`);
+        throw new Error(`Results fetch failed: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -173,16 +204,12 @@ export class ProductionDetectionService {
 
   static async cancelJob(jobId: string): Promise<void> {
     try {
-      const response = await fetch(`${this.baseUrl}/detect/cancel/${jobId}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'X-API-Key': this.apiKey
-        }
+      const response = await this.makeRequest(`${this.baseUrl}/detect/cancel/${jobId}`, {
+        method: 'POST'
       });
 
       if (!response.ok) {
-        throw new Error(`Cancel failed: ${response.status}`);
+        throw new Error(`Cancel failed: ${response.status} ${response.statusText}`);
       }
 
       console.log('Detection job cancelled:', jobId);
@@ -292,20 +319,25 @@ export class ProductionDetectionService {
     queue_size: number;
   }> {
     try {
-      const response = await fetch(`${this.baseUrl}/health`, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'X-API-Key': this.apiKey
-        }
-      });
+      console.log('Checking service health at:', `${this.baseUrl}/health`);
+      
+      const response = await this.makeRequest(`${this.baseUrl}/health`);
 
       if (!response.ok) {
-        throw new Error(`Health check failed: ${response.status}`);
+        throw new Error(`Health check failed: ${response.status} ${response.statusText}`);
       }
 
-      return await response.json();
+      const healthData = await response.json();
+      console.log('Service health:', healthData);
+      return healthData;
     } catch (error: any) {
       console.error('Service health check failed:', error);
+      
+      // Provide more specific error messages for health check failures
+      if (error.message.includes('Failed to fetch')) {
+        throw new Error('Detection service is not reachable. Please ensure the API server is running.');
+      }
+      
       throw new Error(`Service unavailable: ${error.message}`);
     }
   }

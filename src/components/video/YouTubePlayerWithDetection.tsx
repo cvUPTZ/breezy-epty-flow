@@ -61,6 +61,14 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
       console.log('Starting server-side AI detection...');
       toast.info('Starting server-side AI detection...');
       
+      // Check service health first
+      try {
+        await ProductionDetectionService.checkServiceHealth();
+      } catch (healthError: any) {
+        console.error('Service health check failed:', healthError);
+        throw new Error(`Detection service is unavailable: ${healthError.message}`);
+      }
+      
       // Get the YouTube video URL
       const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
       
@@ -97,12 +105,12 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
 
       setResults(detectionResults);
       
-      // Convert server results to frontend format for compatibility
+      // Convert server results to frontend format for compatibility - fix the ball type issue
       const processedResults: ProcessedDetectionResult[] = detectionResults.map((result, index) => ({
         frameIndex: index,
         timestamp: result.timestamp,
         players: result.players,
-        ball: result.ball || null,
+        ball: result.ball || undefined, // Convert null to undefined to match type
         processing_time: result.processing_time,
         model_used: result.model_used
       }));
@@ -237,12 +245,12 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
               <Badge variant="default">Server-Side</Badge>
             </div>
 
-            {/* CORS Warning */}
+            {/* Service Status Warning */}
             <div className="mb-3 p-2 bg-yellow-900/50 border border-yellow-600/50 rounded text-yellow-200 text-xs flex items-start gap-2">
               <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
               <div>
                 <div className="font-medium">Server-Side Processing</div>
-                <div>Uses backend service to download and analyze video, bypassing CORS restrictions.</div>
+                <div>Uses backend service to download and analyze video. Make sure the detection API is running.</div>
               </div>
             </div>
             
