@@ -1,5 +1,5 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -7,24 +7,22 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { X, Play, Square, Settings, Eye, EyeOff } from 'lucide-react';
+import { Play, Square, Settings, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { roboflowDetectionService, ProcessedDetectionResult } from '@/services/roboflowDetectionService';
 
 interface RoboflowVideoDetectionOverlayProps {
-  videoId: string;
+  videoElement?: HTMLVideoElement | null;
   isVisible: boolean;
-  onClose: () => void;
   onDetectionResults: (results: ProcessedDetectionResult[]) => void;
-  isFullscreen?: boolean;
+  canvasRef?: React.RefObject<HTMLCanvasElement>;
 }
 
 export const RoboflowVideoDetectionOverlay: React.FC<RoboflowVideoDetectionOverlayProps> = ({
-  videoId,
+  videoElement,
   isVisible,
-  onClose,
   onDetectionResults,
-  isFullscreen = false
+  canvasRef
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -37,9 +35,6 @@ export const RoboflowVideoDetectionOverlay: React.FC<RoboflowVideoDetectionOverl
   const [maxFrames, setMaxFrames] = useState(50);
   const [modelUrl, setModelUrl] = useState('football-players-detection-3zvbc/9');
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.5);
-
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     if (isVisible && !isInitialized) {
@@ -64,7 +59,7 @@ export const RoboflowVideoDetectionOverlay: React.FC<RoboflowVideoDetectionOverl
   };
 
   const startDetection = async () => {
-    if (!videoRef.current || !isInitialized) {
+    if (!videoElement || !isInitialized) {
       toast.error('Video or AI detection not ready');
       return;
     }
@@ -76,7 +71,7 @@ export const RoboflowVideoDetectionOverlay: React.FC<RoboflowVideoDetectionOverl
     try {
       console.log('Starting HTTP-based detection...');
       const detectionResults = await roboflowDetectionService.processVideoInBatches(
-        videoRef.current,
+        videoElement,
         {
           frameRate,
           maxFrames,
@@ -112,7 +107,7 @@ export const RoboflowVideoDetectionOverlay: React.FC<RoboflowVideoDetectionOverl
   };
 
   const renderDetectionOverlays = () => {
-    if (!showOverlays || !canvasRef.current || !videoRef.current) return null;
+    if (!showOverlays || !canvasRef?.current || !videoElement) return null;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -122,7 +117,7 @@ export const RoboflowVideoDetectionOverlay: React.FC<RoboflowVideoDetectionOverl
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Find current frame results
-    const currentTime = videoRef.current.currentTime;
+    const currentTime = videoElement.currentTime;
     const currentResult = results.find(r => 
       Math.abs(r.timestamp - currentTime) < 0.5
     );
@@ -174,189 +169,136 @@ export const RoboflowVideoDetectionOverlay: React.FC<RoboflowVideoDetectionOverl
 
   if (!isVisible) return null;
 
-  const overlayContent = (
-    <div 
-      className="fixed inset-4 bg-black/90 backdrop-blur-sm border border-white/20 rounded-xl shadow-2xl flex flex-col"
-      style={{ zIndex: isFullscreen ? 2147483647 : 1000 }}
-    >
-      {/* Header */}
-      <div className="flex-shrink-0 p-4 border-b border-white/20 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-            🤖
-          </div>
-          <div>
-            <h2 className="text-white font-semibold">Roboflow AI Detection</h2>
-            <p className="text-white/70 text-sm">HTTP-based browser detection</p>
-          </div>
-        </div>
+  return (
+    <Card className="w-80 bg-black/50 border-white/20">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-white flex items-center gap-2">
+          <Settings className="h-4 w-4" />
+          Detection Settings
+        </CardTitle>
         <div className="flex items-center gap-2">
           <Badge variant={isInitialized ? "default" : "secondary"}>
             {isInitialized ? 'Ready' : 'Initializing...'}
           </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Detection Controls */}
+        <div className="flex gap-2">
           <Button
-            variant="ghost"
+            onClick={startDetection}
+            disabled={isProcessing || !isInitialized}
             size="sm"
-            onClick={onClose}
-            className="text-white hover:bg-white/10"
+            className="flex items-center gap-1"
           >
-            <X className="h-4 w-4" />
+            <Play className="h-3 w-3" />
+            Start Detection
+          </Button>
+          
+          {isProcessing && (
+            <Button
+              onClick={stopDetection}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1"
+            >
+              <Square className="h-3 w-3" />
+              Stop
+            </Button>
+          )}
+          
+          <Button
+            onClick={() => setShowOverlays(!showOverlays)}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1"
+          >
+            {showOverlays ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
           </Button>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex gap-4 p-4 min-h-0">
-        {/* Video Section */}
-        <div className="flex-1 flex flex-col min-h-0">
-          <div className="relative flex-1 bg-black rounded-lg overflow-hidden">
-            <video
-              ref={videoRef}
-              src={`https://www.youtube.com/watch?v=${videoId}`}
-              className="w-full h-full object-contain"
-              controls
-              onTimeUpdate={renderDetectionOverlays}
-            />
-            <canvas
-              ref={canvasRef}
-              className="absolute inset-0 pointer-events-none"
-              width={1280}
-              height={720}
-            />
-          </div>
-          
-          {/* Video Controls */}
-          <div className="flex-shrink-0 mt-4 flex gap-2">
-            <Button
-              onClick={startDetection}
-              disabled={isProcessing || !isInitialized}
-              className="flex items-center gap-2"
-            >
-              <Play className="h-4 w-4" />
-              Start Detection
-            </Button>
-            
-            {isProcessing && (
-              <Button
-                onClick={stopDetection}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <Square className="h-4 w-4" />
-                Stop
-              </Button>
-            )}
-            
-            <Button
-              onClick={() => setShowOverlays(!showOverlays)}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              {showOverlays ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              {showOverlays ? 'Hide' : 'Show'} Overlays
-            </Button>
-          </div>
-
-          {/* Progress */}
-          {isProcessing && (
-            <div className="flex-shrink-0 mt-4">
-              <div className="flex justify-between text-sm text-white/70 mb-2">
-                <span>Processing frames...</span>
-                <span>{Math.round(progress)}%</span>
-              </div>
-              <Progress value={progress} className="w-full" />
+        {/* Progress */}
+        {isProcessing && (
+          <div>
+            <div className="flex justify-between text-sm text-white/70 mb-2">
+              <span>Processing frames...</span>
+              <span>{Math.round(progress)}%</span>
             </div>
-          )}
+            <Progress value={progress} className="w-full" />
+          </div>
+        )}
+
+        <div>
+          <Label className="text-white">Model</Label>
+          <div className="flex gap-2 mt-1">
+            <Input
+              value={modelUrl}
+              onChange={(e) => setModelUrl(e.target.value)}
+              placeholder="model-id/version"
+              className="bg-white/10 border-white/20 text-white"
+            />
+            <Button onClick={changeModel} size="sm" variant="outline">
+              Load
+            </Button>
+          </div>
         </div>
 
-        {/* Settings Panel */}
-        <Card className="w-80 bg-black/50 border-white/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-white flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Detection Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label className="text-white">Model</Label>
-              <div className="flex gap-2 mt-1">
-                <Input
-                  value={modelUrl}
-                  onChange={(e) => setModelUrl(e.target.value)}
-                  placeholder="model-id/version"
-                  className="bg-white/10 border-white/20 text-white"
-                />
-                <Button onClick={changeModel} size="sm" variant="outline">
-                  Load
-                </Button>
-              </div>
-            </div>
+        <div>
+          <Label className="text-white">Frame Rate (fps)</Label>
+          <Input
+            type="number"
+            value={frameRate}
+            onChange={(e) => setFrameRate(Number(e.target.value))}
+            min="0.1"
+            max="10"
+            step="0.1"
+            className="bg-white/10 border-white/20 text-white mt-1"
+          />
+        </div>
 
-            <div>
-              <Label className="text-white">Frame Rate (fps)</Label>
-              <Input
-                type="number"
-                value={frameRate}
-                onChange={(e) => setFrameRate(Number(e.target.value))}
-                min="0.1"
-                max="10"
-                step="0.1"
-                className="bg-white/10 border-white/20 text-white mt-1"
-              />
-            </div>
+        <div>
+          <Label className="text-white">Max Frames</Label>
+          <Input
+            type="number"
+            value={maxFrames}
+            onChange={(e) => setMaxFrames(Number(e.target.value))}
+            min="1"
+            max="500"
+            className="bg-white/10 border-white/20 text-white mt-1"
+          />
+        </div>
 
-            <div>
-              <Label className="text-white">Max Frames</Label>
-              <Input
-                type="number"
-                value={maxFrames}
-                onChange={(e) => setMaxFrames(Number(e.target.value))}
-                min="1"
-                max="500"
-                className="bg-white/10 border-white/20 text-white mt-1"
-              />
-            </div>
+        <div>
+          <Label className="text-white">Confidence Threshold</Label>
+          <Input
+            type="number"
+            value={confidenceThreshold}
+            onChange={(e) => setConfidenceThreshold(Number(e.target.value))}
+            min="0"
+            max="1"
+            step="0.1"
+            className="bg-white/10 border-white/20 text-white mt-1"
+          />
+        </div>
 
-            <div>
-              <Label className="text-white">Confidence Threshold</Label>
-              <Input
-                type="number"
-                value={confidenceThreshold}
-                onChange={(e) => setConfidenceThreshold(Number(e.target.value))}
-                min="0"
-                max="1"
-                step="0.1"
-                className="bg-white/10 border-white/20 text-white mt-1"
-              />
-            </div>
+        <div className="flex items-center justify-between">
+          <Label className="text-white">Show Overlays</Label>
+          <Switch
+            checked={showOverlays}
+            onCheckedChange={setShowOverlays}
+          />
+        </div>
 
-            <div className="flex items-center justify-between">
-              <Label className="text-white">Show Overlays</Label>
-              <Switch
-                checked={showOverlays}
-                onCheckedChange={setShowOverlays}
-              />
-            </div>
-
-            {/* Results Summary */}
-            <div className="pt-4 border-t border-white/20">
-              <h4 className="text-white font-medium mb-2">Results</h4>
-              <div className="text-sm text-white/70">
-                <div>Frames processed: {results.length}</div>
-                <div>Players detected: {results.reduce((sum, r) => sum + r.players.length, 0)}</div>
-                <div>Ball detections: {results.filter(r => r.ball).length}</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+        {/* Results Summary */}
+        <div className="pt-4 border-t border-white/20">
+          <h4 className="text-white font-medium mb-2">Results</h4>
+          <div className="text-sm text-white/70">
+            <div>Frames processed: {results.length}</div>
+            <div>Players detected: {results.reduce((sum, r) => sum + r.players.length, 0)}</div>
+            <div>Ball detections: {results.filter(r => r.ball).length}</div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
-
-  if (isFullscreen) {
-    return createPortal(overlayContent, document.body);
-  }
-
-  return overlayContent;
 };

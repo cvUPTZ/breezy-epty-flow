@@ -28,26 +28,32 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
 }) => {
   const playerRef = useRef<YouTubePlayerInstance | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const videoElementRef = useRef<HTMLVideoElement | null>(null);
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<ProcessedDetectionResult[]>([]);
   const [showOverlays, setShowOverlays] = useState(true);
   const [showDetectionControls, setShowDetectionControls] = useState(false);
-  const [showRoboflowOverlay, setShowRoboflowOverlay] = useState(false);
   
   // Detection configuration
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.5);
 
   const handlePlayerReady = (player: YouTubePlayerInstance) => {
     playerRef.current = player;
+    
+    // Get the actual video element from the YouTube player
+    const iframe = player.getIframe();
+    if (iframe && iframe.contentDocument) {
+      const video = iframe.contentDocument.querySelector('video');
+      if (video) {
+        videoElementRef.current = video;
+      }
+    }
+    
     if (onPlayerReady) {
       onPlayerReady(player);
     }
-  };
-
-  const startRoboflowDetection = () => {
-    setShowRoboflowOverlay(true);
   };
 
   const handleDetectionResults = (detectionResults: ProcessedDetectionResult[]) => {
@@ -149,71 +155,14 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
         </Button>
         
         {showDetectionControls && (
-          <div className="bg-black/80 backdrop-blur-sm rounded-lg p-4 max-w-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-white font-medium">AI Detection</h3>
-              <Badge variant="outline">Roboflow Service</Badge>
-            </div>
-
-            <div className="mb-3 p-2 bg-blue-900/50 border border-blue-600/50 rounded text-blue-200 text-xs flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-              <div>
-                <div className="font-medium">Roboflow AI Detection</div>
-                <div>AI detection runs using the Roboflow service for accurate player and ball detection.</div>
-              </div>
-            </div>
-            
-            <div className="flex gap-2 mb-3">
-              <Button
-                onClick={startRoboflowDetection}
-                disabled={isProcessing}
-                size="sm"
-                className="flex items-center gap-1"
-              >
-                <Play className="h-3 w-3" />
-                Start Detection
-              </Button>
-              
-              <Button
-                onClick={() => setShowOverlays(!showOverlays)}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-1"
-              >
-                {showOverlays ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-              </Button>
-            </div>
-            
-            {isProcessing && (
-              <div className="mb-3">
-                <div className="flex justify-between text-xs text-white/70 mb-1">
-                  <span>Processing video...</span>
-                  <span>{Math.round(progress)}%</span>
-                </div>
-                <Progress value={progress} className="w-full h-1" />
-              </div>
-            )}
-            
-            <div className="text-xs text-white/70">
-              <div>Frames analyzed: {results.length}</div>
-              <div>Players detected: {results.reduce((sum, r) => sum + r.players.length, 0)}</div>
-              <div>Ball detections: {results.filter(r => r.ball).length}</div>
-              <div>Status: Roboflow service ready</div>
-            </div>
-          </div>
+          <RoboflowVideoDetectionOverlay
+            videoElement={videoElementRef.current}
+            isVisible={showDetectionControls}
+            onDetectionResults={handleDetectionResults}
+            canvasRef={canvasRef}
+          />
         )}
       </div>
-
-      {/* Roboflow Detection Overlay */}
-      {showRoboflowOverlay && (
-        <RoboflowVideoDetectionOverlay
-          videoId={videoId}
-          isVisible={showRoboflowOverlay}
-          onClose={() => setShowRoboflowOverlay(false)}
-          onDetectionResults={handleDetectionResults}
-          isFullscreen={false}
-        />
-      )}
     </div>
   );
 };
