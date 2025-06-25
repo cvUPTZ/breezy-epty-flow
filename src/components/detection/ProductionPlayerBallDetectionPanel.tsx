@@ -144,8 +144,8 @@ export const ProductionPlayerBallDetectionPanel: React.FC<ProductionPlayerBallDe
         job_id: job.job_id,
         status: 'pending',
         progress: 0,
-        results: null,
-        error: null,
+        results: undefined,
+        error: undefined,
         created_at: new Date().toISOString(),
       };
       
