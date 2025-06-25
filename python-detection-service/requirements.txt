@@ -1,8 +1,37 @@
 
+# Vercel-optimized requirements for SOTA AI Detection Service
+
+# FastAPI and server
 fastapi==0.104.1
 uvicorn==0.24.0
-opencv-python==4.8.1.78
-numpy==1.24.3
-yt-dlp==2023.10.13
-pydantic==2.4.2
 python-multipart==0.0.6
+
+# Computer Vision and ML - Core only (optimized for Vercel)
+opencv-python-headless==4.8.1.78
+numpy==1.24.3
+pillow==10.0.1
+
+# Video processing
+yt-dlp==2023.10.13
+
+# Data validation (lightweight)
+msgspec==0.18.4
+
+# HTTP requests
+httpx==0.25.1
+
+# Security
+cryptography==41.0.7
+
+# Core ML Models (CPU optimized for Vercel)
+torch==2.1.0+cpu
+torchvision==0.16.0+cpu
+ultralytics==8.0.220
+
+# Performance utilities
+scipy==1.11.4
+numba==0.58.1
+psutil==5.9.6
+
+# Optional: Advanced tracking
+filterpy==1.4.5

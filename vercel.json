@@ -1,0 +1,24 @@
+
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "python-detection-service/sota_main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "python-detection-service/sota_main.py"
+    }
+  ],
+  "functions": {
+    "python-detection-service/sota_main.py": {
+      "maxDuration": 300
+    }
+  },
+  "env": {
+    "PYTHONPATH": "python-detection-service"
+  }
+}
