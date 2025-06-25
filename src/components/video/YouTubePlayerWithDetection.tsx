@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { YouTubePlayer, YouTubePlayerInstance } from './YouTubePlayer';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Settings, Play, Square, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
-import { roboflowDetectionService, ProcessedDetectionResult } from '@/services/roboflowDetectionService';
+import { ProcessedDetectionResult } from '@/services/roboflowDetectionService';
 
 interface YouTubePlayerWithDetectionProps {
   videoId: string;
@@ -26,96 +27,28 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
 }) => {
   const playerRef = useRef<YouTubePlayerInstance | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const videoElementRef = useRef<HTMLVideoElement | null>(null);
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<ProcessedDetectionResult[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
   const [showOverlays, setShowOverlays] = useState(true);
   const [showDetectionControls, setShowDetectionControls] = useState(false);
   
   // Detection configuration
   const [frameRate, setFrameRate] = useState(1);
   const [maxFrames, setMaxFrames] = useState(50);
-  const [modelUrl, setModelUrl] = useState('football-players-detection-3zvbc/9');
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.5);
 
   const handlePlayerReady = (player: YouTubePlayerInstance) => {
     playerRef.current = player;
-    
-    // Try to get the underlying video element for detection
-    setTimeout(() => {
-      const iframe = document.querySelector(`iframe[src*="${videoId}"]`) as HTMLIFrameElement;
-      if (iframe) {
-        try {
-          const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-          const video = iframeDoc?.querySelector('video') as HTMLVideoElement;
-          if (video) {
-            videoElementRef.current = video;
-            console.log('Found YouTube video element for detection');
-          }
-        } catch (e) {
-          console.log('Cannot access YouTube iframe due to CORS, will use canvas capture method');
-        }
-      }
-    }, 1000);
-    
     if (onPlayerReady) {
       onPlayerReady(player);
     }
   };
 
-  const initializeDetection = async () => {
-    try {
-      console.log('Initializing Roboflow detection service...');
-      toast.info('Initializing AI detection...');
-      const success = await roboflowDetectionService.initialize(modelUrl);
-      if (success) {
-        setIsInitialized(true);
-        toast.success('AI detection ready!');
-        console.log('Roboflow service initialized successfully');
-      }
-    } catch (error) {
-      console.error('Failed to initialize Roboflow:', error);
-      toast.error('Failed to initialize AI detection');
-    }
-  };
-
-  const captureVideoFrame = (): HTMLCanvasElement | null => {
-    if (!playerRef.current) return null;
-
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
-
-    // Get player dimensions
-    const playerElement = document.querySelector(`iframe[src*="${videoId}"]`) as HTMLIFrameElement;
-    if (!playerElement) return null;
-
-    canvas.width = 1280; // Standard YouTube resolution
-    canvas.height = 720;
-
-    try {
-      // If we have direct video access, use it
-      if (videoElementRef.current) {
-        ctx.drawImage(videoElementRef.current, 0, 0, canvas.width, canvas.height);
-        return canvas;
-      }
-      
-      // Otherwise, try to capture the iframe (this may not work due to CORS)
-      ctx.drawImage(playerElement, 0, 0, canvas.width, canvas.height);
-      return canvas;
-    } catch (error) {
-      console.error('Cannot capture video frame due to CORS restrictions');
-      toast.error('Cannot capture video frames. YouTube CORS restrictions prevent direct analysis.');
-      return null;
-    }
-  };
-
-  const startDetection = async () => {
-    if (!playerRef.current || !isInitialized) {
-      toast.error('Player or AI detection not ready');
+  const startServerSideDetection = async () => {
+    if (!playerRef.current) {
+      toast.error('Player not ready');
       return;
     }
 
@@ -124,74 +57,108 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
     setResults([]);
 
     try {
-      console.log('Starting video detection...');
+      console.log('Starting server-side AI detection...');
       
-      // Create a mock video element for the detection service
-      const mockVideo = {
-        currentTime: 0,
-        duration: playerRef.current.getDuration(),
-        videoWidth: 1280,
-        videoHeight: 720,
-        addEventListener: () => {},
-        removeEventListener: () => {}
-      } as any;
+      // Get the YouTube video URL
+      const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+      
+      // Call our production detection service
+      const response = await fetch('/api/detect/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.VITE_PYTHON_DETECTION_API_KEY || 'demo-key'}`
+        },
+        body: JSON.stringify({
+          videoUrl,
+          frameRate,
+          confidenceThreshold,
+          trackPlayers: true,
+          trackBall: true,
+          maxRetries: 3,
+          timeout: 300,
+          useSOTAML: true,
+          modelType: "yolo11n",
+          processingMode: "balanced",
+          enableGPU: true,
+          batchSize: 8,
+          nmsThreshold: 0.4,
+          maxDetections: 50
+        })
+      });
 
-      const totalFrames = Math.min(Math.floor(mockVideo.duration * frameRate), maxFrames);
-      const detectionResults: ProcessedDetectionResult[] = [];
-
-      for (let i = 0; i < totalFrames; i++) {
-        const timeToSeek = i / frameRate;
-        
-        // Seek to specific time
-        playerRef.current.seekTo(timeToSeek, true);
-        
-        // Wait for seek to complete
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Capture frame
-        const canvas = captureVideoFrame();
-        if (!canvas) {
-          console.warn('Could not capture frame at time:', timeToSeek);
-          continue;
-        }
-
-        // Convert canvas to blob for detection
-        const blob = await new Promise<Blob>((resolve) => {
-          canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.8);
-        });
-
-        // Run detection on the frame
-        try {
-          mockVideo.currentTime = timeToSeek;
-          const result = await roboflowDetectionService.detectFromVideoFrame(mockVideo, i);
-          
-          if (result) {
-            detectionResults.push(result);
-            setResults(prev => [...prev, result]);
-          }
-        } catch (detectionError) {
-          console.error('Detection failed for frame:', i, detectionError);
-        }
-
-        // Update progress
-        const progressPercent = ((i + 1) / totalFrames) * 100;
-        setProgress(progressPercent);
-
-        // Small delay to prevent overwhelming
-        await new Promise(resolve => setTimeout(resolve, 200));
+      if (!response.ok) {
+        throw new Error(`Detection service error: ${response.status}`);
       }
 
-      if (onDetectionResults) {
-        onDetectionResults(detectionResults);
-      }
+      const { job_id } = await response.json();
       
-      toast.success(`Detection complete! Analyzed ${detectionResults.length} frames.`);
+      // Poll for results
+      await pollDetectionResults(job_id);
+      
     } catch (error: any) {
-      console.error('Detection failed:', error);
+      console.error('Server-side detection failed:', error);
       toast.error(`Detection failed: ${error.message}`);
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const pollDetectionResults = async (jobId: string) => {
+    const maxAttempts = 60; // 5 minutes max
+    let attempts = 0;
+    
+    const poll = async () => {
+      try {
+        const response = await fetch(`/api/detect/status/${jobId}`);
+        const jobData = await response.json();
+        
+        setProgress(jobData.progress || 0);
+        
+        if (jobData.status === 'completed' && jobData.results) {
+          // Process results into our format
+          const detectionResults = processServerResults(jobData.results);
+          setResults(detectionResults);
+          
+          if (onDetectionResults) {
+            onDetectionResults(detectionResults);
+          }
+          
+          toast.success(`Detection complete! Found ${detectionResults.length} frames with detections.`);
+          return;
+        }
+        
+        if (jobData.status === 'failed') {
+          throw new Error(jobData.error || 'Detection job failed');
+        }
+        
+        // Continue polling if still processing
+        if (jobData.status === 'processing' && attempts < maxAttempts) {
+          attempts++;
+          setTimeout(poll, 5000); // Poll every 5 seconds
+        } else if (attempts >= maxAttempts) {
+          throw new Error('Detection timeout');
+        }
+        
+      } catch (error: any) {
+        console.error('Polling error:', error);
+        toast.error(`Polling failed: ${error.message}`);
+      }
+    };
+    
+    poll();
+  };
+
+  const processServerResults = (serverResults: any): ProcessedDetectionResult[] => {
+    // Convert server response to our frontend format
+    return serverResults.map((result: any, index: number) => ({
+      frameIndex: index,
+      timestamp: result.timestamp || (index / frameRate),
+      players: result.players || [],
+      ball: result.ball || null,
+      processing_time: result.processing_time || 0,
+      model_used: result.model_used || 'server-side'
+    }));
   };
 
   const stopDetection = () => {
@@ -257,12 +224,6 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
     renderDetectionOverlays();
   }, [results, showOverlays, confidenceThreshold]);
 
-  useEffect(() => {
-    if (showDetectionControls && !isInitialized) {
-      initializeDetection();
-    }
-  }, [showDetectionControls]);
-
   return (
     <div className="relative w-full h-full">
       <YouTubePlayer
@@ -293,22 +254,20 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
           size="sm"
           className="flex items-center gap-2"
         >
-          🤖 AI Detection
+          🤖 Server AI Detection
         </Button>
         
         {showDetectionControls && (
           <div className="bg-black/80 backdrop-blur-sm rounded-lg p-4 max-w-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-white font-medium">AI Detection</h3>
-              <Badge variant={isInitialized ? "default" : "secondary"}>
-                {isInitialized ? 'Ready' : 'Initializing...'}
-              </Badge>
+              <h3 className="text-white font-medium">Production AI Detection</h3>
+              <Badge variant="default">Server-Side</Badge>
             </div>
             
             <div className="flex gap-2 mb-3">
               <Button
-                onClick={startDetection}
-                disabled={isProcessing || !isInitialized}
+                onClick={startServerSideDetection}
+                disabled={isProcessing}
                 size="sm"
                 className="flex items-center gap-1"
               >
