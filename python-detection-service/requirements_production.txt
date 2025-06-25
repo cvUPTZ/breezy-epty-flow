@@ -1,0 +1,45 @@
+
+# Production Requirements for Football Detection Service
+
+# FastAPI and server
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Computer Vision and ML
+opencv-python==4.8.1.78
+numpy==1.24.3
+pillow==10.0.1
+
+# Video processing
+yt-dlp==2023.10.13
+
+# Data validation
+pydantic==2.4.2
+
+# HTTP requests (for health checks)
+httpx==0.25.1
+
+# Database
+sqlite3  # Built into Python
+
+# Logging and monitoring
+python-json-logger==2.0.7
+
+# Security
+cryptography==41.0.7
+
+# Optional: Real ML models (uncomment when ready)
+# torch==2.1.0
+# torchvision==0.16.0
+# ultralytics==8.0.200  # For YOLOv8
+
+# Optional: Advanced video processing
+# ffmpeg-python==0.2.0
+
+# Optional: Performance monitoring
+# psutil==5.9.6
+
+# Optional: Background task queue (for scaling)
+# celery==5.3.3
+# redis==5.0.1

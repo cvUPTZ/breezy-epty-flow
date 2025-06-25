@@ -8,8 +8,8 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import SimplePianoOverlay from './SimplePianoOverlay';
-import { VideoDetectionOverlay } from './VideoDetectionOverlay';
-import { DetectionResult } from '@/services/pythonDetectionService';
+import { EnhancedVideoDetectionOverlay } from './EnhancedVideoDetectionOverlay';
+import { DetectionResult } from '@/services/enhancedPythonDetectionService';
 
 interface TrackerVideoInterfaceProps {
   initialVideoId: string;
@@ -177,7 +177,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     if (!showDetection) return null;
 
     return (
-      <VideoDetectionOverlay
+      <EnhancedVideoDetectionOverlay
         videoId={currentVideoId}
         isVisible={showDetection}
         onClose={toggleDetection}
