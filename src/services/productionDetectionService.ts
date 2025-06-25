@@ -204,13 +204,13 @@ export class ProductionDetectionService {
         throw new Error('User not authenticated');
       }
 
-      // Save job metadata
+      // Save job metadata - fix the type error by properly typing the JSON data
       const { error: jobError } = await supabase
         .from('video_jobs')
         .upsert({
           id: jobId,
           status: 'completed',
-          result_data: { detections: results },
+          result_data: { detections: results } as any, // Cast to any for JSON compatibility
           user_id: user.user.id,
           input_video_path: `match_${matchId}`,
           video_title: `AI Detection for Match ${matchId}`,

@@ -4,9 +4,10 @@ import { YouTubePlayer, YouTubePlayerInstance } from './YouTubePlayer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Settings, Play, Square, Eye, EyeOff } from 'lucide-react';
+import { Settings, Play, Square, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { ProcessedDetectionResult } from '@/services/roboflowDetectionService';
+import { ProductionDetectionService, ServerDetectionResult } from '@/services/productionDetectionService';
 
 interface YouTubePlayerWithDetectionProps {
   videoId: string;
@@ -30,13 +31,13 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [results, setResults] = useState<ProcessedDetectionResult[]>([]);
+  const [results, setResults] = useState<ServerDetectionResult[]>([]);
   const [showOverlays, setShowOverlays] = useState(true);
   const [showDetectionControls, setShowDetectionControls] = useState(false);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   
   // Detection configuration
   const [frameRate, setFrameRate] = useState(1);
-  const [maxFrames, setMaxFrames] = useState(50);
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.5);
 
   const handlePlayerReady = (player: YouTubePlayerInstance) => {
@@ -58,112 +59,84 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
 
     try {
       console.log('Starting server-side AI detection...');
+      toast.info('Starting server-side AI detection...');
       
       // Get the YouTube video URL
       const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
       
-      // Call our production detection service
-      const response = await fetch('/api/detect/start', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.VITE_PYTHON_DETECTION_API_KEY || 'demo-key'}`
-        },
-        body: JSON.stringify({
-          videoUrl,
-          frameRate,
-          confidenceThreshold,
-          trackPlayers: true,
-          trackBall: true,
-          maxRetries: 3,
-          timeout: 300,
-          useSOTAML: true,
-          modelType: "yolo11n",
-          processingMode: "balanced",
-          enableGPU: true,
-          batchSize: 8,
-          nmsThreshold: 0.4,
-          maxDetections: 50
-        })
+      // Start the detection job
+      const jobId = await ProductionDetectionService.startDetection({
+        videoUrl,
+        frameRate,
+        confidenceThreshold,
+        trackPlayers: true,
+        trackBall: true,
+        maxRetries: 3,
+        timeout: 300,
+        useSOTAML: true,
+        modelType: "yolo11n",
+        processingMode: "balanced",
+        enableGPU: true,
+        batchSize: 8,
+        nmsThreshold: 0.4,
+        maxDetections: 50
       });
 
-      if (!response.ok) {
-        throw new Error(`Detection service error: ${response.status}`);
-      }
-
-      const { job_id } = await response.json();
+      setCurrentJobId(jobId);
+      toast.success(`Detection job started with ID: ${jobId}`);
       
       // Poll for results
-      await pollDetectionResults(job_id);
+      const detectionResults = await ProductionDetectionService.pollJobToCompletion(
+        jobId,
+        (progressValue) => {
+          setProgress(progressValue);
+        },
+        undefined, // onResult callback
+        30 // max wait 30 minutes
+      );
+
+      setResults(detectionResults);
+      
+      // Convert server results to frontend format for compatibility
+      const processedResults: ProcessedDetectionResult[] = detectionResults.map((result, index) => ({
+        frameIndex: index,
+        timestamp: result.timestamp,
+        players: result.players,
+        ball: result.ball || null,
+        processing_time: result.processing_time,
+        model_used: result.model_used
+      }));
+
+      if (onDetectionResults) {
+        onDetectionResults(processedResults);
+      }
+
+      // Save results to database
+      await ProductionDetectionService.saveResultsToDatabase(matchId, jobId, detectionResults);
+      
+      toast.success(`Detection complete! Found ${detectionResults.length} frames with detections.`);
       
     } catch (error: any) {
       console.error('Server-side detection failed:', error);
       toast.error(`Detection failed: ${error.message}`);
     } finally {
       setIsProcessing(false);
+      setCurrentJobId(null);
     }
   };
 
-  const pollDetectionResults = async (jobId: string) => {
-    const maxAttempts = 60; // 5 minutes max
-    let attempts = 0;
-    
-    const poll = async () => {
+  const stopDetection = async () => {
+    if (currentJobId) {
       try {
-        const response = await fetch(`/api/detect/status/${jobId}`);
-        const jobData = await response.json();
-        
-        setProgress(jobData.progress || 0);
-        
-        if (jobData.status === 'completed' && jobData.results) {
-          // Process results into our format
-          const detectionResults = processServerResults(jobData.results);
-          setResults(detectionResults);
-          
-          if (onDetectionResults) {
-            onDetectionResults(detectionResults);
-          }
-          
-          toast.success(`Detection complete! Found ${detectionResults.length} frames with detections.`);
-          return;
-        }
-        
-        if (jobData.status === 'failed') {
-          throw new Error(jobData.error || 'Detection job failed');
-        }
-        
-        // Continue polling if still processing
-        if (jobData.status === 'processing' && attempts < maxAttempts) {
-          attempts++;
-          setTimeout(poll, 5000); // Poll every 5 seconds
-        } else if (attempts >= maxAttempts) {
-          throw new Error('Detection timeout');
-        }
-        
+        await ProductionDetectionService.cancelJob(currentJobId);
+        toast.info('Detection job cancelled');
       } catch (error: any) {
-        console.error('Polling error:', error);
-        toast.error(`Polling failed: ${error.message}`);
+        console.error('Failed to cancel job:', error);
+        toast.error('Failed to cancel detection job');
       }
-    };
-    
-    poll();
-  };
-
-  const processServerResults = (serverResults: any): ProcessedDetectionResult[] => {
-    // Convert server response to our frontend format
-    return serverResults.map((result: any, index: number) => ({
-      frameIndex: index,
-      timestamp: result.timestamp || (index / frameRate),
-      players: result.players || [],
-      ball: result.ball || null,
-      processing_time: result.processing_time || 0,
-      model_used: result.model_used || 'server-side'
-    }));
-  };
-
-  const stopDetection = () => {
+    }
     setIsProcessing(false);
-    toast.info('Detection stopped');
+    setCurrentJobId(null);
   };
 
   const renderDetectionOverlays = () => {
@@ -254,7 +227,7 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
           size="sm"
           className="flex items-center gap-2"
         >
-          🤖 Server AI Detection
+          🤖 Production AI Detection
         </Button>
         
         {showDetectionControls && (
@@ -262,6 +235,15 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-white font-medium">Production AI Detection</h3>
               <Badge variant="default">Server-Side</Badge>
+            </div>
+
+            {/* CORS Warning */}
+            <div className="mb-3 p-2 bg-yellow-900/50 border border-yellow-600/50 rounded text-yellow-200 text-xs flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <div>
+                <div className="font-medium">Server-Side Processing</div>
+                <div>Uses backend service to download and analyze video, bypassing CORS restrictions.</div>
+              </div>
             </div>
             
             <div className="flex gap-2 mb-3">
@@ -272,7 +254,7 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
                 className="flex items-center gap-1"
               >
                 <Play className="h-3 w-3" />
-                Start
+                Start Detection
               </Button>
               
               {isProcessing && (
@@ -283,7 +265,7 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
                   className="flex items-center gap-1"
                 >
                   <Square className="h-3 w-3" />
-                  Stop
+                  Cancel
                 </Button>
               )}
               
@@ -300,17 +282,23 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
             {isProcessing && (
               <div className="mb-3">
                 <div className="flex justify-between text-xs text-white/70 mb-1">
-                  <span>Processing...</span>
+                  <span>Processing video...</span>
                   <span>{Math.round(progress)}%</span>
                 </div>
                 <Progress value={progress} className="w-full h-1" />
+                {currentJobId && (
+                  <div className="text-xs text-white/50 mt-1">
+                    Job ID: {currentJobId}
+                  </div>
+                )}
               </div>
             )}
             
             <div className="text-xs text-white/70">
-              <div>Frames: {results.length}</div>
-              <div>Players: {results.reduce((sum, r) => sum + r.players.length, 0)}</div>
+              <div>Frames analyzed: {results.length}</div>
+              <div>Players detected: {results.reduce((sum, r) => sum + r.players.length, 0)}</div>
               <div>Ball detections: {results.filter(r => r.ball).length}</div>
+              <div>Model: YOLOv11 + GPU acceleration</div>
             </div>
           </div>
         )}
