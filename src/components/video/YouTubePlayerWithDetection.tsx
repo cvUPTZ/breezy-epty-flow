@@ -1,10 +1,9 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { YouTubePlayer, YouTubePlayerInstance } from './YouTubePlayer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Settings, Play, Square, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Settings, Play, Square, Eye, EyeOff, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { ProcessedDetectionResult } from '@/services/roboflowDetectionService';
 import { ProductionDetectionService, ServerDetectionResult } from '@/services/productionDetectionService';
@@ -35,10 +34,20 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
   const [showOverlays, setShowOverlays] = useState(true);
   const [showDetectionControls, setShowDetectionControls] = useState(false);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const [serviceStatus, setServiceStatus] = useState<'unknown' | 'online' | 'offline'>('unknown');
   
   // Detection configuration
   const [frameRate, setFrameRate] = useState(1);
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.5);
+
+  // Check service status on mount
+  useEffect(() => {
+    const checkStatus = async () => {
+      const isAvailable = await ProductionDetectionService.checkServiceHealth();
+      setServiceStatus(isAvailable ? 'online' : 'offline');
+    };
+    checkStatus();
+  }, []);
 
   const handlePlayerReady = (player: YouTubePlayerInstance) => {
     playerRef.current = player;
@@ -62,11 +71,11 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
       toast.info('Starting server-side AI detection...');
       
       // Check service health first
-      try {
-        await ProductionDetectionService.checkServiceHealth();
-      } catch (healthError: any) {
-        console.error('Service health check failed:', healthError);
-        throw new Error(`Detection service is unavailable: ${healthError.message}`);
+      const isServiceHealthy = await ProductionDetectionService.checkServiceHealth();
+      setServiceStatus(isServiceHealthy ? 'online' : 'offline');
+      
+      if (!isServiceHealthy) {
+        throw new Error('AI detection service is currently unavailable. Please try again later.');
       }
       
       // Get the YouTube video URL
@@ -126,7 +135,20 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
       
     } catch (error: any) {
       console.error('Server-side detection failed:', error);
-      toast.error(`Detection failed: ${error.message}`);
+      
+      // Update service status based on error
+      if (error.message.includes('unavailable') || error.message.includes('connect')) {
+        setServiceStatus('offline');
+      }
+      
+      // Show user-friendly error messages
+      if (error.message.includes('unavailable')) {
+        toast.error('AI detection service is temporarily unavailable. Please try again later.');
+      } else if (error.message.includes('timeout')) {
+        toast.error('Detection service is not responding. Please check your connection and try again.');
+      } else {
+        toast.error(`Detection failed: ${error.message}`);
+      }
     } finally {
       setIsProcessing(false);
       setCurrentJobId(null);
@@ -145,6 +167,18 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
     }
     setIsProcessing(false);
     setCurrentJobId(null);
+  };
+
+  const retryConnection = async () => {
+    ProductionDetectionService.resetServiceStatus();
+    const isAvailable = await ProductionDetectionService.checkServiceHealth();
+    setServiceStatus(isAvailable ? 'online' : 'offline');
+    
+    if (isAvailable) {
+      toast.success('AI detection service is now available!');
+    } else {
+      toast.error('AI detection service is still unavailable.');
+    }
   };
 
   const renderDetectionOverlays = () => {
@@ -236,28 +270,62 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
           className="flex items-center gap-2"
         >
           🤖 Production AI Detection
+          {serviceStatus === 'online' && <Wifi className="h-3 w-3 text-green-500" />}
+          {serviceStatus === 'offline' && <WifiOff className="h-3 w-3 text-red-500" />}
         </Button>
         
         {showDetectionControls && (
           <div className="bg-black/80 backdrop-blur-sm rounded-lg p-4 max-w-sm">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-white font-medium">Production AI Detection</h3>
-              <Badge variant="default">Server-Side</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="default">Server-Side</Badge>
+                {serviceStatus === 'online' && (
+                  <Badge variant="default" className="bg-green-600">
+                    <Wifi className="h-3 w-3 mr-1" />
+                    Online
+                  </Badge>
+                )}
+                {serviceStatus === 'offline' && (
+                  <Badge variant="destructive">
+                    <WifiOff className="h-3 w-3 mr-1" />
+                    Offline
+                  </Badge>
+                )}
+              </div>
             </div>
 
             {/* Service Status Warning */}
-            <div className="mb-3 p-2 bg-yellow-900/50 border border-yellow-600/50 rounded text-yellow-200 text-xs flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-              <div>
-                <div className="font-medium">Server-Side Processing</div>
-                <div>Uses backend service to download and analyze video. Make sure the detection API is running.</div>
+            {serviceStatus === 'offline' && (
+              <div className="mb-3 p-2 bg-red-900/50 border border-red-600/50 rounded text-red-200 text-xs flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <div>
+                  <div className="font-medium">Service Unavailable</div>
+                  <div>The AI detection service is currently offline. Please try again later.</div>
+                  <button 
+                    onClick={retryConnection}
+                    className="mt-1 text-red-300 underline hover:text-red-100"
+                  >
+                    Retry connection
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
+
+            {serviceStatus === 'online' && (
+              <div className="mb-3 p-2 bg-yellow-900/50 border border-yellow-600/50 rounded text-yellow-200 text-xs flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <div>
+                  <div className="font-medium">Server-Side Processing</div>
+                  <div>Uses backend service to download and analyze video. Processing may take several minutes.</div>
+                </div>
+              </div>
+            )}
             
             <div className="flex gap-2 mb-3">
               <Button
                 onClick={startServerSideDetection}
-                disabled={isProcessing}
+                disabled={isProcessing || serviceStatus === 'offline'}
                 size="sm"
                 className="flex items-center gap-1"
               >
@@ -307,6 +375,7 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
               <div>Players detected: {results.reduce((sum, r) => sum + r.players.length, 0)}</div>
               <div>Ball detections: {results.filter(r => r.ball).length}</div>
               <div>Model: YOLOv11 + GPU acceleration</div>
+              <div>Status: {serviceStatus === 'online' ? 'Service Online' : serviceStatus === 'offline' ? 'Service Offline' : 'Checking...'}</div>
             </div>
           </div>
         )}

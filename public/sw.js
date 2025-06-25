@@ -1,3 +1,4 @@
+
 // public/sw.js
 const CACHE_NAME = 'match-scribe-cache-v1';
 const INITIAL_ASSETS_TO_CACHE = [
@@ -52,11 +53,31 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip caching for external APIs that might be unreachable
+  if (event.request.url.includes('pythonanywhere.com') || 
+      event.request.url.includes('supabase.co')) {
+    event.respondWith(
+      fetch(event.request).catch(error => {
+        console.error('Service Worker: External API request failed:', error);
+        // Return a proper Response object for failed external requests
+        return new Response(
+          JSON.stringify({ error: 'Service temporarily unavailable' }), 
+          { 
+            status: 503, 
+            statusText: 'Service Unavailable',
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      })
+    );
+    return;
+  }
+
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
         .then(response => {
-          if (response.ok) {
+          if (response && response.ok) {
             const responseToCache = response.clone();
             caches.open(CACHE_NAME)
               .then(cache => {
@@ -95,6 +116,15 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(error => {
           console.error('Service Worker: Error in fetch handler for non-navigation request:', error);
+          // Return a proper fallback Response
+          return new Response(
+            JSON.stringify({ error: 'Resource unavailable' }), 
+            { 
+              status: 503, 
+              statusText: 'Service Unavailable',
+              headers: { 'Content-Type': 'application/json' }
+            }
+          );
         })
     );
   }

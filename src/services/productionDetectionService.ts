@@ -53,10 +53,15 @@ export interface ServerDetectionResult {
 export class ProductionDetectionService {
   private static baseUrl = process.env.VITE_PYTHON_DETECTION_API_URL || 'https://zackbeg.pythonanywhere.com/api';
   private static apiKey = process.env.VITE_PYTHON_DETECTION_API_KEY || 'your-secure-detection-key-2024';
+  
+  // Add a flag to track if the service is available
+  private static serviceAvailable: boolean | null = null;
+  private static lastHealthCheck = 0;
+  private static healthCheckInterval = 5 * 60 * 1000; // 5 minutes
 
   private static async makeRequest(url: string, options: RequestInit = {}): Promise<Response> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // Reduced to 10 seconds
 
     try {
       const response = await fetch(url, {
@@ -80,6 +85,8 @@ export class ProductionDetectionService {
       if (error.name === 'AbortError') {
         throw new Error('Request timeout - server took too long to respond');
       }
+      // Mark service as unavailable on fetch failures
+      this.serviceAvailable = false;
       throw error;
     }
   }
@@ -88,6 +95,12 @@ export class ProductionDetectionService {
     try {
       console.log('Starting production detection with config:', config);
       console.log('API URL:', this.baseUrl);
+      
+      // Check service health first
+      const isHealthy = await this.checkServiceHealth();
+      if (!isHealthy) {
+        throw new Error('Detection service is not available. Please try again later or contact support.');
+      }
       
       const response = await this.makeRequest(`${this.baseUrl}/detect/start`, {
         method: 'POST',
@@ -112,15 +125,18 @@ export class ProductionDetectionService {
     } catch (error: any) {
       console.error('Failed to start detection:', error);
       
-      // Provide more specific error messages
-      if (error.message.includes('Failed to fetch')) {
-        throw new Error('Cannot connect to detection service. Please check if the API is running and accessible.');
+      // Provide more user-friendly error messages
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error('Unable to connect to AI detection service. The service may be temporarily unavailable.');
       }
       if (error.message.includes('CORS')) {
-        throw new Error('CORS error - detection service may not be configured properly.');
+        throw new Error('Connection blocked by browser security. Please contact support.');
+      }
+      if (error.message.includes('timeout')) {
+        throw new Error('AI detection service is not responding. Please try again later.');
       }
       
-      throw new Error(`Failed to start detection: ${error.message}`);
+      throw new Error(`Detection failed: ${error.message}`);
     }
   }
 
@@ -310,35 +326,50 @@ export class ProductionDetectionService {
     }
   }
 
-  // Health check for the production service
-  static async checkServiceHealth(): Promise<{
-    status: string;
-    version: string;
-    gpu_available: boolean;
-    models_loaded: string[];
-    queue_size: number;
-  }> {
+  // Health check for the production service with caching
+  static async checkServiceHealth(): Promise<boolean> {
     try {
+      const now = Date.now();
+      
+      // Use cached result if recent
+      if (this.serviceAvailable !== null && (now - this.lastHealthCheck) < this.healthCheckInterval) {
+        return this.serviceAvailable;
+      }
+
       console.log('Checking service health at:', `${this.baseUrl}/health`);
       
       const response = await this.makeRequest(`${this.baseUrl}/health`);
 
       if (!response.ok) {
+        this.serviceAvailable = false;
+        this.lastHealthCheck = now;
         throw new Error(`Health check failed: ${response.status} ${response.statusText}`);
       }
 
       const healthData = await response.json();
       console.log('Service health:', healthData);
-      return healthData;
+      
+      this.serviceAvailable = true;
+      this.lastHealthCheck = now;
+      return true;
     } catch (error: any) {
       console.error('Service health check failed:', error);
+      this.serviceAvailable = false;
+      this.lastHealthCheck = Date.now();
       
-      // Provide more specific error messages for health check failures
-      if (error.message.includes('Failed to fetch')) {
-        throw new Error('Detection service is not reachable. Please ensure the API server is running.');
-      }
-      
-      throw new Error(`Service unavailable: ${error.message}`);
+      // Don't throw for health checks, just return false
+      return false;
     }
+  }
+
+  // Public method to check if service is available
+  static isServiceAvailable(): boolean {
+    return this.serviceAvailable === true;
+  }
+
+  // Reset service availability (useful for retry scenarios)
+  static resetServiceStatus(): void {
+    this.serviceAvailable = null;
+    this.lastHealthCheck = 0;
   }
 }
