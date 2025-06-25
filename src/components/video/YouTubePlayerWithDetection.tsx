@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Settings, Play, Square, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { ProcessedDetectionResult } from '@/services/roboflowDetectionService';
+import { RoboflowVideoDetectionOverlay } from './RoboflowVideoDetectionOverlay';
 
 interface YouTubePlayerWithDetectionProps {
   videoId: string;
@@ -33,6 +34,7 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
   const [results, setResults] = useState<ProcessedDetectionResult[]>([]);
   const [showOverlays, setShowOverlays] = useState(true);
   const [showDetectionControls, setShowDetectionControls] = useState(false);
+  const [showRoboflowOverlay, setShowRoboflowOverlay] = useState(false);
   
   // Detection configuration
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.5);
@@ -44,13 +46,15 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
     }
   };
 
-  const startLocalDetection = async () => {
-    if (!playerRef.current) {
-      toast.error('Player not ready');
-      return;
-    }
+  const startRoboflowDetection = () => {
+    setShowRoboflowOverlay(true);
+  };
 
-    toast.info('Local AI detection is not yet implemented. Please use the Roboflow detection service instead.');
+  const handleDetectionResults = (detectionResults: ProcessedDetectionResult[]) => {
+    setResults(detectionResults);
+    if (onDetectionResults) {
+      onDetectionResults(detectionResults);
+    }
   };
 
   const renderDetectionOverlays = () => {
@@ -148,20 +152,20 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
           <div className="bg-black/80 backdrop-blur-sm rounded-lg p-4 max-w-sm">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-white font-medium">AI Detection</h3>
-              <Badge variant="outline">Local Processing</Badge>
+              <Badge variant="outline">Roboflow Service</Badge>
             </div>
 
             <div className="mb-3 p-2 bg-blue-900/50 border border-blue-600/50 rounded text-blue-200 text-xs flex items-start gap-2">
               <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
               <div>
-                <div className="font-medium">Client-Side Processing</div>
-                <div>AI detection runs locally in your browser using available detection services.</div>
+                <div className="font-medium">Roboflow AI Detection</div>
+                <div>AI detection runs using the Roboflow service for accurate player and ball detection.</div>
               </div>
             </div>
             
             <div className="flex gap-2 mb-3">
               <Button
-                onClick={startLocalDetection}
+                onClick={startRoboflowDetection}
                 disabled={isProcessing}
                 size="sm"
                 className="flex items-center gap-1"
@@ -194,11 +198,22 @@ export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProp
               <div>Frames analyzed: {results.length}</div>
               <div>Players detected: {results.reduce((sum, r) => sum + r.players.length, 0)}</div>
               <div>Ball detections: {results.filter(r => r.ball).length}</div>
-              <div>Status: Local processing available</div>
+              <div>Status: Roboflow service ready</div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Roboflow Detection Overlay */}
+      {showRoboflowOverlay && (
+        <RoboflowVideoDetectionOverlay
+          videoId={videoId}
+          isVisible={showRoboflowOverlay}
+          onClose={() => setShowRoboflowOverlay(false)}
+          onDetectionResults={handleDetectionResults}
+          isFullscreen={false}
+        />
+      )}
     </div>
   );
 };
