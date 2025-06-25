@@ -1,9 +1,8 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { YouTubePlayer, YouTubePlayerInstance, PlayerControlEvent } from './YouTubePlayer';
 import VideoPlayerControls from './VideoPlayerControls';
-import { EnhancedVoiceChat } from '../voice/EnhancedVoiceChat';
+import { CompactVoiceChat } from '../voice/CompactVoiceChat';
 import { VoiceCollaborationProvider, useVoiceCollaborationContext } from '@/context/VoiceCollaborationContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -161,24 +160,19 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     if (!showVoiceChat || !matchId || !user || !userRole) return null;
 
     const voiceChatOverlay = (
-      <div className="absolute top-16 right-4 w-80 max-h-96 bg-white/95 backdrop-blur-lg border border-gray-200 rounded-lg shadow-xl overflow-hidden"
+      <div className="absolute top-16 right-4 w-80 bg-black/20 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden"
            style={{ zIndex: isFullscreen ? 2147483647 : 50 }}>
-        <div className="p-3 border-b bg-gray-50 flex justify-between items-center">
-          <h3 className="font-semibold text-gray-800">Voice Chat</h3>
+        <div className="p-3 border-b border-white/10 bg-black/30 flex justify-between items-center">
+          <h3 className="font-medium text-white text-sm">Voice Chat</h3>
           <button
             onClick={toggleVoiceChat}
-            className="text-gray-500 hover:text-gray-700 text-lg font-bold"
+            className="text-white/70 hover:text-white text-lg font-bold w-6 h-6 flex items-center justify-center rounded hover:bg-white/10"
           >
             ×
           </button>
         </div>
-        <div className="p-3 max-h-80 overflow-y-auto">
-          <div className="text-xs text-gray-600 mb-2">
-            <p>Match: {matchId}</p>
-            <p>User: {user.email || user.id}</p>
-            <p>Role: {userRole}</p>
-          </div>
-          <EnhancedVoiceChat
+        <div className="p-3">
+          <CompactVoiceChat
             matchId={matchId}
             userId={user.id}
             userRole={userRole}
