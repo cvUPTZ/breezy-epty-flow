@@ -24,12 +24,13 @@ export interface TrackerInfo {
 export const useUnifiedTrackerConnection = (matchId: string, userId?: string) => {
   const [isConnected, setIsConnected] = useState(false);
   const [trackers, setTrackers] = useState<TrackerInfo[]>([]);
-  const [lastBroadcast, setLastBroadcast] = useState<number>(0);
   const channelRef = useRef<any>(null);
   const connectionAttempts = useRef(0);
   const maxRetries = 3;
   const isCurrentUser = Boolean(userId);
   const cleanupExecutedRef = useRef(false);
+  const lastBroadcastTimeRef = useRef<number>(0);
+  const pendingBroadcastRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize unified channel with retry logic
   useEffect(() => {
@@ -162,6 +163,12 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
       mounted = false;
       console.log('UnifiedTrackerConnection: Cleaning up on unmount');
       
+      // Clear any pending broadcasts
+      if (pendingBroadcastRef.current) {
+        clearTimeout(pendingBroadcastRef.current);
+        pendingBroadcastRef.current = null;
+      }
+      
       // Prevent multiple cleanup executions
       if (!cleanupExecutedRef.current) {
         cleanupExecutedRef.current = true;
@@ -232,7 +239,7 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
     fetchTrackers();
   }, [matchId]);
 
-  // Enhanced broadcast status function with better throttling
+  // Enhanced broadcast status function with aggressive throttling
   const broadcastStatus = useCallback(async (statusData: TrackerStatusData) => {
     if (!userId || !matchId || !channelRef.current || !isConnected) {
       console.log('UnifiedTrackerConnection: Cannot broadcast - missing requirements', { 
@@ -246,79 +253,83 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
 
     const now = Date.now();
     
-    // Enhanced throttling - allow important updates but throttle routine ones
-    const isImportantUpdate = statusData.action?.includes('connection') || 
-                             statusData.action?.includes('recording') ||
-                             statusData.action?.includes('player_ready') ||
-                             statusData.status === 'inactive';
-    
-    const timeSinceLastBroadcast = now - lastBroadcast;
-    const throttleTime = isImportantUpdate ? 1000 : 10000; // 1s for important, 10s for routine
-    
-    if (!isImportantUpdate && timeSinceLastBroadcast < throttleTime) {
-      console.log('UnifiedTrackerConnection: Broadcast throttled', { timeSinceLastBroadcast, throttleTime });
+    // Aggressive throttling - minimum 3 seconds between ANY broadcasts
+    const timeSinceLastBroadcast = now - lastBroadcastTimeRef.current;
+    if (timeSinceLastBroadcast < 3000) {
+      console.log('UnifiedTrackerConnection: Broadcast throttled', { timeSinceLastBroadcast });
       return;
     }
 
-    try {
-      const payload = {
-        type: 'tracker_status',
-        user_id: userId,
-        email: 'tracker', // Basic identifier
-        ...statusData,
-        timestamp: now
-      };
-
-      console.log('UnifiedTrackerConnection: Broadcasting status:', payload);
-
-      const result = await channelRef.current.send({
-        type: 'broadcast',
-        event: 'tracker_status',
-        payload
-      });
-
-      if (result === 'ok') {
-        console.log('UnifiedTrackerConnection: Broadcast successful');
-        setLastBroadcast(now);
-        
-        // Update local tracker state optimistically
-        setTrackers(prev => {
-          const updated = prev.map(t => 
-            t.user_id === userId 
-              ? { 
-                  ...t, 
-                  status: statusData.status,
-                  last_activity: now,
-                  current_action: statusData.action,
-                  battery_level: statusData.battery_level,
-                  network_quality: statusData.network_quality
-                }
-              : t
-          );
-          
-          // Add self if not found
-          if (!prev.find(t => t.user_id === userId)) {
-            updated.push({
-              user_id: userId,
-              email: 'tracker',
-              status: statusData.status,
-              last_activity: now,
-              current_action: statusData.action,
-              event_counts: {},
-              battery_level: statusData.battery_level,
-              network_quality: statusData.network_quality
-            });
-          }
-          
-          return updated;
-        });
-      } else {
-        console.error('UnifiedTrackerConnection: Broadcast failed:', result);
-      }
-    } catch (error) {
-      console.error('UnifiedTrackerConnection: Failed to broadcast status:', error);
+    // Clear any pending broadcast
+    if (pendingBroadcastRef.current) {
+      clearTimeout(pendingBroadcastRef.current);
+      pendingBroadcastRef.current = null;
     }
-  }, [matchId, userId, lastBroadcast, isConnected]);
+
+    // Delay broadcast to prevent rapid firing
+    pendingBroadcastRef.current = setTimeout(async () => {
+      if (!channelRef.current || !isConnected) return;
+
+      try {
+        const payload = {
+          type: 'tracker_status',
+          user_id: userId,
+          email: 'tracker',
+          ...statusData,
+          timestamp: Date.now()
+        };
+
+        console.log('UnifiedTrackerConnection: Broadcasting status:', payload);
+
+        const result = await channelRef.current.send({
+          type: 'broadcast',
+          event: 'tracker_status',
+          payload
+        });
+
+        if (result === 'ok') {
+          console.log('UnifiedTrackerConnection: Broadcast successful');
+          lastBroadcastTimeRef.current = Date.now();
+          
+          // Update local tracker state optimistically
+          setTrackers(prev => {
+            const updated = prev.map(t => 
+              t.user_id === userId 
+                ? { 
+                    ...t, 
+                    status: statusData.status,
+                    last_activity: Date.now(),
+                    current_action: statusData.action,
+                    battery_level: statusData.battery_level,
+                    network_quality: statusData.network_quality
+                  }
+                : t
+            );
+            
+            // Add self if not found
+            if (!prev.find(t => t.user_id === userId)) {
+              updated.push({
+                user_id: userId,
+                email: 'tracker',
+                status: statusData.status,
+                last_activity: Date.now(),
+                current_action: statusData.action,
+                event_counts: {},
+                battery_level: statusData.battery_level,
+                network_quality: statusData.network_quality
+              });
+            }
+            
+            return updated;
+          });
+        } else {
+          console.error('UnifiedTrackerConnection: Broadcast failed:', result);
+        }
+      } catch (error) {
+        console.error('UnifiedTrackerConnection: Failed to broadcast status:', error);
+      }
+    }, 500); // 500ms delay to prevent rapid firing
+  }, [matchId, userId, isConnected]);
 
   const cleanup = useCallback(() => {
     console.log('UnifiedTrackerConnection: Manual cleanup called');
@@ -329,6 +340,12 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
     }
     
     cleanupExecutedRef.current = true;
+    
+    // Clear pending broadcasts
+    if (pendingBroadcastRef.current) {
+      clearTimeout(pendingBroadcastRef.current);
+      pendingBroadcastRef.current = null;
+    }
     
     if (isCurrentUser && userId && channelRef.current && isConnected) {
       try {
