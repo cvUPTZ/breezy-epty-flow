@@ -96,7 +96,27 @@ const Admin: React.FC = () => {
 
           <TabsContent value="trackers">
             <div className="space-y-6">
-              <TrackerAbsenceManager />
+              {liveMatches.length > 0 ? (
+                liveMatches.map((match) => (
+                  <div key={match.id} className="space-y-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          Match: {match.home_team_name} vs {match.away_team_name}
+                          <Badge className="bg-green-500">LIVE</Badge>
+                        </CardTitle>
+                      </CardHeader>
+                    </Card>
+                    <TrackerAbsenceManager matchId={match.id} />
+                  </div>
+                ))
+              ) : (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <p className="text-gray-500">No live matches currently. Tracker monitoring requires an active match.</p>
+                  </CardContent>
+                </Card>
+              )}
               <TrackerBatteryMonitor />
             </div>
           </TabsContent>

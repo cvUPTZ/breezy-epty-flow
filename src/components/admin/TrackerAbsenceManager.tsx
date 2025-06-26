@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -234,9 +235,13 @@ const TrackerAbsenceManager: React.FC<TrackerAbsenceManagerProps> = ({ matchId }
                     key={tracker.id}
                     activity={{
                       user_id: tracker.tracker_user_id,
-                      last_seen: activity ? new Date(activity.last_active_at).getTime() : Date.now(),
+                      email: tracker.tracker_email,
                       status: isAbsent ? 'inactive' : (isInactive ? 'inactive' : 'active'),
-                      consecutive_missed_heartbeats: 0
+                      last_activity: activity ? new Date(activity.last_active_at).getTime() : Date.now(),
+                      current_action: undefined,
+                      event_counts: {},
+                      battery_level: undefined,
+                      network_quality: undefined
                     }}
                     isAbsent={isAbsent}
                     onMarkAbsent={handleManualAbsence}
