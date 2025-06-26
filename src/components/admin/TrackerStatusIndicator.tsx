@@ -4,7 +4,17 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { AlertTriangle, CheckCircle, Clock, Wifi, WifiOff, Battery } from 'lucide-react';
-import { TrackerInfo } from '@/hooks/useUnifiedTrackerConnection';
+
+interface TrackerInfo {
+  user_id: string;
+  email?: string;
+  status: 'active' | 'inactive' | 'recording';
+  last_activity: number;
+  current_action?: string;
+  event_counts?: Record<string, number>;
+  battery_level?: number;
+  network_quality?: 'excellent' | 'good' | 'poor';
+}
 
 interface TrackerStatusIndicatorProps {
   activity: TrackerInfo;
@@ -19,17 +29,25 @@ const TrackerStatusIndicator: React.FC<TrackerStatusIndicatorProps> = ({
   onMarkAbsent,
   onReconnect
 }) => {
+  // Check if tracker is recently active (within last 30 seconds)
+  const isRecentlyActive = () => {
+    const timeSinceLastActivity = Date.now() - activity.last_activity;
+    return timeSinceLastActivity < 30000;
+  };
+
+  const connectionStatus = isRecentlyActive();
+
   const getStatusIcon = () => {
     if (isAbsent) return <AlertTriangle className="h-4 w-4 text-red-500" />;
     if (activity.status === 'recording') return <CheckCircle className="h-4 w-4 text-green-500" />;
-    if (activity.status === 'active') return <Wifi className="h-4 w-4 text-blue-500" />;
+    if (connectionStatus) return <Wifi className="h-4 w-4 text-blue-500" />;
     return <WifiOff className="h-4 w-4 text-gray-400" />;
   };
 
   const getStatusColor = () => {
     if (isAbsent) return 'border-red-300 bg-red-50';
     if (activity.status === 'recording') return 'border-green-300 bg-green-50';
-    if (activity.status === 'active') return 'border-blue-300 bg-blue-50';
+    if (connectionStatus) return 'border-blue-300 bg-blue-50';
     return 'border-gray-300 bg-gray-50';
   };
 
@@ -40,12 +58,19 @@ const TrackerStatusIndicator: React.FC<TrackerStatusIndicatorProps> = ({
     return `${minutes} minutes ago`;
   };
 
-  const isConnected = () => {
-    const timeSinceLastActivity = Date.now() - activity.last_activity;
-    return timeSinceLastActivity < 30000; // Consider connected if active within last 30 seconds
+  const getStatusText = () => {
+    if (isAbsent) return 'Absent';
+    if (activity.status === 'recording') return 'Recording';
+    if (connectionStatus) return 'Connected';
+    return 'Disconnected';
   };
 
-  const connectionStatus = isConnected();
+  const getStatusVariant = () => {
+    if (isAbsent) return 'destructive' as const;
+    if (activity.status === 'recording') return 'default' as const;
+    if (connectionStatus) return 'default' as const;
+    return 'secondary' as const;
+  };
 
   return (
     <motion.div
@@ -70,7 +95,7 @@ const TrackerStatusIndicator: React.FC<TrackerStatusIndicatorProps> = ({
           <div>
             <div className="font-medium text-gray-800 flex items-center gap-2">
               Tracker {activity.user_id.slice(-4)}
-              {activity.email && (
+              {activity.email && activity.email !== 'tracker' && (
                 <span className="text-xs text-gray-500">({activity.email})</span>
               )}
               <div className={`w-2 h-2 rounded-full ${connectionStatus ? 'bg-green-500' : 'bg-red-500'}`} />
@@ -88,8 +113,8 @@ const TrackerStatusIndicator: React.FC<TrackerStatusIndicatorProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <Badge variant={isAbsent ? 'destructive' : connectionStatus ? 'default' : 'secondary'}>
-            {isAbsent ? 'Absent' : connectionStatus ? 'Connected' : 'Disconnected'}
+          <Badge variant={getStatusVariant()}>
+            {getStatusText()}
           </Badge>
           
           {activity.battery_level !== undefined && (
