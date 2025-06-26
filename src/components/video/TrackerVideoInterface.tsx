@@ -38,10 +38,6 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [detectionResults, setDetectionResults] = useState<ProcessedDetectionResult[]>([]);
   
-  // Add refs to prevent rapid state changes
-  const lastBroadcastRef = useRef<number>(0);
-  const broadcastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
   // Initialize unified tracker connection for status reporting
   const { isConnected, broadcastStatus } = useUnifiedTrackerConnection(matchId, user?.id);
 
@@ -65,51 +61,58 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Throttled broadcast function to prevent spam
-  const throttledBroadcast = (statusData: any) => {
-    const now = Date.now();
-    const timeSinceLastBroadcast = now - lastBroadcastRef.current;
-    
-    // Minimum 2 seconds between broadcasts for UI actions
-    if (timeSinceLastBroadcast < 2000) {
-      return;
-    }
-    
-    lastBroadcastRef.current = now;
-    
-    if (broadcastTimeoutRef.current) {
-      clearTimeout(broadcastTimeoutRef.current);
-    }
-    
-    broadcastTimeoutRef.current = setTimeout(() => {
-      if (isConnected) {
-        broadcastStatus(statusData);
-      }
-    }, 100);
-  };
-
-  // Single effect for initial connection - simplified
+  // Enhanced connection and status reporting
   useEffect(() => {
-    if (!user?.id || !matchId || !isConnected) return;
+    if (!user?.id || !matchId) return;
 
     let mounted = true;
-    
-    // Single initial broadcast
-    const initialTimer = setTimeout(() => {
+    let statusInterval: NodeJS.Timeout | null = null;
+
+    const startStatusReporting = () => {
+      // Initial status broadcast
       if (mounted && isConnected) {
+        console.log('TrackerVideoInterface: Broadcasting initial active status');
         broadcastStatus({
           status: 'active',
           timestamp: Date.now(),
-          action: 'video_tracker_loaded'
+          action: 'video_tracker_connected'
         });
       }
-    }, 1000);
+
+      // Set up regular status updates every 10 seconds
+      statusInterval = setInterval(() => {
+        if (mounted && isConnected) {
+          console.log('TrackerVideoInterface: Broadcasting periodic active status');
+          broadcastStatus({
+            status: 'active',
+            timestamp: Date.now(),
+            action: 'video_tracker_active'
+          });
+        }
+      }, 10000);
+    };
+
+    // Wait for connection to be established
+    if (isConnected) {
+      startStatusReporting();
+    } else {
+      // Retry connection establishment
+      const connectionTimeout = setTimeout(() => {
+        if (mounted && !isConnected) {
+          console.log('TrackerVideoInterface: Connection timeout, retrying...');
+          // The connection hook will handle retries
+        }
+      }, 5000);
+
+      return () => {
+        clearTimeout(connectionTimeout);
+      };
+    }
 
     return () => {
       mounted = false;
-      clearTimeout(initialTimer);
-      if (broadcastTimeoutRef.current) {
-        clearTimeout(broadcastTimeoutRef.current);
+      if (statusInterval) {
+        clearInterval(statusInterval);
       }
     };
   }, [user?.id, matchId, isConnected, broadcastStatus]);
@@ -118,12 +121,14 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     playerRef.current = playerInstance;
     console.log('Player is ready:', playerInstance);
     
-    // Throttled player ready broadcast
-    throttledBroadcast({
-      status: 'active',
-      timestamp: Date.now(),
-      action: 'player_ready'
-    });
+    // Broadcast player ready status
+    if (isConnected) {
+      broadcastStatus({
+        status: 'active',
+        timestamp: Date.now(),
+        action: 'player_ready'
+      });
+    }
   };
 
   const sendAdminPlayerEvent = (event: Omit<PlayerControlEvent, 'timestamp'>) => {
@@ -155,12 +160,14 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
     setIsRecording(true);
     
-    // Throttled recording broadcast
-    throttledBroadcast({
-      status: 'recording',
-      timestamp: Date.now(),
-      action: `recording_${eventType}`
-    });
+    // Broadcast recording status
+    if (isConnected) {
+      broadcastStatus({
+        status: 'recording',
+        timestamp: Date.now(),
+        action: `recording_${eventType}`
+      });
+    }
     
     try {
       const videoTimestamp = playerRef.current.getCurrentTime();
@@ -193,12 +200,14 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
         description: `${eventType} recorded at ${videoTimestamp.toFixed(2)}s (video time).` 
       });
 
-      // Throttled success broadcast
-      throttledBroadcast({
-        status: 'active',
-        timestamp: Date.now(),
-        action: `event_recorded_${eventType}`
-      });
+      // Broadcast success status
+      if (isConnected) {
+        broadcastStatus({
+          status: 'active',
+          timestamp: Date.now(),
+          action: `event_recorded_${eventType}`
+        });
+      }
     } catch (error: any) {
       console.error('Error recording video event:', error);
       toast({ 
@@ -224,24 +233,28 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     const newState = !showPianoOverlay;
     setShowPianoOverlay(newState);
     
-    // Throttled overlay toggle broadcast
-    throttledBroadcast({
-      status: 'active',
-      timestamp: Date.now(),
-      action: newState ? 'event_tracker_opened' : 'event_tracker_closed'
-    });
+    // Broadcast overlay toggle status
+    if (isConnected) {
+      broadcastStatus({
+        status: 'active',
+        timestamp: Date.now(),
+        action: newState ? 'event_tracker_opened' : 'event_tracker_closed'
+      });
+    }
   };
 
   const toggleVoiceChat = () => {
     const newState = !showVoiceChat;
     setShowVoiceChat(newState);
     
-    // Throttled voice chat toggle broadcast
-    throttledBroadcast({
-      status: 'active',
-      timestamp: Date.now(),
-      action: newState ? 'voice_chat_opened' : 'voice_chat_closed'
-    });
+    // Broadcast voice chat toggle status
+    if (isConnected) {
+      broadcastStatus({
+        status: 'active',
+        timestamp: Date.now(),
+        action: newState ? 'voice_chat_opened' : 'voice_chat_closed'
+      });
+    }
   };
 
   const renderEventTracker = () => {
@@ -300,12 +313,13 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
   return (
     <div className="flex flex-col gap-4 p-4 h-screen overflow-hidden">
-      {/* Connection Status Indicator for Debugging */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="fixed top-2 right-2 z-50 bg-black/70 text-white px-2 py-1 rounded text-xs">
-          Connection: {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
+      {/* Connection Status Indicator */}
+      <div className="fixed top-2 right-2 z-50 bg-black/70 text-white px-2 py-1 rounded text-xs">
+        <div className="flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+          <span>Tracker: {isConnected ? 'Connected' : 'Connecting...'}</span>
         </div>
-      )}
+      </div>
 
       {/* Video Player and Controls Section */}
       <div className="flex-grow flex flex-col gap-2 min-h-0 max-w-full">

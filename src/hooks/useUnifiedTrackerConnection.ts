@@ -26,13 +26,14 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
   const [trackers, setTrackers] = useState<TrackerInfo[]>([]);
   const channelRef = useRef<any>(null);
   const connectionAttempts = useRef(0);
-  const maxRetries = 3;
+  const maxRetries = 5;
   const isCurrentUser = Boolean(userId);
   const cleanupExecutedRef = useRef(false);
   const lastBroadcastTimeRef = useRef<number>(0);
   const pendingBroadcastRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Initialize unified channel with retry logic
+  // Initialize unified channel with enhanced retry logic
   useEffect(() => {
     if (!matchId) {
       console.log('UnifiedTrackerConnection: No matchId provided');
@@ -43,7 +44,7 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
     cleanupExecutedRef.current = false;
 
     const initializeChannel = async () => {
-      if (!mounted) return;
+      if (!mounted || connectionAttempts.current >= maxRetries) return;
 
       console.log('UnifiedTrackerConnection: Initialize attempt', connectionAttempts.current + 1, { 
         matchId, 
@@ -61,8 +62,8 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
           setIsConnected(false);
         }
 
-        // Create single unified channel with unique name
-        const channelName = `unified_match_${matchId}_${Date.now()}`;
+        // Create single unified channel with unique name including user info
+        const channelName = `unified_match_${matchId}_${userId || 'observer'}_${Date.now()}`;
         console.log('UnifiedTrackerConnection: Creating unified channel:', channelName);
         
         channelRef.current = supabase.channel(channelName, {
@@ -115,7 +116,7 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
           }
         });
 
-        // Subscribe to channel with retry logic
+        // Subscribe to channel with enhanced error handling
         channelRef.current.subscribe(async (status: string, err?: Error) => {
           if (!mounted) return;
           
@@ -125,6 +126,19 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
             setIsConnected(true);
             connectionAttempts.current = 0; // Reset attempts on success
             console.log('UnifiedTrackerConnection: Successfully connected to unified channel');
+            
+            // Send immediate presence signal if current user
+            if (isCurrentUser && userId) {
+              setTimeout(() => {
+                if (mounted && channelRef.current) {
+                  broadcastStatusImmediate({
+                    status: 'active',
+                    timestamp: Date.now(),
+                    action: 'connection_established'
+                  });
+                }
+              }, 1000);
+            }
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
             setIsConnected(false);
             console.error('UnifiedTrackerConnection: Channel error:', status, err);
@@ -132,10 +146,12 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
             // Retry connection if attempts remain
             if (connectionAttempts.current < maxRetries && mounted) {
               connectionAttempts.current++;
-              console.log(`UnifiedTrackerConnection: Retrying connection in 2s (attempt ${connectionAttempts.current}/${maxRetries})`);
-              setTimeout(() => {
+              const retryDelay = Math.min(2000 * connectionAttempts.current, 10000); // Exponential backoff
+              console.log(`UnifiedTrackerConnection: Retrying connection in ${retryDelay}ms (attempt ${connectionAttempts.current}/${maxRetries})`);
+              
+              reconnectTimeoutRef.current = setTimeout(() => {
                 if (mounted) initializeChannel();
-              }, 2000);
+              }, retryDelay);
             }
           } else if (status === 'CLOSED') {
             setIsConnected(false);
@@ -150,9 +166,10 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
         // Retry on error
         if (connectionAttempts.current < maxRetries && mounted) {
           connectionAttempts.current++;
-          setTimeout(() => {
+          const retryDelay = Math.min(2000 * connectionAttempts.current, 10000);
+          reconnectTimeoutRef.current = setTimeout(() => {
             if (mounted) initializeChannel();
-          }, 2000);
+          }, retryDelay);
         }
       }
     };
@@ -163,10 +180,15 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
       mounted = false;
       console.log('UnifiedTrackerConnection: Cleaning up on unmount');
       
-      // Clear any pending broadcasts
+      // Clear any pending broadcasts and timeouts
       if (pendingBroadcastRef.current) {
         clearTimeout(pendingBroadcastRef.current);
         pendingBroadcastRef.current = null;
+      }
+      
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
       
       // Prevent multiple cleanup executions
@@ -239,7 +261,79 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
     fetchTrackers();
   }, [matchId]);
 
-  // Enhanced broadcast status function with aggressive throttling
+  // Immediate broadcast function (no throttling for critical updates)
+  const broadcastStatusImmediate = useCallback(async (statusData: TrackerStatusData) => {
+    if (!userId || !matchId || !channelRef.current || !isConnected) {
+      console.log('UnifiedTrackerConnection: Cannot broadcast immediately - missing requirements', { 
+        userId, 
+        matchId, 
+        hasChannel: !!channelRef.current,
+        isConnected 
+      });
+      return;
+    }
+
+    try {
+      const payload = {
+        type: 'tracker_status',
+        user_id: userId,
+        email: 'tracker',
+        ...statusData,
+        timestamp: Date.now()
+      };
+
+      console.log('UnifiedTrackerConnection: Broadcasting status immediately:', payload);
+
+      const result = await channelRef.current.send({
+        type: 'broadcast',
+        event: 'tracker_status',
+        payload
+      });
+
+      if (result === 'ok') {
+        console.log('UnifiedTrackerConnection: Immediate broadcast successful');
+        lastBroadcastTimeRef.current = Date.now();
+        
+        // Update local tracker state optimistically
+        setTrackers(prev => {
+          const updated = prev.map(t => 
+            t.user_id === userId 
+              ? { 
+                  ...t, 
+                  status: statusData.status,
+                  last_activity: Date.now(),
+                  current_action: statusData.action,
+                  battery_level: statusData.battery_level,
+                  network_quality: statusData.network_quality
+                }
+              : t
+          );
+          
+          // Add self if not found
+          if (!prev.find(t => t.user_id === userId)) {
+            updated.push({
+              user_id: userId,
+              email: 'tracker',
+              status: statusData.status,
+              last_activity: Date.now(),
+              current_action: statusData.action,
+              event_counts: {},
+              battery_level: statusData.battery_level,
+              network_quality: statusData.network_quality
+            });
+          }
+          
+          return updated;
+        });
+      } else {
+        console.error('UnifiedTrackerConnection: Immediate broadcast failed:', result);
+      }
+    } catch (error) {
+      console.error('UnifiedTrackerConnection: Failed to broadcast status immediately:', error);
+    }
+  }, [matchId, userId, isConnected]);
+
+  // Throttled broadcast function for regular updates
   const broadcastStatus = useCallback(async (statusData: TrackerStatusData) => {
     if (!userId || !matchId || !channelRef.current || !isConnected) {
       console.log('UnifiedTrackerConnection: Cannot broadcast - missing requirements', { 
@@ -253,9 +347,9 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
 
     const now = Date.now();
     
-    // Aggressive throttling - minimum 3 seconds between ANY broadcasts
+    // Throttling - minimum 5 seconds between regular broadcasts
     const timeSinceLastBroadcast = now - lastBroadcastTimeRef.current;
-    if (timeSinceLastBroadcast < 3000) {
+    if (timeSinceLastBroadcast < 5000) {
       console.log('UnifiedTrackerConnection: Broadcast throttled', { timeSinceLastBroadcast });
       return;
     }
@@ -266,70 +360,16 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
       pendingBroadcastRef.current = null;
     }
 
-    // Delay broadcast to prevent rapid firing
+    // Use immediate broadcast for critical status changes
+    if (statusData.status === 'recording' || statusData.action?.includes('connected') || statusData.action?.includes('ready')) {
+      return broadcastStatusImmediate(statusData);
+    }
+
+    // Delay regular broadcasts slightly
     pendingBroadcastRef.current = setTimeout(async () => {
-      if (!channelRef.current || !isConnected) return;
-
-      try {
-        const payload = {
-          type: 'tracker_status',
-          user_id: userId,
-          email: 'tracker',
-          ...statusData,
-          timestamp: Date.now()
-        };
-
-        console.log('UnifiedTrackerConnection: Broadcasting status:', payload);
-
-        const result = await channelRef.current.send({
-          type: 'broadcast',
-          event: 'tracker_status',
-          payload
-        });
-
-        if (result === 'ok') {
-          console.log('UnifiedTrackerConnection: Broadcast successful');
-          lastBroadcastTimeRef.current = Date.now();
-          
-          // Update local tracker state optimistically
-          setTrackers(prev => {
-            const updated = prev.map(t => 
-              t.user_id === userId 
-                ? { 
-                    ...t, 
-                    status: statusData.status,
-                    last_activity: Date.now(),
-                    current_action: statusData.action,
-                    battery_level: statusData.battery_level,
-                    network_quality: statusData.network_quality
-                  }
-                : t
-            );
-            
-            // Add self if not found
-            if (!prev.find(t => t.user_id === userId)) {
-              updated.push({
-                user_id: userId,
-                email: 'tracker',
-                status: statusData.status,
-                last_activity: Date.now(),
-                current_action: statusData.action,
-                event_counts: {},
-                battery_level: statusData.battery_level,
-                network_quality: statusData.network_quality
-              });
-            }
-            
-            return updated;
-          });
-        } else {
-          console.error('UnifiedTrackerConnection: Broadcast failed:', result);
-        }
-      } catch (error) {
-        console.error('UnifiedTrackerConnection: Failed to broadcast status:', error);
-      }
-    }, 500); // 500ms delay to prevent rapid firing
-  }, [matchId, userId, isConnected]);
+      return broadcastStatusImmediate(statusData);
+    }, 1000);
+  }, [matchId, userId, isConnected, broadcastStatusImmediate]);
 
   const cleanup = useCallback(() => {
     console.log('UnifiedTrackerConnection: Manual cleanup called');
@@ -341,10 +381,15 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
     
     cleanupExecutedRef.current = true;
     
-    // Clear pending broadcasts
+    // Clear pending broadcasts and timeouts
     if (pendingBroadcastRef.current) {
       clearTimeout(pendingBroadcastRef.current);
       pendingBroadcastRef.current = null;
+    }
+    
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
     
     if (isCurrentUser && userId && channelRef.current && isConnected) {
