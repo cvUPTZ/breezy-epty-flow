@@ -4,16 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { AlertTriangle, CheckCircle, Clock, Wifi, WifiOff, Battery } from 'lucide-react';
-
-interface TrackerActivityInfo {
-  user_id: string;
-  last_seen: number;
-  status: 'active' | 'inactive' | 'recording';
-  consecutive_missed_heartbeats: number;
-}
+import { TrackerInfo } from '@/hooks/useUnifiedTrackerConnection';
 
 interface TrackerStatusIndicatorProps {
-  activity: TrackerActivityInfo;
+  activity: TrackerInfo;
   isAbsent: boolean;
   onMarkAbsent: (trackerId: string) => void;
   onReconnect: (trackerId: string) => void;
@@ -46,6 +40,13 @@ const TrackerStatusIndicator: React.FC<TrackerStatusIndicatorProps> = ({
     return `${minutes} minutes ago`;
   };
 
+  const isConnected = () => {
+    const timeSinceLastActivity = Date.now() - activity.last_activity;
+    return timeSinceLastActivity < 30000; // Consider connected if active within last 30 seconds
+  };
+
+  const connectionStatus = isConnected();
+
   return (
     <motion.div
       className={`p-4 rounded-lg border-2 ${getStatusColor()} transition-all duration-300`}
@@ -67,24 +68,44 @@ const TrackerStatusIndicator: React.FC<TrackerStatusIndicatorProps> = ({
           </div>
           
           <div>
-            <div className="font-medium text-gray-800">
+            <div className="font-medium text-gray-800 flex items-center gap-2">
               Tracker {activity.user_id.slice(-4)}
+              {activity.email && (
+                <span className="text-xs text-gray-500">({activity.email})</span>
+              )}
+              <div className={`w-2 h-2 rounded-full ${connectionStatus ? 'bg-green-500' : 'bg-red-500'}`} />
             </div>
             <div className="text-sm text-gray-600 flex items-center gap-2">
               <Clock className="h-3 w-3" />
-              {formatLastSeen(activity.last_seen)}
+              {formatLastSeen(activity.last_activity)}
+              {activity.current_action && (
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                  {activity.current_action}
+                </span>
+              )}
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <Badge variant={isAbsent ? 'destructive' : activity.status === 'active' ? 'default' : 'secondary'}>
-            {isAbsent ? 'Absent' : activity.status}
+          <Badge variant={isAbsent ? 'destructive' : connectionStatus ? 'default' : 'secondary'}>
+            {isAbsent ? 'Absent' : connectionStatus ? 'Connected' : 'Disconnected'}
           </Badge>
           
-          {activity.consecutive_missed_heartbeats > 0 && !isAbsent && (
-            <Badge variant="outline" className="text-orange-600 border-orange-300">
-              {activity.consecutive_missed_heartbeats} missed
+          {activity.battery_level !== undefined && (
+            <div className="flex items-center gap-1 text-xs text-gray-600">
+              <Battery className="h-3 w-3" />
+              {activity.battery_level}%
+            </div>
+          )}
+
+          {activity.network_quality && (
+            <Badge variant="outline" className={`text-xs ${
+              activity.network_quality === 'excellent' ? 'text-green-600 border-green-300' :
+              activity.network_quality === 'good' ? 'text-yellow-600 border-yellow-300' :
+              'text-red-600 border-red-300'
+            }`}>
+              {activity.network_quality}
             </Badge>
           )}
 
