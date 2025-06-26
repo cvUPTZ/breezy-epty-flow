@@ -42,10 +42,12 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   // Initialize unified tracker connection for status reporting
   const { isConnected, broadcastStatus } = useUnifiedTrackerConnection(matchId, user?.id);
 
+  // Set admin view based on user role - only once
   useEffect(() => {
     setIsAdminView(userRole === 'admin');
   }, [userRole]);
 
+  // Update video ID when prop changes
   useEffect(() => {
     setCurrentVideoId(initialVideoId);
   }, [initialVideoId]);
@@ -60,49 +62,56 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Broadcast initial connection and periodic activity updates
+  // Single effect for initial connection and periodic updates - prevent multiple broadcasts
   useEffect(() => {
-    if (!user?.id || !matchId) return;
+    if (!user?.id || !matchId || !isConnected) return;
 
-    // Broadcast initial active status when component mounts
-    const initialBroadcast = () => {
-      broadcastStatus({
-        status: 'active',
-        timestamp: Date.now(),
-        action: 'video_tracker_loaded'
-      });
-    };
-
-    // Delay initial broadcast to ensure connection is established
-    const initialTimer = setTimeout(initialBroadcast, 1000);
+    let mounted = true;
+    
+    // Broadcast initial connection with delay to ensure connection is stable
+    const initialTimer = setTimeout(() => {
+      if (mounted) {
+        broadcastStatus({
+          status: 'active',
+          timestamp: Date.now(),
+          action: 'video_tracker_loaded'
+        });
+      }
+    }, 2000);
 
     // Set up periodic activity updates every 30 seconds
     const activityInterval = setInterval(() => {
-      broadcastStatus({
-        status: 'active',
-        timestamp: Date.now(),
-        action: 'tracker_heartbeat'
-      });
+      if (mounted) {
+        broadcastStatus({
+          status: 'active',
+          timestamp: Date.now(),
+          action: 'tracker_heartbeat'
+        });
+      }
     }, 30000);
 
     return () => {
+      mounted = false;
       clearTimeout(initialTimer);
       clearInterval(activityInterval);
-      // Broadcast inactive status when leaving
-      broadcastStatus({
-        status: 'inactive',
-        timestamp: Date.now(),
-        action: 'video_tracker_unmounted'
-      });
+      
+      // Only broadcast inactive status if we were actually connected
+      if (isConnected) {
+        broadcastStatus({
+          status: 'inactive',
+          timestamp: Date.now(),
+          action: 'video_tracker_unmounted'
+        });
+      }
     };
-  }, [user?.id, matchId, broadcastStatus]);
+  }, [user?.id, matchId, isConnected, broadcastStatus]);
 
   const handlePlayerReady = (playerInstance: YouTubePlayerInstance) => {
     playerRef.current = playerInstance;
     console.log('Player is ready:', playerInstance);
     
-    // Broadcast player ready status
-    if (user?.id) {
+    // Broadcast player ready status - only if connected
+    if (user?.id && isConnected) {
       broadcastStatus({
         status: 'active',
         timestamp: Date.now(),
@@ -140,12 +149,14 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
     setIsRecording(true);
     
-    // Broadcast recording status
-    broadcastStatus({
-      status: 'recording',
-      timestamp: Date.now(),
-      action: `recording_${eventType}`
-    });
+    // Broadcast recording status - throttled
+    if (isConnected) {
+      broadcastStatus({
+        status: 'recording',
+        timestamp: Date.now(),
+        action: `recording_${eventType}`
+      });
+    }
     
     try {
       const videoTimestamp = playerRef.current.getCurrentTime();
@@ -179,11 +190,13 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
       });
 
       // Broadcast successful event recording
-      broadcastStatus({
-        status: 'active',
-        timestamp: Date.now(),
-        action: `event_recorded_${eventType}`
-      });
+      if (isConnected) {
+        broadcastStatus({
+          status: 'active',
+          timestamp: Date.now(),
+          action: `event_recorded_${eventType}`
+        });
+      }
     } catch (error: any) {
       console.error('Error recording video event:', error);
       toast({ 
@@ -206,27 +219,29 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   };
 
   const togglePianoOverlay = () => {
-    setShowPianoOverlay(!showPianoOverlay);
+    const newState = !showPianoOverlay;
+    setShowPianoOverlay(newState);
     
-    // Broadcast action
-    if (user?.id) {
+    // Broadcast action - only if connected and throttled
+    if (user?.id && isConnected) {
       broadcastStatus({
         status: 'active',
         timestamp: Date.now(),
-        action: showPianoOverlay ? 'event_tracker_closed' : 'event_tracker_opened'
+        action: newState ? 'event_tracker_opened' : 'event_tracker_closed'
       });
     }
   };
 
   const toggleVoiceChat = () => {
-    setShowVoiceChat(!showVoiceChat);
+    const newState = !showVoiceChat;
+    setShowVoiceChat(newState);
     
-    // Broadcast action
-    if (user?.id) {
+    // Broadcast action - only if connected and throttled
+    if (user?.id && isConnected) {
       broadcastStatus({
         status: 'active',
         timestamp: Date.now(),
-        action: showVoiceChat ? 'voice_chat_closed' : 'voice_chat_opened'
+        action: newState ? 'voice_chat_opened' : 'voice_chat_closed'
       });
     }
   };
