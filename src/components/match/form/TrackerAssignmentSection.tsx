@@ -246,12 +246,16 @@ const TrackerAssignmentSection: React.FC<TrackerAssignmentSectionProps> = ({
                             {filteredPlayers.map((player) => (
                               <div key={player.id} className="flex items-center space-x-2">
                                 <Checkbox
+                                  id={`player-${player.id}-assignment-${index}`}
                                   checked={assignment.player_ids.includes(player.id)}
                                   onCheckedChange={(checked) => handlePlayerToggle(player.id, !!checked, index)}
                                 />
-                                <span className="text-sm">
+                                <label 
+                                  htmlFor={`player-${player.id}-assignment-${index}`}
+                                  className="text-sm cursor-pointer"
+                                >
                                   {player.number ? `#${player.number}` : ''} {player.name || `Player ${player.id}`}
-                                </span>
+                                </label>
                               </div>
                             ))}
                           </div>
