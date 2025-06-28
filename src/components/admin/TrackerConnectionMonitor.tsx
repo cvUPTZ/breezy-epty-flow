@@ -48,13 +48,15 @@ export const TrackerConnectionMonitor: React.FC<TrackerConnectionMonitorProps> =
           .eq('match_id', matchId);
 
         if (data && mounted) {
-          const initialTrackers: TrackerInfo[] = data.map(assignment => ({
-            user_id: assignment.tracker_user_id,
-            email: assignment.tracker_email || undefined,
-            status: 'inactive',
-            last_activity: Date.now(),
-            event_counts: {}
-          }));
+          const initialTrackers: TrackerInfo[] = data
+            .filter(assignment => assignment.tracker_user_id) // Filter out null values
+            .map(assignment => ({
+              user_id: assignment.tracker_user_id!,
+              email: assignment.tracker_email || undefined,
+              status: 'inactive' as const,
+              last_activity: Date.now(),
+              event_counts: {}
+            }));
           
           console.log('TrackerConnectionMonitor: Initial trackers loaded:', initialTrackers);
           setTrackers(initialTrackers);
@@ -99,8 +101,8 @@ export const TrackerConnectionMonitor: React.FC<TrackerConnectionMonitorProps> =
               : t
           );
           
-          // Add new tracker if not found in assignments
-          if (!prev.find(t => t.user_id === statusUpdate.user_id)) {
+          // Add new tracker if not found in assignments and user_id exists
+          if (!prev.find(t => t.user_id === statusUpdate.user_id) && statusUpdate.user_id) {
             updated.push({
               user_id: statusUpdate.user_id,
               email: statusUpdate.email || 'tracker',

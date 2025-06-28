@@ -106,6 +106,14 @@ const TrackerAssignmentSection: React.FC<TrackerAssignmentSectionProps> = ({
     return team === 'home' ? homeTeamPlayers : awayTeamPlayers;
   };
 
+  const handlePlayerToggle = (playerId: number, checked: boolean, assignmentIndex: number) => {
+    const assignment = trackerAssignments[assignmentIndex];
+    const newPlayerIds = checked
+      ? [...assignment.player_ids, playerId]
+      : assignment.player_ids.filter(id => id !== playerId);
+    updateTrackerAssignment(assignmentIndex, 'player_ids', newPlayerIds);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -239,12 +247,7 @@ const TrackerAssignmentSection: React.FC<TrackerAssignmentSectionProps> = ({
                               <div key={player.id} className="flex items-center space-x-2">
                                 <Checkbox
                                   checked={assignment.player_ids.includes(player.id)}
-                                  onCheckedChange={(checked) => {
-                                    const newPlayerIds = checked
-                                      ? [...assignment.player_ids, player.id]
-                                      : assignment.player_ids.filter(id => id !== player.id);
-                                    updateTrackerAssignment(index, 'player_ids', newPlayerIds);
-                                  }}
+                                  onCheckedChange={(checked) => handlePlayerToggle(player.id, !!checked, index)}
                                 />
                                 <span className="text-sm">
                                   {player.number ? `#${player.number}` : ''} {player.name || `Player ${player.id}`}
