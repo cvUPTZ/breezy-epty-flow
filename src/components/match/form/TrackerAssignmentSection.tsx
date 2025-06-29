@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -254,17 +253,34 @@ const TrackerAssignmentSection: React.FC<TrackerAssignmentSectionProps> = ({
                         <div key={team}>
                           <h4 className="font-medium text-sm mb-2 capitalize">{team} Team</h4>
                           <div className="space-y-1 max-h-40 overflow-y-auto">
-                            {filteredPlayers.map((player) => {
+                            {filteredPlayers.map((player, playerIndex) => {
                               const isChecked = assignment.player_ids.includes(player.id);
-                              const uniqueId = `player-${player.id}-assignment-${index}`;
+                              // Create a unique key that includes team, assignment index, and player index to avoid conflicts
+                              const uniqueKey = `assignment-${index}-${team}-player-${player.id}-${playerIndex}`;
+                              const uniqueId = `checkbox-${uniqueKey}`;
+                              
+                              console.log('Rendering player:', { 
+                                playerId: player.id, 
+                                playerName: player.name, 
+                                team, 
+                                assignmentIndex: index, 
+                                isChecked,
+                                uniqueKey 
+                              });
                               
                               return (
-                                <div key={`${team}-${player.id}`} className="flex items-center space-x-2">
+                                <div key={uniqueKey} className="flex items-center space-x-2">
                                   <Checkbox
                                     id={uniqueId}
                                     checked={isChecked}
                                     onCheckedChange={(checked) => {
-                                      console.log('Checkbox changed:', { playerId: player.id, checked, assignmentIndex: index });
+                                      console.log('Checkbox clicked:', { 
+                                        playerId: player.id, 
+                                        checked, 
+                                        assignmentIndex: index, 
+                                        team,
+                                        uniqueKey 
+                                      });
                                       handlePlayerToggle(player.id, !!checked, index);
                                     }}
                                   />
