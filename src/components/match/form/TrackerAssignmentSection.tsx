@@ -107,10 +107,21 @@ const TrackerAssignmentSection: React.FC<TrackerAssignmentSectionProps> = ({
   };
 
   const handlePlayerToggle = (playerId: number, checked: boolean, assignmentIndex: number) => {
+    console.log('Player toggle:', { playerId, checked, assignmentIndex });
     const assignment = trackerAssignments[assignmentIndex];
-    const newPlayerIds = checked
-      ? [...assignment.player_ids, playerId]
-      : assignment.player_ids.filter(id => id !== playerId);
+    
+    let newPlayerIds: number[];
+    if (checked) {
+      // Add player if not already in the list
+      newPlayerIds = assignment.player_ids.includes(playerId) 
+        ? assignment.player_ids 
+        : [...assignment.player_ids, playerId];
+    } else {
+      // Remove player from the list
+      newPlayerIds = assignment.player_ids.filter(id => id !== playerId);
+    }
+    
+    console.log('Updated player IDs:', newPlayerIds);
     updateTrackerAssignment(assignmentIndex, 'player_ids', newPlayerIds);
   };
 
@@ -243,21 +254,29 @@ const TrackerAssignmentSection: React.FC<TrackerAssignmentSectionProps> = ({
                         <div key={team}>
                           <h4 className="font-medium text-sm mb-2 capitalize">{team} Team</h4>
                           <div className="space-y-1 max-h-40 overflow-y-auto">
-                            {filteredPlayers.map((player) => (
-                              <div key={player.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`player-${player.id}-assignment-${index}`}
-                                  checked={assignment.player_ids.includes(player.id)}
-                                  onCheckedChange={(checked) => handlePlayerToggle(player.id, !!checked, index)}
-                                />
-                                <label 
-                                  htmlFor={`player-${player.id}-assignment-${index}`}
-                                  className="text-sm cursor-pointer"
-                                >
-                                  {player.number ? `#${player.number}` : ''} {player.name || `Player ${player.id}`}
-                                </label>
-                              </div>
-                            ))}
+                            {filteredPlayers.map((player) => {
+                              const isChecked = assignment.player_ids.includes(player.id);
+                              const uniqueId = `player-${player.id}-assignment-${index}`;
+                              
+                              return (
+                                <div key={`${team}-${player.id}`} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={uniqueId}
+                                    checked={isChecked}
+                                    onCheckedChange={(checked) => {
+                                      console.log('Checkbox changed:', { playerId: player.id, checked, assignmentIndex: index });
+                                      handlePlayerToggle(player.id, !!checked, index);
+                                    }}
+                                  />
+                                  <label 
+                                    htmlFor={uniqueId}
+                                    className="text-sm cursor-pointer flex-1"
+                                  >
+                                    {player.number ? `#${player.number}` : ''} {player.name || `Player ${player.id}`}
+                                  </label>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       );
