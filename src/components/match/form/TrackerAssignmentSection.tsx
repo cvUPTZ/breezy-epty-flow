@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,7 @@ interface TrackerUser {
 interface TrackerAssignment {
   tracker_user_id: string;
   assigned_event_types: string[];
-  player_ids: number[];
+  player_ids: (number | string)[];
 }
 
 interface Player {
@@ -105,19 +106,24 @@ const TrackerAssignmentSection: React.FC<TrackerAssignmentSectionProps> = ({
     return team === 'home' ? homeTeamPlayers : awayTeamPlayers;
   };
 
-  const handlePlayerToggle = (playerId: number, checked: boolean, assignmentIndex: number) => {
-    console.log('Player toggle:', { playerId, checked, assignmentIndex });
+  // Create a unique identifier for players that handles undefined IDs
+  const getPlayerIdentifier = (player: Player, playerIndex: number, team: 'home' | 'away') => {
+    return player.id !== undefined ? player.id : `${team}-${playerIndex}`;
+  };
+
+  const handlePlayerToggle = (playerIdentifier: number | string, checked: boolean, assignmentIndex: number) => {
+    console.log('Player toggle:', { playerIdentifier, checked, assignmentIndex });
     const assignment = trackerAssignments[assignmentIndex];
     
-    let newPlayerIds: number[];
+    let newPlayerIds: (number | string)[];
     if (checked) {
       // Add player if not already in the list
-      newPlayerIds = assignment.player_ids.includes(playerId) 
+      newPlayerIds = assignment.player_ids.includes(playerIdentifier) 
         ? assignment.player_ids 
-        : [...assignment.player_ids, playerId];
+        : [...assignment.player_ids, playerIdentifier];
     } else {
       // Remove player from the list
-      newPlayerIds = assignment.player_ids.filter(id => id !== playerId);
+      newPlayerIds = assignment.player_ids.filter(id => id !== playerIdentifier);
     }
     
     console.log('Updated player IDs:', newPlayerIds);
@@ -254,13 +260,15 @@ const TrackerAssignmentSection: React.FC<TrackerAssignmentSectionProps> = ({
                           <h4 className="font-medium text-sm mb-2 capitalize">{team} Team</h4>
                           <div className="space-y-1 max-h-40 overflow-y-auto">
                             {filteredPlayers.map((player, playerIndex) => {
-                              const isChecked = assignment.player_ids.includes(player.id);
+                              const playerIdentifier = getPlayerIdentifier(player, playerIndex, team);
+                              const isChecked = assignment.player_ids.includes(playerIdentifier);
                               // Create a unique key that includes team, assignment index, and player index to avoid conflicts
-                              const uniqueKey = `assignment-${index}-${team}-player-${player.id}-${playerIndex}`;
+                              const uniqueKey = `assignment-${index}-${team}-player-${playerIdentifier}-${playerIndex}`;
                               const uniqueId = `checkbox-${uniqueKey}`;
                               
                               console.log('Rendering player:', { 
                                 playerId: player.id, 
+                                playerIdentifier,
                                 playerName: player.name, 
                                 team, 
                                 assignmentIndex: index, 
@@ -276,19 +284,20 @@ const TrackerAssignmentSection: React.FC<TrackerAssignmentSectionProps> = ({
                                     onCheckedChange={(checked) => {
                                       console.log('Checkbox clicked:', { 
                                         playerId: player.id, 
+                                        playerIdentifier,
                                         checked, 
                                         assignmentIndex: index, 
                                         team,
                                         uniqueKey 
                                       });
-                                      handlePlayerToggle(player.id, !!checked, index);
+                                      handlePlayerToggle(playerIdentifier, !!checked, index);
                                     }}
                                   />
                                   <label 
                                     htmlFor={uniqueId}
                                     className="text-sm cursor-pointer flex-1"
                                   >
-                                    {player.number ? `#${player.number}` : ''} {player.name || `Player ${player.id}`}
+                                    {player.number ? `#${player.number}` : ''} {player.name || `Player ${playerIdentifier}`}
                                   </label>
                                 </div>
                               );
