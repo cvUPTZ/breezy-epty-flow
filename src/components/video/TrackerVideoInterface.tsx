@@ -40,7 +40,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const [isRecording, setIsRecording] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [detectionResults, setDetectionResults] = useState<ProcessedDetectionResult[]>([]);
-  
+
   // Initialize unified tracker connection for status reporting
   const { isConnected, broadcastStatus } = useUnifiedTrackerConnection(matchId, user?.id);
 
@@ -57,10 +57,84 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     5: 'save'       // Right Bumper
   });
 
+  // **Define handleRecordEvent HERE, before it's used by useGamepadTracker**
+  const handleRecordEvent = async (eventType: string): Promise<void> => {
+    if (!playerRef.current) {
+      toast({ title: "Player Error", description: "YouTube player is not available.", variant: "destructive" });
+      return;
+    }
+    if (!user) {
+      toast({ title: "Auth Error", description: "User not authenticated.", variant: "destructive" });
+      return;
+    }
+
+    setIsRecording(true);
+
+    // Broadcast recording status
+    if (isConnected) {
+      broadcastStatus({
+        status: 'recording',
+        timestamp: Date.now(),
+        action: `recording_${eventType}`
+      });
+    }
+
+    try {
+      const videoTimestamp = playerRef.current.getCurrentTime();
+
+      const eventToInsert = {
+        match_id: matchId,
+        event_type: eventType,
+        player_id: null,
+        team: null,
+        coordinates: null,
+        details: {
+          video_timestamp: videoTimestamp,
+          recorded_by_video_tracker: true,
+          recorded_via_gamepad: gamepadConnected, // Track if event was recorded via gamepad
+        },
+        created_by: user.id,
+      };
+
+      console.log("Recording event with video time:", eventToInsert);
+
+      const { data, error } = await supabase
+        .from('match_events')
+        .insert(eventToInsert)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Event Recorded",
+        description: `${eventType} recorded at ${videoTimestamp.toFixed(2)}s (video time)${gamepadConnected ? ' via gamepad' : ''}.`
+      });
+
+      // Broadcast success status
+      if (isConnected) {
+        broadcastStatus({
+          status: 'active',
+          timestamp: Date.now(),
+          action: `event_recorded_${eventType}`
+        });
+      }
+    } catch (error: any) {
+      console.error('Error recording video event:', error);
+      toast({
+        title: "Recording Error",
+        description: `Failed to record event: ${error.message}`,
+        variant: "destructive"
+      });
+    } finally {
+      setIsRecording(false);
+    }
+  };
+
   // Initialize gamepad tracker
   const { isConnected: gamepadConnected } = useGamepadTracker({
     buttonMapping: gamepadButtonMapping,
-    onEventTrigger: handleRecordEvent
+    onEventTrigger: handleRecordEvent // Now handleRecordEvent is defined
   });
 
   // Set admin view based on user role - only once
@@ -142,7 +216,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const handlePlayerReady = (playerInstance: YouTubePlayerInstance) => {
     playerRef.current = playerInstance;
     console.log('Player is ready:', playerInstance);
-    
+
     // Broadcast player ready status
     if (isConnected) {
       broadcastStatus({
@@ -170,78 +244,8 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     }
   };
 
-  const handleRecordEvent = async (eventType: string): Promise<void> => {
-    if (!playerRef.current) {
-      toast({ title: "Player Error", description: "YouTube player is not available.", variant: "destructive" });
-      return;
-    }
-    if (!user) {
-      toast({ title: "Auth Error", description: "User not authenticated.", variant: "destructive" });
-      return;
-    }
-
-    setIsRecording(true);
-    
-    // Broadcast recording status
-    if (isConnected) {
-      broadcastStatus({
-        status: 'recording',
-        timestamp: Date.now(),
-        action: `recording_${eventType}`
-      });
-    }
-    
-    try {
-      const videoTimestamp = playerRef.current.getCurrentTime();
-
-      const eventToInsert = {
-        match_id: matchId,
-        event_type: eventType,
-        player_id: null,
-        team: null,
-        coordinates: null,
-        details: {
-          video_timestamp: videoTimestamp,
-          recorded_by_video_tracker: true,
-          recorded_via_gamepad: gamepadConnected, // Track if event was recorded via gamepad
-        },
-        created_by: user.id,
-      };
-
-      console.log("Recording event with video time:", eventToInsert);
-
-      const { data, error } = await supabase
-        .from('match_events')
-        .insert(eventToInsert)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      toast({ 
-        title: "Event Recorded", 
-        description: `${eventType} recorded at ${videoTimestamp.toFixed(2)}s (video time)${gamepadConnected ? ' via gamepad' : ''}.` 
-      });
-
-      // Broadcast success status
-      if (isConnected) {
-        broadcastStatus({
-          status: 'active',
-          timestamp: Date.now(),
-          action: `event_recorded_${eventType}`
-        });
-      }
-    } catch (error: any) {
-      console.error('Error recording video event:', error);
-      toast({ 
-        title: "Recording Error", 
-        description: `Failed to record event: ${error.message}`, 
-        variant: "destructive" 
-      });
-    } finally {
-      setIsRecording(false);
-    }
-  };
+  // **Moved handleRecordEvent definition above, so this is no longer needed**
+  // const handleRecordEvent = async (eventType: string): Promise<void> => { ... };
 
   const handleDetectionResults = (results: ProcessedDetectionResult[]) => {
     console.log('Received AI detection results:', results);
@@ -255,7 +259,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const togglePianoOverlay = () => {
     const newState = !showPianoOverlay;
     setShowPianoOverlay(newState);
-    
+
     // Broadcast overlay toggle status
     if (isConnected) {
       broadcastStatus({
@@ -269,7 +273,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const toggleVoiceChat = () => {
     const newState = !showVoiceChat;
     setShowVoiceChat(newState);
-    
+
     // Broadcast voice chat toggle status
     if (isConnected) {
       broadcastStatus({
@@ -283,7 +287,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const toggleGamepadConfig = () => {
     const newState = !showGamepadConfig;
     setShowGamepadConfig(newState);
-    
+
     // Broadcast gamepad config toggle status
     if (isConnected) {
       broadcastStatus({
@@ -413,19 +417,19 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
                 onPlayerReady={handlePlayerReady}
                 onDetectionResults={handleDetectionResults}
               />
-              
+
               {/* Control Buttons */}
               <div className="absolute bottom-4 left-4 flex gap-2">
                 {/* Event Tracker Toggle Button - Always available */}
                 <button
                   onClick={togglePianoOverlay}
                   className={`px-4 py-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
-                    showPianoOverlay 
-                      ? 'bg-red-600 hover:bg-red-700 text-white' 
+                    showPianoOverlay
+                      ? 'bg-red-600 hover:bg-red-700 text-white'
                       : 'bg-black/70 hover:bg-black/90 text-white backdrop-blur-sm border border-white/20'
                   }`}
-                  style={{ 
-                    zIndex: isFullscreen ? 2147483646 : 40 
+                  style={{
+                    zIndex: isFullscreen ? 2147483646 : 40
                   }}
                 >
                   <span className="text-lg">⚽</span>
@@ -436,12 +440,12 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
                 <button
                   onClick={toggleGamepadConfig}
                   className={`px-4 py-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
-                    showGamepadConfig 
-                      ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                    showGamepadConfig
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white'
                       : 'bg-black/70 hover:bg-black/90 text-white backdrop-blur-sm border border-white/20'
                   }`}
-                  style={{ 
-                    zIndex: isFullscreen ? 2147483646 : 40 
+                  style={{
+                    zIndex: isFullscreen ? 2147483646 : 40
                   }}
                 >
                   <span className="text-lg">🎮</span>
@@ -453,12 +457,12 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
                   <button
                     onClick={toggleVoiceChat}
                     className={`px-4 py-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
-                      showVoiceChat 
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                      showVoiceChat
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
                         : 'bg-black/70 hover:bg-black/90 text-white backdrop-blur-sm border border-white/20'
                     }`}
-                    style={{ 
-                      zIndex: isFullscreen ? 2147483646 : 40 
+                    style={{
+                      zIndex: isFullscreen ? 2147483646 : 40
                     }}
                   >
                     <span className="text-lg">🎤</span>
@@ -473,7 +477,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
             </div>
           )}
         </div>
-        
+
         {/* Admin-only Video Player Controls */}
         {isAdminView && playerRef.current && !isFullscreen && (
           <div className="flex-shrink-0 w-full">
