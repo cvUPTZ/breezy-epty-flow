@@ -9,8 +9,10 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import SimplePianoOverlay from './SimplePianoOverlay';
+import GamepadConfig from './GamepadConfig'; // Import the GamepadConfig component
 import { ProcessedDetectionResult } from '@/services/roboflowDetectionService';
 import { useUnifiedTrackerConnection } from '@/hooks/useUnifiedTrackerConnection';
+import { useGamepadTracker } from '@/hooks/useGamepadTracker'; // Import the gamepad hook
 
 interface TrackerVideoInterfaceProps {
   initialVideoId: string;
@@ -34,12 +36,32 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const [isAdminView, setIsAdminView] = useState(false);
   const [showPianoOverlay, setShowPianoOverlay] = useState(false);
   const [showVoiceChat, setShowVoiceChat] = useState(false);
+  const [showGamepadConfig, setShowGamepadConfig] = useState(false); // New state for gamepad config
   const [isRecording, setIsRecording] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [detectionResults, setDetectionResults] = useState<ProcessedDetectionResult[]>([]);
   
   // Initialize unified tracker connection for status reporting
   const { isConnected, broadcastStatus } = useUnifiedTrackerConnection(matchId, user?.id);
+
+  // Available event types for gamepad mapping
+  const availableEvents = ['goal', 'shot', 'pass', 'tackle', 'foul', 'save', 'corner', 'throw_in', 'free_kick', 'penalty'];
+
+  // Gamepad button mapping state
+  const [gamepadButtonMapping, setGamepadButtonMapping] = useState<{ [buttonIndex: number]: string }>({
+    0: 'goal',      // A Button
+    1: 'shot',      // B Button
+    2: 'pass',      // X Button
+    3: 'tackle',    // Y Button
+    4: 'foul',      // Left Bumper
+    5: 'save'       // Right Bumper
+  });
+
+  // Initialize gamepad tracker
+  const { isConnected: gamepadConnected } = useGamepadTracker({
+    buttonMapping: gamepadButtonMapping,
+    onEventTrigger: handleRecordEvent
+  });
 
   // Set admin view based on user role - only once
   useEffect(() => {
@@ -181,6 +203,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
         details: {
           video_timestamp: videoTimestamp,
           recorded_by_video_tracker: true,
+          recorded_via_gamepad: gamepadConnected, // Track if event was recorded via gamepad
         },
         created_by: user.id,
       };
@@ -197,7 +220,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
       toast({ 
         title: "Event Recorded", 
-        description: `${eventType} recorded at ${videoTimestamp.toFixed(2)}s (video time).` 
+        description: `${eventType} recorded at ${videoTimestamp.toFixed(2)}s (video time)${gamepadConnected ? ' via gamepad' : ''}.` 
       });
 
       // Broadcast success status
@@ -257,6 +280,25 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     }
   };
 
+  const toggleGamepadConfig = () => {
+    const newState = !showGamepadConfig;
+    setShowGamepadConfig(newState);
+    
+    // Broadcast gamepad config toggle status
+    if (isConnected) {
+      broadcastStatus({
+        status: 'active',
+        timestamp: Date.now(),
+        action: newState ? 'gamepad_config_opened' : 'gamepad_config_closed'
+      });
+    }
+  };
+
+  const handleGamepadConfigChange = (mapping: { [buttonIndex: number]: string }) => {
+    setGamepadButtonMapping(mapping);
+    console.log('Gamepad button mapping updated:', mapping);
+  };
+
   const renderEventTracker = () => {
     if (!showPianoOverlay) return null;
 
@@ -311,6 +353,39 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     return voiceChatOverlay;
   };
 
+  const renderGamepadConfig = () => {
+    if (!showGamepadConfig) return null;
+
+    const gamepadConfigOverlay = (
+      <div className="absolute top-16 left-4 w-96 bg-black/20 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden"
+           style={{ zIndex: isFullscreen ? 2147483647 : 50 }}>
+        <div className="p-3 border-b border-white/10 bg-black/30 flex justify-between items-center">
+          <h3 className="font-medium text-white text-sm">Gamepad Configuration</h3>
+          <button
+            onClick={toggleGamepadConfig}
+            className="text-white/70 hover:text-white text-lg font-bold w-6 h-6 flex items-center justify-center rounded hover:bg-white/10"
+          >
+            ×
+          </button>
+        </div>
+        <div className="p-3">
+          <GamepadConfig
+            isConnected={gamepadConnected}
+            onConfigChange={handleGamepadConfigChange}
+            availableEvents={availableEvents}
+          />
+        </div>
+      </div>
+    );
+
+    // Render in portal when in fullscreen to ensure it appears above the video
+    if (isFullscreen) {
+      return createPortal(gamepadConfigOverlay, document.body);
+    }
+
+    return gamepadConfigOverlay;
+  };
+
   return (
     <div className="flex flex-col gap-4 p-4 h-screen overflow-hidden">
       {/* Connection Status Indicator */}
@@ -318,6 +393,11 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
           <span>Tracker: {isConnected ? 'Connected' : 'Connecting...'}</span>
+        </div>
+        {/* Gamepad Status */}
+        <div className="flex items-center gap-2 mt-1">
+          <div className={`w-2 h-2 rounded-full ${gamepadConnected ? 'bg-blue-500' : 'bg-gray-500'}`} />
+          <span>Gamepad: {gamepadConnected ? 'Connected' : 'Disconnected'}</span>
         </div>
       </div>
 
@@ -334,7 +414,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
                 onDetectionResults={handleDetectionResults}
               />
               
-              {/* Control Buttons - Only show event tracker for all users */}
+              {/* Control Buttons */}
               <div className="absolute bottom-4 left-4 flex gap-2">
                 {/* Event Tracker Toggle Button - Always available */}
                 <button
@@ -350,6 +430,22 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
                 >
                   <span className="text-lg">⚽</span>
                   {showPianoOverlay ? 'Close Tracker' : 'Event Tracker'}
+                </button>
+
+                {/* Gamepad Config Toggle Button */}
+                <button
+                  onClick={toggleGamepadConfig}
+                  className={`px-4 py-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
+                    showGamepadConfig 
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                      : 'bg-black/70 hover:bg-black/90 text-white backdrop-blur-sm border border-white/20'
+                  }`}
+                  style={{ 
+                    zIndex: isFullscreen ? 2147483646 : 40 
+                  }}
+                >
+                  <span className="text-lg">🎮</span>
+                  {showGamepadConfig ? 'Close Gamepad' : 'Gamepad Config'}
                 </button>
 
                 {/* Voice Chat Toggle Button */}
@@ -395,6 +491,9 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
       {/* Voice Chat Overlay */}
       {renderVoiceChat()}
+
+      {/* Gamepad Configuration Overlay */}
+      {renderGamepadConfig()}
     </div>
   );
 };
