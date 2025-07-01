@@ -62,7 +62,8 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
   // Function to handle recording events (now defined before use)
   const handleRecordEvent = async (eventType: string): Promise<void> => {
-    // ... (rest of your handleRecordEvent implementation)
+    console.log('TrackerVideoInterface: handleRecordEvent called with:', eventType); // <<< DEBUG LOG
+
     if (!playerRef.current) {
       toast({ title: "Player Error", description: "YouTube player is not available.", variant: "destructive" });
       return;
@@ -75,6 +76,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     setIsRecording(true);
     // Signal that an event is being recorded (for UI feedback)
     setLastGamepadTriggeredEvent(eventType); 
+    console.log('TrackerVideoInterface: setLastGamepadTriggeredEvent called with:', eventType); // <<< DEBUG LOG
 
     // Broadcast recording status
     if (isConnected) {
@@ -135,11 +137,18 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     } finally {
       setIsRecording(false);
       // Clear the triggered event after a short delay to allow UI to show it
-      setTimeout(() => setLastGamepadTriggeredEvent(null), 1000); 
+      setTimeout(() => {
+        setLastGamepadTriggeredEvent(null);
+        console.log('TrackerVideoInterface: cleared lastGamepadTriggeredEvent'); // <<< DEBUG LOG
+      }, 1000); 
     }
   };
 
+  // Initialize unified tracker connection for status reporting
+  const { isConnected, broadcastStatus } = useUnifiedTrackerConnection(matchId, user?.id);
+
   // Initialize gamepad tracker
+  // >>> IMPORTANT: Ensure your useGamepadTracker hook correctly implements logging for debugging <<<
   const { isConnected: gamepadConnected } = useGamepadTracker({
     buttonMapping: gamepadButtonMapping,
     onEventTrigger: handleRecordEvent // This now correctly references the defined function

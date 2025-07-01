@@ -42,17 +42,19 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
     { key: 'foul', label: 'Foul' },
     { key: 'corner', label: 'Corner' },
     { key: 'save', label: 'Save' },
-    { key: 'assist', label: 'Assist' }
+    { key: 'assist', label: 'Assist' } // Assuming 'assist' is a valid event type
   ];
 
   const handleEventClick = async (eventType: string) => {
-    // If gamepad is connected and triggered an event, we don't want manual clicks to override
+    // If gamepad is connected and triggered an event recently, don't allow manual click to override it immediately
+    // Also prevent clicking if a manual recording is in progress
     if (isRecording || (gamepadConnected && lastTriggeredEvent === eventType)) return;
     
     setRecordingEventType(eventType);
     try {
       await onRecordEvent(eventType);
     } finally {
+      // Reset manual recording state after async operation completes
       setRecordingEventType(null);
     }
   };
@@ -107,7 +109,7 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
                   disabled={isRecording || (gamepadConnected && lastTriggeredEvent === event.key)}
                   className={`flex flex-col items-center p-3 rounded-xl transition-all duration-200 relative border group ${
                     isHighlighted
-                      ? 'bg-green-500/30 border-green-400'
+                      ? 'bg-green-500/30 border-green-400' // Highlight for manual or gamepad triggered event
                       : 'bg-white/5 hover:bg-white/15 border-white/20'
                   }`}
                 >
@@ -154,7 +156,7 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
                   disabled={isRecording || (gamepadConnected && lastTriggeredEvent === event.key)}
                   className={`flex flex-col items-center p-2 rounded-lg transition-all duration-200 relative group ${
                     isHighlighted
-                      ? 'bg-green-500/30 border border-green-400'
+                      ? 'bg-green-500/30 border border-green-400' // Highlight for manual or gamepad triggered event
                       : 'bg-white/5 border border-white/20 hover:bg-white/10'
                   }`}
                 >
