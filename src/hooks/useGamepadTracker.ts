@@ -12,7 +12,7 @@ interface GamepadTrackerConfig {
 }
 
 export const useGamepadTracker = (config: GamepadTrackerConfig) => {
-  console.log('useGamepadTracker initializing with mapping:', config.buttonMapping);
+  // console.log('useGamepadTracker initializing with mapping:', config.buttonMapping);
 
   const [gamepadState, setGamepadState] = useState<GamepadState>({
     connected: false,
@@ -34,8 +34,8 @@ export const useGamepadTracker = (config: GamepadTrackerConfig) => {
   }, [config]);
 
   const checkGamepadConnection = useCallback(() => {
-    console.log('checkGamepadConnection called');
-
+    // console.log('checkGamepadConnection called');
+// 
     const gamepads = navigator.getGamepads();
     let connectedGamepad = null;
     let gamepadIndex = null;
@@ -44,13 +44,13 @@ export const useGamepadTracker = (config: GamepadTrackerConfig) => {
       if (gamepads[i]) {
         connectedGamepad = gamepads[i];
         gamepadIndex = i;
-        console.log(`Found gamepad at index ${i}:`, connectedGamepad.id);
+        // console.log(`Found gamepad at index ${i}:`, connectedGamepad.id);
         break;
       }
     }
 
     if (connectedGamepad && gamepadIndex !== null) {
-      console.log(`Setting gamepad state: connected=true, index=${gamepadIndex}`);
+      // console.log(`Setting gamepad state: connected=true, index=${gamepadIndex}`);
       setGamepadState(prev => ({
         ...prev,
         connected: true,
@@ -81,12 +81,12 @@ export const useGamepadTracker = (config: GamepadTrackerConfig) => {
     const gamepad = gamepads[currentState.gamepadIndex];
     
     if (!gamepad) {
-      console.warn(`handleGamepadInput: Gamepad at index ${currentState.gamepadIndex} is null.`);
+      // console.warn(`handleGamepadInput: Gamepad at index ${currentState.gamepadIndex} is null.`);
       return;
     }
 
     const currentButtonStates = gamepad.buttons.map(button => button.pressed);
-    console.log('handleGamepadInput: Current buttons:', currentButtonStates.map((pressed, i) => pressed ? i : null).filter(x => x !== null));
+    // console.log('handleGamepadInput: Current buttons:', currentButtonStates.map((pressed, i) => pressed ? i : null).filter(x => x !== null));
     
     // Check for button press events (transition from false to true)
     currentButtonStates.forEach((pressed, index) => {
@@ -112,17 +112,17 @@ export const useGamepadTracker = (config: GamepadTrackerConfig) => {
   }, []); // Empty dependency array since we're using refs
 
   useEffect(() => {
-    console.log('Gamepad hook useEffect setup');
+    // console.log('Gamepad hook useEffect setup');
 
     checkGamepadConnection(); // Initial check
 
     const handleGamepadConnected = (event: GamepadEvent) => {
-      console.log('Gamepad connected event:', event.gamepad.id);
+      // console.log('Gamepad connected event:', event.gamepad.id);
       checkGamepadConnection();
     };
 
     const handleGamepadDisconnected = (event: GamepadEvent) => {
-      console.log('Gamepad disconnected event:', event.gamepad.id);
+      // console.log('Gamepad disconnected event:', event.gamepad.id);
       checkGamepadConnection();
     };
 
@@ -134,7 +134,7 @@ export const useGamepadTracker = (config: GamepadTrackerConfig) => {
     }, 50); 
 
     return () => {
-      console.log('Gamepad hook useEffect cleanup');
+      // console.log('Gamepad hook useEffect cleanup');
       window.removeEventListener('gamepadconnected', handleGamepadConnected);
       window.removeEventListener('gamepaddisconnected', handleGamepadDisconnected);
       clearInterval(pollInterval);
