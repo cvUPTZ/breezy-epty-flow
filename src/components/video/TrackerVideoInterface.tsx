@@ -63,7 +63,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   // IMPORTANT: Use useCallback to memoize the handleRecordEvent function
   // This prevents the gamepad hook from restarting on every render
   const handleRecordEvent = useCallback(async (eventType: string): Promise<void> => {
-    console.log('TrackerVideoInterface: handleRecordEvent called with:', eventType);
+    // console.log('TrackerVideoInterface: handleRecordEvent called with:', eventType);
 
     if (!playerRef.current) {
       toast({ title: "Player Error", description: "YouTube player is not available.", variant: "destructive" });
@@ -77,7 +77,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     setIsRecording(true);
     // Signal that an event is being recorded (for UI feedback)
     setLastGamepadTriggeredEvent(eventType); 
-    console.log('TrackerVideoInterface: setLastGamepadTriggeredEvent called with:', eventType);
+    // console.log('TrackerVideoInterface: setLastGamepadTriggeredEvent called with:', eventType);
 
     // Broadcast recording status
     if (isConnected) {
@@ -105,7 +105,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
         created_by: user.id,
       };
 
-      console.log("Recording event with video time:", eventToInsert);
+      // console.log("Recording event with video time:", eventToInsert);
 
       const { data, error } = await supabase
         .from('match_events')
@@ -140,7 +140,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
       // Clear the triggered event after a short delay to allow UI to show it
       setTimeout(() => {
         setLastGamepadTriggeredEvent(null);
-        console.log('TrackerVideoInterface: cleared lastGamepadTriggeredEvent');
+        // console.log('TrackerVideoInterface: cleared lastGamepadTriggeredEvent');
       }, 1000); 
     }
   }, [user, isConnected, broadcastStatus, toast]); // Dependencies for useCallback
@@ -181,7 +181,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     const startStatusReporting = () => {
       // Initial status broadcast
       if (mounted && isConnected) {
-        console.log('TrackerVideoInterface: Broadcasting initial active status');
+        // console.log('TrackerVideoInterface: Broadcasting initial active status');
         broadcastStatus({
           status: 'active',
           timestamp: Date.now(),
@@ -192,7 +192,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
       // Set up regular status updates every 10 seconds
       statusInterval = setInterval(() => {
         if (mounted && isConnected) {
-          console.log('TrackerVideoInterface: Broadcasting periodic active status');
+          // console.log('TrackerVideoInterface: Broadcasting periodic active status');
           broadcastStatus({
             status: 'active',
             timestamp: Date.now(),
@@ -209,7 +209,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
       // Retry connection establishment
       const connectionTimeout = setTimeout(() => {
         if (mounted && !isConnected) {
-          console.log('TrackerVideoInterface: Connection timeout, retrying...');
+          // console.log('TrackerVideoInterface: Connection timeout, retrying...');
           // The connection hook will handle retries
         }
       }, 5000);
@@ -229,7 +229,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
   const handlePlayerReady = useCallback((playerInstance: YouTubePlayerInstance) => {
     playerRef.current = playerInstance;
-    console.log('Player is ready:', playerInstance);
+    // console.log('Player is ready:', playerInstance);
     
     // Broadcast player ready status
     if (isConnected) {
@@ -245,7 +245,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     const channel = supabase.channel(`video-control-${matchId}`);
     if (isAdminView && channel && playerRef.current) {
       const fullEvent: PlayerControlEvent = { ...event, timestamp: Date.now() };
-      console.log('Admin sending player control event from TrackerVideoInterface:', fullEvent);
+      // console.log('Admin sending player control event from TrackerVideoInterface:', fullEvent);
       channel.send({
         type: 'broadcast',
         event: 'player-control',
@@ -259,7 +259,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   }, [isAdminView, matchId]);
 
   const handleDetectionResults = useCallback((results: ProcessedDetectionResult[]) => {
-    console.log('Received AI detection results:', results);
+    // console.log('Received AI detection results:', results);
     setDetectionResults(results);
     toast({
       title: 'AI Detection Complete',
@@ -311,7 +311,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
   const handleGamepadConfigChange = useCallback((mapping: { [buttonIndex: number]: string }) => {
     setGamepadButtonMapping(mapping);
-    console.log('Gamepad button mapping updated:', mapping);
+    // console.log('Gamepad button mapping updated:', mapping);
   }, []);
 
   const renderEventTracker = () => {
