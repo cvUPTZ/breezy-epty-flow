@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -5,6 +6,8 @@ import { useAuth } from '@/context/AuthContext';
 import { EnhancedEventTypeIcon } from '@/components/match/EnhancedEventTypeIcon';
 import { EventType } from '@/types';
 import CancelActionIndicator from './CancelActionIndicator';
+import GamepadConfig from '../gamepad/GamepadConfig';
+import { useGamepadTracker } from '@/hooks/useGamepadTracker';
 import { supabase } from '@/integrations/supabase/client';
 
 interface RecordedEvent {
@@ -24,6 +27,7 @@ const EnhancedPianoInput: React.FC<EnhancedPianoInputProps> = ({
 }) => {
   const [recentEvents, setRecentEvents] = useState<RecordedEvent[]>([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [gamepadMapping, setGamepadMapping] = useState<{ [buttonIndex: number]: string }>({});
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -84,6 +88,19 @@ const EnhancedPianoInput: React.FC<EnhancedPianoInputProps> = ({
     }
   }, [onEventRecord, toast, isRecording]);
 
+  // Gamepad event handler
+  const handleGamepadEvent = useCallback((eventType: string) => {
+    if (eventType && eventType !== 'none') {
+      handleEventRecord(eventType as EventType);
+    }
+  }, [handleEventRecord]);
+
+  // Initialize gamepad tracker
+  const { isConnected: gamepadConnected } = useGamepadTracker({
+    buttonMapping: gamepadMapping,
+    onEventTrigger: handleGamepadEvent
+  });
+
   const handleCancelEvent = useCallback(async (eventId: string, eventType: EventType) => {
     try {
       setRecentEvents(prev => prev.filter(event => event.id !== eventId));
@@ -119,6 +136,7 @@ const EnhancedPianoInput: React.FC<EnhancedPianoInputProps> = ({
 
   const primaryEvents: EventType[] = ['goal', 'shot', 'pass', 'tackle'];
   const secondaryEvents: EventType[] = ['foul', 'assist', 'save', 'corner', 'freeKick'];
+  const allEvents = [...primaryEvents, ...secondaryEvents];
 
   const renderEventButton = (eventType: EventType, isPrimary: boolean) => {
     const buttonSizeClasses = isPrimary
@@ -149,6 +167,14 @@ const EnhancedPianoInput: React.FC<EnhancedPianoInputProps> = ({
 
   return (
     <div className="space-y-8">
+      {/* Gamepad Configuration */}
+      <GamepadConfig
+        isConnected={gamepadConnected}
+        onConfigChange={setGamepadMapping}
+        availableEvents={allEvents}
+      />
+
+      {/* Piano Input */}
       <Card className="bg-white/60 backdrop-blur-xl border-slate-200/80 shadow-2xl rounded-3xl overflow-hidden transition-all">
         <CardHeader className="pb-4 border-b border-slate-200/80 bg-slate-50/30">
           <CardTitle className="text-xl font-bold text-slate-800 text-center">Event Piano</CardTitle>
