@@ -9,7 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import SimplePianoOverlay from './SimplePianoOverlay';
-import GamepadConfig from './GamepadConfig'; // Import the GamepadConfig component
+import GamepadConfig from '@/components/gamepad/GamepadConfig'; // Import the GamepadConfig component
 import { ProcessedDetectionResult } from '@/services/roboflowDetectionService';
 import { useUnifiedTrackerConnection } from '@/hooks/useUnifiedTrackerConnection';
 import { useGamepadTracker } from '@/hooks/useGamepadTracker'; // Import the gamepad hook
