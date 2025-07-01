@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,18 +7,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { TrackerAssignment } from '@/types/trackerAssignment';
 
 interface TrackerUser {
   id: string;
   email: string;
   full_name: string;
   role: 'admin' | 'user' | 'tracker' | 'teacher';
-}
-
-interface TrackerAssignment {
-  tracker_user_id: string;
-  assigned_event_types: string[];
-  player_ids: (number | string)[];
 }
 
 interface Player {

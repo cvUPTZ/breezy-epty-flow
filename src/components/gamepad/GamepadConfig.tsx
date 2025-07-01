@@ -12,7 +12,7 @@ interface GamepadConfigProps {
   availableEvents: string[];
 }
 
-const XBOX_BUTTON_NAMES = {
+const XBOX_BUTTON_NAMES: { [key: number]: string } = {
   0: 'A Button',
   1: 'B Button', 
   2: 'X Button',
