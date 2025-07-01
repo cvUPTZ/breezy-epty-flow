@@ -45,7 +45,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const [lastGamepadTriggeredEvent, setLastGamepadTriggeredEvent] = useState<string | null>(null);
 
   // Initialize unified tracker connection for status reporting
-  const { isConnected, broadcastStatus } = useUnifiedTrackerConnection(matchId, user?.id);
+  const { isConnected, broadcastStatus } = useUnifiedTrackerConnection(matchId, user?.id); // <<< CORRECTLY DECLARED ONCE
 
   // Available event types for gamepad mapping
   const availableEvents = ['goal', 'shot', 'pass', 'tackle', 'foul', 'save', 'corner', 'throw_in', 'free_kick', 'penalty'];
@@ -79,7 +79,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     console.log('TrackerVideoInterface: setLastGamepadTriggeredEvent called with:', eventType); // <<< DEBUG LOG
 
     // Broadcast recording status
-    if (isConnected) {
+    if (isConnected) { // Uses the isConnected from the hook declaration on line 48
       broadcastStatus({
         status: 'recording',
         timestamp: Date.now(),
@@ -120,7 +120,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
       });
 
       // Broadcast success status
-      if (isConnected) {
+      if (isConnected) { // Uses the isConnected from the hook declaration on line 48
         broadcastStatus({
           status: 'active',
           timestamp: Date.now(),
@@ -143,15 +143,12 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
       }, 1000); 
     }
   };
-
-  // Initialize unified tracker connection for status reporting
-  const { isConnected, broadcastStatus } = useUnifiedTrackerConnection(matchId, user?.id);
-
+  
   // Initialize gamepad tracker
   // >>> IMPORTANT: Ensure your useGamepadTracker hook correctly implements logging for debugging <<<
-  const { isConnected: gamepadConnected } = useGamepadTracker({
+  const { isConnected: gamepadConnected } = useGamepadTracker({ // Renamed to avoid conflict if needed, though the main issue was re-declaration
     buttonMapping: gamepadButtonMapping,
-    onEventTrigger: handleRecordEvent // This now correctly references the defined function
+    onEventTrigger: handleRecordEvent 
   });
 
   // Set admin view based on user role - only once
@@ -183,9 +180,9 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
     const startStatusReporting = () => {
       // Initial status broadcast
-      if (mounted && isConnected) {
+      if (mounted && isConnected) { // Uses the isConnected from the hook declaration on line 48
         console.log('TrackerVideoInterface: Broadcasting initial active status');
-        broadcastStatus({
+        broadcastStatus({ // Uses the broadcastStatus from the hook declaration on line 48
           status: 'active',
           timestamp: Date.now(),
           action: 'video_tracker_connected'
@@ -194,9 +191,9 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
       // Set up regular status updates every 10 seconds
       statusInterval = setInterval(() => {
-        if (mounted && isConnected) {
+        if (mounted && isConnected) { // Uses the isConnected from the hook declaration on line 48
           console.log('TrackerVideoInterface: Broadcasting periodic active status');
-          broadcastStatus({
+          broadcastStatus({ // Uses the broadcastStatus from the hook declaration on line 48
             status: 'active',
             timestamp: Date.now(),
             action: 'video_tracker_active'
@@ -206,12 +203,12 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     };
 
     // Wait for connection to be established
-    if (isConnected) {
+    if (isConnected) { // Uses the isConnected from the hook declaration on line 48
       startStatusReporting();
     } else {
       // Retry connection establishment
       const connectionTimeout = setTimeout(() => {
-        if (mounted && !isConnected) {
+        if (mounted && !isConnected) { // Uses the isConnected from the hook declaration on line 48
           console.log('TrackerVideoInterface: Connection timeout, retrying...');
           // The connection hook will handle retries
         }
@@ -228,15 +225,15 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
         clearInterval(statusInterval);
       }
     };
-  }, [user?.id, matchId, isConnected, broadcastStatus]);
+  }, [user?.id, matchId, isConnected, broadcastStatus]); // Make sure dependencies are correct
 
   const handlePlayerReady = (playerInstance: YouTubePlayerInstance) => {
     playerRef.current = playerInstance;
     console.log('Player is ready:', playerInstance);
     
     // Broadcast player ready status
-    if (isConnected) {
-      broadcastStatus({
+    if (isConnected) { // Uses the isConnected from the hook declaration on line 48
+      broadcastStatus({ // Uses the broadcastStatus from the hook declaration on line 48
         status: 'active',
         timestamp: Date.now(),
         action: 'player_ready'
@@ -275,8 +272,8 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     setShowPianoOverlay(newState);
     
     // Broadcast overlay toggle status
-    if (isConnected) {
-      broadcastStatus({
+    if (isConnected) { // Uses the isConnected from the hook declaration on line 48
+      broadcastStatus({ // Uses the broadcastStatus from the hook declaration on line 48
         status: 'active',
         timestamp: Date.now(),
         action: newState ? 'event_tracker_opened' : 'event_tracker_closed'
@@ -289,8 +286,8 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     setShowVoiceChat(newState);
     
     // Broadcast voice chat toggle status
-    if (isConnected) {
-      broadcastStatus({
+    if (isConnected) { // Uses the isConnected from the hook declaration on line 48
+      broadcastStatus({ // Uses the broadcastStatus from the hook declaration on line 48
         status: 'active',
         timestamp: Date.now(),
         action: newState ? 'voice_chat_opened' : 'voice_chat_closed'
@@ -303,8 +300,8 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     setShowGamepadConfig(newState);
     
     // Broadcast gamepad config toggle status
-    if (isConnected) {
-      broadcastStatus({
+    if (isConnected) { // Uses the isConnected from the hook declaration on line 48
+      broadcastStatus({ // Uses the broadcastStatus from the hook declaration on line 48
         status: 'active',
         timestamp: Date.now(),
         action: newState ? 'gamepad_config_opened' : 'gamepad_config_closed'
@@ -326,7 +323,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
         onClose={togglePianoOverlay}
         isRecording={isRecording}
         // Pass the gamepad connected status and the last triggered event
-        gamepadConnected={gamepadConnected}
+        gamepadConnected={gamepadConnected} // From the useGamepadTracker hook
         lastTriggeredEvent={lastGamepadTriggeredEvent} 
       />
     );
