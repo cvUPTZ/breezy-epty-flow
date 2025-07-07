@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -36,8 +35,8 @@ const Admin: React.FC = () => {
   const [liveMatches, setLiveMatches] = useState<any[]>([]);
   const [videoUrl, setVideoUrl] = useState('');
   const [mockTrackers] = useState([
-    { user_id: '1', email: 'tracker1@example.com', status: 'active', last_activity: Date.now(), battery_level: 85 },
-    { user_id: '2', email: 'tracker2@example.com', status: 'inactive', last_activity: Date.now() - 300000, battery_level: 45 },
+    { user_id: '1', email: 'tracker1@example.com', status: 'active' as const, last_activity: Date.now(), battery_level: 85 },
+    { user_id: '2', email: 'tracker2@example.com', status: 'inactive' as const, last_activity: Date.now() - 300000, battery_level: 45 },
   ]);
   const [systemStats, setSystemStats] = useState({
     totalUsers: 0,
@@ -146,19 +145,21 @@ const Admin: React.FC = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-12">
+          <TabsList className="grid w-full grid-cols-14">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="matches">Matches</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="trackers">Trackers</TabsTrigger>
-            <TabsTrigger value="assignments">Assignments</TabsTrigger>
-            <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
-            <TabsTrigger value="video">Video</TabsTrigger>
+            <TabsTrigger value="matches">Matches</TabsTrigger>
             <TabsTrigger value="voice">Voice</TabsTrigger>
+            <TabsTrigger value="planning">Planning</TabsTrigger>
+            <TabsTrigger value="replacement">Replacement</TabsTrigger>
+            <TabsTrigger value="matrix">Matrix</TabsTrigger>
+            <TabsTrigger value="events">Events</TabsTrigger>
+            <TabsTrigger value="battery">Battery</TabsTrigger>
+            <TabsTrigger value="mockdata">Mock Data</TabsTrigger>
+            <TabsTrigger value="players">Players</TabsTrigger>
             <TabsTrigger value="access">Access</TabsTrigger>
-            <TabsTrigger value="tools">Tools</TabsTrigger>
-            <TabsTrigger value="logs">Logs</TabsTrigger>
+            <TabsTrigger value="audit">Audit</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -244,17 +245,31 @@ const Admin: React.FC = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="matches">
-            <MatchManagement />
-          </TabsContent>
-
           <TabsContent value="users">
             <UserManagement />
           </TabsContent>
 
-          <TabsContent value="trackers">
+          <TabsContent value="matches">
+            <MatchManagement />
+          </TabsContent>
+
+          <TabsContent value="voice">
+            <VoiceCollaborationManager />
+          </TabsContent>
+
+          <TabsContent value="planning">
             <div className="space-y-6">
-              <TrackerBatteryMonitor />
+              <SpecializedTrackerAssignment 
+                matchId={liveMatches[0]?.id || 'default-match-id'}
+                homeTeamPlayers={mockPlayers}
+                awayTeamPlayers={mockAwayPlayers}
+              />
+              <QuickPlanningActions matchId={liveMatches[0]?.id || null} />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="replacement">
+            <div className="space-y-6">
               {liveMatches.length > 0 ? (
                 liveMatches.map((match) => (
                   <div key={match.id} className="space-y-4">
@@ -272,25 +287,52 @@ const Admin: React.FC = () => {
               ) : (
                 <Card>
                   <CardContent className="p-6 text-center">
-                    <p className="text-gray-500">No live matches currently. Tracker monitoring requires an active match.</p>
+                    <p className="text-gray-500">No live matches currently. Tracker replacement requires an active match.</p>
                   </CardContent>
                 </Card>
               )}
             </div>
           </TabsContent>
 
-          <TabsContent value="assignments">
+          <TabsContent value="matrix">
+            <MatchTrackingMatrix />
+          </TabsContent>
+
+          <TabsContent value="events">
             <div className="space-y-6">
-              <SpecializedTrackerAssignment 
-                matchId={liveMatches[0]?.id || 'default-match-id'}
-                homeTeamPlayers={mockPlayers}
-                awayTeamPlayers={mockAwayPlayers}
-              />
-              <MatchTrackingMatrix />
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <EventAssignments />
-                <PlayerAssignments />
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    Real-Time Match Events
+                    <Badge variant="outline">{liveMatches.length} Active Matches</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <RealTimeMatchEvents />
+                </CardContent>
+              </Card>
+              <EventAssignments />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="battery">
+            <TrackerBatteryMonitor />
+          </TabsContent>
+
+          <TabsContent value="mockdata">
+            <Card>
+              <CardHeader>
+                <CardTitle>Development Tools</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <MockDataGenerator />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="players">
+            <div className="space-y-6">
+              <PlayerAssignments />
               <AbsenceSummaryDashboard 
                 totalTrackers={systemStats.activeTrackers}
                 activeTrackers={systemStats.activeTrackers}
@@ -300,86 +342,74 @@ const Admin: React.FC = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="monitoring">
-            <div className="space-y-6">
-              <div className="grid gap-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      Real-Time Match Events
-                      <Badge variant="outline">{liveMatches.length} Active Matches</Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <RealTimeMatchEvents />
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      Tracker Connection Status
-                      <Badge variant="outline">{liveMatches.length} Active</Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {liveMatches.length === 0 ? (
-                      <p className="text-gray-500 text-center py-4">No live matches currently</p>
-                    ) : (
-                      <div className="space-y-4">
-                        {liveMatches.map((match) => (
-                          <div key={match.id} className="space-y-2">
-                            <h4 className="font-medium">
-                              {match.home_team_name} vs {match.away_team_name}
-                            </h4>
-                            <TrackerConnectionMonitor matchId={match.id} />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="notifications">
-            <TrackerNotificationSystem 
-              trackers={mockTrackers}
-              matchId={liveMatches[0]?.id || 'default-match-id'}
-            />
-          </TabsContent>
-
-          <TabsContent value="video">
-            <VideoMatchSetup 
-              videoUrl={videoUrl}
-              onVideoUrlChange={setVideoUrl}
-            />
-          </TabsContent>
-
-          <TabsContent value="voice">
-            <VoiceCollaborationManager />
-          </TabsContent>
-
           <TabsContent value="access">
             <AccessManagement />
           </TabsContent>
 
-          <TabsContent value="tools">
+          <TabsContent value="audit">
+            <AuditLogs />
+          </TabsContent>
+
+          <TabsContent value="analytics">
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Development Tools</CardTitle>
+                  <CardTitle>Analytics Overview</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <MockDataGenerator />
+                  <p className="text-gray-600">Advanced analytics and reporting features will be available here.</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    Tracker Connection Status
+                    <Badge variant="outline">{liveMatches.length} Active</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {liveMatches.length === 0 ? (
+                    <p className="text-gray-500 text-center py-4">No live matches currently</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {liveMatches.map((match) => (
+                        <div key={match.id} className="space-y-2">
+                          <h4 className="font-medium">
+                            {match.home_team_name} vs {match.away_team_name}
+                          </h4>
+                          <TrackerConnectionMonitor matchId={match.id} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tracker Notifications</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <TrackerNotificationSystem 
+                    trackers={mockTrackers}
+                    matchId={liveMatches[0]?.id || 'default-match-id'}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Video Setup</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <VideoMatchSetup 
+                    videoUrl={videoUrl}
+                    onVideoUrlChange={setVideoUrl}
+                  />
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
-
-          <TabsContent value="logs">
-            <AuditLogs />
           </TabsContent>
         </Tabs>
       </div>
