@@ -9,6 +9,7 @@ import TeamSetupSection from './match/form/TeamSetupSection';
 import TrackerAssignmentSection from './match/form/TrackerAssignmentSection';
 import VideoSetupSection from './match/form/VideoSetupSection';
 import { Button } from './ui/button';
+import { Player as TrackerPlayer } from '@/types/trackerAssignment';
 
 type MatchStatus = 'draft' | 'scheduled' | 'live' | 'completed';
 type Formation = '4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '5-3-2' | '3-4-3';
@@ -235,6 +236,15 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
 
   const handleVideoUrlChange = (url: string) => {
     setVideoUrl(url);
+  };
+
+  const convertToTrackerPlayers = (players: Player[], team: 'home' | 'away'): TrackerPlayer[] => {
+    return players.map((player, index) => ({
+      id: player.id || (team === 'home' ? 1000 + index : 2000 + index),
+      jersey_number: player.number || 0,
+      player_name: player.name || '',
+      team: team
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -464,11 +474,11 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
         onFlagChange={handleFlagChange}
       />
       <TrackerAssignmentSection
-        trackers={trackers}
-        trackerAssignments={trackerAssignments}
-        homeTeamPlayers={homeTeamPlayers}
-        awayTeamPlayers={awayTeamPlayers}
-        onTrackerAssignmentsChange={handleTrackerAssignmentsChange}
+        homeTeamPlayers={convertToTrackerPlayers(homeTeamPlayers, 'home')}
+        awayTeamPlayers={convertToTrackerPlayers(awayTeamPlayers, 'away')}
+        trackerUsers={trackers}
+        assignments={trackerAssignments}
+        onAssignmentsChange={handleTrackerAssignmentsChange}
       />
       <VideoSetupSection videoUrl={videoUrl} onVideoUrlChange={handleVideoUrlChange} />
       <div>
