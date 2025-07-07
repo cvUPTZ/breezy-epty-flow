@@ -1,12 +1,43 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { 
+  Users, 
+  Play, 
+  Mic, 
+  Calendar, 
+  Replace, 
+  Grid, 
+  Activity, 
+  Battery, 
+  Database, 
+  UserCheck, 
+  Shield, 
+  FileText, 
+  BarChart3,
+  LayoutDashboard
+} from 'lucide-react';
+
+// Sidebar components
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from '@/components/ui/sidebar';
 
 // Import admin components
 import UserManagement from '@/components/admin/UserManagement';
@@ -28,10 +59,54 @@ import RealTimeMatchEvents from '@/components/admin/RealTimeMatchEvents';
 import AbsenceSummaryDashboard from '@/components/admin/AbsenceSummaryDashboard';
 import QuickPlanningActions from '@/components/admin/QuickPlanningActions';
 
+const sidebarItems = [
+  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'users', label: 'Users', icon: Users },
+  { id: 'matches', label: 'Matches', icon: Play },
+  { id: 'voice', label: 'Voice', icon: Mic },
+  { id: 'planning', label: 'Planning', icon: Calendar },
+  { id: 'replacement', label: 'Replacement', icon: Replace },
+  { id: 'matrix', label: 'Matrix', icon: Grid },
+  { id: 'events', label: 'Events', icon: Activity },
+  { id: 'battery', label: 'Battery', icon: Battery },
+  { id: 'mockdata', label: 'Mock Data', icon: Database },
+  { id: 'players', label: 'Players', icon: UserCheck },
+  { id: 'access', label: 'Access', icon: Shield },
+  { id: 'audit', label: 'Audit', icon: FileText },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+];
+
+function AdminSidebar({ activeSection, setActiveSection }: { activeSection: string; setActiveSection: (section: string) => void }) {
+  return (
+    <Sidebar>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Admin Panel</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {sidebarItems.map((item) => (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton
+                    isActive={activeSection === item.id}
+                    onClick={() => setActiveSection(item.id)}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+    </Sidebar>
+  );
+}
+
 const Admin: React.FC = () => {
   const { user, userRole } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeSection, setActiveSection] = useState('overview');
   const [liveMatches, setLiveMatches] = useState<any[]>([]);
   const [videoUrl, setVideoUrl] = useState('');
   const [mockTrackers] = useState([
@@ -136,284 +211,285 @@ const Admin: React.FC = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">Comprehensive system management and monitoring</p>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-14">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="matches">Matches</TabsTrigger>
-            <TabsTrigger value="voice">Voice</TabsTrigger>
-            <TabsTrigger value="planning">Planning</TabsTrigger>
-            <TabsTrigger value="replacement">Replacement</TabsTrigger>
-            <TabsTrigger value="matrix">Matrix</TabsTrigger>
-            <TabsTrigger value="events">Events</TabsTrigger>
-            <TabsTrigger value="battery">Battery</TabsTrigger>
-            <TabsTrigger value="mockdata">Mock Data</TabsTrigger>
-            <TabsTrigger value="players">Players</TabsTrigger>
-            <TabsTrigger value="access">Access</TabsTrigger>
-            <TabsTrigger value="audit">Audit</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview">
-            <div className="grid gap-6">
-              {/* System Overview Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{systemStats.totalUsers}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Total Matches</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{systemStats.totalMatches}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Active Trackers</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{systemStats.activeTrackers}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Pending Notifications</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{systemStats.pendingNotifications}</div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Live Matches Overview */}
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'overview':
+        return (
+          <div className="grid gap-6">
+            {/* System Overview Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    Live Matches
-                    <Badge variant="outline">{liveMatches.length} Active</Badge>
-                  </CardTitle>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Total Users</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {liveMatches.length === 0 ? (
-                    <p className="text-gray-500 text-center py-4">No live matches currently</p>
-                  ) : (
-                    <div className="space-y-4">
-                      {liveMatches.map((match) => (
-                        <Card key={match.id} className="border-l-4 border-green-500">
-                          <CardContent className="p-4">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h3 className="font-semibold">
-                                  {match.home_team_name} vs {match.away_team_name}
-                                </h3>
-                                <p className="text-sm text-gray-600">Match ID: {match.id}</p>
-                              </div>
-                              <Badge className="bg-green-500">LIVE</Badge>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
+                  <div className="text-2xl font-bold">{systemStats.totalUsers}</div>
                 </CardContent>
               </Card>
-
-              {/* Quick Actions */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Total Matches</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <QuickPlanningActions matchId={liveMatches[0]?.id || null} />
+                  <div className="text-2xl font-bold">{systemStats.totalMatches}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Active Trackers</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{systemStats.activeTrackers}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Pending Notifications</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{systemStats.pendingNotifications}</div>
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
 
-          <TabsContent value="users">
-            <UserManagement />
-          </TabsContent>
-
-          <TabsContent value="matches">
-            <MatchManagement />
-          </TabsContent>
-
-          <TabsContent value="voice">
-            <VoiceCollaborationManager />
-          </TabsContent>
-
-          <TabsContent value="planning">
-            <div className="space-y-6">
-              <SpecializedTrackerAssignment 
-                matchId={liveMatches[0]?.id || 'default-match-id'}
-                homeTeamPlayers={mockPlayers}
-                awayTeamPlayers={mockAwayPlayers}
-              />
-              <QuickPlanningActions matchId={liveMatches[0]?.id || null} />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="replacement">
-            <div className="space-y-6">
-              {liveMatches.length > 0 ? (
-                liveMatches.map((match) => (
-                  <div key={match.id} className="space-y-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          Match: {match.home_team_name} vs {match.away_team_name}
-                          <Badge className="bg-green-500">LIVE</Badge>
-                        </CardTitle>
-                      </CardHeader>
-                    </Card>
-                    <TrackerAbsenceManager matchId={match.id} />
-                  </div>
-                ))
-              ) : (
-                <Card>
-                  <CardContent className="p-6 text-center">
-                    <p className="text-gray-500">No live matches currently. Tracker replacement requires an active match.</p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="matrix">
-            <MatchTrackingMatrix />
-          </TabsContent>
-
-          <TabsContent value="events">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    Real-Time Match Events
-                    <Badge variant="outline">{liveMatches.length} Active Matches</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <RealTimeMatchEvents />
-                </CardContent>
-              </Card>
-              <EventAssignments />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="battery">
-            <TrackerBatteryMonitor />
-          </TabsContent>
-
-          <TabsContent value="mockdata">
+            {/* Live Matches Overview */}
             <Card>
               <CardHeader>
-                <CardTitle>Development Tools</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  Live Matches
+                  <Badge variant="outline">{liveMatches.length} Active</Badge>
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <MockDataGenerator />
+                {liveMatches.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No live matches currently</p>
+                ) : (
+                  <div className="space-y-4">
+                    {liveMatches.map((match) => (
+                      <Card key={match.id} className="border-l-4 border-green-500">
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-semibold">
+                                {match.home_team_name} vs {match.away_team_name}
+                              </h3>
+                              <p className="text-sm text-gray-600">Match ID: {match.id}</p>
+                            </div>
+                            <Badge className="bg-green-500">LIVE</Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="players">
-            <div className="space-y-6">
-              <PlayerAssignments />
-              <AbsenceSummaryDashboard 
-                totalTrackers={systemStats.activeTrackers}
-                activeTrackers={systemStats.activeTrackers}
-                absentTrackers={0}
-                averageResponseTime={2.5}
-              />
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <QuickPlanningActions matchId={liveMatches[0]?.id || null} />
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'users':
+        return <UserManagement />;
+
+      case 'matches':
+        return <MatchManagement />;
+
+      case 'voice':
+        return <VoiceCollaborationManager />;
+
+      case 'planning':
+        return (
+          <div className="space-y-6">
+            <SpecializedTrackerAssignment 
+              matchId={liveMatches[0]?.id || 'default-match-id'}
+              homeTeamPlayers={mockPlayers}
+              awayTeamPlayers={mockAwayPlayers}
+            />
+            <QuickPlanningActions matchId={liveMatches[0]?.id || null} />
+          </div>
+        );
+
+      case 'replacement':
+        return (
+          <div className="space-y-6">
+            {liveMatches.length > 0 ? (
+              liveMatches.map((match) => (
+                <div key={match.id} className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        Match: {match.home_team_name} vs {match.away_team_name}
+                        <Badge className="bg-green-500">LIVE</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                  </Card>
+                  <TrackerAbsenceManager matchId={match.id} />
+                </div>
+              ))
+            ) : (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-gray-500">No live matches currently. Tracker replacement requires an active match.</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        );
+
+      case 'matrix':
+        return <MatchTrackingMatrix />;
+
+      case 'events':
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  Real-Time Match Events
+                  <Badge variant="outline">{liveMatches.length} Active Matches</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RealTimeMatchEvents />
+              </CardContent>
+            </Card>
+            <EventAssignments />
+          </div>
+        );
+
+      case 'battery':
+        return <TrackerBatteryMonitor />;
+
+      case 'mockdata':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Development Tools</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <MockDataGenerator />
+            </CardContent>
+          </Card>
+        );
+
+      case 'players':
+        return (
+          <div className="space-y-6">
+            <PlayerAssignments />
+            <AbsenceSummaryDashboard 
+              totalTrackers={systemStats.activeTrackers}
+              activeTrackers={systemStats.activeTrackers}
+              absentTrackers={0}
+              averageResponseTime={2.5}
+            />
+          </div>
+        );
+
+      case 'access':
+        return <AccessManagement />;
+
+      case 'audit':
+        return <AuditLogs />;
+
+      case 'analytics':
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Analytics Overview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">Advanced analytics and reporting features will be available here.</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  Tracker Connection Status
+                  <Badge variant="outline">{liveMatches.length} Active</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {liveMatches.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No live matches currently</p>
+                ) : (
+                  <div className="space-y-4">
+                    {liveMatches.map((match) => (
+                      <div key={match.id} className="space-y-2">
+                        <h4 className="font-medium">
+                          {match.home_team_name} vs {match.away_team_name}
+                        </h4>
+                        <TrackerConnectionMonitor matchId={match.id} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Tracker Notifications</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TrackerNotificationSystem 
+                  trackers={mockTrackers}
+                  matchId={liveMatches[0]?.id || 'default-match-id'}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Video Setup</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <VideoMatchSetup 
+                  videoUrl={videoUrl}
+                  onVideoUrlChange={setVideoUrl}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      default:
+        return <div>Section not found</div>;
+    }
+  };
+
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AdminSidebar activeSection={activeSection} setActiveSection={setActiveSection} />
+        <SidebarInset>
+          <header className="flex h-16 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1" />
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+                <div className="text-sm text-gray-600">
+                  {sidebarItems.find(item => item.id === activeSection)?.label}
+                </div>
+              </div>
             </div>
-          </TabsContent>
-
-          <TabsContent value="access">
-            <AccessManagement />
-          </TabsContent>
-
-          <TabsContent value="audit">
-            <AuditLogs />
-          </TabsContent>
-
-          <TabsContent value="analytics">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Analytics Overview</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600">Advanced analytics and reporting features will be available here.</p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    Tracker Connection Status
-                    <Badge variant="outline">{liveMatches.length} Active</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {liveMatches.length === 0 ? (
-                    <p className="text-gray-500 text-center py-4">No live matches currently</p>
-                  ) : (
-                    <div className="space-y-4">
-                      {liveMatches.map((match) => (
-                        <div key={match.id} className="space-y-2">
-                          <h4 className="font-medium">
-                            {match.home_team_name} vs {match.away_team_name}
-                          </h4>
-                          <TrackerConnectionMonitor matchId={match.id} />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Tracker Notifications</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <TrackerNotificationSystem 
-                    trackers={mockTrackers}
-                    matchId={liveMatches[0]?.id || 'default-match-id'}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Video Setup</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <VideoMatchSetup 
-                    videoUrl={videoUrl}
-                    onVideoUrlChange={setVideoUrl}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+          </header>
+          <main className="flex-1 overflow-auto p-4">
+            {renderContent()}
+          </main>
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
