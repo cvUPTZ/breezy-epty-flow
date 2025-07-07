@@ -34,12 +34,28 @@ const Admin: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [liveMatches, setLiveMatches] = useState<any[]>([]);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [mockTrackers] = useState([
+    { user_id: '1', email: 'tracker1@example.com', status: 'active', last_activity: Date.now(), battery_level: 85 },
+    { user_id: '2', email: 'tracker2@example.com', status: 'inactive', last_activity: Date.now() - 300000, battery_level: 45 },
+  ]);
   const [systemStats, setSystemStats] = useState({
     totalUsers: 0,
     totalMatches: 0,
     activeTrackers: 0,
     pendingNotifications: 0
   });
+
+  // Mock data for components that need it
+  const mockPlayers = [
+    { id: 1, jersey_number: 10, player_name: 'Player 1', team: 'home' as const },
+    { id: 2, jersey_number: 11, player_name: 'Player 2', team: 'home' as const },
+  ];
+
+  const mockAwayPlayers = [
+    { id: 3, jersey_number: 9, player_name: 'Player 3', team: 'away' as const },
+    { id: 4, jersey_number: 8, player_name: 'Player 4', team: 'away' as const },
+  ];
 
   useEffect(() => {
     if (!user) {
@@ -222,7 +238,7 @@ const Admin: React.FC = () => {
                   <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <QuickPlanningActions />
+                  <QuickPlanningActions matchId={liveMatches[0]?.id || null} />
                 </CardContent>
               </Card>
             </div>
@@ -265,13 +281,22 @@ const Admin: React.FC = () => {
 
           <TabsContent value="assignments">
             <div className="space-y-6">
-              <SpecializedTrackerAssignment />
+              <SpecializedTrackerAssignment 
+                matchId={liveMatches[0]?.id || 'default-match-id'}
+                homeTeamPlayers={mockPlayers}
+                awayTeamPlayers={mockAwayPlayers}
+              />
               <MatchTrackingMatrix />
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <EventAssignments />
                 <PlayerAssignments />
               </div>
-              <AbsenceSummaryDashboard />
+              <AbsenceSummaryDashboard 
+                totalTrackers={systemStats.activeTrackers}
+                activeTrackers={systemStats.activeTrackers}
+                absentTrackers={0}
+                averageResponseTime={2.5}
+              />
             </div>
           </TabsContent>
 
@@ -319,11 +344,17 @@ const Admin: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="notifications">
-            <TrackerNotificationSystem />
+            <TrackerNotificationSystem 
+              trackers={mockTrackers}
+              matchId={liveMatches[0]?.id || 'default-match-id'}
+            />
           </TabsContent>
 
           <TabsContent value="video">
-            <VideoMatchSetup />
+            <VideoMatchSetup 
+              videoUrl={videoUrl}
+              onVideoUrlChange={setVideoUrl}
+            />
           </TabsContent>
 
           <TabsContent value="voice">
