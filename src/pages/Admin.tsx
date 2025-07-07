@@ -21,7 +21,8 @@ import {
   Shield, 
   FileText, 
   BarChart3,
-  LayoutDashboard
+  LayoutDashboard,
+  LogOut
 } from 'lucide-react';
 
 // Sidebar components
@@ -77,6 +78,23 @@ const sidebarItems = [
 ];
 
 function AdminSidebar({ activeSection, setActiveSection }: { activeSection: string; setActiveSection: (section: string) => void }) {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success('Logged out successfully');
+      navigate('/auth');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast.error('Failed to log out');
+    }
+  };
+
+  const handleDashboard = () => {
+    navigate('/');
+  };
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -84,6 +102,15 @@ function AdminSidebar({ activeSection, setActiveSection }: { activeSection: stri
           <SidebarGroupLabel>Admin Panel</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              {/* Dashboard Link */}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={handleDashboard}>
+                  <LayoutDashboard className="h-4 w-4" />
+                  <span>Dashboard</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Admin Sections */}
               {sidebarItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
@@ -95,6 +122,14 @@ function AdminSidebar({ activeSection, setActiveSection }: { activeSection: stri
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              {/* Logout */}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={handleLogout}>
+                  <LogOut className="h-4 w-4" />
+                  <span>Logout</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
