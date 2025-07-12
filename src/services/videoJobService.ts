@@ -29,10 +29,6 @@ export interface VideoJob {
   chunked_video_metadata?: ChunkedVideoMetadata;
 }
 
-/**
- * Simplified Video Service for direct video processing without job queues.
- * Focuses on basic video upload and URL handling with chunking support.
- */
 export class VideoJobService {
   static sanitizeFileName(fileName: string): string {
     return fileName
@@ -45,18 +41,18 @@ export class VideoJobService {
   }
 
   static async uploadVideo(file: File, onProgress?: (progress: number) => void): Promise<string> {
-    console.log(`Starting upload for: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+    console.log(`🎬 Starting upload: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
 
     try {
       if (VideoChunkingService.needsChunking(file)) {
-        console.log('File size exceeds limit, using chunking approach');
+        console.log('📦 Using chunked upload for large file');
         return await this.uploadVideoWithChunking(file, onProgress);
       } else {
-        console.log('File size acceptable, using direct upload');
+        console.log('⚡ Using direct upload for small file');
         return await this.uploadVideoDirectly(file, onProgress);
       }
     } catch (error: any) {
-      console.error('Upload failed with error:', error);
+      console.error('💥 Upload failed:', error);
       throw new Error(`Upload failed: ${error.message || 'Unknown error'}`);
     }
   }
@@ -67,11 +63,11 @@ export class VideoJobService {
     const sanitizedName = this.sanitizeFileName(file.name.replace(/\.[^/.]+$/, ''));
     const fileName = `${timestamp}_${sanitizedName}.${fileExtension}`;
 
-    console.log('Starting direct upload:', { originalName: file.name, fileName, size: file.size });
-
-    if (onProgress) onProgress(10);
+    console.log(`📤 Direct upload: ${fileName}`);
 
     try {
+      onProgress?.(10);
+
       const { data, error } = await supabase.storage
         .from('videos')
         .upload(fileName, file, { 
@@ -81,69 +77,63 @@ export class VideoJobService {
         });
 
       if (error) {
-        console.error('Direct upload error:', error);
-        throw new Error(`Failed to upload video: ${error.message}`);
+        throw new Error(`Upload failed: ${error.message}`);
       }
       
-      if (onProgress) onProgress(100);
-      console.log('Direct upload successful:', data);
+      onProgress?.(100);
+      console.log('✅ Direct upload successful');
       return data.path;
       
     } catch (error: any) {
-      console.error('Direct upload exception:', error);
+      console.error('💥 Direct upload failed:', error);
       throw error;
     }
   }
 
   private static async uploadVideoWithChunking(file: File, onProgress?: (progress: number) => void): Promise<string> {
-    console.log('Starting chunked upload process');
+    console.log('🔄 Starting chunked upload...');
     
     try {
-      if (onProgress) onProgress(5);
+      onProgress?.(2);
 
-      console.log('Splitting file into chunks...');
+      // Split file into chunks
       const { chunks, metadata } = await VideoChunkingService.splitVideoFile(file);
-      console.log(`File split into ${chunks.length} chunks successfully`);
+      console.log(`✂️ File split into ${chunks.length} chunks`);
 
-      if (onProgress) onProgress(15);
+      onProgress?.(5);
 
-      const chunkProgress = (chunkProgressPercent: number) => {
-        if (onProgress) {
-          // Reserve 15-95% for chunk upload progress
-          const totalProgress = 15 + (chunkProgressPercent * 0.8);
-          console.log(`Reporting progress: ${totalProgress.toFixed(1)}%`);
-          onProgress(totalProgress);
-        }
-      };
-
-      console.log('Starting chunk uploads...');
+      // Upload chunks with progress tracking
       const chunkedMetadata = await VideoChunkingService.uploadVideoChunks(
         chunks, 
         metadata, 
-        chunkProgress
+        (chunkProgress) => {
+          // Map chunk progress to overall progress (5% to 95%)
+          const overallProgress = 5 + (chunkProgress * 0.9);
+          onProgress?.(overallProgress);
+        }
       );
 
-      if (onProgress) onProgress(100);
+      onProgress?.(100);
 
       const metadataPath = `chunked:${JSON.stringify(chunkedMetadata)}`;
-      console.log('Chunked upload completed successfully');
+      console.log('🎉 Chunked upload completed successfully!');
       
       return metadataPath;
     } catch (error: any) {
-      console.error('Chunked upload failed:', error);
-      throw new Error(`Chunked upload failed: ${error.message || 'Unknown error'}`);
+      console.error('💥 Chunked upload failed:', error);
+      throw new Error(`Chunked upload failed: ${error.message}`);
     }
   }
 
   static async getVideoDownloadUrl(videoPath: string): Promise<string> {
-    console.log(`Getting download URL for path: ${videoPath.substring(0, 50)}...`);
+    console.log(`🔗 Getting download URL for: ${videoPath.substring(0, 50)}...`);
     
     try {
       if (videoPath.startsWith('chunked:')) {
         const metadataJson = videoPath.replace('chunked:', '');
         const metadata: ChunkedVideoMetadata = JSON.parse(metadataJson);
         
-        console.log('Getting URL for chunked video');
+        console.log('🧩 Getting URL for chunked video');
         return await VideoChunkingService.getChunkedVideoUrl(metadata);
       } else {
         const { data, error } = await supabase.storage.from('videos').createSignedUrl(videoPath, 3600);
