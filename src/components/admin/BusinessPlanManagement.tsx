@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -110,12 +109,18 @@ const BusinessPlanManagement: React.FC = () => {
     }
   ]);
 
-  const [newGoal, setNewGoal] = useState({
+  const [newGoal, setNewGoal] = useState<{
+    title: string;
+    description: string;
+    target: string;
+    deadline: string;
+    priority: 'low' | 'medium' | 'high';
+  }>({
     title: '',
     description: '',
     target: '',
     deadline: '',
-    priority: 'medium' as const
+    priority: 'medium'
   });
 
   const [newRevenue, setNewRevenue] = useState({
