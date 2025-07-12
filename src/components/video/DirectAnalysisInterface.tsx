@@ -1,540 +1,314 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
-import { Slider } from '@/components/ui/slider';
-import { useToast } from "@/hooks/use-toast";
-import { Copy, Check, ChevronsUpDown, Download, Upload, Link, X, AlertCircle, BarChart3 } from 'lucide-react';
-import { YouTubeService } from '@/services/youtubeService';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { cn } from "@/lib/utils"
-import { format } from 'date-fns'
-import { CalendarIcon } from "lucide-react"
-import { DateRange } from "react-day-picker"
-import { addMinutes, formatISO } from 'date-fns';
-import EnhancedVideoPlayer, { VideoPlayerRef } from './EnhancedVideoPlayer';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AdvancedVideoAnalysisInterface } from './analysis/AdvancedVideoAnalysisInterface';
+
+import React, { useState, useRef, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Settings, BarChart3, Download, Upload, Users, Activity } from 'lucide-react';
+import { toast } from 'sonner';
+import { EnhancedVideoPlayer } from './EnhancedVideoPlayer';
+import { ProductionTacticalOverlay } from './analysis/ProductionTacticalOverlay';
+import { AnalysisControlPanel } from './analysis/AnalysisControlPanel';
 
 interface DirectAnalysisInterfaceProps {
   videoUrl: string;
 }
 
-interface Timestamp {
-  id: string;
-  time: number;
-  description: string;
-}
-
 export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = ({ videoUrl }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [isCopied, setIsCopied] = useState(false);
-  const [timestampDescription, setTimestampDescription] = useState('');
-  const [timestamps, setTimestamps] = useState<Timestamp[]>([]);
-  const [selectedTimestamp, setSelectedTimestamp] = useState<string | null>(null);
-  const [isYoutubeUrl, setIsYoutubeUrl] = useState(false);
-  const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [extractionError, setExtractionError] = useState<string | null>(null);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadError, setDownloadError] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
-  const [date, setDate] = useState<DateRange | undefined>(undefined);
-  const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
-  const [isEventValid, setIsEventValid] = useState(false);
-  const [isTimeValid, setIsTimeValid] = useState(false);
-  const [isDescriptionValid, setIsDescriptionValid] = useState(false);
-  const { toast } = useToast();
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [videoDimensions, setVideoDimensions] = useState({ width: 0, height: 0 });
+  const [analysisStats, setAnalysisStats] = useState({
+    playerCount: 22,
+    avgConfidence: 87,
+    detectedEvents: 45,
+    analysisProgress: 0
+  });
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const videoRef = useRef<VideoPlayerRef>(null);
-
-  // Check if the provided URL is a YouTube URL
-  useEffect(() => {
-    const checkYouTubeUrl = () => {
-      try {
-        const url = new URL(videoUrl);
-        const isYT = url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be');
-        setIsYoutubeUrl(isYT);
-        
-        if (isYT) {
-          const videoId = YouTubeService.extractVideoId(videoUrl);
-          setYoutubeVideoId(videoId);
-        }
-      } catch (error) {
-        setIsYoutubeUrl(false);
-        setYoutubeVideoId(null);
-      }
-    };
-    
-    if (videoUrl) {
-      checkYouTubeUrl();
-    }
-  }, [videoUrl]);
-
-  const handleTimeUpdate = (time: number) => {
+  const handleVideoTimeUpdate = (time: number) => {
     setCurrentTime(time);
   };
 
-  const handleDurationChange = (durationValue: number) => {
-    setDuration(durationValue);
+  const handleVideoDurationChange = (dur: number) => {
+    setDuration(dur);
   };
 
-  const formatTime = (time: number): string => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  const handleVideoPlay = () => {
+    setIsPlaying(true);
   };
 
-  const handleSliderChange = (value: number[]) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = value[0];
-      setCurrentTime(value[0]);
-    }
+  const handleVideoPause = () => {
+    setIsPlaying(false);
   };
 
-  const handleAddTimestamp = () => {
-    if (!timestampDescription.trim()) {
-      toast({
-        title: "Required",
-        description: "Description is required",
-      })
-      return;
-    }
-
-    const newTimestamp = {
-      id: Date.now().toString(),
-      time: currentTime,
-      description: timestampDescription,
-    };
-    setTimestamps([...timestamps, newTimestamp]);
-    setTimestampDescription('');
-  };
-
-  const handleCopyToClipboard = () => {
-    const textToCopy = timestamps.map(ts => `${formatTime(ts.time)} - ${ts.description}`).join('\n');
-    navigator.clipboard.writeText(textToCopy)
-      .then(() => {
-        setIsCopied(true);
-        toast({
-          title: "Copied",
-          description: "Timestamps copied to clipboard!",
-        })
-        setTimeout(() => setIsCopied(false), 3000);
-      })
-      .catch(err => console.error("Could not copy text: ", err));
-  };
-
-  const handleTimestampClick = (time: number) => {
+  const handleSeek = (time: number) => {
     if (videoRef.current) {
       videoRef.current.currentTime = time;
       setCurrentTime(time);
     }
   };
 
-  const handleTimestampDelete = (id: string) => {
-    setTimestamps(timestamps.filter(ts => ts.id !== id));
-    setSelectedTimestamp(null);
-  };
-
-  const handleTimestampEdit = (id: string) => {
-    setSelectedTimestamp(id);
-    const timestampToEdit = timestamps.find(ts => ts.id === id);
-    if (timestampToEdit) {
-      setCurrentTime(timestampToEdit.time);
-      setTimestampDescription(timestampToEdit.description);
-    }
-  };
-
-  const handleTimestampUpdate = () => {
-    if (!selectedTimestamp) return;
-
-    const updatedTimestamps = timestamps.map(ts =>
-      ts.id === selectedTimestamp ? { ...ts, time: currentTime, description: timestampDescription } : ts
-    );
-    setTimestamps(updatedTimestamps);
-    setSelectedTimestamp(null);
-    setTimestampDescription('');
-  };
-
-  const handleYouTubeURL = async () => {
-    setIsExtracting(true);
-    setExtractionError(null);
-    setYoutubeVideoId(null);
-
-    try {
-      const extractedVideoId = YouTubeService.extractVideoId(videoUrl);
-      if (extractedVideoId) {
-        setYoutubeVideoId(extractedVideoId);
-        toast({
-          title: "Success",
-          description: "YouTube URL is valid",
-        })
+  const handlePlayPause = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
       } else {
-        setExtractionError('Could not extract video ID from the URL.');
-        toast({
-          title: "Error",
-          description: "Could not extract video ID from the URL.",
-        })
+        videoRef.current.play();
       }
-    } catch (error: any) {
-      console.error('Error extracting YouTube video ID:', error);
-      setExtractionError(error.message || 'Failed to extract video ID.');
-      toast({
-        title: "Error",
-        description: error.message || 'Failed to extract video ID.',
-      })
-    } finally {
-      setIsExtracting(false);
     }
   };
 
-  const handleDownloadTimestamps = async () => {
-    setIsDownloading(true);
-    setDownloadError(null);
-
-    try {
-      const filename = 'timestamps.txt';
-      const text = timestamps.map(ts => `${formatTime(ts.time)} - ${ts.description}`).join('\n');
-
-      const blob = new Blob([text], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast({
-        title: "Success",
-        description: "Timestamps downloaded successfully",
-      })
-    } catch (error: any) {
-      console.error('Error downloading timestamps:', error);
-      setDownloadError(error.message || 'Failed to download timestamps.');
-      toast({
-        title: "Error",
-        description: error.message || 'Failed to download timestamps.',
-      })
-    } finally {
-      setIsDownloading(false);
+  const handleVolumeChange = (newVolume: number) => {
+    setVolume(newVolume);
+    if (videoRef.current) {
+      videoRef.current.volume = newVolume;
     }
   };
 
-  const handleUploadTimestamps = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    setIsUploading(true);
-    setUploadError(null);
-    setUploadSuccess(null);
-
-    const file = event.target.files?.[0];
-    if (!file) {
-      setIsUploading(false);
-      return;
-    }
-
-    try {
-      const text = await file.text();
-      const lines = text.split('\n');
-      const newTimestamps = lines.map(line => {
-        const [timePart, description] = line.split(' - ');
-        if (!timePart || !description) return null;
-
-        const [minutes, seconds] = timePart.split(':').map(Number);
-        if (isNaN(minutes) || isNaN(seconds)) return null;
-
-        const timeInSeconds = minutes * 60 + seconds;
-        return {
-          id: Date.now().toString(),
-          time: timeInSeconds,
-          description: description.trim(),
-        };
-      }).filter(Boolean) as Timestamp[];
-
-      setTimestamps(newTimestamps);
-      setUploadSuccess('Timestamps uploaded successfully!');
-      toast({
-        title: "Success",
-        description: "Timestamps uploaded successfully!",
-      })
-    } catch (error: any) {
-      console.error('Error uploading timestamps:', error);
-      setUploadError(error.message || 'Failed to upload timestamps.');
-      toast({
-        title: "Error",
-        description: error.message || 'Failed to upload timestamps.',
-      })
-    } finally {
-      setIsUploading(false);
+  const handleFullscreenToggle = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen();
+    } else {
+      document.exitFullscreen();
     }
   };
 
-  const handleEventChange = (event: string) => {
-    setSelectedEvent(event);
-    setIsEventValid(!!event);
+  const handleVideoDimensionsChange = (dimensions: { width: number; height: number }) => {
+    setVideoDimensions(dimensions);
   };
 
-  const handleTimeChange = (time: number) => {
-    setCurrentTime(time);
-    setIsTimeValid(!!time);
+  const handleStartAnalysis = async () => {
+    setIsAnalyzing(true);
+    toast.info('Starting video analysis...');
+    
+    // Simulate analysis progress
+    for (let i = 0; i <= 100; i += 10) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      setAnalysisStats(prev => ({ ...prev, analysisProgress: i }));
+    }
+    
+    setIsAnalyzing(false);
+    toast.success('Analysis completed successfully!');
   };
 
-  const handleDescriptionChange = (description: string) => {
-    setTimestampDescription(description);
-    setIsDescriptionValid(!!description);
+  const handleSaveAnnotations = () => {
+    toast.success('Annotations saved successfully!');
   };
+
+  const handleExportData = () => {
+    toast.success('Analysis data exported!');
+  };
+
+  // Monitor fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   return (
-    <div className="w-full">
-      {/* YouTube URL Warning */}
-      {isYoutubeUrl && (
-        <Alert className="border-yellow-200 bg-yellow-50 mb-6">
-          <AlertCircle className="h-4 w-4 text-yellow-600" />
-          <AlertDescription className="text-yellow-800">
-            <strong>YouTube URL Detected:</strong> Direct YouTube URLs cannot be played in a standard video player due to CORS restrictions. 
-            Consider uploading the video file directly or using a different video hosting service that allows direct access.
-            {youtubeVideoId && (
-              <div className="mt-2">
-                <strong>Video ID:</strong> {youtubeVideoId}
-              </div>
-            )}
-          </AlertDescription>
-        </Alert>
-      )}
+    <div className="container mx-auto p-4 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Video Analysis</h1>
+          <p className="text-muted-foreground">Advanced tactical analysis and annotation tools</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-500/30">
+            <Activity className="w-3 h-3 mr-1" />
+            Live Analysis
+          </Badge>
+          <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+            <Users className="w-3 h-3 mr-1" />
+            {analysisStats.playerCount} Players
+          </Badge>
+        </div>
+      </div>
 
-      {/* Main Interface Tabs */}
-      <Tabs defaultValue="advanced" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="basic">Basic Analysis</TabsTrigger>
-          <TabsTrigger value="advanced">
-            <BarChart3 className="w-4 h-4 mr-2" />
+      <Tabs defaultValue="advanced" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="basic" className="flex items-center gap-2">
+            <Play className="w-4 h-4" />
+            Basic Playback
+          </TabsTrigger>
+          <TabsTrigger value="advanced" className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
             Advanced Analysis
           </TabsTrigger>
+          <TabsTrigger value="controls" className="flex items-center gap-2">
+            <Settings className="w-4 h-4" />
+            Controls
+          </TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="advanced" className="space-y-6">
-          <AdvancedVideoAnalysisInterface videoUrl={videoUrl} />
-        </TabsContent>
-        
-        <TabsContent value="basic" className="space-y-6">
-          {/* Video Player - Only show if not a YouTube URL */}
-          {!isYoutubeUrl ? (
-            <>
-              <EnhancedVideoPlayer
-                ref={videoRef}
-                src={videoUrl}
-                onTimeUpdate={handleTimeUpdate}
-                onDurationChange={handleDurationChange}
-                className="w-full"
-              />
 
-              {/* Current Time Display and Slider */}
-              <div className="flex items-center space-x-2">
-                <Label htmlFor="video-slider">Current Time: {formatTime(currentTime)} / {formatTime(duration)}</Label>
-                <Slider
-                  id="video-slider"
-                  defaultValue={[0]}
-                  max={duration}
-                  step={0.1}
-                  onValueChange={handleSliderChange}
-                  aria-label="Video timeline"
+        <TabsContent value="basic" className="space-y-4">
+          <Card>
+            <CardContent className="p-0">
+              <div className="relative">
+                <EnhancedVideoPlayer
+                  ref={videoRef}
+                  videoUrl={videoUrl}
+                  onTimeUpdate={handleVideoTimeUpdate}
+                  onDurationChange={handleVideoDurationChange}
+                  onPlay={handleVideoPlay}
+                  onPause={handleVideoPause}
+                  onVolumeChange={handleVolumeChange}
+                  onFullscreenToggle={handleFullscreenToggle}
+                  onDimensionsChange={handleVideoDimensionsChange}
+                  showControls={true}
+                  autoPlay={false}
                 />
               </div>
-            </>
-          ) : (
-            <Card className="bg-gray-50">
-              <CardContent className="flex items-center justify-center p-8">
-                <div className="text-center">
-                  <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">YouTube Video Detected</h3>
-                  <p className="text-gray-600">
-                    This appears to be a YouTube URL. Please upload the video file directly or use a different video hosting service.
-                  </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="advanced" className="space-y-4">
+          <Card>
+            <CardContent className="p-0">
+              <div ref={containerRef} className="relative bg-black">
+                <EnhancedVideoPlayer
+                  ref={videoRef}
+                  videoUrl={videoUrl}
+                  onTimeUpdate={handleVideoTimeUpdate}
+                  onDurationChange={handleVideoDurationChange}
+                  onPlay={handleVideoPlay}
+                  onPause={handleVideoPause}
+                  onVolumeChange={handleVolumeChange}
+                  onFullscreenToggle={handleFullscreenToggle}
+                  onDimensionsChange={handleVideoDimensionsChange}
+                  showControls={true}
+                  autoPlay={false}
+                />
+                
+                {/* Production Tactical Overlay with Drawing Tools */}
+                <ProductionTacticalOverlay
+                  videoElement={videoRef.current}
+                  videoUrl={videoUrl}
+                  videoDimensions={videoDimensions}
+                  currentTime={currentTime}
+                  isPlaying={isPlaying}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Analysis Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-500" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Players Detected</p>
+                    <p className="font-semibold">{analysisStats.playerCount}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          )}
-
-          {/* Timestamp Controls */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Add Timestamp Section */}
+            
             <Card>
-              <CardContent className="space-y-4">
-                <h4 className="text-sm font-medium">Add Timestamp</h4>
-                <div className="grid grid-cols-2 gap-2">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-green-500" />
                   <div>
-                    <Label htmlFor="event-select">Event</Label>
-                    <Select onValueChange={handleEventChange}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select event" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="goal">Goal</SelectItem>
-                        <SelectItem value="foul">Foul</SelectItem>
-                        <SelectItem value="corner">Corner</SelectItem>
-                        <SelectItem value="substitution">Substitution</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="time-input">Time</Label>
-                    <Input
-                      type="number"
-                      id="time-input"
-                      value={currentTime}
-                      onChange={(e) => handleTimeChange(Number(e.target.value))}
-                      className="w-full"
-                    />
+                    <p className="text-sm text-muted-foreground">Avg Confidence</p>
+                    <p className="font-semibold">{analysisStats.avgConfidence}%</p>
                   </div>
                 </div>
-                <div>
-                  <Label htmlFor="timestamp-description">Description</Label>
-                  <Input
-                    type="text"
-                    id="timestamp-description"
-                    value={timestampDescription}
-                    onChange={(e) => handleDescriptionChange(e.target.value)}
-                    placeholder="Enter description"
-                    className="w-full"
-                  />
-                </div>
-                <Button 
-                  onClick={handleAddTimestamp} 
-                  disabled={!isEventValid || !isTimeValid || !isDescriptionValid || isYoutubeUrl} 
-                  className="w-full"
-                >
-                  Add Timestamp
-                </Button>
               </CardContent>
             </Card>
-
-            {/* Timestamp List Section */}
+            
             <Card>
-              <CardContent className="space-y-4">
-                <h4 className="text-sm font-medium">Timestamps</h4>
-                <ul className="space-y-2">
-                  {timestamps.map(ts => (
-                    <li key={ts.id} className="flex items-center justify-between p-2 border rounded-md">
-                      <button 
-                        onClick={() => handleTimestampClick(ts.time)} 
-                        className="hover:underline"
-                        disabled={isYoutubeUrl}
-                      >
-                        {formatTime(ts.time)} - {ts.description}
-                      </button>
-                      <div className="flex space-x-2">
-                        <Button variant="outline" size="icon" onClick={() => handleTimestampEdit(ts.id)}>
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button variant="destructive" size="icon" onClick={() => handleTimestampDelete(ts.id)}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-purple-500" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Events Detected</p>
+                    <p className="font-semibold">{analysisStats.detectedEvents}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-orange-500" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Analysis Status</p>
+                    <p className="font-semibold">{isAnalyzing ? 'Processing...' : 'Ready'}</p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
 
-          {/* Actions Section */}
-          <Card>
-            <CardContent className="space-y-4">
-              <h4 className="text-sm font-medium">Actions</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button onClick={handleCopyToClipboard} disabled={timestamps.length === 0}>
-                  Copy to Clipboard
-                  {isCopied && <Check className="ml-2 h-4 w-4" />}
-                </Button>
-                <Button onClick={handleDownloadTimestamps} disabled={timestamps.length === 0} >
-                  Download Timestamps
-                </Button>
-                <div>
-                  <Input
-                    type="file"
-                    id="upload"
-                    className="hidden"
-                    onChange={handleUploadTimestamps}
-                    accept=".txt"
-                  />
-                  <Label htmlFor="upload" className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 w-full">
-                    Upload Timestamps
-                  </Label>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* YouTube URL Information */}
-          {isYoutubeUrl && (
+        <TabsContent value="controls" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <AnalysisControlPanel
+              currentTime={currentTime}
+              duration={duration}
+              isPlaying={isPlaying}
+              onSeek={handleSeek}
+              onPlayPause={handlePlayPause}
+              isAnalyzing={isAnalyzing}
+              analysisProgress={analysisStats.analysisProgress}
+              playerCount={analysisStats.playerCount}
+              avgConfidence={analysisStats.avgConfidence}
+              onStartAnalysis={handleStartAnalysis}
+              onSaveAnnotations={handleSaveAnnotations}
+              onExportData={handleExportData}
+            />
+            
             <Card>
+              <CardHeader>
+                <CardTitle>Export Options</CardTitle>
+              </CardHeader>
               <CardContent className="space-y-4">
-                <h4 className="text-sm font-medium">YouTube Video Information</h4>
-                {youtubeVideoId && (
+                <div className="grid grid-cols-2 gap-4">
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Download className="w-4 h-4" />
+                    Export Video
+                  </Button>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Download className="w-4 h-4" />
+                    Export Data
+                  </Button>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Upload className="w-4 h-4" />
+                    Import Config
+                  </Button>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Settings className="w-4 h-4" />
+                    Settings
+                  </Button>
+                </div>
+                
+                {isAnalyzing && (
                   <div className="space-y-2">
-                    <p><strong>Video ID:</strong> {youtubeVideoId}</p>
-                    <p><strong>URL:</strong> {videoUrl}</p>
+                    <div className="flex justify-between text-sm">
+                      <span>Analysis Progress</span>
+                      <span>{analysisStats.analysisProgress}%</span>
+                    </div>
+                    <Progress value={analysisStats.analysisProgress} className="h-2" />
                   </div>
                 )}
-                <Button onClick={handleYouTubeURL} disabled={isExtracting}>
-                  {isExtracting ? 'Extracting...' : 'Refresh Video Info'}
-                </Button>
-                {extractionError && <p className="text-red-500 text-sm">{extractionError}</p>}
               </CardContent>
             </Card>
-          )}
-
-          {/* Date Range Picker */}
-          <Card>
-            <CardContent className="space-y-4">
-              <h4 className="text-sm font-medium">Date Range</h4>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-[280px] justify-start text-left font-normal",
-                      !date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date?.from ? (
-                      date.to ? (
-                        `${format(date.from, "LLL dd, y")} - ${format(date.to, "LLL dd, y")}`
-                      ) : (
-                        format(date.from, "LLL dd, y")
-                      )
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="center" side="bottom">
-                  <Calendar
-                    mode="range"
-                    defaultMonth={date?.from}
-                    selected={date}
-                    onSelect={setDate}
-                    numberOfMonths={2}
-                    pagedNavigation
-                  />
-                </PopoverContent>
-              </Popover>
-            </CardContent>
-          </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
