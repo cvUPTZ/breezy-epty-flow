@@ -29,11 +29,14 @@ export class VideoChunkingService {
       const chunks: Blob[] = [];
       const videoId = `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+      console.log(`Splitting file into ${totalChunks} chunks of ${chunkSize} bytes each`);
+
       for (let i = 0; i < totalChunks; i++) {
         const start = i * chunkSize;
         const end = Math.min(start + chunkSize, file.size);
         const chunk = file.slice(start, end);
         chunks.push(chunk);
+        console.log(`Created chunk ${i + 1}/${totalChunks}: ${chunk.size} bytes`);
       }
 
       const metadata = {
@@ -49,7 +52,7 @@ export class VideoChunkingService {
   }
 
   /**
-   * Upload video chunks to storage
+   * Upload video chunks to storage with improved error handling
    */
   static async uploadVideoChunks(
     chunks: Blob[], 
@@ -59,39 +62,73 @@ export class VideoChunkingService {
     const { supabase } = await import('@/integrations/supabase/client');
     const uploadedChunks: VideoChunk[] = [];
     
+    console.log(`Starting upload of ${chunks.length} chunks for video: ${metadata.originalFileName}`);
+    
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
       const chunkFileName = `${metadata.id}_chunk_${i.toString().padStart(3, '0')}.part`;
       
-      console.log(`Uploading chunk ${i + 1}/${chunks.length}: ${chunkFileName}`);
+      console.log(`Uploading chunk ${i + 1}/${chunks.length}: ${chunkFileName} (${chunk.size} bytes)`);
 
-      const { data, error } = await supabase.storage
-        .from('videos')
-        .upload(chunkFileName, chunk, { 
-          cacheControl: '3600', 
-          upsert: false,
-          contentType: 'application/octet-stream'
+      try {
+        const { data, error } = await supabase.storage
+          .from('videos')
+          .upload(chunkFileName, chunk, { 
+            cacheControl: '3600', 
+            upsert: false,
+            contentType: 'application/octet-stream'
+          });
+
+        if (error) {
+          console.error(`Failed to upload chunk ${i}:`, error);
+          throw new Error(`Failed to upload chunk ${i + 1}/${chunks.length}: ${error.message}`);
+        }
+
+        if (!data || !data.path) {
+          throw new Error(`No data returned for chunk ${i + 1}/${chunks.length}`);
+        }
+
+        uploadedChunks.push({
+          id: `${metadata.id}_${i}`,
+          chunkIndex: i,
+          totalChunks: chunks.length,
+          path: data.path,
+          size: chunk.size
         });
 
-      if (error) {
-        console.error(`Failed to upload chunk ${i}:`, error);
-        throw new Error(`Failed to upload chunk ${i + 1}: ${error.message}`);
-      }
+        console.log(`Successfully uploaded chunk ${i + 1}/${chunks.length}: ${data.path}`);
 
-      uploadedChunks.push({
-        id: `${metadata.id}_${i}`,
-        chunkIndex: i,
-        totalChunks: chunks.length,
-        path: data.path,
-        size: chunk.size
-      });
+        // Report progress after each successful upload
+        if (onProgress) {
+          const progress = ((i + 1) / chunks.length) * 100;
+          console.log(`Upload progress: ${progress.toFixed(1)}%`);
+          onProgress(progress);
+        }
 
-      // Report progress
-      if (onProgress) {
-        const progress = ((i + 1) / chunks.length) * 100;
-        onProgress(progress);
+        // Add a small delay between uploads to prevent overwhelming the server
+        if (i < chunks.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+      } catch (uploadError: any) {
+        console.error(`Critical error uploading chunk ${i + 1}:`, uploadError);
+        
+        // Clean up any successfully uploaded chunks
+        if (uploadedChunks.length > 0) {
+          console.log(`Cleaning up ${uploadedChunks.length} successfully uploaded chunks`);
+          try {
+            const pathsToDelete = uploadedChunks.map(chunk => chunk.path);
+            await supabase.storage.from('videos').remove(pathsToDelete);
+          } catch (cleanupError) {
+            console.warn('Failed to clean up chunks:', cleanupError);
+          }
+        }
+        
+        throw new Error(`Upload failed at chunk ${i + 1}/${chunks.length}: ${uploadError.message}`);
       }
     }
+
+    console.log(`Successfully uploaded all ${chunks.length} chunks`);
 
     return {
       ...metadata,
@@ -101,7 +138,6 @@ export class VideoChunkingService {
 
   /**
    * Create a signed URL for the first chunk to use as video source
-   * Instead of reassembling all chunks, we'll use signed URLs approach
    */
   static async getChunkedVideoUrl(metadata: ChunkedVideoMetadata): Promise<string> {
     const { supabase } = await import('@/integrations/supabase/client');
@@ -109,8 +145,6 @@ export class VideoChunkingService {
     console.log(`Getting signed URL for chunked video: ${metadata.id}`);
 
     try {
-      // For now, let's try to get a signed URL for the first chunk
-      // This is a temporary solution - ideally we'd need a backend service to reassemble
       const firstChunk = metadata.chunks.find(chunk => chunk.chunkIndex === 0);
       
       if (!firstChunk) {
@@ -136,7 +170,6 @@ export class VideoChunkingService {
 
   /**
    * Create a blob URL from video chunks for playback
-   * This is kept as fallback but won't be used by default due to memory constraints
    */
   static async reassembleVideoFromChunks(metadata: ChunkedVideoMetadata): Promise<string> {
     const { supabase } = await import('@/integrations/supabase/client');
@@ -145,7 +178,6 @@ export class VideoChunkingService {
     console.log(`Reassembling video from ${metadata.totalChunks} chunks`);
 
     try {
-      // Download all chunks with better error handling
       for (const chunkInfo of metadata.chunks.sort((a, b) => a.chunkIndex - b.chunkIndex)) {
         console.log(`Downloading chunk ${chunkInfo.chunkIndex + 1}/${metadata.totalChunks}`);
         
@@ -165,11 +197,9 @@ export class VideoChunkingService {
         chunkBlobs.push(data);
       }
 
-      // Combine chunks into a single blob
       console.log('Combining chunks into single blob...');
       const combinedBlob = new Blob(chunkBlobs, { type: metadata.mimeType });
       
-      // Create blob URL for video playback
       const blobUrl = URL.createObjectURL(combinedBlob);
       console.log('Successfully created blob URL for reassembled video');
       
@@ -190,7 +220,12 @@ export class VideoChunkingService {
     const pathsToDelete = metadata.chunks.map(chunk => chunk.path);
     
     if (pathsToDelete.length > 0) {
-      await supabase.storage.from('videos').remove(pathsToDelete);
+      console.log(`Deleting ${pathsToDelete.length} video chunks`);
+      const { error } = await supabase.storage.from('videos').remove(pathsToDelete);
+      if (error) {
+        console.error('Error deleting video chunks:', error);
+        throw new Error(`Failed to delete video chunks: ${error.message}`);
+      }
     }
   }
 
@@ -198,6 +233,8 @@ export class VideoChunkingService {
    * Check if a file needs to be chunked
    */
   static needsChunking(file: File): boolean {
-    return file.size > this.CHUNK_SIZE;
+    const needsChunking = file.size > this.CHUNK_SIZE;
+    console.log(`File size: ${(file.size / 1024 / 1024).toFixed(2)}MB, needs chunking: ${needsChunking}`);
+    return needsChunking;
   }
 }
