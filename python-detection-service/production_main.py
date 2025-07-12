@@ -70,7 +70,7 @@ class Config:
     MAX_CONCURRENT_JOBS = int(os.getenv("MAX_CONCURRENT_JOBS", "3"))
     MAX_VIDEO_DURATION = int(os.getenv("MAX_VIDEO_DURATION", "600"))  # 10 minutes
     FRAME_PROCESSING_TIMEOUT = int(os.getenv("FRAME_PROCESSING_TIMEOUT", "30"))
-    ENABLE_REAL_ML = os.getenv("ENABLE_REAL_ML", "false").lower() == "true"
+    ENABLE_REAL_ML = os.getenv("ENABLE_REAL_ML", "true").lower() == "true"
     DB_PATH = os.getenv("DB_PATH", "detection_jobs.db")
     MODEL_CACHE_DIR = os.getenv("MODEL_CACHE_DIR", "./models")
     USE_GPU = os.getenv("USE_GPU", "true").lower() == "true" and torch.cuda.is_available() if ML_AVAILABLE else False
