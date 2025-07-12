@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -7,8 +7,15 @@ import { Progress } from '@/components/ui/progress';
 import { DirectAnalysisInterface } from '@/components/video/DirectAnalysisInterface';
 import { VideoJobService } from '@/services/videoJobService';
 import { VideoChunkingService } from '@/services/videoChunkingService';
-import { Upload, Link, X, FileVideo } from 'lucide-react';
+import { Upload, Link, X, FileVideo, Clock, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+
+interface CachedVideo {
+  fileName: string;
+  url: string;
+  uploadDate: string;
+  fileSize: number;
+}
 
 const DirectVideoAnalyzer: React.FC = () => {
   const [videoUrl, setVideoUrl] = useState<string>('');
@@ -18,7 +25,72 @@ const DirectVideoAnalyzer: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<string>('');
+  const [cachedVideos, setCachedVideos] = useState<CachedVideo[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load cached videos on component mount
+  useEffect(() => {
+    loadCachedVideos();
+  }, []);
+
+  const loadCachedVideos = () => {
+    try {
+      const cached = localStorage.getItem('cachedVideoUrls');
+      if (cached) {
+        const videos = JSON.parse(cached) as CachedVideo[];
+        setCachedVideos(videos);
+      }
+    } catch (error) {
+      console.error('Error loading cached videos:', error);
+    }
+  };
+
+  const saveCachedVideo = (fileName: string, url: string, fileSize: number) => {
+    try {
+      const newVideo: CachedVideo = {
+        fileName,
+        url,
+        uploadDate: new Date().toISOString(),
+        fileSize
+      };
+
+      const existingVideos = cachedVideos.filter(v => v.fileName !== fileName);
+      const updatedVideos = [newVideo, ...existingVideos].slice(0, 10); // Keep only last 10 videos
+      
+      localStorage.setItem('cachedVideoUrls', JSON.stringify(updatedVideos));
+      setCachedVideos(updatedVideos);
+    } catch (error) {
+      console.error('Error saving cached video:', error);
+    }
+  };
+
+  const deleteCachedVideo = (fileName: string) => {
+    try {
+      const updatedVideos = cachedVideos.filter(v => v.fileName !== fileName);
+      localStorage.setItem('cachedVideoUrls', JSON.stringify(updatedVideos));
+      setCachedVideos(updatedVideos);
+      toast.success('Cached video removed');
+    } catch (error) {
+      console.error('Error deleting cached video:', error);
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const formatDate = (dateString: string): string => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   const handleUrlSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +112,18 @@ const DirectVideoAnalyzer: React.FC = () => {
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    // Check if this file is already cached
+    const existingVideo = cachedVideos.find(v => v.fileName === file.name && v.fileSize === file.size);
+    if (existingVideo) {
+      setUploadedVideoUrl(existingVideo.url);
+      setSubmittedUrl(existingVideo.url);
+      toast.success('Using cached video - no upload needed!');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
 
     setIsUploading(true);
     setUploadProgress(0);
@@ -79,7 +163,10 @@ const DirectVideoAnalyzer: React.FC = () => {
       setUploadedVideoUrl(signedUrl);
       setSubmittedUrl(signedUrl);
       setUploadStatus('Upload completed successfully!');
-      toast.success('Video uploaded successfully');
+      
+      // Save to cache
+      saveCachedVideo(file.name, signedUrl, file.size);
+      toast.success('Video uploaded and cached successfully');
       
       // Reset progress after a short delay
       setTimeout(() => {
@@ -97,6 +184,12 @@ const DirectVideoAnalyzer: React.FC = () => {
         fileInputRef.current.value = '';
       }
     }
+  };
+
+  const handleUseCachedVideo = (video: CachedVideo) => {
+    setUploadedVideoUrl(video.url);
+    setSubmittedUrl(video.url);
+    toast.success(`Using cached video: ${video.fileName}`);
   };
 
   const handleReset = () => {
@@ -119,12 +212,63 @@ const DirectVideoAnalyzer: React.FC = () => {
           {!submittedUrl && (
             <CardDescription>
               Upload a video file or enter a video URL to start analyzing directly. Files larger than 40MB will be automatically split into chunks for optimal upload performance.
+              {cachedVideos.length > 0 && " Previously uploaded videos are cached for quick access."}
             </CardDescription>
           )}
         </CardHeader>
         <CardContent>
           {!submittedUrl ? (
             <div className="space-y-6">
+              {/* Cached Videos Section */}
+              {cachedVideos.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Clock className="h-5 w-5" />
+                      Recently Uploaded Videos
+                    </CardTitle>
+                    <CardDescription className="text-sm">
+                      Click on any video to use it without re-uploading.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {cachedVideos.map((video, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <FileVideo className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                              <span className="font-medium text-sm truncate">{video.fileName}</span>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {formatFileSize(video.fileSize)} • {formatDate(video.uploadDate)}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 ml-2">
+                            <Button
+                              onClick={() => handleUseCachedVideo(video)}
+                              size="sm"
+                              variant="outline"
+                              className="text-xs"
+                            >
+                              Use Video
+                            </Button>
+                            <Button
+                              onClick={() => deleteCachedVideo(video.fileName)}
+                              size="sm"
+                              variant="ghost"
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* URL Input Section */}
               <Card>
                 <CardHeader className="pb-3">
@@ -160,6 +304,7 @@ const DirectVideoAnalyzer: React.FC = () => {
                   </CardTitle>
                   <CardDescription className="text-sm">
                     Supports files up to several GB. Large files will be automatically chunked for reliable upload.
+                    Uploaded videos are cached to avoid re-uploading.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
