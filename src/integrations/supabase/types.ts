@@ -1295,9 +1295,22 @@ export type Database = {
         Args: { match_uuid: string }
         Returns: boolean
       }
+      cancel_ml_job: {
+        Args: { p_job_id: string; p_user_id: string }
+        Returns: boolean
+      }
       check_tracker_activity: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      create_ml_job: {
+        Args: {
+          p_video_url: string
+          p_user_id: string
+          p_priority?: string
+          p_config?: Json
+        }
+        Returns: string
       }
       find_replacement_tracker: {
         Args: { p_match_id: string; p_absent_tracker_id: string }
@@ -1310,6 +1323,24 @@ export type Database = {
           email: string
           raw_user_meta_data: Json
           created_at: string
+        }[]
+      }
+      get_ml_job: {
+        Args: { p_job_id: string }
+        Returns: {
+          id: string
+          video_url: string
+          user_id: string
+          status: string
+          priority: string
+          config: Json
+          progress: number
+          error_message: string
+          results: Json
+          created_at: string
+          started_at: string
+          completed_at: string
+          estimated_completion: string
         }[]
       }
       get_room_participant_count: {
@@ -1345,6 +1376,24 @@ export type Database = {
       get_user_effective_permissions: {
         Args: { user_id: string }
         Returns: Json
+      }
+      get_user_ml_jobs: {
+        Args: { p_user_id: string; p_limit?: number }
+        Returns: {
+          id: string
+          video_url: string
+          user_id: string
+          status: string
+          priority: string
+          config: Json
+          progress: number
+          error_message: string
+          results: Json
+          created_at: string
+          started_at: string
+          completed_at: string
+          estimated_completion: string
+        }[]
       }
       get_user_permissions: {
         Args: { user_id: string }
