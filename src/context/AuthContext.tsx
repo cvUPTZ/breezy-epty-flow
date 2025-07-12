@@ -5,7 +5,6 @@ import { User } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
-  userRole: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
@@ -20,22 +19,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const fetchUserRole = async (userId: string) => {
-    try {
-      const { data, error } = await supabase.rpc('get_user_role_from_auth', { user_id_param: userId });
-      if (error) {
-        console.error('Error fetching user role:', error);
-        return null;
-      }
-      return data;
-    } catch (error) {
-      console.error('Error in fetchUserRole:', error);
-      return null;
-    }
-  };
 
   useEffect(() => {
     // Get initial session
@@ -43,11 +27,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          const role = await fetchUserRole(session.user.id);
-          setUserRole(role);
-        }
       } catch (error) {
         console.error('Error getting initial session:', error);
       } finally {
@@ -61,14 +40,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          const role = await fetchUserRole(session.user.id);
-          setUserRole(role);
-        } else {
-          setUserRole(null);
-        }
-        
         setLoading(false);
       }
     );
@@ -99,7 +70,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value = {
     user,
-    userRole,
     loading,
     signIn,
     signUp,

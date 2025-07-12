@@ -33,7 +33,7 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    await signUp(email, password);
+    await signUp(email, password, fullName);
   };
 
   const handleGoogleAuth = async () => {
