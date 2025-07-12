@@ -6,10 +6,12 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Play, Pause, SkipBack, SkipForward, Maximize, Volume2, Settings, MapPin, Pencil, Eraser } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Settings } from 'lucide-react';
 import { VideoPlayerControls } from './VideoPlayerControls';
 import EventTaggingSection from './EventTaggingSection';
 import { AnnotationToolbox } from './AnnotationToolbox';
+import TacticalAnnotationOverlay from './TacticalAnnotationOverlay';
+import PlayerTrackingService from './PlayerTrackingService';
 import EnhancedVideoPlayer, { VideoPlayerRef } from '../EnhancedVideoPlayer';
 import { toast } from 'sonner';
 
@@ -22,11 +24,13 @@ interface AnalysisEvent {
   color: string;
 }
 
-interface AnnotationData {
+interface PlayerPosition {
   id: string;
-  timestamp: number;
-  type: 'circle' | 'rectangle' | 'arrow' | 'text';
-  data: any;
+  x: number;
+  y: number;
+  team: 'home' | 'away';
+  jerseyNumber?: number;
+  isCorrectPosition?: boolean;
 }
 
 interface AdvancedVideoAnalysisInterfaceProps {
@@ -47,10 +51,10 @@ export const AdvancedVideoAnalysisInterface: React.FC<AdvancedVideoAnalysisInter
   const [playbackRate, setPlaybackRate] = useState(1);
   const [volume, setVolume] = useState(0.8);
   const [events, setEvents] = useState<AnalysisEvent[]>(MOCK_EVENTS);
-  const [annotations, setAnnotations] = useState<AnnotationData[]>([]);
-  const [selectedAnnotationTool, setSelectedAnnotationTool] = useState<'none' | 'circle' | 'rectangle' | 'arrow' | 'text'>('none');
-  const [showAnnotations, setShowAnnotations] = useState(true);
   const [selectedEventType, setSelectedEventType] = useState<string>('all');
+  const [playerPositions, setPlayerPositions] = useState<PlayerPosition[]>([]);
+  const [isTrackingActive, setIsTrackingActive] = useState(false);
+  const [videoDimensions, setVideoDimensions] = useState({ width: 0, height: 0 });
 
   const videoRef = useRef<VideoPlayerRef>(null);
 
@@ -117,9 +121,55 @@ export const AdvancedVideoAnalysisInterface: React.FC<AdvancedVideoAnalysisInter
 
   const eventTypes = [...new Set(events.map(event => event.type))];
 
+  const handleTrackingData = useCallback((trackingData: any[]) => {
+    // Convert tracking data to player positions
+    const positions: PlayerPosition[] = trackingData.map(data => ({
+      id: data.playerId,
+      x: data.position.x,
+      y: data.position.y,
+      team: data.team,
+      jerseyNumber: data.jerseyNumber,
+      isCorrectPosition: Math.random() > 0.3 // Mock tactical analysis
+    }));
+    setPlayerPositions(positions);
+  }, []);
+
+  const handleAnalysisUpdate = useCallback((analysis: any) => {
+    // Handle analysis updates from the tracking service
+    console.log('Analysis update:', analysis);
+  }, []);
+
+  const handleAnnotationSave = useCallback((annotations: any[]) => {
+    console.log('Annotations saved:', annotations);
+    toast.success('Tactical annotations saved successfully');
+  }, []);
+
+  // Update video dimensions when video loads
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (videoRef.current) {
+        const video = videoRef.current as any;
+        if (video.videoWidth && video.videoHeight) {
+          setVideoDimensions({
+            width: 640, // Standard player width
+            height: 360  // Standard player height
+          });
+        }
+      }
+    };
+
+    const timer = setTimeout(updateDimensions, 1000);
+    return () => clearTimeout(timer);
+  }, [videoUrl]);
+
+  // Start tracking when video plays
+  useEffect(() => {
+    setIsTrackingActive(isPlaying);
+  }, [isPlaying]);
+
   return (
     <div className="w-full space-y-6">
-      {/* Video Player Section */}
+      {/* Video Player Section with Overlays */}
       <Card>
         <CardContent className="p-0">
           <div className="relative">
@@ -131,40 +181,13 @@ export const AdvancedVideoAnalysisInterface: React.FC<AdvancedVideoAnalysisInter
               className="w-full aspect-video"
             />
             
-            {/* Annotation Overlay */}
-            {showAnnotations && (
-              <div className="absolute inset-0 pointer-events-none">
-                {annotations
-                  .filter(ann => Math.abs(ann.timestamp - currentTime) < 1)
-                  .map(annotation => (
-                    <div key={annotation.id} className="absolute">
-                      {/* Render annotation based on type */}
-                      {annotation.type === 'circle' && (
-                        <div 
-                          className="border-2 border-red-500 rounded-full"
-                          style={{
-                            left: annotation.data.x,
-                            top: annotation.data.y,
-                            width: annotation.data.radius * 2,
-                            height: annotation.data.radius * 2,
-                          }}
-                        />
-                      )}
-                      {annotation.type === 'text' && (
-                        <div 
-                          className="bg-black bg-opacity-75 text-white px-2 py-1 rounded text-sm"
-                          style={{
-                            left: annotation.data.x,
-                            top: annotation.data.y,
-                          }}
-                        >
-                          {annotation.data.text}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
-            )}
+            {/* Tactical Annotation Overlay */}
+            <TacticalAnnotationOverlay
+              videoDimensions={videoDimensions}
+              currentTime={currentTime}
+              onAnnotationSave={handleAnnotationSave}
+              playerPositions={playerPositions}
+            />
           </div>
         </CardContent>
       </Card>
@@ -242,8 +265,8 @@ export const AdvancedVideoAnalysisInterface: React.FC<AdvancedVideoAnalysisInter
         </CardContent>
       </Card>
 
-      {/* Control Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Control Panel and AI Tracking */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Playback Controls */}
         <Card>
           <CardHeader>
@@ -299,134 +322,120 @@ export const AdvancedVideoAnalysisInterface: React.FC<AdvancedVideoAnalysisInter
           </CardContent>
         </Card>
 
-        {/* Annotation Tools */}
+        {/* AI Player Tracking */}
+        <PlayerTrackingService
+          videoUrl={videoUrl}
+          currentTime={currentTime}
+          isTracking={isTrackingActive}
+          onTrackingData={handleTrackingData}
+          onAnalysisUpdate={handleAnalysisUpdate}
+        />
+
+        {/* Quick Analysis Actions */}
         <Card>
           <CardHeader>
-            <CardTitle>Annotation Tools</CardTitle>
+            <CardTitle>Quick Analysis</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={selectedAnnotationTool === 'circle' ? 'default' : 'outline'}
-                onClick={() => setSelectedAnnotationTool('circle')}
-                className="flex items-center gap-2"
-              >
-                <div className="w-4 h-4 border-2 border-current rounded-full" />
-                Circle
-              </Button>
-              <Button
-                variant={selectedAnnotationTool === 'rectangle' ? 'default' : 'outline'}
-                onClick={() => setSelectedAnnotationTool('rectangle')}
-                className="flex items-center gap-2"
-              >
-                <div className="w-4 h-3 border-2 border-current" />
-                Rectangle
-              </Button>
-              <Button
-                variant={selectedAnnotationTool === 'arrow' ? 'default' : 'outline'}
-                onClick={() => setSelectedAnnotationTool('arrow')}
-                className="flex items-center gap-2"
-              >
-                →
-                Arrow
-              </Button>
-              <Button
-                variant={selectedAnnotationTool === 'text' ? 'default' : 'outline'}
-                onClick={() => setSelectedAnnotationTool('text')}
-                className="flex items-center gap-2"
-              >
-                <Pencil className="w-4 h-4" />
-                Text
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowAnnotations(!showAnnotations)}
-              >
-                {showAnnotations ? 'Hide' : 'Show'} Annotations
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setAnnotations([])}
-              >
-                <Eraser className="w-4 h-4 mr-2" />
-                Clear All
-              </Button>
-            </div>
+          <CardContent className="space-y-3">
+            <Button className="w-full" size="sm">
+              Analyze Formation
+            </Button>
+            <Button className="w-full" size="sm" variant="outline">
+              Check Offside
+            </Button>
+            <Button className="w-full" size="sm" variant="outline">
+              Measure Distances
+            </Button>
+            <Button className="w-full" size="sm" variant="outline">
+              Generate Report
+            </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* Data Visualization */}
+      {/* Data Visualization Tabs */}
       <Card>
         <CardHeader>
-          <CardTitle>Match Statistics</CardTitle>
+          <CardTitle>Match Analysis & Statistics</CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="events" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="events">Event Timeline</TabsTrigger>
-              <TabsTrigger value="heatmap">Player Heatmap</TabsTrigger>
-              <TabsTrigger value="stats">Live Stats</TabsTrigger>
+          <Tabs defaultValue="tracking" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="tracking">Player Tracking</TabsTrigger>
+              <TabsTrigger value="tactical">Tactical Analysis</TabsTrigger>
+              <TabsTrigger value="heatmap">Heatmaps</TabsTrigger>
+              <TabsTrigger value="stats">Statistics</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="events" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {eventTypes.map(type => {
-                  const count = events.filter(e => e.type === type).length;
-                  return (
-                    <div key={type} className="p-4 bg-gray-50 rounded-lg">
-                      <div className="text-2xl font-bold">{count}</div>
-                      <div className="text-sm capitalize">{type}s</div>
-                    </div>
-                  );
-                })}
+            <TabsContent value="tracking" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="text-2xl font-bold">{playerPositions.length}</div>
+                  <div className="text-sm">Players Tracked</div>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="text-2xl font-bold">24.3</div>
+                  <div className="text-sm">Avg Speed (km/h)</div>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="tactical" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="text-lg font-bold text-green-700">Formation Stability</div>
+                  <div className="text-2xl font-bold text-green-600">87%</div>
+                </div>
+                <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <div className="text-lg font-bold text-yellow-700">Compactness</div>
+                  <div className="text-2xl font-bold text-yellow-600">72%</div>
+                </div>
+                <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                  <div className="text-lg font-bold text-red-700">Violations</div>
+                  <div className="text-2xl font-bold text-red-600">3</div>
+                </div>
               </div>
             </TabsContent>
             
             <TabsContent value="heatmap">
               <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-                <span className="text-gray-500">Player heatmap visualization would go here</span>
+                <span className="text-gray-500">Player movement heatmaps will be displayed here</span>
               </div>
             </TabsContent>
             
             <TabsContent value="stats">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <h4 className="font-medium">Home Team</h4>
+                  <h4 className="font-medium">Team Performance</h4>
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
                       <span>Possession</span>
                       <span>58%</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Shots</span>
-                      <span>12</span>
+                      <span>Pass Accuracy</span>
+                      <span>84%</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Passes</span>
-                      <span>342</span>
+                      <span>Distance Covered</span>
+                      <span>89.2 km</span>
                     </div>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <h4 className="font-medium">Away Team</h4>
+                  <h4 className="font-medium">Tactical Metrics</h4>
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
-                      <span>Possession</span>
-                      <span>42%</span>
+                      <span>Formation Discipline</span>
+                      <span>Good</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Shots</span>
-                      <span>8</span>
+                      <span>Pressing Intensity</span>
+                      <span>High</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Passes</span>
-                      <span>278</span>
+                      <span>Width Usage</span>
+                      <span>Optimal</span>
                     </div>
                   </div>
                 </div>
