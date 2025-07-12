@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -22,7 +23,8 @@ import {
   BarChart3,
   LayoutDashboard,
   LogOut,
-  Building2
+  Building2,
+  Calculator
 } from 'lucide-react';
 
 // Sidebar components
@@ -60,6 +62,7 @@ import RealTimeMatchEvents from '@/components/admin/RealTimeMatchEvents';
 import AbsenceSummaryDashboard from '@/components/admin/AbsenceSummaryDashboard';
 import QuickPlanningActions from '@/components/admin/QuickPlanningActions';
 import BusinessPlanManagement from '@/components/admin/BusinessPlanManagement';
+import BudgetTrackerConfig from '@/components/admin/BudgetTrackerConfig';
 
 const sidebarItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -77,6 +80,7 @@ const sidebarItems = [
   { id: 'audit', label: 'Audit', icon: FileText },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'business', label: 'Business Plan', icon: Building2 },
+  { id: 'budget', label: 'Budget Tracker', icon: Calculator },
 ];
 
 function AdminSidebar({ activeSection, setActiveSection }: { activeSection: string; setActiveSection: (section: string) => void }) {
@@ -502,6 +506,9 @@ const Admin: React.FC = () => {
 
       case 'business':
         return <BusinessPlanManagement />;
+
+      case 'budget':
+        return <BudgetTrackerConfig />;
 
       default:
         return <div>Section not found</div>;
