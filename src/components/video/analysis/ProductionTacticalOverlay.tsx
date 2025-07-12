@@ -106,9 +106,9 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
 
   return (
     <div className="absolute inset-0">
-      {/* Drawing Tools Panel - Only show when drawing mode is enabled */}
+      {/* Drawing Tools Panel - Use maximum z-index for fullscreen compatibility */}
       {drawingMode && (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[9999]">
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2" style={{ zIndex: 2147483647 }}>
           <DrawingToolsPanel
             activeAnnotationTool={activeAnnotationTool}
             onToolChange={setActiveAnnotationTool}
@@ -123,7 +123,7 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
 
       {/* Toggle Drawing Mode Button - Always visible */}
       {!drawingMode && (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[9999]">
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2" style={{ zIndex: 2147483647 }}>
           <button
             onClick={handleDrawingModeToggle}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition-colors"
@@ -134,11 +134,11 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
       )}
 
       {/* Drawing Overlay - Only intercept pointer events when actively drawing */}
-      <div className={`absolute inset-0 z-[9998] ${
+      <div className={`absolute inset-0 ${
         drawingMode && activeAnnotationTool !== 'select' 
           ? 'pointer-events-auto' 
           : 'pointer-events-none'
-      }`}>
+      }`} style={{ zIndex: 2147483646 }}>
         <AdvancedDrawingOverlay
           videoDimensions={videoDimensions}
           currentTime={currentTime}

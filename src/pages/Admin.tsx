@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -24,7 +23,8 @@ import {
   LayoutDashboard,
   LogOut,
   Building2,
-  Calculator
+  Calculator,
+  Video
 } from 'lucide-react';
 
 // Sidebar components
@@ -81,6 +81,7 @@ const sidebarItems = [
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'business', label: 'Business Plan', icon: Building2 },
   { id: 'budget', label: 'Budget Tracker', icon: Calculator },
+  { id: 'video-analyzer', label: 'Video Analyzer', icon: Video },
 ];
 
 function AdminSidebar({ activeSection, setActiveSection }: { activeSection: string; setActiveSection: (section: string) => void }) {
@@ -101,6 +102,10 @@ function AdminSidebar({ activeSection, setActiveSection }: { activeSection: stri
     navigate('/');
   };
 
+  const handleVideoAnalyzer = () => {
+    navigate('/direct-analyzer');
+  };
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -116,8 +121,16 @@ function AdminSidebar({ activeSection, setActiveSection }: { activeSection: stri
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
+              {/* Video Analyzer Link */}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={handleVideoAnalyzer}>
+                  <Video className="h-4 w-4" />
+                  <span>Video Analyzer</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {/* Admin Sections */}
-              {sidebarItems.map((item) => (
+              {sidebarItems.filter(item => item.id !== 'video-analyzer').map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
                     isActive={activeSection === item.id}
