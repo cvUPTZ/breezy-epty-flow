@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Settings, BarChart3, Download, Upload, Users, Activity } from 'lucide-react';
 import { toast } from 'sonner';
-import { EnhancedVideoPlayer } from './EnhancedVideoPlayer';
+import EnhancedVideoPlayer from './EnhancedVideoPlayer';
 import { ProductionTacticalOverlay } from './analysis/ProductionTacticalOverlay';
 import { AnalysisControlPanel } from './analysis/AnalysisControlPanel';
 
@@ -157,17 +156,9 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
             <CardContent className="p-0">
               <div className="relative">
                 <EnhancedVideoPlayer
-                  ref={videoRef}
-                  videoUrl={videoUrl}
+                  src={videoUrl}
                   onTimeUpdate={handleVideoTimeUpdate}
                   onDurationChange={handleVideoDurationChange}
-                  onPlay={handleVideoPlay}
-                  onPause={handleVideoPause}
-                  onVolumeChange={handleVolumeChange}
-                  onFullscreenToggle={handleFullscreenToggle}
-                  onDimensionsChange={handleVideoDimensionsChange}
-                  showControls={true}
-                  autoPlay={false}
                 />
               </div>
             </CardContent>
@@ -179,17 +170,9 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
             <CardContent className="p-0">
               <div ref={containerRef} className="relative bg-black">
                 <EnhancedVideoPlayer
-                  ref={videoRef}
-                  videoUrl={videoUrl}
+                  src={videoUrl}
                   onTimeUpdate={handleVideoTimeUpdate}
                   onDurationChange={handleVideoDurationChange}
-                  onPlay={handleVideoPlay}
-                  onPause={handleVideoPause}
-                  onVolumeChange={handleVolumeChange}
-                  onFullscreenToggle={handleFullscreenToggle}
-                  onDimensionsChange={handleVideoDimensionsChange}
-                  showControls={true}
-                  autoPlay={false}
                 />
                 
                 {/* Production Tactical Overlay with Drawing Tools */}
