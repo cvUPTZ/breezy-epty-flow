@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { AdvancedDrawingOverlay } from './AdvancedDrawingOverlay';
 import { TacticalPlayerHighlighting } from './TacticalPlayerHighlighting';
@@ -15,11 +14,12 @@ interface PlayerPosition {
 
 interface AnnotationElement {
   id: string;
-  type: 'circle' | 'line' | 'arrow' | 'distance' | 'area' | 'spotlight' | 'trajectory';
+  type: 'circle' | 'line' | 'arrow' | 'distance' | 'area' | 'spotlight' | 'trajectory' | 'offside-line' | 'pressure-zone' | 'passing-lane' | 'ellipse-light' | 'cone';
   points: { x: number; y: number }[];
   color: string;
   label?: string;
   measurement?: number;
+  intensity?: number;
 }
 
 interface TacticalAnnotationOverlayProps {

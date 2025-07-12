@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Circle, Square, ArrowRight, Ruler, Focus, MousePointer, PenTool, PenOff } from 'lucide-react';
+import { Circle, Square, ArrowRight, Ruler, Search, MousePointer, PenTool, PenOff, Zap, Triangle } from 'lucide-react';
 
 interface DrawingToolsPanelProps {
   activeAnnotationTool: string;
@@ -30,11 +30,13 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
     { id: 'line', icon: Square, label: 'Line', color: 'bg-green-500' },
     { id: 'arrow', icon: ArrowRight, label: 'Arrow', color: 'bg-purple-500' },
     { id: 'distance', icon: Ruler, label: 'Distance', color: 'bg-red-500' },
-    { id: 'spotlight', icon: Focus, label: 'Spotlight', color: 'bg-yellow-500' },
+    { id: 'spotlight', icon: Search, label: 'Spotlight', color: 'bg-yellow-500' },
+    { id: 'ellipse-light', icon: Zap, label: 'Light Zone', color: 'bg-orange-500' },
+    { id: 'cone', icon: Triangle, label: 'Cone', color: 'bg-pink-500' },
   ];
 
   return (
-    <div className="pointer-events-auto">
+    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto">
       <Card className="bg-black/80 backdrop-blur-sm border-white/20 text-white shadow-2xl">
         <CardContent className="p-2">
           <div className="flex items-center gap-2">

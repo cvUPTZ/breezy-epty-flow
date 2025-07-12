@@ -21,7 +21,7 @@ interface PlayerPosition {
 
 interface AnnotationElement {
   id: string;
-  type: 'circle' | 'line' | 'arrow' | 'distance' | 'spotlight' | 'trajectory' | 'area' | 'offside-line' | 'pressure-zone' | 'passing-lane';
+  type: 'circle' | 'line' | 'arrow' | 'distance' | 'spotlight' | 'trajectory' | 'area' | 'offside-line' | 'pressure-zone' | 'passing-lane' | 'ellipse-light' | 'cone';
   points: { x: number; y: number }[];
   color: string;
   label?: string;
@@ -128,7 +128,7 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
 
     if (['line', 'arrow', 'distance', 'trajectory', 'offside-line', 'passing-lane'].includes(activeAnnotationTool)) {
       setDrawingPoints([drawingPoints[0], { x, y }]);
-    } else if (['spotlight', 'pressure-zone'].includes(activeAnnotationTool)) {
+    } else if (['spotlight', 'pressure-zone', 'ellipse-light', 'cone'].includes(activeAnnotationTool)) {
       const radius = Math.sqrt(Math.pow(x - drawingPoints[0].x, 2) + Math.pow(y - drawingPoints[0].y, 2));
       setDrawingPoints([drawingPoints[0], { x: drawingPoints[0].x + radius, y: drawingPoints[0].y }]);
     }
@@ -147,7 +147,9 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
       area: '#06b6d4',
       'offside-line': '#dc2626',
       'pressure-zone': '#7c3aed',
-      'passing-lane': '#059669'
+      'passing-lane': '#059669',
+      'ellipse-light': '#f59e0b',
+      'cone': '#ec4899'
     };
 
     const newAnnotation: AnnotationElement = {
@@ -156,7 +158,7 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
       points: [...drawingPoints],
       color: colorMap[activeAnnotationTool as keyof typeof colorMap] || '#3b82f6',
       measurement: activeAnnotationTool === 'distance' ? calculateDistance(drawingPoints) : undefined,
-      intensity: ['spotlight', 'pressure-zone'].includes(activeAnnotationTool) ? 0.7 : undefined
+      intensity: ['spotlight', 'pressure-zone', 'ellipse-light', 'cone'].includes(activeAnnotationTool) ? 0.7 : undefined
     };
 
     setAnnotations(prev => [...prev, newAnnotation]);
@@ -452,6 +454,102 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
           );
         }
         break;
+
+      case 'ellipse-light':
+        if (isoPoints.length >= 2) {
+          const radius = Math.abs(isoPoints[1].x - isoPoints[0].x);
+          return (
+            <g key={annotation.id}>
+              {/* Vertical light beam */}
+              <defs>
+                <linearGradient id={`light-gradient-${annotation.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor={`${color}80`} />
+                  <stop offset="50%" stopColor={`${color}40`} />
+                  <stop offset="100%" stopColor={`${color}10`} />
+                </linearGradient>
+              </defs>
+              {/* Light beam extending upward */}
+              <rect
+                x={isoPoints[0].x - 20}
+                y={isoPoints[0].y - 200}
+                width="40"
+                height="200"
+                fill={`url(#light-gradient-${annotation.id})`}
+                className="animate-pulse"
+                transform={`skewX(-${perspectiveAngle})`}
+              />
+              {/* Main ellipse */}
+              <ellipse
+                cx={isoPoints[0].x}
+                cy={isoPoints[0].y}
+                rx={radius}
+                ry={radius * isometricScale}
+                fill={`${color}30`}
+                stroke={color}
+                strokeWidth="3"
+                className="animate-pulse drop-shadow-lg"
+                transform={`skewX(-${perspectiveAngle})`}
+              />
+              <text
+                x={isoPoints[0].x}
+                y={isoPoints[0].y - radius - 20}
+                textAnchor="middle"
+                fill={color}
+                fontSize="12"
+                fontWeight="bold"
+                className="drop-shadow-md"
+              >
+                LIGHT ZONE
+              </text>
+            </g>
+          );
+        }
+        break;
+
+      case 'cone':
+        if (isoPoints.length >= 2) {
+          const radius = Math.abs(isoPoints[1].x - isoPoints[0].x);
+          const coneHeight = radius * 1.5;
+          return (
+            <g key={annotation.id}>
+              {/* Cone shape using path */}
+              <path
+                d={`M ${isoPoints[0].x} ${isoPoints[0].y - coneHeight} 
+                    L ${isoPoints[0].x - radius} ${isoPoints[0].y} 
+                    A ${radius} ${radius * isometricScale} 0 0 0 ${isoPoints[0].x + radius} ${isoPoints[0].y} 
+                    Z`}
+                fill={`${color}40`}
+                stroke={color}
+                strokeWidth="3"
+                className="drop-shadow-lg"
+                transform={`skewX(-${perspectiveAngle})`}
+              />
+              {/* Cone base ellipse */}
+              <ellipse
+                cx={isoPoints[0].x}
+                cy={isoPoints[0].y}
+                rx={radius}
+                ry={radius * isometricScale * 0.3}
+                fill={`${color}60`}
+                stroke={color}
+                strokeWidth="2"
+                transform={`skewX(-${perspectiveAngle})`}
+              />
+              <text
+                x={isoPoints[0].x}
+                y={isoPoints[0].y + radius + 15}
+                textAnchor="middle"
+                fill={color}
+                fontSize="12"
+                fontWeight="bold"
+                className="drop-shadow-md"
+              >
+                CONE
+              </text>
+            </g>
+          );
+        }
+        break;
     }
     return null;
   };
@@ -658,6 +756,71 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
                   strokeDasharray="10,5"
                   className="animate-pulse"
                 />
+              )}
+              {activeAnnotationTool === 'ellipse-light' && drawingPoints.length === 2 && (
+                <g>
+                  <defs>
+                    <linearGradient id="preview-light-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#f59e0b80" />
+                      <stop offset="50%" stopColor="#f59e0b40" />
+                      <stop offset="100%" stopColor="#f59e0b10" />
+                    </linearGradient>
+                  </defs>
+                  <rect
+                    x={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x - 20}
+                    y={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).y - 200}
+                    width="40"
+                    height="200"
+                    fill="url(#preview-light-gradient)"
+                    className="animate-pulse"
+                  />
+                  <ellipse
+                    cx={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x}
+                    cy={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).y}
+                    rx={Math.abs(transformToIsometric(drawingPoints[1].x, drawingPoints[1].y).x - transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x)}
+                    ry={Math.abs(transformToIsometric(drawingPoints[1].x, drawingPoints[1].y).x - transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x) * isometricScale}
+                    fill="#f59e0b30"
+                    stroke="#f59e0b"
+                    strokeWidth="3"
+                    className="animate-pulse"
+                    transform={`skewX(-${perspectiveAngle})`}
+                  />
+                </g>
+              )}
+              {activeAnnotationTool === 'cone' && drawingPoints.length === 2 && (
+                <g>
+                  {(() => {
+                    const isoStart = transformToIsometric(drawingPoints[0].x, drawingPoints[0].y);
+                    const radius = Math.abs(transformToIsometric(drawingPoints[1].x, drawingPoints[1].y).x - isoStart.x);
+                    const coneHeight = radius * 1.5;
+                    return (
+                      <>
+                        <path
+                          d={`M ${isoStart.x} ${isoStart.y - coneHeight} 
+                              L ${isoStart.x - radius} ${isoStart.y} 
+                              A ${radius} ${radius * isometricScale} 0 0 0 ${isoStart.x + radius} ${isoStart.y} 
+                              Z`}
+                          fill="#ec489940"
+                          stroke="#ec4899"
+                          strokeWidth="3"
+                          className="animate-pulse"
+                          transform={`skewX(-${perspectiveAngle})`}
+                        />
+                        <ellipse
+                          cx={isoStart.x}
+                          cy={isoStart.y}
+                          rx={radius}
+                          ry={radius * isometricScale * 0.3}
+                          fill="#ec489960"
+                          stroke="#ec4899"
+                          strokeWidth="2"
+                          className="animate-pulse"
+                          transform={`skewX(-${perspectiveAngle})`}
+                        />
+                      </>
+                    );
+                  })()}
+                </g>
               )}
             </>
           )}
