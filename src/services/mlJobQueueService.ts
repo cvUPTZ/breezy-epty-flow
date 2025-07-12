@@ -39,7 +39,7 @@ class MLJobQueueService {
     }
 
     // Use raw SQL query since ml_detection_jobs isn't in the generated types yet
-    const { data, error } = await supabase.rpc('create_ml_job', {
+    const { data, error } = await (supabase as any).rpc('create_ml_job', {
       p_video_url: videoUrl,
       p_user_id: user.user.id,
       p_priority: priority,
@@ -53,12 +53,12 @@ class MLJobQueueService {
     // Trigger job processing
     await this.triggerJobProcessing();
     
-    return data;
+    return data as string;
   }
 
   async getJob(jobId: string): Promise<QueuedMLJob | null> {
     try {
-      const { data, error } = await supabase.rpc('get_ml_job', {
+      const { data, error } = await (supabase as any).rpc('get_ml_job', {
         p_job_id: jobId
       });
 
@@ -67,7 +67,7 @@ class MLJobQueueService {
         return null;
       }
 
-      return data;
+      return data as QueuedMLJob;
     } catch (error) {
       console.error('Error fetching job:', error);
       return null;
@@ -79,7 +79,7 @@ class MLJobQueueService {
     if (!user.user) return [];
 
     try {
-      const { data, error } = await supabase.rpc('get_user_ml_jobs', {
+      const { data, error } = await (supabase as any).rpc('get_user_ml_jobs', {
         p_user_id: user.user.id,
         p_limit: limit
       });
@@ -89,7 +89,7 @@ class MLJobQueueService {
         return [];
       }
 
-      return data || [];
+      return (data || []) as QueuedMLJob[];
     } catch (error) {
       console.error('Error fetching user jobs:', error);
       return [];
@@ -101,7 +101,7 @@ class MLJobQueueService {
     if (!user.user) return false;
 
     try {
-      const { error } = await supabase.rpc('cancel_ml_job', {
+      const { error } = await (supabase as any).rpc('cancel_ml_job', {
         p_job_id: jobId,
         p_user_id: user.user.id
       });
@@ -115,14 +115,14 @@ class MLJobQueueService {
 
   async getQueueStats(): Promise<QueueStats> {
     try {
-      const { data, error } = await supabase.rpc('get_ml_queue_stats');
+      const { data, error } = await (supabase as any).rpc('get_ml_queue_stats');
 
       if (error) {
         console.error('Error fetching queue stats:', error);
         return this.getDefaultStats();
       }
 
-      return data || this.getDefaultStats();
+      return (data || this.getDefaultStats()) as QueueStats;
     } catch (error) {
       console.error('Error fetching queue stats:', error);
       return this.getDefaultStats();
