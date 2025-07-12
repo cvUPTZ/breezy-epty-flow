@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { UserRoleType } from '@/types';
@@ -141,8 +142,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAssignedEventTypes(null);
   };
 
+  const value = {
+    user,
+    userRole,
+    assignedEventTypes,
+    loading,
+    signOut,
+    signIn,
+    signUp
+  };
+
   return (
-    <AuthContext.Provider value={{ user, userRole, assignedEventTypes, loading, signOut, signIn, signUp }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
