@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Circle, Square, ArrowRight, Ruler, Target, Zap, MousePointer, Focus } from 'lucide-react';
+import { Circle, Square, ArrowRight, Ruler, Focus, MousePointer, PenTool, PenOff } from 'lucide-react';
 
 interface DrawingToolsPanelProps {
   activeAnnotationTool: string;
@@ -11,6 +11,8 @@ interface DrawingToolsPanelProps {
   onClearAll: () => void;
   onSaveAnalysis: () => void;
   violationCount: number;
+  drawingMode: boolean;
+  onDrawingModeToggle: () => void;
 }
 
 export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
@@ -18,7 +20,9 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
   onToolChange,
   onClearAll,
   onSaveAnalysis,
-  violationCount
+  violationCount,
+  drawingMode,
+  onDrawingModeToggle
 }) => {
   const tools = [
     { id: 'select', icon: MousePointer, label: 'Select', color: 'bg-gray-500' },
@@ -32,41 +36,67 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
   return (
     <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20 pointer-events-none">
       <div className="pointer-events-auto">
-        <Card className="bg-black/80 backdrop-blur-md border-white/20 text-white">
+        <Card className="bg-black/70 backdrop-blur-sm border-white/20 text-white">
           <CardContent className="p-2">
             <div className="flex items-center gap-2">
+              {/* Drawing Mode Toggle */}
+              <Button
+                size="sm"
+                variant={drawingMode ? 'default' : 'outline'}
+                onClick={onDrawingModeToggle}
+                className={`
+                  h-8 px-3 transition-all duration-200
+                  ${drawingMode 
+                    ? 'bg-blue-600 text-white shadow-lg' 
+                    : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                  }
+                `}
+                title={drawingMode ? 'Disable Drawing Mode' : 'Enable Drawing Mode'}
+              >
+                {drawingMode ? <PenTool className="w-4 h-4 mr-1" /> : <PenOff className="w-4 h-4 mr-1" />}
+                <span className="text-xs">{drawingMode ? 'Draw' : 'View'}</span>
+              </Button>
+              
+              <div className="w-px h-6 bg-white/20" />
+              
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Tools</span>
                 <Badge 
                   variant={violationCount > 0 ? "destructive" : "default"}
-                  className="bg-red-500/20 text-red-400 border-red-500/30 text-xs"
+                  className="bg-red-500/20 text-red-400 border-red-500/30 text-xs px-2 py-0"
                 >
                   {violationCount}
                 </Badge>
               </div>
               
-              <div className="flex gap-1">
-                {tools.map((tool) => (
-                  <Button
-                    key={tool.id}
-                    size="sm"
-                    variant={activeAnnotationTool === tool.id ? 'default' : 'outline'}
-                    onClick={() => onToolChange(tool.id)}
-                    className={`
-                      h-8 w-8 p-0 transition-all duration-200
-                      ${activeAnnotationTool === tool.id 
-                        ? `${tool.color} text-white shadow-lg` 
-                        : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
-                      }
-                    `}
-                    title={tool.label}
-                  >
-                    <tool.icon className="w-4 h-4" />
-                  </Button>
-                ))}
-              </div>
+              {/* Drawing Tools - only show when drawing mode is enabled */}
+              {drawingMode && (
+                <>
+                  <div className="w-px h-6 bg-white/20" />
+                  <div className="flex gap-1">
+                    {tools.map((tool) => (
+                      <Button
+                        key={tool.id}
+                        size="sm"
+                        variant={activeAnnotationTool === tool.id ? 'default' : 'outline'}
+                        onClick={() => onToolChange(tool.id)}
+                        className={`
+                          h-8 w-8 p-0 transition-all duration-200
+                          ${activeAnnotationTool === tool.id 
+                            ? `${tool.color} text-white shadow-lg` 
+                            : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                          }
+                        `}
+                        title={tool.label}
+                      >
+                        <tool.icon className="w-4 h-4" />
+                      </Button>
+                    ))}
+                  </div>
+                </>
+              )}
 
-              <div className="flex gap-1 ml-2">
+              <div className="w-px h-6 bg-white/20" />
+              <div className="flex gap-1">
                 <Button 
                   size="sm" 
                   variant="outline" 

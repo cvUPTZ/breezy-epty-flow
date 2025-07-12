@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { ProductionVideoAnalysisService } from '@/services/productionVideoAnalysisService';
 import { ProductionPlayerTrackingService, RealTimePlayerData } from '@/services/productionPlayerTrackingService';
@@ -28,6 +27,7 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
   const [annotations, setAnnotations] = useState<any[]>([]);
   const [activeAnnotationTool, setActiveAnnotationTool] = useState('select');
   const [violationCount, setViolationCount] = useState(0);
+  const [drawingMode, setDrawingMode] = useState(false);
 
   // Initialize tracking service
   useEffect(() => {
@@ -96,19 +96,28 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
     toast.success('All annotations cleared');
   };
 
+  const handleDrawingModeToggle = () => {
+    setDrawingMode(!drawingMode);
+    if (!drawingMode) {
+      setActiveAnnotationTool('select');
+    }
+  };
+
   return (
     <div className="absolute inset-0">
-      {/* Drawing Tools - Top Center, Compact */}
+      {/* Drawing Tools Panel */}
       <DrawingToolsPanel
         activeAnnotationTool={activeAnnotationTool}
         onToolChange={setActiveAnnotationTool}
         onClearAll={handleClearAll}
         onSaveAnalysis={handleSaveAnnotations}
         violationCount={violationCount}
+        drawingMode={drawingMode}
+        onDrawingModeToggle={handleDrawingModeToggle}
       />
 
-      {/* Drawing Overlay - Only intercept pointer events when not in select mode */}
-      <div className={`absolute inset-0 ${activeAnnotationTool === 'select' ? 'pointer-events-none' : 'pointer-events-auto'} z-10`}>
+      {/* Drawing Overlay - Only active when drawing mode is enabled and not in select mode */}
+      <div className={`absolute inset-0 ${drawingMode && activeAnnotationTool !== 'select' ? 'pointer-events-auto' : 'pointer-events-none'} z-10`}>
         <AdvancedDrawingOverlay
           videoDimensions={videoDimensions}
           currentTime={currentTime}
