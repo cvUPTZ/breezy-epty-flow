@@ -2,155 +2,87 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Switch } from '@/components/ui/switch';
-import { Play, Settings, Save, Download } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 
-interface AnalysisControlPanelProps {
-  isAnalyzing: boolean;
-  analysisProgress: number;
-  playerCount: number;
-  avgConfidence: number;
-  onStartAnalysis: () => void;
-  onStartTracking: () => void;
-  onSaveAnnotations: () => void;
-  onExportData: () => void;
-  trackingEnabled: boolean;
-  heatmapEnabled: boolean;
-  trajectoryEnabled: boolean;
-  onTrackingToggle: (enabled: boolean) => void;
-  onHeatmapToggle: (enabled: boolean) => void;
-  onTrajectoryToggle: (enabled: boolean) => void;
+export interface AnalysisControlPanelProps {
+  currentTime: number;
+  duration: number;
+  onSeek: (time: number) => void;
+  onPlayPause?: () => void;
+  isPlaying?: boolean;
 }
 
 export const AnalysisControlPanel: React.FC<AnalysisControlPanelProps> = ({
-  isAnalyzing,
-  analysisProgress,
-  playerCount,
-  avgConfidence,
-  onStartAnalysis,
-  onStartTracking,
-  onSaveAnnotations,
-  onExportData,
-  trackingEnabled,
-  heatmapEnabled,
-  trajectoryEnabled,
-  onTrackingToggle,
-  onHeatmapToggle,
-  onTrajectoryToggle
+  currentTime,
+  duration,
+  onSeek,
+  onPlayPause,
+  isPlaying = false
 }) => {
+  const formatTime = (time: number): string => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
+
+  const handleSkipBackward = () => {
+    onSeek(Math.max(0, currentTime - 10));
+  };
+
+  const handleSkipForward = () => {
+    onSeek(Math.min(duration, currentTime + 10));
+  };
+
   return (
-    <div className="absolute top-4 right-4 w-64 space-y-2 z-20 pointer-events-none">
-      {/* Analysis Status */}
-      <Card className="bg-black/80 backdrop-blur-sm border-white/20 text-white pointer-events-auto">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center justify-between">
-            <span>Analysis</span>
-            <Badge variant={isAnalyzing ? 'default' : 'secondary'} className="bg-blue-600 text-xs">
-              {isAnalyzing ? 'Processing' : 'Ready'}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex gap-1">
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Playback Controls</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSkipBackward}
+          >
+            <SkipBack className="w-4 h-4" />
+          </Button>
+          
+          {onPlayPause && (
             <Button
-              size="sm"
-              onClick={onStartAnalysis}
-              disabled={isAnalyzing}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 h-7 text-xs"
-            >
-              <Play className="w-3 h-3 mr-1" />
-              Start
-            </Button>
-            <Button
-              size="sm"
               variant="outline"
-              onClick={onStartTracking}
-              className="border-white/20 text-white hover:bg-white/20 h-7 w-7 p-0"
+              size="sm"
+              onClick={onPlayPause}
             >
-              <Settings className="w-3 h-3" />
+              {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
             </Button>
-          </div>
-
-          {isAnalyzing && (
-            <div className="space-y-1">
-              <div className="text-xs text-gray-300">
-                Processing: {analysisProgress}%
-              </div>
-              <Progress value={analysisProgress} className="h-1" />
-            </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Compact Tracking Options */}
-      <Card className="bg-black/80 backdrop-blur-sm border-white/20 text-white pointer-events-auto">
-        <CardContent className="p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs">Player Tracking</span>
-            <Switch
-              checked={trackingEnabled}
-              onCheckedChange={onTrackingToggle}
-              className="scale-75"
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-xs">Heatmap</span>
-            <Switch
-              checked={heatmapEnabled}
-              onCheckedChange={onHeatmapToggle}
-              className="scale-75"
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-xs">Trajectories</span>
-            <Switch
-              checked={trajectoryEnabled}
-              onCheckedChange={onTrajectoryToggle}
-              className="scale-75"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Live Stats */}
-      {playerCount > 0 && (
-        <Card className="bg-black/80 backdrop-blur-sm border-white/20 text-white pointer-events-auto">
-          <CardContent className="p-3 space-y-1">
-            <div className="text-xs">Players: {playerCount}</div>
-            <div className="text-xs">
-              Confidence: {avgConfidence.toFixed(1)}%
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Compact Actions */}
-      <Card className="bg-black/80 backdrop-blur-sm border-white/20 text-white pointer-events-auto">
-        <CardContent className="p-2">
-          <div className="flex gap-1">
-            <Button 
-              size="sm" 
-              variant="outline" 
-              onClick={onSaveAnnotations}
-              className="flex-1 border-white/20 text-white hover:bg-white/20 h-7 text-xs"
-            >
-              <Save className="w-3 h-3 mr-1" />
-              Save
-            </Button>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              onClick={onExportData}
-              className="flex-1 border-white/20 text-white hover:bg-white/20 h-7 text-xs"
-            >
-              <Download className="w-3 h-3 mr-1" />
-              Export
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSkipForward}
+          >
+            <SkipForward className="w-4 h-4" />
+          </Button>
+          
+          <span className="text-sm min-w-24">
+            {formatTime(currentTime)} / {formatTime(duration)}
+          </span>
+        </div>
+        
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Timeline</label>
+          <Slider
+            value={[currentTime]}
+            max={duration}
+            step={0.1}
+            onValueChange={(value) => onSeek(value[0])}
+            className="w-full"
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 };

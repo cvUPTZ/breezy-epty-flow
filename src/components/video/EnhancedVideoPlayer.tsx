@@ -11,8 +11,11 @@ interface EnhancedVideoPlayerProps {
   className?: string;
 }
 
-export interface VideoPlayerRef extends HTMLVideoElement {
-  // This interface now extends HTMLVideoElement to include all its properties
+export interface VideoPlayerRef {
+  videoElement: HTMLVideoElement | null;
+  play: () => Promise<void>;
+  pause: () => void;
+  currentTime: number;
 }
 
 const EnhancedVideoPlayer = forwardRef<VideoPlayerRef, EnhancedVideoPlayerProps>(
@@ -23,8 +26,28 @@ const EnhancedVideoPlayer = forwardRef<VideoPlayerRef, EnhancedVideoPlayerProps>
     const [error, setError] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
 
-    // Expose the video element through the ref
-    useImperativeHandle(ref, () => videoRef.current as VideoPlayerRef, []);
+    // Expose the video element and controls through the ref
+    useImperativeHandle(ref, () => ({
+      videoElement: videoRef.current,
+      play: async () => {
+        if (videoRef.current) {
+          await videoRef.current.play();
+        }
+      },
+      pause: () => {
+        if (videoRef.current) {
+          videoRef.current.pause();
+        }
+      },
+      get currentTime() {
+        return videoRef.current?.currentTime || 0;
+      },
+      set currentTime(time: number) {
+        if (videoRef.current) {
+          videoRef.current.currentTime = time;
+        }
+      }
+    }), []);
 
     const togglePlay = () => {
       if (!videoRef.current) return;

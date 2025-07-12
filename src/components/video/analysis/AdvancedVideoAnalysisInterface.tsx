@@ -11,6 +11,7 @@ import ProductionTacticalOverlay from './ProductionTacticalOverlay';
 import { AnalysisStats } from './AnalysisStats';
 import { EventTaggingSection } from './EventTaggingSection';
 import { AnalysisControlPanel } from './AnalysisControlPanel';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface AdvancedVideoAnalysisInterfaceProps {
   videoUrl: string;
@@ -25,7 +26,6 @@ export const AdvancedVideoAnalysisInterface: React.FC<AdvancedVideoAnalysisInter
   const [volume, setVolume] = useState(80);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [activePanel, setActivePanel] = useState<'analysis' | 'events' | 'stats'>('analysis');
   const [videoDimensions, setVideoDimensions] = useState({ width: 0, height: 0 });
   
   const videoRef = useRef<VideoPlayerRef>(null);
@@ -216,56 +216,46 @@ export const AdvancedVideoAnalysisInterface: React.FC<AdvancedVideoAnalysisInter
 
       {/* Analysis Panels - Only show when not in fullscreen */}
       {!isFullscreen && (
-        <div className="mt-6 space-y-6">
-          {/* Panel Navigation */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant={activePanel === 'analysis' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActivePanel('analysis')}
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Analysis Controls
-            </Button>
-            <Button
-              variant={activePanel === 'events' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActivePanel('events')}
-            >
-              Event Tagging
-            </Button>
-            <Button
-              variant={activePanel === 'stats' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActivePanel('stats')}
-            >
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Statistics
-            </Button>
-          </div>
-
-          {/* Panel Content */}
-          {activePanel === 'analysis' && (
-            <AnalysisControlPanel
-              currentTime={currentTime}
-              duration={duration}
-              onSeek={(time) => handleSeek([time])}
-            />
-          )}
-
-          {activePanel === 'events' && (
-            <EventTaggingSection
-              currentTime={currentTime}
-              videoUrl={videoUrl}
-            />
-          )}
-
-          {activePanel === 'stats' && (
-            <AnalysisStats
-              videoUrl={videoUrl}
-              currentTime={currentTime}
-            />
-          )}
+        <div className="mt-6">
+          <Tabs defaultValue="analysis" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="analysis" className="flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                Analysis Controls
+              </TabsTrigger>
+              <TabsTrigger value="events">
+                Event Tagging
+              </TabsTrigger>
+              <TabsTrigger value="stats" className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                Statistics
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="analysis" className="mt-4">
+              <AnalysisControlPanel
+                currentTime={currentTime}
+                duration={duration}
+                onSeek={(time: number) => handleSeek([time])}
+                onPlayPause={handlePlayPause}
+                isPlaying={isPlaying}
+              />
+            </TabsContent>
+            
+            <TabsContent value="events" className="mt-4">
+              <EventTaggingSection
+                currentTime={currentTime}
+                videoUrl={videoUrl}
+              />
+            </TabsContent>
+            
+            <TabsContent value="stats" className="mt-4">
+              <AnalysisStats
+                videoUrl={videoUrl}
+                currentTime={currentTime}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
       )}
 

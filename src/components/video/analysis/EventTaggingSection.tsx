@@ -1,182 +1,138 @@
 
 import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tag, ListVideo, PlusCircle, Trash2 as DeleteIcon, CheckCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Tag, Trash2 } from 'lucide-react';
 
-// Local types for the direct analyzer (not using Supabase tables)
-interface LocalEventType {
-  id: string;
-  name: string;
-  color?: string;
+export interface EventTaggingSectionProps {
+  currentTime: number;
+  videoUrl: string;
+  onEventAdd?: (event: VideoEvent) => void;
 }
 
-interface LocalTaggedEvent {
+interface VideoEvent {
   id: string;
-  timestamp: number;
-  typeId: string;
-  typeName: string;
-  notes?: string;
-  annotations?: any[];
-}
-
-// Utility function
-const formatTime = (seconds: number | null | undefined): string => {
-  if (seconds === null || seconds === undefined || isNaN(seconds) || seconds < 0) return '00:00';
-  const totalSeconds = Math.floor(seconds);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const secs = totalSeconds % 60;
-  if (hours > 0) {
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  }
-  return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-};
-
-interface EventTaggingSectionProps {
-  videoPlayerRef: React.RefObject<HTMLVideoElement>;
-  taggedEvents: LocalTaggedEvent[];
-  availableEventTypes: LocalEventType[];
-  activeTaggedEventId: string | null;
-  onSetActiveTaggedEventId: (id: string | null) => void;
-  onCreateEventType: (name: string) => void;
-  onTagEvent: (eventTypeId: string, timestamp: number) => void;
-  onDeleteTaggedEvent: (taggedEventId: string) => void;
-  disabled?: boolean;
+  time: number;
+  type: string;
+  description: string;
+  timestamp: string;
 }
 
 export const EventTaggingSection: React.FC<EventTaggingSectionProps> = ({
-  videoPlayerRef,
-  taggedEvents,
-  availableEventTypes,
-  activeTaggedEventId,
-  onSetActiveTaggedEventId,
-  onCreateEventType,
-  onTagEvent,
-  onDeleteTaggedEvent,
-  disabled = false,
+  currentTime,
+  videoUrl,
+  onEventAdd
 }) => {
-  const [selectedEventTypeId, setSelectedEventTypeId] = useState<string>('');
-  const [newEventTypeName, setNewEventTypeName] = useState('');
+  const [events, setEvents] = useState<VideoEvent[]>([]);
+  const [eventType, setEventType] = useState('');
+  const [eventDescription, setEventDescription] = useState('');
 
-  const handleCreateEventType = () => {
-    if (!newEventTypeName.trim()) {
-      toast.error('Event type name cannot be empty.');
-      return;
-    }
-    onCreateEventType(newEventTypeName.trim());
-    setNewEventTypeName('');
+  const formatTime = (time: number): string => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
-  const handleTagEvent = () => {
-    if (!selectedEventTypeId) {
-      toast.error('Please select an event type.');
-      return;
-    }
-    if (!videoPlayerRef.current) {
-      toast.error('Video player is not available.');
-      return;
-    }
-    const currentTime = videoPlayerRef.current.currentTime;
-    onTagEvent(selectedEventTypeId, currentTime);
+  const handleAddEvent = () => {
+    if (!eventType.trim() || !eventDescription.trim()) return;
+
+    const newEvent: VideoEvent = {
+      id: Date.now().toString(),
+      time: currentTime,
+      type: eventType,
+      description: eventDescription,
+      timestamp: formatTime(currentTime)
+    };
+
+    setEvents(prev => [...prev, newEvent]);
+    onEventAdd?.(newEvent);
+    setEventType('');
+    setEventDescription('');
+  };
+
+  const handleRemoveEvent = (id: string) => {
+    setEvents(prev => prev.filter(event => event.id !== id));
   };
 
   return (
-    <>
-      {/* UI for selecting/creating event types */}
-      <div className={`mb-4 space-y-3 p-3 border rounded-md ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-        <h4 className="font-medium text-sm flex items-center"><Tag className="h-4 w-4 mr-2" />Event Configuration</h4>
-        
-        <div className="flex items-center gap-2">
-          <Select value={selectedEventTypeId} onValueChange={setSelectedEventTypeId} disabled={disabled}>
-            <SelectTrigger className="flex-grow">
-              <SelectValue placeholder={availableEventTypes.length === 0 ? "No event types. Create one!" : "Select Event Type"} />
-            </SelectTrigger>
-            <SelectContent>
-              {availableEventTypes.map(et => (
-                <SelectItem key={et.id} value={et.id} style={et.color ? { color: et.color } : {}}>
-                  {et.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Tag className="w-5 h-5" />
+          Event Tagging
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label htmlFor="event-type">Event Type</Label>
+            <Input
+              id="event-type"
+              value={eventType}
+              onChange={(e) => setEventType(e.target.value)}
+              placeholder="e.g., Goal, Foul, Corner"
+            />
+          </div>
+          <div>
+            <Label htmlFor="current-time">Time</Label>
+            <Input
+              id="current-time"
+              value={formatTime(currentTime)}
+              readOnly
+              className="bg-gray-50"
+            />
+          </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div>
+          <Label htmlFor="event-description">Description</Label>
           <Input
-            type="text"
-            value={newEventTypeName}
-            onChange={(e) => setNewEventTypeName(e.target.value)}
-            placeholder="New event type name"
-            className="flex-grow"
-            disabled={disabled}
+            id="event-description"
+            value={eventDescription}
+            onChange={(e) => setEventDescription(e.target.value)}
+            placeholder="Describe the event..."
           />
-          <Button size="sm" variant="outline" onClick={handleCreateEventType} disabled={disabled || !newEventTypeName.trim()} title="Create New Event Type">
-            <PlusCircle className="h-4 w-4" />
-          </Button>
         </div>
-      </div>
-
-      {/* Button to tag an event at the current video timestamp */}
-      <div className={`mb-4 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-        <Button onClick={handleTagEvent} disabled={disabled || !selectedEventTypeId} className="w-full">
-          <Tag className="h-4 w-4 mr-2" /> Tag Event at Current Timestamp
+        
+        <Button
+          onClick={handleAddEvent}
+          disabled={!eventType.trim() || !eventDescription.trim()}
+          className="w-full"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Event
         </Button>
-      </div>
-
-      {/* Section to display existing tagged events for the video */}
-      <div className={`space-y-3 p-3 border rounded-md mt-4 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-        <h4 className="font-medium text-sm flex items-center"><ListVideo className="h-4 w-4 mr-2" />Tagged Events</h4>
         
-        {taggedEvents.length === 0 && (
-          <p className="text-sm text-gray-500">No events tagged for this video yet.</p>
-        )}
-        
-        {taggedEvents.length > 0 && (
-          <ul className="space-y-2 max-h-96 overflow-y-auto">
-            {taggedEvents.map(te => {
-              const eventType = availableEventTypes.find(et => et.id === te.typeId);
-              const eventTypeName = eventType?.name || 'Unknown Event Type';
-              const eventTypeColor = eventType?.color;
-              const isActive = te.id === activeTaggedEventId;
-
-              return (
-                <li
-                  key={te.id}
-                  className={`flex items-center justify-between p-2 rounded-md text-sm cursor-pointer transition-colors
-                              ${isActive ? 'bg-blue-100 hover:bg-blue-200' : 'bg-gray-50 hover:bg-gray-100'}`}
-                  onClick={() => disabled ? null : onSetActiveTaggedEventId(te.id === activeTaggedEventId ? null : te.id)}
-                  title={isActive ? "Deselect to clear annotations" : "Click to load/edit annotations"}
-                >
-                  <div className="flex-grow">
-                    <span className="font-semibold" style={eventTypeColor ? { color: eventTypeColor } : {}}>
-                      {eventTypeName}
-                    </span>
-                    <span className="text-gray-600 ml-2">@ {formatTime(te.timestamp)}</span>
-                    {te.annotations && te.annotations.length > 0 && <span className="text-xs text-blue-500 ml-2">(A)</span>}
-                    {te.notes && <p className="text-xs text-gray-500 mt-1 italic">{te.notes}</p>}
+        {events.length > 0 && (
+          <div className="space-y-2">
+            <Label>Tagged Events ({events.length})</Label>
+            <div className="max-h-48 overflow-y-auto space-y-2">
+              {events.map((event) => (
+                <div key={event.id} className="flex items-center justify-between p-2 border rounded">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">{event.type}</Badge>
+                      <span className="text-sm font-medium">{event.timestamp}</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">{event.description}</p>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => { e.stopPropagation(); if(!disabled) onDeleteTaggedEvent(te.id); }}
-                      disabled={disabled}
-                      title="Delete Tagged Event"
-                    >
-                      <DeleteIcon className="h-4 w-4 text-red-500 hover:text-red-700" />
-                    </Button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveEvent(event.id)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
-      </div>
-    </>
+      </CardContent>
+    </Card>
   );
 };
-
-export default EventTaggingSection;
