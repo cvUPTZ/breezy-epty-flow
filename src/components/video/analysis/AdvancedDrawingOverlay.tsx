@@ -51,7 +51,7 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
   playerPositions = []
 }) => {
   const [isDrawing, setIsDrawing] = useState(false);
-  const [activeAnnotationTool, setActiveAnnotationTool] = useState<string>('none');
+  const [activeAnnotationTool, setActiveAnnotationTool] = useState<string>('select');
   const [annotations, setAnnotations] = useState<AnnotationElement[]>([]);
   const [drawingPoints, setDrawingPoints] = useState<{ x: number; y: number }[]>([]);
   const [showPlayerTracking, setShowPlayerTracking] = useState(true);
@@ -60,6 +60,7 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
   const [zoomLevel, setZoomLevel] = useState([1]);
   const [panPosition, setPanPosition] = useState({ x: 0, y: 0 });
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
+  const [drawingMode, setDrawingMode] = useState(false);
   
   const overlayRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -82,7 +83,7 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
   ];
 
   const handleMouseDown = (event: React.MouseEvent) => {
-    if (activeAnnotationTool === 'none') return;
+    if (activeAnnotationTool === 'select') return;
 
     const rect = overlayRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -95,7 +96,7 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
   };
 
   const handleMouseMove = (event: React.MouseEvent) => {
-    if (!isDrawing || activeAnnotationTool === 'none') return;
+    if (!isDrawing || activeAnnotationTool === 'select') return;
 
     const rect = overlayRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -396,6 +397,13 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
     toast.success('Tactical analysis saved successfully');
   };
 
+  const handleDrawingModeToggle = () => {
+    setDrawingMode(!drawingMode);
+    if (!drawingMode) {
+      setActiveAnnotationTool('select');
+    }
+  };
+
   const violationCount = playerPositions.filter(p => p.isCorrectPosition === false).length;
 
   return (
@@ -403,7 +411,7 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
       {/* Main drawing overlay */}
       <div
         ref={overlayRef}
-        className="absolute inset-0 cursor-crosshair"
+        className={`absolute inset-0 ${drawingMode && activeAnnotationTool !== 'select' ? 'cursor-crosshair' : 'cursor-default'}`}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -571,6 +579,8 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
         onClearAll={handleClearAll}
         onSaveAnalysis={handleSaveAnalysis}
         violationCount={violationCount}
+        drawingMode={drawingMode}
+        onDrawingModeToggle={handleDrawingModeToggle}
       />
     </div>
   );
