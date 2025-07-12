@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { ProductionVideoAnalysisService } from '@/services/productionVideoAnalysisService';
 import { ProductionPlayerTrackingService, RealTimePlayerData } from '@/services/productionPlayerTrackingService';
@@ -107,20 +108,22 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
     <div className="absolute inset-0">
       {/* Drawing Tools Panel - Only show when drawing mode is enabled */}
       {drawingMode && (
-        <DrawingToolsPanel
-          activeAnnotationTool={activeAnnotationTool}
-          onToolChange={setActiveAnnotationTool}
-          onClearAll={handleClearAll}
-          onSaveAnalysis={handleSaveAnnotations}
-          violationCount={violationCount}
-          drawingMode={drawingMode}
-          onDrawingModeToggle={handleDrawingModeToggle}
-        />
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[9999]">
+          <DrawingToolsPanel
+            activeAnnotationTool={activeAnnotationTool}
+            onToolChange={setActiveAnnotationTool}
+            onClearAll={handleClearAll}
+            onSaveAnalysis={handleSaveAnnotations}
+            violationCount={violationCount}
+            drawingMode={drawingMode}
+            onDrawingModeToggle={handleDrawingModeToggle}
+          />
+        </div>
       )}
 
       {/* Toggle Drawing Mode Button - Always visible */}
       {!drawingMode && (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[9999]">
           <button
             onClick={handleDrawingModeToggle}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition-colors"
@@ -131,7 +134,7 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
       )}
 
       {/* Drawing Overlay - Only intercept pointer events when actively drawing */}
-      <div className={`absolute inset-0 z-10 ${
+      <div className={`absolute inset-0 z-[9998] ${
         drawingMode && activeAnnotationTool !== 'select' 
           ? 'pointer-events-auto' 
           : 'pointer-events-none'
