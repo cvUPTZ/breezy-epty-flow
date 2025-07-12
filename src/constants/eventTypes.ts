@@ -1,4 +1,3 @@
-
 import { EventType } from '@/types';
 
 export const EVENT_TYPES = [
@@ -13,16 +12,16 @@ export const EVENT_TYPES = [
 
 export const EVENT_CATEGORIES = {
   'Ball Actions': {
-    description: 'Events related to ball movement and possession',
-    events: ['pass', 'shot', 'cross', 'dribble', 'clearance', 'block', 'save', 'interception']
+    description: 'Events related to ball movement and control',
+    events: ['pass', 'shot', 'cross', 'dribble', 'tackle', 'interception', 'clearance', 'save']
   },
   'Set Pieces': {
     description: 'Fixed situations and restarts',
-    events: ['corner', 'free-kick', 'penalty', 'goal-kick', 'throw-in', 'freeKick', 'throwIn', 'goalKick']
+    events: ['corner', 'freeKick', 'throwIn', 'goalKick', 'penalty']
   },
   'Fouls & Cards': {
     description: 'Disciplinary actions and violations',
-    events: ['foul', 'yellowCard', 'redCard', 'card']
+    events: ['foul', 'yellowCard', 'redCard', 'offside']
   },
   'Goals & Assists': {
     description: 'Scoring and goal-related events',
@@ -30,15 +29,15 @@ export const EVENT_CATEGORIES = {
   },
   'Possession': {
     description: 'Ball control and possession changes',
-    events: ['possession', 'ballLost', 'ballRecovered', 'tackle']
+    events: ['ballLost', 'ballRecovered']
   },
   'Match Events': {
     description: 'General match occurrences',
-    events: ['substitution', 'offside', 'aerialDuel', 'groundDuel', 'sub']
+    events: ['substitution', 'sub']
   },
-  'Advanced Actions': {
-    description: 'Detailed gameplay actions',
-    events: ['pressure', 'dribble_attempt', 'ball_recovery']
+  'Duels': {
+    description: 'Player vs player contests',
+    events: ['aerialDuel', 'groundDuel']
   }
 } as const;
 
@@ -52,10 +51,10 @@ export const EVENT_TYPE_CATEGORIES = [
       { key: 'shot', label: 'Shot' },
       { key: 'cross', label: 'Cross' },
       { key: 'dribble', label: 'Dribble' },
+      { key: 'tackle', label: 'Tackle' },
+      { key: 'interception', label: 'Interception' },
       { key: 'clearance', label: 'Clearance' },
-      { key: 'block', label: 'Block' },
-      { key: 'save', label: 'Save' },
-      { key: 'interception', label: 'Interception' }
+      { key: 'save', label: 'Save' }
     ]
   },
   {
@@ -63,11 +62,11 @@ export const EVENT_TYPE_CATEGORIES = [
     label: 'Set Pieces',
     color: '#10B981',
     events: [
-      { key: 'corner', label: 'Corner' },
+      { key: 'corner', label: 'Corner Kick' },
       { key: 'freeKick', label: 'Free Kick' },
-      { key: 'penalty', label: 'Penalty' },
+      { key: 'throwIn', label: 'Throw In' },
       { key: 'goalKick', label: 'Goal Kick' },
-      { key: 'throwIn', label: 'Throw In' }
+      { key: 'penalty', label: 'Penalty' }
     ]
   },
   {
@@ -78,7 +77,7 @@ export const EVENT_TYPE_CATEGORIES = [
       { key: 'foul', label: 'Foul' },
       { key: 'yellowCard', label: 'Yellow Card' },
       { key: 'redCard', label: 'Red Card' },
-      { key: 'card', label: 'Card' }
+      { key: 'offside', label: 'Offside' }
     ]
   },
   {
@@ -96,10 +95,8 @@ export const EVENT_TYPE_CATEGORIES = [
     label: 'Possession',
     color: '#8B5CF6',
     events: [
-      { key: 'possession', label: 'Possession' },
       { key: 'ballLost', label: 'Ball Lost' },
-      { key: 'ballRecovered', label: 'Ball Recovered' },
-      { key: 'tackle', label: 'Tackle' }
+      { key: 'ballRecovered', label: 'Ball Recovered' }
     ]
   },
   {
@@ -108,20 +105,16 @@ export const EVENT_TYPE_CATEGORIES = [
     color: '#6B7280',
     events: [
       { key: 'substitution', label: 'Substitution' },
-      { key: 'sub', label: 'Sub' },
-      { key: 'offside', label: 'Offside' },
-      { key: 'aerialDuel', label: 'Aerial Duel' },
-      { key: 'groundDuel', label: 'Ground Duel' }
+      { key: 'sub', label: 'Sub' }
     ]
   },
   {
-    key: 'advancedActions',
-    label: 'Advanced Actions',
-    color: '#A0A0A0', // Example color
+    key: 'duels',
+    label: 'Duels',
+    color: '#A855F7',
     events: [
-      { key: 'pressure', label: 'Pressure' },
-      { key: 'dribble_attempt', label: 'Dribble Attempt' },
-      { key: 'ball_recovery', label: 'Ball Recovery' }
+      { key: 'aerialDuel', label: 'Aerial Duel' },
+      { key: 'groundDuel', label: 'Ground Duel' }
     ]
   }
 ];
