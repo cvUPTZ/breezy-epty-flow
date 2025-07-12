@@ -21,7 +21,13 @@ import {
   Globe,
   Briefcase,
   MapPin,
-  Banknote
+  Banknote,
+  Calculator,
+  UserCheck,
+  Timer,
+  Activity,
+  Settings,
+  BarChart3
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -51,6 +57,23 @@ interface AlgerianRegulation {
   description: string;
   compliance: 'compliant' | 'pending' | 'non-compliant';
   deadline?: string;
+}
+
+interface EventTypeConfig {
+  id: string;
+  name: string;
+  difficultyScore: number;
+  detectionRate: number;
+  timeRequired: number; // en secondes
+}
+
+interface TrackerBudgetConfig {
+  basePayPerHour: number;
+  difficultyMultiplier: number;
+  overtimeRate: number;
+  transportAllowance: number;
+  equipmentCost: number;
+  socialCharges: number; // pourcentage
 }
 
 const BusinessPlanManagement: React.FC = () => {
@@ -109,6 +132,38 @@ const BusinessPlanManagement: React.FC = () => {
     }
   ]);
 
+  // Nouvelle configuration pour les événements
+  const [eventTypes, setEventTypes] = useState<EventTypeConfig[]>([
+    { id: '1', name: 'But', difficultyScore: 3, detectionRate: 95, timeRequired: 15 },
+    { id: '2', name: 'Passe', difficultyScore: 2, detectionRate: 85, timeRequired: 5 },
+    { id: '3', name: 'Tir', difficultyScore: 4, detectionRate: 90, timeRequired: 10 },
+    { id: '4', name: 'Faute', difficultyScore: 6, detectionRate: 70, timeRequired: 12 },
+    { id: '5', name: 'Hors-jeu', difficultyScore: 8, detectionRate: 65, timeRequired: 20 },
+    { id: '6', name: 'Carton', difficultyScore: 2, detectionRate: 98, timeRequired: 8 },
+    { id: '7', name: 'Corner', difficultyScore: 3, detectionRate: 92, timeRequired: 6 },
+    { id: '8', name: 'Duel aérien', difficultyScore: 7, detectionRate: 75, timeRequired: 18 }
+  ]);
+
+  // Configuration budget trackers
+  const [budgetConfig, setBudgetConfig] = useState<TrackerBudgetConfig>({
+    basePayPerHour: 1500, // DZD par heure
+    difficultyMultiplier: 1.2,
+    overtimeRate: 1.5,
+    transportAllowance: 2000, // DZD par match
+    equipmentCost: 500, // DZD par match
+    socialCharges: 25 // pourcentage
+  });
+
+  // Simulation de match
+  const [matchSimulation, setMatchSimulation] = useState({
+    duration: 90, // minutes
+    totalEvents: 616,
+    trackersMinimum: 2,
+    trackersOptimal: 3,
+    playersToTrack: 22,
+    replacements: 1
+  });
+
   const [newGoal, setNewGoal] = useState<{
     title: string;
     description: string;
@@ -129,6 +184,30 @@ const BusinessPlanManagement: React.FC = () => {
     monthlyRevenue: 0,
     marketSegment: ''
   });
+
+  // Calculs pour l'analyse budgétaire
+  const calculateComplexityScore = () => {
+    const totalComplexity = eventTypes.reduce((sum, event) => 
+      sum + (event.difficultyScore * (matchSimulation.totalEvents / eventTypes.length)), 0
+    );
+    return Math.round(totalComplexity);
+  };
+
+  const calculateTrackerCost = () => {
+    const matchDurationHours = matchSimulation.duration / 60;
+    const complexityScore = calculateComplexityScore();
+    const complexityFactor = (complexityScore / 1000) * budgetConfig.difficultyMultiplier;
+    
+    const baseCost = matchSimulation.trackersOptimal * matchDurationHours * budgetConfig.basePayPerHour;
+    const complexityCost = baseCost * complexityFactor;
+    const transportCost = matchSimulation.trackersOptimal * budgetConfig.transportAllowance;
+    const equipmentCost = matchSimulation.trackersOptimal * budgetConfig.equipmentCost;
+    
+    const subtotal = baseCost + complexityCost + transportCost + equipmentCost;
+    const socialChargesCost = subtotal * (budgetConfig.socialCharges / 100);
+    
+    return Math.round(subtotal + socialChargesCost);
+  };
 
   const addGoal = () => {
     if (!newGoal.title || !newGoal.description) {
@@ -197,10 +276,11 @@ const BusinessPlanManagement: React.FC = () => {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="goals">Objectifs</TabsTrigger>
           <TabsTrigger value="revenue">Revenus</TabsTrigger>
+          <TabsTrigger value="budget">Budget Trackers</TabsTrigger>
           <TabsTrigger value="market">Marché Local</TabsTrigger>
           <TabsTrigger value="compliance">Conformité</TabsTrigger>
         </TabsList>
@@ -261,13 +341,15 @@ const BusinessPlanManagement: React.FC = () => {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Croissance</p>
-                    <p className="text-2xl font-bold text-foreground">+24%</p>
+                    <p className="text-sm text-muted-foreground">Coût par Match</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {formatCurrency(calculateTrackerCost())}
+                    </p>
                   </div>
-                  <TrendingUp className="h-8 w-8 text-orange-600" />
+                  <Calculator className="h-8 w-8 text-orange-600" />
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Croissance annuelle
+                  {matchSimulation.trackersOptimal} trackers optimal
                 </p>
               </CardContent>
             </Card>
@@ -312,6 +394,313 @@ const BusinessPlanManagement: React.FC = () => {
                     <li>• Support technique local</li>
                   </ul>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="budget" className="space-y-6">
+          {/* Analyse des Événements */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  📊 Analyse des Événements
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Événements</p>
+                    <p className="text-2xl font-bold text-foreground">{matchSimulation.totalEvents}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Événements/Minute</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {(matchSimulation.totalEvents / matchSimulation.duration).toFixed(1)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Score Complexité</p>
+                    <p className="text-2xl font-bold text-foreground">{calculateComplexityScore()}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Complexité/Minute</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {(calculateComplexityScore() / matchSimulation.duration).toFixed(1)}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserCheck className="h-5 w-5" />
+                  👥 Charge de Travail
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Trackers Minimum</p>
+                    <p className="text-2xl font-bold text-foreground">{matchSimulation.trackersMinimum}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Trackers Optimal</p>
+                    <p className="text-2xl font-bold text-foreground">{matchSimulation.trackersOptimal}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Remplacements</p>
+                    <p className="text-2xl font-bold text-foreground">{matchSimulation.replacements}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Joueurs à Suivre</p>
+                    <p className="text-2xl font-bold text-foreground">{matchSimulation.playersToTrack}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Coûts par Match */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                💰 Coûts par Match
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-foreground">Coût Total</h4>
+                  <p className="text-3xl font-bold text-green-600">
+                    {formatCurrency(calculateTrackerCost())}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Pour {matchSimulation.trackersOptimal} trackers
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-foreground">Détail des Coûts</h4>
+                  <div className="text-sm space-y-1">
+                    <div className="flex justify-between">
+                      <span>Salaire de base:</span>
+                      <span>{formatCurrency(matchSimulation.trackersOptimal * (matchSimulation.duration / 60) * budgetConfig.basePayPerHour)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Prime complexité:</span>
+                      <span>{formatCurrency(Math.round(matchSimulation.trackersOptimal * (matchSimulation.duration / 60) * budgetConfig.basePayPerHour * (calculateComplexityScore() / 1000) * budgetConfig.difficultyMultiplier))}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Transport:</span>
+                      <span>{formatCurrency(matchSimulation.trackersOptimal * budgetConfig.transportAllowance)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Équipement:</span>
+                      <span>{formatCurrency(matchSimulation.trackersOptimal * budgetConfig.equipmentCost)}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-1">
+                      <span>Charges sociales ({budgetConfig.socialCharges}%):</span>
+                      <span>{formatCurrency(Math.round((calculateTrackerCost() / (1 + budgetConfig.socialCharges / 100)) * (budgetConfig.socialCharges / 100)))}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-foreground">Rentabilité</h4>
+                  <div className="text-sm space-y-1">
+                    <div className="flex justify-between">
+                      <span>Coût par événement:</span>
+                      <span>{formatCurrency(Math.round(calculateTrackerCost() / matchSimulation.totalEvents))}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Coût par minute:</span>
+                      <span>{formatCurrency(Math.round(calculateTrackerCost() / matchSimulation.duration))}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Coût par tracker/heure:</span>
+                      <span>{formatCurrency(Math.round(calculateTrackerCost() / (matchSimulation.trackersOptimal * matchSimulation.duration / 60)))}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Configuration des Paramètres */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Configuration Budget
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="basePayPerHour">Salaire/Heure (DZD)</Label>
+                    <Input
+                      id="basePayPerHour"
+                      type="number"
+                      value={budgetConfig.basePayPerHour}
+                      onChange={(e) => setBudgetConfig({
+                        ...budgetConfig,
+                        basePayPerHour: Number(e.target.value)
+                      })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="difficultyMultiplier">Multiplicateur Complexité</Label>
+                    <Input
+                      id="difficultyMultiplier"
+                      type="number"
+                      step="0.1"
+                      value={budgetConfig.difficultyMultiplier}
+                      onChange={(e) => setBudgetConfig({
+                        ...budgetConfig,
+                        difficultyMultiplier: Number(e.target.value)
+                      })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="transportAllowance">Indemnité Transport (DZD)</Label>
+                    <Input
+                      id="transportAllowance"
+                      type="number"
+                      value={budgetConfig.transportAllowance}
+                      onChange={(e) => setBudgetConfig({
+                        ...budgetConfig,
+                        transportAllowance: Number(e.target.value)
+                      })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="socialCharges">Charges Sociales (%)</Label>
+                    <Input
+                      id="socialCharges"
+                      type="number"
+                      value={budgetConfig.socialCharges}
+                      onChange={(e) => setBudgetConfig({
+                        ...budgetConfig,
+                        socialCharges: Number(e.target.value)
+                      })}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Timer className="h-5 w-5" />
+                  Configuration Match
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="matchDuration">Durée Match (min)</Label>
+                    <Input
+                      id="matchDuration"
+                      type="number"
+                      value={matchSimulation.duration}
+                      onChange={(e) => setMatchSimulation({
+                        ...matchSimulation,
+                        duration: Number(e.target.value)
+                      })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="totalEvents">Total Événements</Label>
+                    <Input
+                      id="totalEvents"
+                      type="number"
+                      value={matchSimulation.totalEvents}
+                      onChange={(e) => setMatchSimulation({
+                        ...matchSimulation,
+                        totalEvents: Number(e.target.value)
+                      })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="trackersOptimal">Trackers Optimal</Label>
+                    <Input
+                      id="trackersOptimal"
+                      type="number"
+                      value={matchSimulation.trackersOptimal}
+                      onChange={(e) => setMatchSimulation({
+                        ...matchSimulation,
+                        trackersOptimal: Number(e.target.value)
+                      })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="playersToTrack">Joueurs à Suivre</Label>
+                    <Input
+                      id="playersToTrack"
+                      type="number"
+                      value={matchSimulation.playersToTrack}
+                      onChange={(e) => setMatchSimulation({
+                        ...matchSimulation,
+                        playersToTrack: Number(e.target.value)
+                      })}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Types d'Événements et Difficulté */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Configuration des Types d'Événements
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-2">Type d'Événement</th>
+                      <th className="text-left p-2">Score Difficulté</th>
+                      <th className="text-left p-2">Taux Détection (%)</th>
+                      <th className="text-left p-2">Temps Requis (sec)</th>
+                      <th className="text-left p-2">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {eventTypes.map((event) => (
+                      <tr key={event.id} className="border-b">
+                        <td className="p-2 font-medium">{event.name}</td>
+                        <td className="p-2">
+                          <Badge variant={
+                            event.difficultyScore <= 3 ? 'default' :
+                            event.difficultyScore <= 6 ? 'secondary' : 'destructive'
+                          }>
+                            {event.difficultyScore}
+                          </Badge>
+                        </td>
+                        <td className="p-2">{event.detectionRate}%</td>
+                        <td className="p-2">{event.timeRequired}s</td>
+                        <td className="p-2">
+                          <Button variant="outline" size="sm">
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>
