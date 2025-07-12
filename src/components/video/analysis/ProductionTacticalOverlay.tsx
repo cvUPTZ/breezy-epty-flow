@@ -34,6 +34,7 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
   const [activeAnnotationTool, setActiveAnnotationTool] = useState('select');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [violationCount, setViolationCount] = useState(0);
 
   // Initialize tracking service
   useEffect(() => {
@@ -114,6 +115,9 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
     try {
       await trackingService.startTracking(videoElement, (data) => {
         setPlayerData(data);
+        // Update violation count based on tracking data
+        const violations = data.filter(p => p.confidence < 0.6).length;
+        setViolationCount(violations);
       });
       toast.success('Real-time tracking started');
     } catch (error: any) {
@@ -130,6 +134,12 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
     } catch (error: any) {
       toast.error(`Failed to save annotations: ${error.message}`);
     }
+  };
+
+  // Clear all annotations
+  const handleClearAll = () => {
+    setAnnotations([]);
+    toast.success('All annotations cleared');
   };
 
   // Export analysis data
@@ -222,12 +232,13 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
       </Card>
 
       {/* Drawing Tools */}
-      <div className="absolute top-4 right-4 pointer-events-auto">
-        <DrawingToolsPanel
-          activeAnnotationTool={activeAnnotationTool}
-          onToolChange={setActiveAnnotationTool}
-        />
-      </div>
+      <DrawingToolsPanel
+        activeAnnotationTool={activeAnnotationTool}
+        onToolChange={setActiveAnnotationTool}
+        onClearAll={handleClearAll}
+        onSaveAnalysis={handleSaveAnnotations}
+        violationCount={violationCount}
+      />
 
       {/* Drawing Overlay */}
       <AdvancedDrawingOverlay
@@ -243,7 +254,6 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
           isCorrectPosition: p.confidence > 0.8,
           heatIntensity: p.speed / 25
         }))}
-        existingAnnotations={annotations}
       />
     </div>
   );

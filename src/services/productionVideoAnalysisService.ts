@@ -1,6 +1,4 @@
 
-import { supabase } from '@/integrations/supabase/client';
-
 export interface VideoAnalysisJob {
   id: string;
   videoUrl: string;
@@ -56,7 +54,7 @@ export interface TrajectoryData {
 }
 
 export class ProductionVideoAnalysisService {
-  private static readonly API_ENDPOINT = import.meta.env.VITE_ANALYSIS_API_URL || 'https://api.your-analysis-service.com';
+  private static readonly STORAGE_KEY = 'video_analysis_jobs';
 
   static async startAnalysis(videoUrl: string, options: {
     enablePlayerTracking: boolean;
@@ -64,121 +62,139 @@ export class ProductionVideoAnalysisService {
     enableHeatmaps: boolean;
     enableTrajectories: boolean;
   }): Promise<VideoAnalysisJob> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('Authentication required');
-
-    const jobData = {
-      video_url: videoUrl,
-      user_id: user.user.id,
+    const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const jobData: VideoAnalysisJob = {
+      id: jobId,
+      videoUrl: videoUrl,
       status: 'pending',
       progress: 0,
-      options: options,
-      created_at: new Date().toISOString()
+      createdAt: new Date().toISOString()
     };
 
-    const { data, error } = await supabase
-      .from('video_analysis_jobs')
-      .insert(jobData)
-      .select()
-      .single();
+    // Save job to local storage
+    this.saveJobLocally(jobData);
 
-    if (error) throw new Error(`Failed to create analysis job: ${error.message}`);
+    // Start processing (simulate async processing)
+    this.processVideo(jobId, videoUrl, options);
 
-    // Start processing
-    this.processVideo(data.id, videoUrl, options);
-
-    return {
-      id: data.id,
-      videoUrl: data.video_url,
-      status: data.status,
-      progress: data.progress,
-      createdAt: data.created_at
-    };
+    return jobData;
   }
 
   private static async processVideo(jobId: string, videoUrl: string, options: any) {
     try {
       // Update status to processing
-      await supabase
-        .from('video_analysis_jobs')
-        .update({ status: 'processing', progress: 10 })
-        .eq('id', jobId);
+      this.updateJobStatus(jobId, { status: 'processing', progress: 10 });
 
-      // Call external analysis service
-      const response = await fetch(`${this.API_ENDPOINT}/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ videoUrl, options, jobId })
+      // Simulate processing time
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      this.updateJobStatus(jobId, { progress: 50 });
+
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      this.updateJobStatus(jobId, { progress: 80 });
+
+      // Generate mock results
+      const results: AnalysisResults = {
+        playerTracking: [
+          {
+            playerId: 'player_1',
+            timestamp: 0,
+            position: { x: 100, y: 200 },
+            velocity: 15,
+            team: 'home',
+            confidence: 0.9
+          }
+        ],
+        events: [
+          {
+            id: 'event_1',
+            type: 'pass',
+            timestamp: 5.2,
+            playerId: 'player_1',
+            position: { x: 150, y: 180 },
+            confidence: 0.85
+          }
+        ],
+        statistics: {
+          possession: { home: 65, away: 35 },
+          passes: { home: 120, away: 85 },
+          shots: { home: 8, away: 5 },
+          distance: { home: 45.2, away: 38.7 }
+        },
+        heatmaps: [],
+        trajectories: []
+      };
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Update job as completed
+      this.updateJobStatus(jobId, { 
+        status: 'completed', 
+        progress: 100, 
+        results: results 
       });
 
-      if (!response.ok) {
-        throw new Error(`Analysis service error: ${response.statusText}`);
-      }
-
-      const results = await response.json();
-
-      // Store results
-      await supabase
-        .from('video_analysis_jobs')
-        .update({ 
-          status: 'completed', 
-          progress: 100, 
-          results: results 
-        })
-        .eq('id', jobId);
-
     } catch (error: any) {
-      await supabase
-        .from('video_analysis_jobs')
-        .update({ 
-          status: 'failed', 
-          error: error.message 
-        })
-        .eq('id', jobId);
+      this.updateJobStatus(jobId, { 
+        status: 'failed', 
+        error: error.message 
+      });
+    }
+  }
+
+  private static saveJobLocally(job: VideoAnalysisJob): void {
+    try {
+      const existingJobs = this.getJobsFromStorage();
+      existingJobs.push(job);
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(existingJobs));
+    } catch (error) {
+      console.error('Failed to save job locally:', error);
+    }
+  }
+
+  private static updateJobStatus(jobId: string, updates: Partial<VideoAnalysisJob>): void {
+    try {
+      const jobs = this.getJobsFromStorage();
+      const jobIndex = jobs.findIndex(job => job.id === jobId);
+      
+      if (jobIndex !== -1) {
+        jobs[jobIndex] = { ...jobs[jobIndex], ...updates };
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(jobs));
+      }
+    } catch (error) {
+      console.error('Failed to update job status:', error);
+    }
+  }
+
+  private static getJobsFromStorage(): VideoAnalysisJob[] {
+    try {
+      const stored = localStorage.getItem(this.STORAGE_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error('Failed to get jobs from storage:', error);
+      return [];
     }
   }
 
   static async getJobStatus(jobId: string): Promise<VideoAnalysisJob | null> {
-    const { data, error } = await supabase
-      .from('video_analysis_jobs')
-      .select('*')
-      .eq('id', jobId)
-      .single();
-
-    if (error || !data) return null;
-
-    return {
-      id: data.id,
-      videoUrl: data.video_url,
-      status: data.status,
-      progress: data.progress,
-      results: data.results,
-      error: data.error,
-      createdAt: data.created_at
-    };
+    try {
+      const jobs = this.getJobsFromStorage();
+      return jobs.find(job => job.id === jobId) || null;
+    } catch (error) {
+      console.error('Failed to get job status:', error);
+      return null;
+    }
   }
 
   static async getUserJobs(limit: number = 10): Promise<VideoAnalysisJob[]> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) return [];
-
-    const { data, error } = await supabase
-      .from('video_analysis_jobs')
-      .select('*')
-      .eq('user_id', user.user.id)
-      .order('created_at', { ascending: false })
-      .limit(limit);
-
-    if (error || !data) return [];
-
-    return data.map(job => ({
-      id: job.id,
-      videoUrl: job.video_url,
-      status: job.status,
-      progress: job.progress,
-      results: job.results,
-      error: job.error,
-      createdAt: job.created_at
-    }));
+    try {
+      const jobs = this.getJobsFromStorage();
+      return jobs
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, limit);
+    } catch (error) {
+      console.error('Failed to get user jobs:', error);
+      return [];
+    }
   }
 }

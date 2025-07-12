@@ -1,6 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
-
 export interface RealTimePlayerData {
   playerId: string;
   position: { x: number; y: number };
@@ -24,6 +21,7 @@ export class ProductionPlayerTrackingService {
   private isTracking = false;
   private trackingWorker: Worker | null = null;
   private configuration: TrackingConfiguration;
+  private trackingData: RealTimePlayerData[] = [];
 
   constructor(config: TrackingConfiguration) {
     this.configuration = config;
@@ -41,8 +39,9 @@ export class ProductionPlayerTrackingService {
       const { type, data } = event.data;
       
       if (type === 'tracking_data') {
+        this.trackingData = data;
         onDataUpdate(data);
-        this.saveTrackingData(data);
+        this.saveTrackingDataLocally(data);
       }
     };
 
@@ -78,8 +77,11 @@ export class ProductionPlayerTrackingService {
     processFrame();
   }
 
-  private async saveTrackingData(data: RealTimePlayerData[]): Promise<void> {
+  private saveTrackingDataLocally(data: RealTimePlayerData[]): void {
     try {
+      const storageKey = 'player_tracking_data';
+      const existingData = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      
       const trackingRecords = data.map(player => ({
         player_id: player.playerId,
         position_x: player.position.x,
@@ -94,11 +96,16 @@ export class ProductionPlayerTrackingService {
         created_at: new Date().toISOString()
       }));
 
-      await supabase
-        .from('player_tracking_data')
-        .insert(trackingRecords);
+      existingData.push(...trackingRecords);
+      
+      // Keep only last 1000 records to prevent storage overflow
+      if (existingData.length > 1000) {
+        existingData.splice(0, existingData.length - 1000);
+      }
+      
+      localStorage.setItem(storageKey, JSON.stringify(existingData));
     } catch (error) {
-      console.error('Failed to save tracking data:', error);
+      console.error('Failed to save tracking data locally:', error);
     }
   }
 
@@ -112,34 +119,41 @@ export class ProductionPlayerTrackingService {
   }
 
   async generateHeatmap(playerId: string, timeRange: { start: number; end: number }): Promise<HeatmapPoint[]> {
-    const { data, error } = await supabase
-      .from('player_tracking_data')
-      .select('position_x, position_y, timestamp')
-      .eq('player_id', playerId)
-      .gte('timestamp', timeRange.start)
-      .lte('timestamp', timeRange.end);
+    try {
+      const storageKey = 'player_tracking_data';
+      const data = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      
+      const playerData = data.filter((point: any) => 
+        point.player_id === playerId &&
+        point.timestamp >= timeRange.start &&
+        point.timestamp <= timeRange.end
+      );
 
-    if (error || !data) return [];
+      if (!playerData.length) return [];
 
-    // Generate heatmap points with intensity based on time spent in areas
-    const heatmapGrid: { [key: string]: number } = {};
-    const gridSize = 20;
+      // Generate heatmap points with intensity based on time spent in areas
+      const heatmapGrid: { [key: string]: number } = {};
+      const gridSize = 20;
 
-    data.forEach(point => {
-      const gridX = Math.floor(point.position_x / gridSize);
-      const gridY = Math.floor(point.position_y / gridSize);
-      const key = `${gridX},${gridY}`;
-      heatmapGrid[key] = (heatmapGrid[key] || 0) + 1;
-    });
+      playerData.forEach((point: any) => {
+        const gridX = Math.floor(point.position_x / gridSize);
+        const gridY = Math.floor(point.position_y / gridSize);
+        const key = `${gridX},${gridY}`;
+        heatmapGrid[key] = (heatmapGrid[key] || 0) + 1;
+      });
 
-    return Object.entries(heatmapGrid).map(([key, intensity]) => {
-      const [x, y] = key.split(',').map(Number);
-      return {
-        x: x * gridSize + gridSize / 2,
-        y: y * gridSize + gridSize / 2,
-        intensity: Math.min(intensity / 10, 1) // Normalize intensity
-      };
-    });
+      return Object.entries(heatmapGrid).map(([key, intensity]) => {
+        const [x, y] = key.split(',').map(Number);
+        return {
+          x: x * gridSize + gridSize / 2,
+          y: y * gridSize + gridSize / 2,
+          intensity: Math.min(intensity / 10, 1) // Normalize intensity
+        };
+      });
+    } catch (error) {
+      console.error('Failed to generate heatmap:', error);
+      return [];
+    }
   }
 }
 
