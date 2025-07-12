@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Database } from '@/integrations/supabase/types';
 
 export type VideoJobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'queued' | 'uploading';
 
@@ -51,7 +50,8 @@ export class VideoJobService {
       video_title: data.video_title || undefined,
       video_duration: data.video_duration || undefined,
       error_message: data.error_message || undefined,
-      user_id: data.user_id!
+      user_id: data.user_id!,
+      progress: data.progress || 0
     };
   }
 
@@ -71,11 +71,12 @@ export class VideoJobService {
       video_title: job.video_title || undefined,
       video_duration: job.video_duration || undefined,
       error_message: job.error_message || undefined,
-      user_id: job.user_id!
+      user_id: job.user_id!,
+      progress: job.progress || 0
     }));
   }
 
-  static async uploadVideo(file: File, onProgress?: (progress: number) => void): Promise<string> {
+  static async uploadVideo(file: File): Promise<string> {
     const timestamp = Date.now();
     const fileName = `${timestamp}-${file.name}`;
     const filePath = `public/${fileName}`;
@@ -91,7 +92,7 @@ export class VideoJobService {
   static async getVideoDownloadUrl(path: string): Promise<string> {
     const { data } = await supabase.storage
       .from('videos')
-      .createSignedUrl(path, 3600); // 1 hour expiry
+      .createSignedUrl(path, 3600);
 
     if (!data?.signedUrl) throw new Error('Failed to get signed URL');
     return data.signedUrl;
@@ -142,12 +143,12 @@ export class VideoJobService {
           video_title: data.video_title || undefined,
           video_duration: data.video_duration || undefined,
           error_message: data.error_message || undefined,
-          user_id: data.user_id!
+          user_id: data.user_id!,
+          progress: data.progress || 0
         };
 
         callback(job);
 
-        // Stop polling if job is complete or failed
         if (job.status === 'completed' || job.status === 'failed') {
           clearInterval(intervalId);
         }
@@ -155,9 +156,8 @@ export class VideoJobService {
         console.error('Error in polling:', error);
         callback(null);
       }
-    }, 2000); // Poll every 2 seconds
+    }, 2000);
 
-    // Return stop function
     return () => clearInterval(intervalId);
   }
 }
