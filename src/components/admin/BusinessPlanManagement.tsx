@@ -2,26 +2,29 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
-  Building2, 
+  TrendingUp, 
   Target, 
   DollarSign, 
-  TrendingUp, 
-  Users, 
-  Calendar,
+  Calendar, 
+  Plus, 
+  Edit, 
   FileText,
-  PieChart,
-  BarChart3,
-  Plus,
-  Edit,
-  Trash2,
-  Save
+  Building2,
+  Users,
+  Globe,
+  Briefcase,
+  MapPin,
+  Banknote
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface BusinessGoal {
   id: string;
@@ -30,6 +33,7 @@ interface BusinessGoal {
   target: string;
   deadline: string;
   status: 'pending' | 'in-progress' | 'completed';
+  priority: 'low' | 'medium' | 'high';
 }
 
 interface RevenueStream {
@@ -39,312 +43,386 @@ interface RevenueStream {
   monthlyRevenue: number;
   growth: number;
   status: 'active' | 'planned' | 'discontinued';
+  marketSegment: string;
 }
 
-interface FinancialMetric {
+interface AlgerianRegulation {
   id: string;
   name: string;
-  value: number;
-  unit: string;
-  trend: 'up' | 'down' | 'stable';
-  change: number;
+  description: string;
+  compliance: 'compliant' | 'pending' | 'non-compliant';
+  deadline?: string;
 }
 
 const BusinessPlanManagement: React.FC = () => {
-  const [businessGoals, setBusinessGoals] = useState<BusinessGoal[]>([
+  const [goals, setGoals] = useState<BusinessGoal[]>([
     {
       id: '1',
-      title: 'Expand to 5 New Markets',
-      description: 'Launch our sports tracking platform in 5 new geographical markets',
-      target: '5 markets',
+      title: 'Pénétrer le marché algérien du football',
+      description: 'Établir une présence forte sur le marché du football en Algérie',
+      target: '50 clubs partenaires',
       deadline: '2024-12-31',
-      status: 'in-progress'
-    },
-    {
-      id: '2',
-      title: 'Reach 10,000 Active Users',
-      description: 'Grow our user base to 10,000 active monthly users',
-      target: '10,000 users',
-      deadline: '2024-10-31',
-      status: 'in-progress'
+      status: 'in-progress',
+      priority: 'high'
     }
   ]);
 
   const [revenueStreams, setRevenueStreams] = useState<RevenueStream[]>([
     {
       id: '1',
-      name: 'Subscription Plans',
-      description: 'Monthly and yearly subscription plans for teams and organizations',
-      monthlyRevenue: 15000,
-      growth: 12.5,
-      status: 'active'
+      name: 'Abonnements Clubs',
+      description: 'Abonnements mensuels pour les clubs de football',
+      monthlyRevenue: 150000,
+      growth: 15,
+      status: 'active',
+      marketSegment: 'Clubs professionnels'
     },
     {
       id: '2',
-      name: 'Enterprise Licenses',
-      description: 'Custom enterprise solutions for large organizations',
-      monthlyRevenue: 25000,
-      growth: 8.3,
-      status: 'active'
+      name: 'Formation et Consulting',
+      description: 'Services de formation pour entraîneurs et analystes',
+      monthlyRevenue: 80000,
+      growth: 25,
+      status: 'active',
+      marketSegment: 'Éducation sportive'
+    }
+  ]);
+
+  const [regulations] = useState<AlgerianRegulation[]>([
+    {
+      id: '1',
+      name: 'Enregistrement Commercial',
+      description: 'Inscription au Registre du Commerce Algérien',
+      compliance: 'compliant'
+    },
+    {
+      id: '2',
+      name: 'TVA Algérienne',
+      description: 'Conformité aux règles de TVA (19%)',
+      compliance: 'compliant'
     },
     {
       id: '3',
-      name: 'Video Analysis Services',
-      description: 'Professional video analysis and reporting services',
-      monthlyRevenue: 8000,
-      growth: 15.2,
-      status: 'active'
+      name: 'Autorisation FAF',
+      description: 'Autorisation de la Fédération Algérienne de Football',
+      compliance: 'pending',
+      deadline: '2024-06-30'
     }
   ]);
 
-  const [financialMetrics, setFinancialMetrics] = useState<FinancialMetric[]>([
-    { id: '1', name: 'Monthly Recurring Revenue', value: 48000, unit: '$', trend: 'up', change: 12.5 },
-    { id: '2', name: 'Customer Acquisition Cost', value: 85, unit: '$', trend: 'down', change: -8.2 },
-    { id: '3', name: 'Customer Lifetime Value', value: 1250, unit: '$', trend: 'up', change: 15.3 },
-    { id: '4', name: 'Churn Rate', value: 5.2, unit: '%', trend: 'down', change: -2.1 },
-    { id: '5', name: 'Gross Margin', value: 75.5, unit: '%', trend: 'stable', change: 0.5 }
-  ]);
+  const [newGoal, setNewGoal] = useState({
+    title: '',
+    description: '',
+    target: '',
+    deadline: '',
+    priority: 'medium' as const
+  });
 
-  const [newGoal, setNewGoal] = useState<Partial<BusinessGoal>>({});
-  const [newRevenueStream, setNewRevenueStream] = useState<Partial<RevenueStream>>({});
+  const [newRevenue, setNewRevenue] = useState({
+    name: '',
+    description: '',
+    monthlyRevenue: 0,
+    marketSegment: ''
+  });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-      case 'completed':
-        return 'bg-green-500';
-      case 'in-progress':
-      case 'planned':
-        return 'bg-blue-500';
-      case 'pending':
-        return 'bg-yellow-500';
-      case 'discontinued':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
+  const addGoal = () => {
+    if (!newGoal.title || !newGoal.description) {
+      toast.error('Veuillez remplir tous les champs obligatoires');
+      return;
     }
-  };
 
-  const getTrendIcon = (trend: string) => {
-    switch (trend) {
-      case 'up':
-        return <TrendingUp className="h-4 w-4 text-green-500" />;
-      case 'down':
-        return <TrendingUp className="h-4 w-4 text-red-500 rotate-180" />;
-      default:
-        return <div className="h-4 w-4 bg-gray-400 rounded-full" />;
-    }
-  };
+    const goal: BusinessGoal = {
+      id: Date.now().toString(),
+      ...newGoal,
+      status: 'pending'
+    };
 
-  const addBusinessGoal = () => {
-    if (newGoal.title && newGoal.description) {
-      const goal: BusinessGoal = {
-        id: Date.now().toString(),
-        title: newGoal.title,
-        description: newGoal.description,
-        target: newGoal.target || '',
-        deadline: newGoal.deadline || '',
-        status: 'pending'
-      };
-      setBusinessGoals([...businessGoals, goal]);
-      setNewGoal({});
-    }
+    setGoals([...goals, goal]);
+    setNewGoal({ title: '', description: '', target: '', deadline: '', priority: 'medium' });
+    toast.success('Objectif ajouté avec succès');
   };
 
   const addRevenueStream = () => {
-    if (newRevenueStream.name && newRevenueStream.description) {
-      const stream: RevenueStream = {
-        id: Date.now().toString(),
-        name: newRevenueStream.name,
-        description: newRevenueStream.description,
-        monthlyRevenue: newRevenueStream.monthlyRevenue || 0,
-        growth: newRevenueStream.growth || 0,
-        status: 'planned'
-      };
-      setRevenueStreams([...revenueStreams, stream]);
-      setNewRevenueStream({});
+    if (!newRevenue.name || !newRevenue.description) {
+      toast.error('Veuillez remplir tous les champs obligatoires');
+      return;
     }
+
+    const revenue: RevenueStream = {
+      id: Date.now().toString(),
+      ...newRevenue,
+      growth: 0,
+      status: 'planned'
+    };
+
+    setRevenueStreams([...revenueStreams, revenue]);
+    setNewRevenue({ name: '', description: '', monthlyRevenue: 0, marketSegment: '' });
+    toast.success('Source de revenus ajoutée avec succès');
   };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('ar-DZ', {
+      style: 'currency',
+      currency: 'DZD'
+    }).format(amount);
+  };
+
+  const totalMonthlyRevenue = revenueStreams
+    .filter(stream => stream.status === 'active')
+    .reduce((sum, stream) => sum + stream.monthlyRevenue, 0);
+
+  const totalYearlyRevenue = totalMonthlyRevenue * 12;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Business Management</h1>
-          <p className="text-gray-600">Manage your business plan, model, and financial metrics</p>
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Building2 className="h-6 w-6 text-primary" />
+            Plan d'Affaires - Marché Algérien
+          </h2>
+          <p className="text-muted-foreground">
+            Gestion stratégique pour le marché du football en Algérie
+          </p>
         </div>
+        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+          <MapPin className="h-3 w-3 mr-1" />
+          Algérie
+        </Badge>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="goals">Business Goals</TabsTrigger>
-          <TabsTrigger value="revenue">Revenue Model</TabsTrigger>
-          <TabsTrigger value="financial">Financial Metrics</TabsTrigger>
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="goals">Objectifs</TabsTrigger>
+          <TabsTrigger value="revenue">Revenus</TabsTrigger>
+          <TabsTrigger value="market">Marché Local</TabsTrigger>
+          <TabsTrigger value="compliance">Conformité</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Key Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Goals</CardTitle>
-                <Target className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{businessGoals.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  {businessGoals.filter(g => g.status === 'completed').length} completed
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Revenus Mensuels</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {formatCurrency(totalMonthlyRevenue)}
+                    </p>
+                  </div>
+                  <Banknote className="h-8 w-8 text-green-600" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  +12% vs mois précédent
                 </p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  ${revenueStreams.reduce((sum, stream) => sum + stream.monthlyRevenue, 0).toLocaleString()}
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Objectifs Actifs</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {goals.filter(g => g.status !== 'completed').length}
+                    </p>
+                  </div>
+                  <Target className="h-8 w-8 text-blue-600" />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  From {revenueStreams.filter(s => s.status === 'active').length} active streams
+                <p className="text-xs text-muted-foreground mt-2">
+                  {goals.filter(g => g.status === 'completed').length} terminés
                 </p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Growth Rate</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {(revenueStreams.reduce((sum, stream) => sum + stream.growth, 0) / revenueStreams.length).toFixed(1)}%
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Clubs Partenaires</p>
+                    <p className="text-2xl font-bold text-foreground">28</p>
+                  </div>
+                  <Users className="h-8 w-8 text-purple-600" />
                 </div>
-                <p className="text-xs text-muted-foreground">Average monthly growth</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Objectif: 50 clubs
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Croissance</p>
+                    <p className="text-2xl font-bold text-foreground">+24%</p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-orange-600" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Croissance annuelle
+                </p>
               </CardContent>
             </Card>
           </div>
 
+          {/* Business Model Canvas - Algerian Context */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                Business Model Canvas
+                <Briefcase className="h-5 w-5" />
+                Modèle d'Affaires - Contexte Algérien
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="p-4">
-                  <h3 className="font-semibold mb-2">Key Partnerships</h3>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• Sports organizations</li>
-                    <li>• Technology partners</li>
-                    <li>• Video analytics providers</li>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-foreground">Partenaires Clés</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Fédération Algérienne de Football (FAF)</li>
+                    <li>• Ligues Régionales</li>
+                    <li>• Clubs Professionnels</li>
+                    <li>• Centres de Formation</li>
                   </ul>
-                </Card>
-                <Card className="p-4">
-                  <h3 className="font-semibold mb-2">Value Propositions</h3>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• Real-time match tracking</li>
-                    <li>• Advanced analytics</li>
-                    <li>• Team collaboration tools</li>
+                </div>
+                
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-foreground">Segments Clients</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Clubs de Ligue 1 et 2</li>
+                    <li>• Académies de football</li>
+                    <li>• Entraîneurs professionnels</li>
+                    <li>• Analystes sportifs</li>
                   </ul>
-                </Card>
-                <Card className="p-4">
-                  <h3 className="font-semibold mb-2">Customer Segments</h3>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• Professional sports teams</li>
-                    <li>• Amateur leagues</li>
-                    <li>• Educational institutions</li>
+                </div>
+                
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-foreground">Canaux de Distribution</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Plateforme web</li>
+                    <li>• Partenariats directs</li>
+                    <li>• Formations présentielles</li>
+                    <li>• Support technique local</li>
                   </ul>
-                </Card>
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="goals" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Business Goals
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="goal-title">Goal Title</Label>
-                  <Input
-                    id="goal-title"
-                    placeholder="Enter goal title"
-                    value={newGoal.title || ''}
-                    onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
-                  />
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">Objectifs Stratégiques</h3>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nouvel Objectif
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Ajouter un Objectif</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="goal-title">Titre</Label>
+                    <Input
+                      id="goal-title"
+                      value={newGoal.title}
+                      onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
+                      placeholder="Ex: Expansion dans 3 nouvelles wilayas"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="goal-description">Description</Label>
+                    <Textarea
+                      id="goal-description"
+                      value={newGoal.description}
+                      onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
+                      placeholder="Description détaillée de l'objectif"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="goal-target">Cible</Label>
+                    <Input
+                      id="goal-target"
+                      value={newGoal.target}
+                      onChange={(e) => setNewGoal({ ...newGoal, target: e.target.value })}
+                      placeholder="Ex: 15 nouveaux clubs"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="goal-deadline">Date Limite</Label>
+                    <Input
+                      id="goal-deadline"
+                      type="date"
+                      value={newGoal.deadline}
+                      onChange={(e) => setNewGoal({ ...newGoal, deadline: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="goal-priority">Priorité</Label>
+                    <Select
+                      value={newGoal.priority}
+                      onValueChange={(value: 'low' | 'medium' | 'high') => 
+                        setNewGoal({ ...newGoal, priority: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Faible</SelectItem>
+                        <SelectItem value="medium">Moyenne</SelectItem>
+                        <SelectItem value="high">Élevée</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button onClick={addGoal} className="w-full">
+                    Ajouter l'Objectif
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="goal-target">Target</Label>
-                  <Input
-                    id="goal-target"
-                    placeholder="e.g., 10,000 users"
-                    value={newGoal.target || ''}
-                    onChange={(e) => setNewGoal({ ...newGoal, target: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="goal-description">Description</Label>
-                <Textarea
-                  id="goal-description"
-                  placeholder="Describe the goal"
-                  value={newGoal.description || ''}
-                  onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="goal-deadline">Deadline</Label>
-                <Input
-                  id="goal-deadline"
-                  type="date"
-                  value={newGoal.deadline || ''}
-                  onChange={(e) => setNewGoal({ ...newGoal, deadline: e.target.value })}
-                />
-              </div>
-              <Button onClick={addBusinessGoal} className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Business Goal
-              </Button>
-            </CardContent>
-          </Card>
+              </DialogContent>
+            </Dialog>
+          </div>
 
           <div className="grid gap-4">
-            {businessGoals.map((goal) => (
+            {goals.map((goal) => (
               <Card key={goal.id}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold">{goal.title}</h3>
-                        <Badge className={getStatusColor(goal.status)}>
-                          {goal.status.replace('-', ' ')}
+                        <h4 className="font-semibold text-foreground">{goal.title}</h4>
+                        <Badge variant={
+                          goal.priority === 'high' ? 'destructive' :
+                          goal.priority === 'medium' ? 'default' : 'secondary'
+                        }>
+                          {goal.priority === 'high' ? 'Élevée' :
+                           goal.priority === 'medium' ? 'Moyenne' : 'Faible'}
+                        </Badge>
+                        <Badge variant={
+                          goal.status === 'completed' ? 'default' :
+                          goal.status === 'in-progress' ? 'secondary' : 'outline'
+                        }>
+                          {goal.status === 'completed' ? 'Terminé' :
+                           goal.status === 'in-progress' ? 'En cours' : 'En attente'}
                         </Badge>
                       </div>
-                      <p className="text-gray-600 mb-2">{goal.description}</p>
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <span>Target: {goal.target}</span>
-                        <span>Deadline: {new Date(goal.deadline).toLocaleDateString()}</span>
+                      <p className="text-sm text-muted-foreground mb-2">{goal.description}</p>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span>Cible: {goal.target}</span>
+                        {goal.deadline && (
+                          <span>Échéance: {new Date(goal.deadline).toLocaleDateString('fr-FR')}</span>
+                        )}
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Button variant="outline" size="sm">
+                      <Edit className="h-4 w-4" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -353,77 +431,125 @@ const BusinessPlanManagement: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="revenue" className="space-y-6">
+          {/* Revenue Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <h4 className="font-semibold text-foreground mb-2">Revenus Mensuels</h4>
+                <p className="text-2xl font-bold text-green-600">
+                  {formatCurrency(totalMonthlyRevenue)}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <h4 className="font-semibold text-foreground mb-2">Revenus Annuels</h4>
+                <p className="text-2xl font-bold text-blue-600">
+                  {formatCurrency(totalYearlyRevenue)}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <h4 className="font-semibold text-foreground mb-2">Sources Actives</h4>
+                <p className="text-2xl font-bold text-purple-600">
+                  {revenueStreams.filter(stream => stream.status === 'active').length}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Add New Revenue Stream */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Revenue Streams
-              </CardTitle>
+              <CardTitle>Ajouter une Source de Revenus</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="stream-name">Stream Name</Label>
+                <div>
+                  <Label htmlFor="revenue-name">Nom</Label>
                   <Input
-                    id="stream-name"
-                    placeholder="Enter revenue stream name"
-                    value={newRevenueStream.name || ''}
-                    onChange={(e) => setNewRevenueStream({ ...newRevenueStream, name: e.target.value })}
+                    id="revenue-name"
+                    value={newRevenue.name}
+                    onChange={(e) => setNewRevenue({ ...newRevenue, name: e.target.value })}
+                    placeholder="Ex: Licences logiciels"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="stream-revenue">Monthly Revenue ($)</Label>
+                <div>
+                  <Label htmlFor="revenue-segment">Segment de Marché</Label>
                   <Input
-                    id="stream-revenue"
+                    id="revenue-segment"
+                    value={newRevenue.marketSegment}
+                    onChange={(e) => setNewRevenue({ ...newRevenue, marketSegment: e.target.value })}
+                    placeholder="Ex: Clubs amateurs"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label htmlFor="revenue-description">Description</Label>
+                  <Textarea
+                    id="revenue-description"
+                    value={newRevenue.description}
+                    onChange={(e) => setNewRevenue({ ...newRevenue, description: e.target.value })}
+                    placeholder="Description de la source de revenus"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="revenue-amount">Revenus Mensuels Estimés (DZD)</Label>
+                  <Input
+                    id="revenue-amount"
                     type="number"
+                    value={newRevenue.monthlyRevenue}
+                    onChange={(e) => setNewRevenue({ ...newRevenue, monthlyRevenue: Number(e.target.value) })}
                     placeholder="0"
-                    value={newRevenueStream.monthlyRevenue || ''}
-                    onChange={(e) => setNewRevenueStream({ ...newRevenueStream, monthlyRevenue: Number(e.target.value) })}
                   />
                 </div>
+                <div className="flex items-end">
+                  <Button onClick={addRevenueStream} className="w-full">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter
+                  </Button>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="stream-description">Description</Label>
-                <Textarea
-                  id="stream-description"
-                  placeholder="Describe the revenue stream"
-                  value={newRevenueStream.description || ''}
-                  onChange={(e) => setNewRevenueStream({ ...newRevenueStream, description: e.target.value })}
-                />
-              </div>
-              <Button onClick={addRevenueStream} className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Revenue Stream
-              </Button>
             </CardContent>
           </Card>
 
-          <div className="grid gap-4">
+          {/* Revenue Streams List */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Sources de Revenus</h3>
             {revenueStreams.map((stream) => (
               <Card key={stream.id}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold">{stream.name}</h3>
-                        <Badge className={getStatusColor(stream.status)}>
-                          {stream.status}
+                        <h4 className="font-semibold text-foreground">{stream.name}</h4>
+                        <Badge variant={
+                          stream.status === 'active' ? 'default' :
+                          stream.status === 'planned' ? 'secondary' : 'outline'
+                        }>
+                          {stream.status === 'active' ? 'Actif' :
+                           stream.status === 'planned' ? 'Planifié' : 'Discontinué'}
                         </Badge>
                       </div>
-                      <p className="text-gray-600 mb-2">{stream.description}</p>
+                      <p className="text-sm text-muted-foreground mb-2">{stream.description}</p>
                       <div className="flex items-center gap-4 text-sm">
-                        <span className="font-medium">${stream.monthlyRevenue.toLocaleString()}/month</span>
-                        <span className="text-green-600">+{stream.growth}% growth</span>
+                        <span className="font-medium text-green-600">
+                          {formatCurrency(stream.monthlyRevenue)}/mois
+                        </span>
+                        <span className="text-muted-foreground">
+                          Segment: {stream.marketSegment}
+                        </span>
+                        {stream.growth > 0 && (
+                          <span className="text-green-600 flex items-center gap-1">
+                            <TrendingUp className="h-3 w-3" />
+                            +{stream.growth}%
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Button variant="outline" size="sm">
+                      <Edit className="h-4 w-4" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -431,96 +557,158 @@ const BusinessPlanManagement: React.FC = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="financial" className="space-y-6">
+        <TabsContent value="market" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="h-5 w-5" />
+                  Analyse du Marché Algérien
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Taille du Marché</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• 140+ clubs professionnels</li>
+                    <li>• 48 wilayas couvertes</li>
+                    <li>• 2M+ joueurs licenciés</li>
+                    <li>• Marché estimé: 2.5B DZD</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Opportunités</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Digitalisation du sport</li>
+                    <li>• Formation des entraîneurs</li>
+                    <li>• Analyse de performance</li>
+                    <li>• Jeunes talents</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Défis du Marché Local</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Défis Techniques</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Infrastructure internet variable</li>
+                    <li>• Adoption technologique lente</li>
+                    <li>• Formation numérique nécessaire</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Défis Économiques</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Budgets limités des clubs</li>
+                    <li>• Volatilité du dinar</li>
+                    <li>• Financement difficile</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Stratégie de Pénétration</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <h4 className="font-semibold">Phase 1: Établissement</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Partenariat avec FAF</li>
+                    <li>• Clubs pilotes à Alger</li>
+                    <li>• Formation équipes locales</li>
+                  </ul>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-semibold">Phase 2: Expansion</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Extension à Oran, Constantine</li>
+                    <li>• Recrutement commercial</li>
+                    <li>• Adaptation produit local</li>
+                  </ul>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-semibold">Phase 3: Consolidation</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Couverture nationale</li>
+                    <li>• Diversification services</li>
+                    <li>• Leadership marché</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="compliance" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Financial Metrics
+                <FileText className="h-5 w-5" />
+                Conformité Réglementaire Algérienne
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {financialMetrics.map((metric) => (
-                  <Card key={metric.id} className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium text-sm">{metric.name}</h3>
-                      {getTrendIcon(metric.trend)}
+              <div className="space-y-4">
+                {regulations.map((regulation) => (
+                  <div key={regulation.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-foreground">{regulation.name}</h4>
+                      <p className="text-sm text-muted-foreground">{regulation.description}</p>
+                      {regulation.deadline && (
+                        <p className="text-xs text-orange-600 mt-1">
+                          Échéance: {new Date(regulation.deadline).toLocaleDateString('fr-FR')}
+                        </p>
+                      )}
                     </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-bold">
-                        {metric.unit === '$' ? '$' : ''}{metric.value.toLocaleString()}{metric.unit !== '$' ? metric.unit : ''}
-                      </span>
-                    </div>
-                    <p className={`text-xs ${metric.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {metric.change >= 0 ? '+' : ''}{metric.change}% from last month
-                    </p>
-                  </Card>
+                    <Badge variant={
+                      regulation.compliance === 'compliant' ? 'default' :
+                      regulation.compliance === 'pending' ? 'secondary' : 'destructive'
+                    }>
+                      {regulation.compliance === 'compliant' ? 'Conforme' :
+                       regulation.compliance === 'pending' ? 'En cours' : 'Non conforme'}
+                    </Badge>
+                  </div>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PieChart className="h-5 w-5" />
-                  Revenue Breakdown
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {revenueStreams.map((stream) => {
-                    const percentage = (stream.monthlyRevenue / revenueStreams.reduce((sum, s) => sum + s.monthlyRevenue, 0)) * 100;
-                    return (
-                      <div key={stream.id} className="flex items-center justify-between">
-                        <span className="text-sm">{stream.name}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">{percentage.toFixed(1)}%</span>
-                          <div className="w-20 h-2 bg-gray-200 rounded-full">
-                            <div 
-                              className="h-2 bg-blue-500 rounded-full" 
-                              style={{ width: `${percentage}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+          <Card>
+            <CardHeader>
+              <CardTitle>Exigences Fiscales</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-semibold mb-3">Obligations Fiscales</h4>
+                  <ul className="text-sm text-muted-foreground space-y-2">
+                    <li>• TVA: 19% sur services digitaux</li>
+                    <li>• IBS: 23% sur bénéfices</li>
+                    <li>• TAP: 2% sur chiffre d'affaires</li>
+                    <li>• Versement forfaitaire: 1%</li>
+                  </ul>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Business Plan Documents
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span>Business Plan 2024.pdf</span>
-                    <Button variant="outline" size="sm">View</Button>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span>Financial Projections.xlsx</span>
-                    <Button variant="outline" size="sm">View</Button>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span>Market Analysis.pdf</span>
-                    <Button variant="outline" size="sm">View</Button>
-                  </div>
-                  <Button variant="outline" className="w-full">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Upload Document
-                  </Button>
+                <div>
+                  <h4 className="font-semibold mb-3">Calendrier Fiscal</h4>
+                  <ul className="text-sm text-muted-foreground space-y-2">
+                    <li>• Déclarations TVA: Mensuelle</li>
+                    <li>• Déclaration IBS: Annuelle</li>
+                    <li>• Acomptes provisionnels: Trimestriels</li>
+                    <li>• Bilan comptable: 31 Mars</li>
+                  </ul>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
