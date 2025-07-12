@@ -27,10 +27,12 @@ import {
   Timer,
   Activity,
   Settings,
-  BarChart3
+  BarChart3,
+  Zap
 } from 'lucide-react';
 import { toast } from 'sonner';
 import StartupPitchPresentation from './StartupPitchPresentation';
+import BudgetOptimizationSolver from './BudgetOptimizationSolver';
 
 interface BusinessGoal {
   id: string;
@@ -342,6 +344,19 @@ const BusinessPlanManagement: React.FC = () => {
 
   const totalYearlyRevenue = totalMonthlyRevenue * 12;
 
+  // Handler for optimization solver
+  const handleConfigUpdate = (config: {
+    trackersMinimum: number;
+    trackersOptimal: number;
+    replacements: number;
+    playersToTrack: number;
+  }) => {
+    setMatchSimulation({
+      ...matchSimulation,
+      ...config
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -490,6 +505,29 @@ const BusinessPlanManagement: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="budget" className="space-y-6">
+          {/* Budget Optimization Solver */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                Optimisateur de Configuration
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BudgetOptimizationSolver
+                currentConfig={{
+                  trackersMinimum: matchSimulation.trackersMinimum,
+                  trackersOptimal: matchSimulation.trackersOptimal,
+                  replacements: matchSimulation.replacements,
+                  playersToTrack: matchSimulation.playersToTrack
+                }}
+                onConfigUpdate={handleConfigUpdate}
+                calculateCost={calculateTrackerCost}
+                calculateEfficiency={calculateEfficiencyMetrics}
+              />
+            </CardContent>
+          </Card>
+
           {/* Enhanced Real-World Analytics */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card>
