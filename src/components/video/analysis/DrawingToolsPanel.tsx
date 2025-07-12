@@ -30,7 +30,7 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
   ];
 
   return (
-    <div className="absolute bottom-4 left-4 right-4 z-20 pointer-events-none">
+    <div className="absolute bottom-16 left-4 right-4 z-20 pointer-events-none">
       <div className="flex justify-center">
         <Card className="bg-black/80 backdrop-blur-md border-white/20 text-white pointer-events-auto max-w-4xl">
           <CardContent className="p-4">
