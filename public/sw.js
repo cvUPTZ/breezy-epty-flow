@@ -48,28 +48,47 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Skip non-GET requests
   if (event.request.method !== 'GET') {
-    event.respondWith(fetch(event.request));
     return;
   }
 
-  const url = new URL(event.request.url);
-  
+  // Validate URL before processing
+  let url;
+  try {
+    url = new URL(event.request.url);
+  } catch (error) {
+    console.error('Service Worker: Invalid URL detected:', event.request.url);
+    return;
+  }
+
+  // Skip invalid or problematic URLs
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    console.log('Service Worker: Skipping non-http(s) URL:', event.request.url);
+    return;
+  }
+
+  // Skip chrome-extension URLs
+  if (url.protocol === 'chrome-extension:') {
+    console.log('Service Worker: Skipping chrome extension URL:', event.request.url);
+    return;
+  }
+
   // Skip YouTube URLs entirely - they should be handled by YouTube embed
   if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
     console.log('Service Worker: Skipping YouTube URL:', event.request.url);
     return;
   }
 
-  // Skip chrome-extension URLs
-  if (event.request.url.startsWith('chrome-extension://')) {
-    console.log('Service Worker: Skipping chrome extension URL:', event.request.url);
+  // Skip blob URLs
+  if (url.protocol === 'blob:') {
+    console.log('Service Worker: Skipping blob URL:', event.request.url);
     return;
   }
 
-  // Skip external APIs that might be unreachable
-  if (event.request.url.includes('pythonanywhere.com') || 
-      event.request.url.includes('supabase.co')) {
+  // Handle external APIs that might be unreachable
+  if (url.hostname.includes('pythonanywhere.com') || 
+      url.hostname.includes('supabase.co')) {
     event.respondWith(
       fetch(event.request).catch(error => {
         console.error('Service Worker: External API request failed:', error);
@@ -86,6 +105,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Handle navigation requests
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
@@ -95,26 +115,35 @@ self.addEventListener('fetch', (event) => {
             caches.open(CACHE_NAME)
               .then(cache => {
                 cache.put(event.request, responseToCache);
+              })
+              .catch(error => {
+                console.error('Service Worker: Failed to cache navigation response:', error);
               });
           }
           return response;
         })
-        .catch(() => {
+        .catch(error => {
+          console.error('Service Worker: Navigation request failed:', error);
           return caches.match(event.request)
             .then(cachedResponse => {
               return cachedResponse || caches.match('/index.html');
             });
         })
     );
-  } else {
-    event.respondWith(
-      caches.match(event.request)
-        .then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
+    return;
+  }
 
-          return fetch(event.request).then((networkResponse) => {
+  // Handle other requests (assets, etc.)
+  event.respondWith(
+    caches.match(event.request)
+      .then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+
+        return fetch(event.request)
+          .then((networkResponse) => {
+            // Only cache successful responses
             if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
               return networkResponse;
             }
@@ -123,12 +152,29 @@ self.addEventListener('fetch', (event) => {
             caches.open(CACHE_NAME)
               .then((cache) => {
                 cache.put(event.request, responseToCache);
+              })
+              .catch(error => {
+                console.error('Service Worker: Failed to cache response:', error);
               });
             return networkResponse;
+          })
+          .catch(error => {
+            console.error('Service Worker: Network request failed:', error);
+            // Return a generic error response for failed requests
+            return new Response(
+              JSON.stringify({ error: 'Resource unavailable' }), 
+              { 
+                status: 503, 
+                statusText: 'Service Unavailable',
+                headers: { 'Content-Type': 'application/json' }
+              }
+            );
           });
-        })
-        .catch(error => {
-          console.error('Service Worker: Error in fetch handler for non-navigation request:', error);
+      })
+      .catch(error => {
+        console.error('Service Worker: Cache match failed:', error);
+        // Fallback to network request
+        return fetch(event.request).catch(() => {
           return new Response(
             JSON.stringify({ error: 'Resource unavailable' }), 
             { 
@@ -137,9 +183,9 @@ self.addEventListener('fetch', (event) => {
               headers: { 'Content-Type': 'application/json' }
             }
           );
-        })
-    );
-  }
+        });
+      })
+  );
 });
 
 self.addEventListener('message', (event) => {
