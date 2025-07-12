@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { Play, Pause, RotateCcw, Save, Target, Activity } from 'lucide-react';
+import { Play, Pause, RotateCcw, Save, Target, Activity, Download } from 'lucide-react';
 
 interface AnalysisControlPanelProps {
   currentTime: number;
@@ -20,9 +20,13 @@ interface AnalysisControlPanelProps {
   onStartTracking?: () => void;
   onSaveAnnotations?: () => void;
   onClearAnnotations?: () => void;
+  onExportData?: () => void;
   onPlayerTrackingToggle?: (enabled: boolean) => void;
   onHeatmapToggle?: (enabled: boolean) => void;
   onTrajectoryToggle?: (enabled: boolean) => void;
+  trackingEnabled?: boolean;
+  heatmapEnabled?: boolean;
+  trajectoryEnabled?: boolean;
 }
 
 export const AnalysisControlPanel: React.FC<AnalysisControlPanelProps> = ({
@@ -39,6 +43,7 @@ export const AnalysisControlPanel: React.FC<AnalysisControlPanelProps> = ({
   onStartTracking,
   onSaveAnnotations,
   onClearAnnotations,
+  onExportData,
   onPlayerTrackingToggle,
   onHeatmapToggle,
   onTrajectoryToggle
@@ -137,6 +142,17 @@ export const AnalysisControlPanel: React.FC<AnalysisControlPanelProps> = ({
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Clear All
+              </Button>
+            )}
+
+            {onExportData && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onExportData}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export
               </Button>
             )}
           </div>

@@ -15,11 +15,12 @@ interface PlayerPosition {
 
 interface AnnotationElement {
   id: string;
-  type: 'circle' | 'line' | 'arrow' | 'distance' | 'area' | 'spotlight' | 'trajectory';
+  type: 'circle' | 'line' | 'arrow' | 'distance' | 'area' | 'spotlight' | 'trajectory' | 'offside-line' | 'pressure-zone' | 'passing-lane';
   points: { x: number; y: number }[];
   color: string;
   label?: string;
   measurement?: number;
+  intensity?: number;
 }
 
 interface TacticalAnnotationOverlayProps {
