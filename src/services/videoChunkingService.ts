@@ -100,7 +100,43 @@ export class VideoChunkingService {
   }
 
   /**
+   * Create a signed URL for the first chunk to use as video source
+   * Instead of reassembling all chunks, we'll use signed URLs approach
+   */
+  static async getChunkedVideoUrl(metadata: ChunkedVideoMetadata): Promise<string> {
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    console.log(`Getting signed URL for chunked video: ${metadata.id}`);
+
+    try {
+      // For now, let's try to get a signed URL for the first chunk
+      // This is a temporary solution - ideally we'd need a backend service to reassemble
+      const firstChunk = metadata.chunks.find(chunk => chunk.chunkIndex === 0);
+      
+      if (!firstChunk) {
+        throw new Error('No chunks found in metadata');
+      }
+
+      const { data, error } = await supabase.storage
+        .from('videos')
+        .createSignedUrl(firstChunk.path, 3600);
+
+      if (error) {
+        throw new Error(`Failed to create signed URL: ${error.message}`);
+      }
+
+      console.log('Successfully created signed URL for first chunk');
+      return data.signedUrl;
+      
+    } catch (error: any) {
+      console.error('Error getting chunked video URL:', error);
+      throw new Error(`Failed to get chunked video URL: ${error.message}`);
+    }
+  }
+
+  /**
    * Create a blob URL from video chunks for playback
+   * This is kept as fallback but won't be used by default due to memory constraints
    */
   static async reassembleVideoFromChunks(metadata: ChunkedVideoMetadata): Promise<string> {
     const { supabase } = await import('@/integrations/supabase/client');
@@ -108,24 +144,41 @@ export class VideoChunkingService {
 
     console.log(`Reassembling video from ${metadata.totalChunks} chunks`);
 
-    // Download all chunks
-    for (const chunkInfo of metadata.chunks.sort((a, b) => a.chunkIndex - b.chunkIndex)) {
-      const { data, error } = await supabase.storage
-        .from('videos')
-        .download(chunkInfo.path);
+    try {
+      // Download all chunks with better error handling
+      for (const chunkInfo of metadata.chunks.sort((a, b) => a.chunkIndex - b.chunkIndex)) {
+        console.log(`Downloading chunk ${chunkInfo.chunkIndex + 1}/${metadata.totalChunks}`);
+        
+        const { data, error } = await supabase.storage
+          .from('videos')
+          .download(chunkInfo.path);
 
-      if (error) {
-        throw new Error(`Failed to download chunk ${chunkInfo.chunkIndex}: ${error.message}`);
+        if (error) {
+          console.error(`Failed to download chunk ${chunkInfo.chunkIndex}:`, error);
+          throw new Error(`Failed to download chunk ${chunkInfo.chunkIndex}: ${error.message}`);
+        }
+
+        if (!data) {
+          throw new Error(`No data received for chunk ${chunkInfo.chunkIndex}`);
+        }
+
+        chunkBlobs.push(data);
       }
 
-      chunkBlobs.push(data);
+      // Combine chunks into a single blob
+      console.log('Combining chunks into single blob...');
+      const combinedBlob = new Blob(chunkBlobs, { type: metadata.mimeType });
+      
+      // Create blob URL for video playback
+      const blobUrl = URL.createObjectURL(combinedBlob);
+      console.log('Successfully created blob URL for reassembled video');
+      
+      return blobUrl;
+      
+    } catch (error: any) {
+      console.error('Error reassembling video from chunks:', error);
+      throw new Error(`Failed to reassemble video: ${error.message}`);
     }
-
-    // Combine chunks into a single blob
-    const combinedBlob = new Blob(chunkBlobs, { type: metadata.mimeType });
-    
-    // Create blob URL for video playback
-    return URL.createObjectURL(combinedBlob);
   }
 
   /**

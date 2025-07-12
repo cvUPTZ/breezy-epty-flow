@@ -139,8 +139,9 @@ export class VideoJobService {
         const metadataJson = videoPath.replace('chunked:', '');
         const metadata: ChunkedVideoMetadata = JSON.parse(metadataJson);
         
-        console.log('Reassembling chunked video for playback');
-        return await VideoChunkingService.reassembleVideoFromChunks(metadata);
+        console.log('Getting URL for chunked video');
+        // Use the new method that gets signed URL instead of reassembling
+        return await VideoChunkingService.getChunkedVideoUrl(metadata);
       } else {
         // Regular file - get signed URL
         const { data, error } = await supabase.storage.from('videos').createSignedUrl(videoPath, 3600);
