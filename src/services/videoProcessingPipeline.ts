@@ -85,6 +85,7 @@ export class VideoProcessingPipeline {
     // Convert database response to VideoJob format - ensure user_id is string
     let currentJobState: VideoJob = {
       ...insertResult.data,
+      created_at: insertResult.data.created_at || new Date().toISOString(),
       video_title: insertResult.data.video_title || undefined,
       video_duration: insertResult.data.video_duration || undefined,
       error_message: insertResult.data.error_message || undefined,
@@ -110,6 +111,7 @@ export class VideoProcessingPipeline {
     } else if (updateResult.data) {
       currentJobState = {
         ...updateResult.data,
+        created_at: updateResult.data.created_at || new Date().toISOString(),
         video_title: updateResult.data.video_title || undefined,
         video_duration: updateResult.data.video_duration || undefined,
         error_message: updateResult.data.error_message || undefined,
@@ -135,6 +137,7 @@ export class VideoProcessingPipeline {
         if (updateAfterPrimary.data) {
           currentJobState = {
             ...updateAfterPrimary.data,
+            created_at: updateAfterPrimary.data.created_at || new Date().toISOString(),
             video_title: updateAfterPrimary.data.video_title || undefined,
             video_duration: updateAfterPrimary.data.video_duration || undefined,
             error_message: updateAfterPrimary.data.error_message || undefined,
@@ -170,6 +173,7 @@ export class VideoProcessingPipeline {
               if (updateAfterFallbackFail.data) {
                 currentJobState = {
                   ...updateAfterFallbackFail.data,
+                  created_at: updateAfterFallbackFail.data.created_at || new Date().toISOString(),
                   video_title: updateAfterFallbackFail.data.video_title || undefined,
                   video_duration: updateAfterFallbackFail.data.video_duration || undefined,
                   error_message: updateAfterFallbackFail.data.error_message || undefined,
@@ -207,6 +211,7 @@ export class VideoProcessingPipeline {
             if (updateAfterFallback.data) {
               currentJobState = {
                 ...updateAfterFallback.data,
+                created_at: updateAfterFallback.data.created_at || new Date().toISOString(),
                 video_title: updateAfterFallback.data.video_title || undefined,
                 video_duration: updateAfterFallback.data.video_duration || undefined,
                 error_message: updateAfterFallback.data.error_message || undefined,
@@ -230,6 +235,7 @@ export class VideoProcessingPipeline {
             if (updateAfterFallbackCatch.data) {
               currentJobState = {
                 ...updateAfterFallbackCatch.data,
+                created_at: updateAfterFallbackCatch.data.created_at || new Date().toISOString(),
                 video_title: updateAfterFallbackCatch.data.video_title || undefined,
                 video_duration: updateAfterFallbackCatch.data.video_duration || undefined,
                 error_message: updateAfterFallbackCatch.data.error_message || undefined,
@@ -253,6 +259,7 @@ export class VideoProcessingPipeline {
           if (updateNoFallback.data) {
             currentJobState = {
               ...updateNoFallback.data,
+              created_at: updateNoFallback.data.created_at || new Date().toISOString(),
               video_title: updateNoFallback.data.video_title || undefined,
               video_duration: updateNoFallback.data.video_duration || undefined,
               error_message: updateNoFallback.data.error_message || undefined,
@@ -274,6 +281,7 @@ export class VideoProcessingPipeline {
       if (updateNoAI.data) {
         currentJobState = {
           ...updateNoAI.data,
+          created_at: updateNoAI.data.created_at || new Date().toISOString(),
           video_title: updateNoAI.data.video_title || undefined,
           video_duration: updateNoAI.data.video_duration || undefined,
           error_message: updateNoAI.data.error_message || undefined,
@@ -345,7 +353,7 @@ export class VideoProcessingPipeline {
     }
 
     return {
-      status: data.status,
+      status: data.status || 'pending',
       progress: data.progress || 0,
       error: data.error_message || undefined
     };

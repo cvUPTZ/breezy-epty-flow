@@ -1,6 +1,8 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
-import { AccessToken } from 'https://deno.land/x/livekit@0.5.6/mod.ts'
+
+// Using a more reliable LiveKit import
+const LIVEKIT_URL = 'https://esm.sh/livekit-server-sdk@2.0.5'
 
 interface TokenRequest {
   roomId: string;
@@ -29,6 +31,9 @@ serve(async (req: Request) => {
       throw new Error('LiveKit credentials not configured');
     }
 
+    // Import AccessToken dynamically
+    const { AccessToken } = await import(LIVEKIT_URL);
+
     const token = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
       identity: participantIdentity,
       name: participantName,
@@ -41,7 +46,7 @@ serve(async (req: Request) => {
       canSubscribe: true,
     });
 
-    const jwt = token.toJwt();
+    const jwt = await token.toJwt();
 
     return new Response(JSON.stringify({ token: jwt }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

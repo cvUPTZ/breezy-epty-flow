@@ -46,6 +46,7 @@ export class VideoJobService {
     
     return {
       ...data,
+      created_at: data.created_at || new Date().toISOString(),
       status: (data.status || 'pending') as VideoJobStatus,
       video_title: data.video_title || undefined,
       video_duration: data.video_duration || undefined,
@@ -65,6 +66,7 @@ export class VideoJobService {
     
     return data.map(job => ({
       ...job,
+      created_at: job.created_at || new Date().toISOString(),
       status: (job.status || 'pending') as VideoJobStatus,
       video_title: job.video_title || undefined,
       video_duration: job.video_duration || undefined,
@@ -80,14 +82,7 @@ export class VideoJobService {
 
     const { data, error } = await supabase.storage
       .from('videos')
-      .upload(filePath, file, {
-        onUploadProgress: (event) => {
-          if (onProgress && event.loaded && event.total) {
-            const progress = (event.loaded / event.total) * 100;
-            onProgress(progress);
-          }
-        }
-      });
+      .upload(filePath, file);
 
     if (error) throw new Error(`Upload failed: ${error.message}`);
     return data.path;
@@ -123,5 +118,46 @@ export class VideoJobService {
       .eq('id', jobId);
 
     if (error) throw new Error(`Failed to update job: ${error.message}`);
+  }
+
+  static async pollJobStatus(jobId: string, callback: (job: VideoJob | null) => void): Promise<() => void> {
+    const intervalId = setInterval(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('video_jobs')
+          .select('*')
+          .eq('id', jobId)
+          .single();
+
+        if (error) {
+          console.error('Error polling job status:', error);
+          callback(null);
+          return;
+        }
+
+        const job: VideoJob = {
+          ...data,
+          created_at: data.created_at || new Date().toISOString(),
+          status: (data.status || 'pending') as VideoJobStatus,
+          video_title: data.video_title || undefined,
+          video_duration: data.video_duration || undefined,
+          error_message: data.error_message || undefined,
+          user_id: data.user_id!
+        };
+
+        callback(job);
+
+        // Stop polling if job is complete or failed
+        if (job.status === 'completed' || job.status === 'failed') {
+          clearInterval(intervalId);
+        }
+      } catch (error) {
+        console.error('Error in polling:', error);
+        callback(null);
+      }
+    }, 2000); // Poll every 2 seconds
+
+    // Return stop function
+    return () => clearInterval(intervalId);
   }
 }
