@@ -53,13 +53,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip caching for external APIs that might be unreachable
+  const url = new URL(event.request.url);
+  
+  // Skip YouTube URLs entirely - they should be handled by YouTube embed
+  if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
+    console.log('Service Worker: Skipping YouTube URL:', event.request.url);
+    return;
+  }
+
+  // Skip chrome-extension URLs
+  if (event.request.url.startsWith('chrome-extension://')) {
+    console.log('Service Worker: Skipping chrome extension URL:', event.request.url);
+    return;
+  }
+
+  // Skip external APIs that might be unreachable
   if (event.request.url.includes('pythonanywhere.com') || 
       event.request.url.includes('supabase.co')) {
     event.respondWith(
       fetch(event.request).catch(error => {
         console.error('Service Worker: External API request failed:', error);
-        // Return a proper Response object for failed external requests
         return new Response(
           JSON.stringify({ error: 'Service temporarily unavailable' }), 
           { 
@@ -116,7 +129,6 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(error => {
           console.error('Service Worker: Error in fetch handler for non-navigation request:', error);
-          // Return a proper fallback Response
           return new Response(
             JSON.stringify({ error: 'Resource unavailable' }), 
             { 

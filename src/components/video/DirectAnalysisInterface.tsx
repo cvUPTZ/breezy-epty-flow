@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Check, ChevronsUpDown, Download, Upload, Link, X } from 'lucide-react';
+import { Copy, Check, ChevronsUpDown, Download, Upload, Link, X, AlertCircle } from 'lucide-react';
 import { YouTubeService } from '@/services/youtubeService';
 import {
   Select,
@@ -23,6 +22,7 @@ import { CalendarIcon } from "lucide-react"
 import { DateRange } from "react-day-picker"
 import { addMinutes, formatISO } from 'date-fns';
 import EnhancedVideoPlayer, { VideoPlayerRef } from './EnhancedVideoPlayer';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface DirectAnalysisInterfaceProps {
   videoUrl: string;
@@ -58,6 +58,29 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
   const { toast } = useToast();
 
   const videoRef = useRef<VideoPlayerRef>(null);
+
+  // Check if the provided URL is a YouTube URL
+  useEffect(() => {
+    const checkYouTubeUrl = () => {
+      try {
+        const url = new URL(videoUrl);
+        const isYT = url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be');
+        setIsYoutubeUrl(isYT);
+        
+        if (isYT) {
+          const videoId = YouTubeService.extractVideoId(videoUrl);
+          setYoutubeVideoId(videoId);
+        }
+      } catch (error) {
+        setIsYoutubeUrl(false);
+        setYoutubeVideoId(null);
+      }
+    };
+    
+    if (videoUrl) {
+      checkYouTubeUrl();
+    }
+  }, [videoUrl]);
 
   const handleTimeUpdate = (time: number) => {
     setCurrentTime(time);
@@ -274,27 +297,59 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
 
   return (
     <div className="space-y-6">
-      {/* Video Player */}
-      <EnhancedVideoPlayer
-        ref={videoRef}
-        src={videoUrl}
-        onTimeUpdate={handleTimeUpdate}
-        onDurationChange={handleDurationChange}
-        className="w-full"
-      />
+      {/* YouTube URL Warning */}
+      {isYoutubeUrl && (
+        <Alert className="border-yellow-200 bg-yellow-50">
+          <AlertCircle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            <strong>YouTube URL Detected:</strong> Direct YouTube URLs cannot be played in a standard video player due to CORS restrictions. 
+            Consider uploading the video file directly or using a different video hosting service that allows direct access.
+            {youtubeVideoId && (
+              <div className="mt-2">
+                <strong>Video ID:</strong> {youtubeVideoId}
+              </div>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
 
-      {/* Current Time Display and Slider */}
-      <div className="flex items-center space-x-2">
-        <Label htmlFor="video-slider">Current Time: {formatTime(currentTime)} / {formatTime(duration)}</Label>
-        <Slider
-          id="video-slider"
-          defaultValue={[0]}
-          max={duration}
-          step={0.1}
-          onValueChange={handleSliderChange}
-          aria-label="Video timeline"
-        />
-      </div>
+      {/* Video Player - Only show if not a YouTube URL */}
+      {!isYoutubeUrl ? (
+        <>
+          <EnhancedVideoPlayer
+            ref={videoRef}
+            src={videoUrl}
+            onTimeUpdate={handleTimeUpdate}
+            onDurationChange={handleDurationChange}
+            className="w-full"
+          />
+
+          {/* Current Time Display and Slider */}
+          <div className="flex items-center space-x-2">
+            <Label htmlFor="video-slider">Current Time: {formatTime(currentTime)} / {formatTime(duration)}</Label>
+            <Slider
+              id="video-slider"
+              defaultValue={[0]}
+              max={duration}
+              step={0.1}
+              onValueChange={handleSliderChange}
+              aria-label="Video timeline"
+            />
+          </div>
+        </>
+      ) : (
+        <Card className="bg-gray-50">
+          <CardContent className="flex items-center justify-center p-8">
+            <div className="text-center">
+              <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">YouTube Video Detected</h3>
+              <p className="text-gray-600">
+                This appears to be a YouTube URL. Please upload the video file directly or use a different video hosting service.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Timestamp Controls */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -339,7 +394,11 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
                 className="w-full"
               />
             </div>
-            <Button onClick={handleAddTimestamp} disabled={!isEventValid || !isTimeValid || !isDescriptionValid} className="w-full">
+            <Button 
+              onClick={handleAddTimestamp} 
+              disabled={!isEventValid || !isTimeValid || !isDescriptionValid || isYoutubeUrl} 
+              className="w-full"
+            >
               Add Timestamp
             </Button>
           </CardContent>
@@ -352,7 +411,11 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
             <ul className="space-y-2">
               {timestamps.map(ts => (
                 <li key={ts.id} className="flex items-center justify-between p-2 border rounded-md">
-                  <button onClick={() => handleTimestampClick(ts.time)} className="hover:underline">
+                  <button 
+                    onClick={() => handleTimestampClick(ts.time)} 
+                    className="hover:underline"
+                    disabled={isYoutubeUrl}
+                  >
                     {formatTime(ts.time)} - {ts.description}
                   </button>
                   <div className="flex space-x-2">
@@ -398,20 +461,24 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
         </CardContent>
       </Card>
 
-      {/* YouTube URL Extraction */}
-      <Card>
-        <CardContent className="space-y-4">
-          <h4 className="text-sm font-medium">YouTube URL</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input type="url" placeholder="Enter YouTube URL" value={videoUrl} onChange={(e) => setIsYoutubeUrl(!!e.target.value)} />
+      {/* YouTube URL Information */}
+      {isYoutubeUrl && (
+        <Card>
+          <CardContent className="space-y-4">
+            <h4 className="text-sm font-medium">YouTube Video Information</h4>
+            {youtubeVideoId && (
+              <div className="space-y-2">
+                <p><strong>Video ID:</strong> {youtubeVideoId}</p>
+                <p><strong>URL:</strong> {videoUrl}</p>
+              </div>
+            )}
             <Button onClick={handleYouTubeURL} disabled={isExtracting}>
-              {isExtracting ? 'Extracting...' : 'Extract Video ID'}
+              {isExtracting ? 'Extracting...' : 'Refresh Video Info'}
             </Button>
-          </div>
-          {youtubeVideoId && <p>YouTube Video ID: {youtubeVideoId}</p>}
-          {extractionError && <p className="text-red-500">{extractionError}</p>}
-        </CardContent>
-      </Card>
+            {extractionError && <p className="text-red-500 text-sm">{extractionError}</p>}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Date Range Picker */}
       <Card>
