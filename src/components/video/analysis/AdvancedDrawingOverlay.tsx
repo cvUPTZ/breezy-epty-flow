@@ -512,7 +512,7 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
           const coneHeight = radius * 1.5;
           return (
             <g key={annotation.id}>
-              {/* Vertical light beam extending upward from cone tip */}
+              {/* Cone-shaped light beam extending upward */}
               <defs>
                 <linearGradient id={`cone-light-gradient-${annotation.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
                   <stop offset="0%" stopColor={`${color}80`} />
@@ -520,12 +520,12 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
                   <stop offset="100%" stopColor={`${color}10`} />
                 </linearGradient>
               </defs>
-              {/* Light beam from cone tip upward */}
-              <rect
-                x={isoPoints[0].x - radius * 0.3}
-                y={isoPoints[0].y - coneHeight - 150}
-                width={radius * 0.6}
-                height="150"
+              {/* Tapered light beam from cone tip upward - preview */}
+              <path
+                d={`M ${isoPoints[0].x} ${isoPoints[0].y - coneHeight} 
+                    L ${isoPoints[0].x - radius * 0.8} ${isoPoints[0].y - coneHeight - 150} 
+                    L ${isoPoints[0].x + radius * 0.8} ${isoPoints[0].y - coneHeight - 150} 
+                    Z`}
                 fill={`url(#cone-light-gradient-${annotation.id})`}
                 className="animate-pulse"
                 transform={`skewX(-${perspectiveAngle})`}
@@ -827,12 +827,12 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
                     const coneHeight = radius * 1.5;
                     return (
                       <>
-                        {/* Light beam from cone tip upward */}
-                        <rect
-                          x={isoStart.x - radius * 0.3}
-                          y={isoStart.y - coneHeight - 150}
-                          width={radius * 0.6}
-                          height="150"
+                        {/* Tapered light beam from cone tip upward - preview */}
+                        <path
+                          d={`M ${isoStart.x} ${isoStart.y - coneHeight} 
+                              L ${isoStart.x - radius * 0.8} ${isoStart.y - coneHeight - 150} 
+                              L ${isoStart.x + radius * 0.8} ${isoStart.y - coneHeight - 150} 
+                              Z`}
                           fill="url(#preview-cone-light-gradient)"
                           className="animate-pulse"
                         />
