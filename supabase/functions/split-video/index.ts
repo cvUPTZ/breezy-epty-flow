@@ -1,6 +1,11 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders } from '../_shared/cors.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -8,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { videoPath, segmentDuration = 300 } = await req.json()
+    const { videoPath, segmentDuration = 300, jobId } = await req.json()
     
     if (!videoPath) {
       throw new Error('Video path is required')
@@ -16,27 +21,115 @@ serve(async (req) => {
 
     console.log(`Splitting video: ${videoPath} into ${segmentDuration}s segments`)
 
-    // In a real implementation, this would:
-    // 1. Download the video from Supabase Storage
-    // 2. Use FFmpeg to split the video into segments
-    // 3. Upload segments back to storage
-    // 4. Return the paths to the segments
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // For now, simulate video splitting
-    const mockSegmentPaths = [
-      `${videoPath}_segment_001.mp4`,
-      `${videoPath}_segment_002.mp4`,
-      `${videoPath}_segment_003.mp4`
-    ]
+    // Update job progress if provided
+    if (jobId) {
+      await supabase
+        .from('video_jobs')
+        .update({ 
+          status: 'processing',
+          progress: 20,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', jobId)
+    }
 
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    // Get video metadata
+    const { data: videoData, error: downloadError } = await supabase.storage
+      .from('videos')
+      .download(videoPath)
+
+    if (downloadError || !videoData) {
+      throw new Error(`Failed to download video: ${downloadError?.message}`)
+    }
+
+    // In a production environment, you would use FFmpeg or similar tools
+    // For now, we'll simulate video splitting with intelligent segment calculation
+    
+    const videoSize = videoData.size
+    const estimatedDuration = Math.max(600, videoSize / (1024 * 1024) * 60) // Rough estimate: 1MB per minute
+    const actualSegmentDuration = Math.min(segmentDuration, estimatedDuration / 2)
+    const numberOfSegments = Math.ceil(estimatedDuration / actualSegmentDuration)
+
+    console.log(`Estimated video duration: ${estimatedDuration}s, creating ${numberOfSegments} segments`)
+
+    // Update progress
+    if (jobId) {
+      await supabase
+        .from('video_jobs')
+        .update({ progress: 40 })
+        .eq('id', jobId)
+    }
+
+    // Generate segment metadata
+    const segments = []
+    const baseFileName = videoPath.replace(/\.[^/.]+$/, "") // Remove extension
+    
+    for (let i = 0; i < numberOfSegments; i++) {
+      const startTime = i * actualSegmentDuration
+      const endTime = Math.min((i + 1) * actualSegmentDuration, estimatedDuration)
+      const segmentPath = `${baseFileName}_segment_${String(i + 1).padStart(3, '0')}.mp4`
+      
+      segments.push({
+        path: segmentPath,
+        startTime,
+        endTime,
+        duration: endTime - startTime,
+        index: i + 1,
+        size: Math.floor(videoSize / numberOfSegments),
+        status: 'ready'
+      })
+
+      // In production, you would actually split the video here
+      // For simulation, we'll create metadata that can be used by processing functions
+    }
+
+    // Update progress
+    if (jobId) {
+      await supabase
+        .from('video_jobs')
+        .update({ progress: 80 })
+        .eq('id', jobId)
+    }
+
+    // Store segment information for later processing
+    const segmentData = {
+      originalVideo: videoPath,
+      segmentDuration: actualSegmentDuration,
+      totalSegments: numberOfSegments,
+      estimatedDuration,
+      segments,
+      splitCompletedAt: new Date().toISOString(),
+      method: 'simulated_intelligent_split'
+    }
+
+    // Final progress update
+    if (jobId) {
+      await supabase
+        .from('video_jobs')
+        .update({ 
+          progress: 100,
+          result_data: segmentData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', jobId)
+    }
+
+    // Return segment paths for compatibility with existing code
+    const segmentPaths = segments.map(segment => segment.path)
 
     return new Response(
       JSON.stringify({ 
-        segmentPaths: mockSegmentPaths,
-        segmentDuration,
-        totalSegments: mockSegmentPaths.length
+        segmentPaths,
+        segmentDuration: actualSegmentDuration,
+        totalSegments: numberOfSegments,
+        estimatedDuration,
+        segmentDetails: segments,
+        method: 'intelligent_simulation'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -46,6 +139,30 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in split-video:', error)
+    
+    // Update job status if jobId provided
+    if (req.body) {
+      try {
+        const { jobId } = await req.clone().json()
+        if (jobId) {
+          const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+          const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+          const supabase = createClient(supabaseUrl, supabaseServiceKey)
+          
+          await supabase
+            .from('video_jobs')
+            .update({
+              status: 'failed',
+              error_message: error.message,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', jobId)
+        }
+      } catch (updateError) {
+        console.error('Failed to update job status:', updateError)
+      }
+    }
+
     return new Response(
       JSON.stringify({ error: error.message }),
       {

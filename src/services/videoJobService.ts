@@ -1,24 +1,20 @@
-// src/services/videoJobService.ts
+
 import { supabase } from '@/integrations/supabase/client';
-import { VideoChunkingService, ChunkedVideoMetadata } from './videoChunkingService';
+import { Database } from '@/integrations/supabase/types';
+
+export type VideoJobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'queued' | 'uploading';
 
 export interface VideoJob {
   id: string;
-  status: 'queued' | 'uploading' | 'processing' | 'completed' | 'failed' | 'pending';
-  progress?: number;
-  fileName?: string;
-  createdAt?: string;
   created_at: string;
-  updated_at: string;
-  segmentId?: string;
-  results?: any;
-  result_data?: any;
-  error?: string;
-  error_message?: string;
-  colabLogUrl?: string;
+  updated_at: string | null;
+  status: VideoJobStatus;
   input_video_path: string;
   video_title?: string;
   video_duration?: number;
+  result_data?: any;
+  error_message?: string;
+  progress: number;
   user_id: string;
   job_config?: {
     source_type: 'youtube' | 'upload';
@@ -26,152 +22,106 @@ export interface VideoJob {
     enableSegmentation: boolean;
     segmentDuration?: number;
   };
-  chunked_video_metadata?: ChunkedVideoMetadata;
 }
 
 export class VideoJobService {
-  static sanitizeFileName(fileName: string): string {
-    return fileName
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9.-]/g, '_')
-      .replace(/_{2,}/g, '_')
-      .replace(/^_|_$/g, '')
-      .toLowerCase();
-  }
+  static async createJob(jobData: {
+    input_video_path: string;
+    video_title?: string;
+    video_duration?: number;
+    user_id: string;
+    job_config?: any;
+  }): Promise<VideoJob> {
+    const { data, error } = await supabase
+      .from('video_jobs')
+      .insert({
+        ...jobData,
+        status: 'pending' as const,
+        progress: 0
+      })
+      .select('*')
+      .single();
 
-  static async uploadVideo(file: File, onProgress?: (progress: number) => void): Promise<string> {
-    console.log(`🎬 Starting upload: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
-
-    try {
-      if (VideoChunkingService.needsChunking(file)) {
-        console.log('📦 Using chunked upload for large file');
-        return await this.uploadVideoWithChunking(file, onProgress);
-      } else {
-        console.log('⚡ Using direct upload for small file');
-        return await this.uploadVideoDirectly(file, onProgress);
-      }
-    } catch (error: any) {
-      console.error('💥 Upload failed:', error);
-      throw new Error(`Upload failed: ${error.message || 'Unknown error'}`);
-    }
-  }
-
-  private static async uploadVideoDirectly(file: File, onProgress?: (progress: number) => void): Promise<string> {
-    const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop() || 'mp4';
-    const sanitizedName = this.sanitizeFileName(file.name.replace(/\.[^/.]+$/, ''));
-    const fileName = `${timestamp}_${sanitizedName}.${fileExtension}`;
-
-    console.log(`📤 Direct upload: ${fileName}`);
-
-    try {
-      onProgress?.(10);
-
-      const { data, error } = await supabase.storage
-        .from('videos')
-        .upload(fileName, file, { 
-          cacheControl: '3600', 
-          upsert: false,
-          contentType: file.type
-        });
-
-      if (error) {
-        throw new Error(`Upload failed: ${error.message}`);
-      }
-      
-      onProgress?.(100);
-      console.log('✅ Direct upload successful');
-      return data.path;
-      
-    } catch (error: any) {
-      console.error('💥 Direct upload failed:', error);
-      throw error;
-    }
-  }
-
-  private static async uploadVideoWithChunking(file: File, onProgress?: (progress: number) => void): Promise<string> {
-    console.log('🔄 Starting chunked upload...');
+    if (error) throw new Error(`Failed to create job: ${error.message}`);
     
-    try {
-      onProgress?.(2);
-
-      // Split file into chunks
-      const { chunks, metadata } = await VideoChunkingService.splitVideoFile(file);
-      console.log(`✂️ File split into ${chunks.length} chunks`);
-
-      onProgress?.(5);
-
-      // Upload chunks with progress tracking
-      const chunkedMetadata = await VideoChunkingService.uploadVideoChunks(
-        chunks, 
-        metadata, 
-        (chunkProgress) => {
-          // Map chunk progress to overall progress (5% to 95%)
-          const overallProgress = 5 + (chunkProgress * 0.9);
-          onProgress?.(overallProgress);
-        }
-      );
-
-      onProgress?.(100);
-
-      const metadataPath = `chunked:${JSON.stringify(chunkedMetadata)}`;
-      console.log('🎉 Chunked upload completed successfully!');
-      
-      return metadataPath;
-    } catch (error: any) {
-      console.error('💥 Chunked upload failed:', error);
-      throw new Error(`Chunked upload failed: ${error.message}`);
-    }
-  }
-
-  static async getVideoDownloadUrl(videoPath: string): Promise<string> {
-    console.log(`🔗 Getting download URL for: ${videoPath.substring(0, 50)}...`);
-    
-    try {
-      if (videoPath.startsWith('chunked:')) {
-        const metadataJson = videoPath.replace('chunked:', '');
-        const metadata: ChunkedVideoMetadata = JSON.parse(metadataJson);
-        
-        console.log('🧩 Getting URL for chunked video');
-        return await VideoChunkingService.getChunkedVideoUrl(metadata);
-      } else {
-        const { data, error } = await supabase.storage.from('videos').createSignedUrl(videoPath, 3600);
-        if (error) throw new Error(`Failed to get download URL: ${error.message}`);
-        return data.signedUrl;
-      }
-    } catch (error: any) {
-      console.error('Failed to get video download URL:', error);
-      throw new Error(`Failed to get video URL: ${error.message || 'Unknown error'}`);
-    }
-  }
-
-  static async deleteVideoFile(videoPath: string): Promise<void> {
-    if (videoPath && !videoPath.includes('youtube.com') && !videoPath.includes('youtu.be')) {
-      if (videoPath.startsWith('chunked:')) {
-        const metadataJson = videoPath.replace('chunked:', '');
-        const metadata: ChunkedVideoMetadata = JSON.parse(metadataJson);
-        await VideoChunkingService.deleteVideoChunks(metadata);
-      } else {
-        await supabase.storage.from('videos').remove([videoPath]);
-      }
-    }
-  }
-
-  static async pollJobStatus(jobId: string, callback: (job: VideoJob | null) => void, intervalMs: number = 5000): Promise<() => void> {
-    console.warn(`VideoJobService.pollJobStatus is a stub and does not perform real polling for job ID: ${jobId}. Interval: ${intervalMs}ms`);
-    return () => {
-      console.warn(`Polling stopped for job ID: ${jobId} (stub)`);
+    return {
+      ...data,
+      status: (data.status || 'pending') as VideoJobStatus,
+      video_title: data.video_title || undefined,
+      video_duration: data.video_duration || undefined,
+      error_message: data.error_message || undefined,
+      user_id: data.user_id!
     };
   }
 
-  static async getUserJobs(userId?: string): Promise<VideoJob[]> {
-    console.warn(`VideoJobService.getUserJobs is a stub and will return an empty array for user ID: ${userId || 'undefined'}`);
-    return [];
+  static async getUserJobs(userId: string): Promise<VideoJob[]> {
+    const { data, error } = await supabase
+      .from('video_jobs')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw new Error(`Failed to fetch jobs: ${error.message}`);
+    
+    return data.map(job => ({
+      ...job,
+      status: (job.status || 'pending') as VideoJobStatus,
+      video_title: job.video_title || undefined,
+      video_duration: job.video_duration || undefined,
+      error_message: job.error_message || undefined,
+      user_id: job.user_id!
+    }));
+  }
+
+  static async uploadVideo(file: File, onProgress?: (progress: number) => void): Promise<string> {
+    const timestamp = Date.now();
+    const fileName = `${timestamp}-${file.name}`;
+    const filePath = `public/${fileName}`;
+
+    const { data, error } = await supabase.storage
+      .from('videos')
+      .upload(filePath, file, {
+        onUploadProgress: (event) => {
+          if (onProgress && event.loaded && event.total) {
+            const progress = (event.loaded / event.total) * 100;
+            onProgress(progress);
+          }
+        }
+      });
+
+    if (error) throw new Error(`Upload failed: ${error.message}`);
+    return data.path;
+  }
+
+  static async getVideoDownloadUrl(path: string): Promise<string> {
+    const { data } = await supabase.storage
+      .from('videos')
+      .createSignedUrl(path, 3600); // 1 hour expiry
+
+    if (!data?.signedUrl) throw new Error('Failed to get signed URL');
+    return data.signedUrl;
   }
 
   static async deleteJob(jobId: string): Promise<void> {
-    console.warn(`VideoJobService.deleteJob is a stub and does not delete job ID: ${jobId}`);
-    return Promise.resolve();
+    const { error } = await supabase
+      .from('video_jobs')
+      .delete()
+      .eq('id', jobId);
+
+    if (error) throw new Error(`Failed to delete job: ${error.message}`);
+  }
+
+  static async updateJobStatus(jobId: string, status: VideoJobStatus, progress?: number, resultData?: any, errorMessage?: string): Promise<void> {
+    const updateData: any = { status };
+    if (progress !== undefined) updateData.progress = progress;
+    if (resultData) updateData.result_data = resultData;
+    if (errorMessage) updateData.error_message = errorMessage;
+
+    const { error } = await supabase
+      .from('video_jobs')
+      .update(updateData)
+      .eq('id', jobId);
+
+    if (error) throw new Error(`Failed to update job: ${error.message}`);
   }
 }

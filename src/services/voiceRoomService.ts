@@ -1,187 +1,92 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface VoiceRoom {
   id: string;
   name: string;
-  description?: string | null;
-  max_participants: number;
-  priority: number;
-  permissions: string[];
-  is_private: boolean;
-  is_active: boolean;
-  match_id: string;
-  created_at: string;
-  updated_at: string | null;
-  participant_count?: number;
-}
-
-export interface VoiceRoomParticipant {
-  id: string;
-  name: string;
-  user_id: string;
-  room_id: string;
-  joined_at: string;
-  user_name?: string;
-  user_email?: string;
-  user_role?: string;
-  is_muted?: boolean;
-  is_speaking?: boolean;
-  connection_quality?: string;
+  description?: string;
+  max_participants?: number; // Changed from number to number | undefined
+  priority?: number;
+  permissions?: string[];
+  is_private?: boolean;
+  is_active?: boolean;
+  match_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export class VoiceRoomService {
-  private static instance: VoiceRoomService;
-
-  static getInstance(): VoiceRoomService {
-    if (!VoiceRoomService.instance) {
-      VoiceRoomService.instance = new VoiceRoomService();
-    }
-    return VoiceRoomService.instance;
-  }
-
-  async testDatabaseConnection(): Promise<boolean> {
-    try {
-      const { data, error } = await supabase
-        .from('voice_rooms')
-        .select('id')
-        .limit(1);
-      
-      return !error;
-    } catch {
-      return false;
-    }
-  }
-
-  async getRoomsForMatch(matchId: string): Promise<VoiceRoom[]> {
+  static async getVoiceRoomsForMatch(matchId: string): Promise<VoiceRoom[]> {
     const { data, error } = await supabase
       .from('voice_rooms')
       .select('*')
       .eq('match_id', matchId)
-      .eq('is_active', true)
       .order('priority', { ascending: true });
 
     if (error) {
-      throw new Error(`Failed to fetch rooms: ${error.message}`);
+      console.error("Error fetching voice rooms:", error);
+      throw new Error(`Failed to fetch voice rooms: ${error.message}`);
     }
 
-    return data?.map(room => ({
-      ...room,
-      description: room.description || null,
-      updated_at: room.updated_at || new Date().toISOString()
-    })) || [];
+    return data || [];
   }
 
-  async createRoom(matchId: string, roomData: Partial<VoiceRoom>): Promise<VoiceRoom> {
+  static async getVoiceRoomById(roomId: string): Promise<VoiceRoom | null> {
     const { data, error } = await supabase
       .from('voice_rooms')
-      .insert({
-        match_id: matchId,
-        name: roomData.name || 'New Room',
-        description: roomData.description || null,
-        max_participants: roomData.max_participants || 25,
-        priority: roomData.priority || 1,
-        permissions: roomData.permissions || ['all'],
-        is_private: roomData.is_private || false,
-        is_active: true,
-      })
-      .select()
+      .select('*')
+      .eq('id', roomId)
       .single();
 
     if (error) {
-      throw new Error(`Failed to create room: ${error.message}`);
+      console.error("Error fetching voice room by ID:", error);
+      return null;
     }
 
-    return {
-      ...data,
-      description: data.description || null,
-      updated_at: data.updated_at || new Date().toISOString()
-    };
+    return data || null;
   }
 
-  async initializeRoomsForMatch(matchId: string): Promise<VoiceRoom[]> {
-    // Check if rooms already exist for this match
-    const existingRooms = await this.getRoomsForMatch(matchId);
-    if (existingRooms.length > 0) {
-      return existingRooms;
+  static async createVoiceRoom(roomData: Omit<VoiceRoom, 'id' | 'created_at' | 'updated_at'>): Promise<VoiceRoom> {
+    const { data, error } = await supabase
+      .from('voice_rooms')
+      .insert([roomData])
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error("Error creating voice room:", error);
+      throw new Error(`Failed to create voice room: ${error.message}`);
     }
 
-    // Create default rooms for the match
-    const defaultRooms = [
-      {
-        name: 'Main Communication',
-        description: 'Primary voice channel for all participants',
-        max_participants: 50,
-        priority: 1,
-        permissions: ['all'],
-        is_private: false
-      },
-      {
-        name: 'Coordinators Only',
-        description: 'Private channel for coordinators and admins',
-        max_participants: 10,
-        priority: 2,
-        permissions: ['coordinator', 'admin'],
-        is_private: true
-      },
-      {
-        name: 'Technical Support',
-        description: 'Channel for technical issues and support',
-        max_participants: 20,
-        priority: 3,
-        permissions: ['all'],
-        is_private: false
-      }
-    ];
-
-    const createdRooms: VoiceRoom[] = [];
-    for (const roomData of defaultRooms) {
-      try {
-        const room = await this.createRoom(matchId, roomData);
-        createdRooms.push(room);
-      } catch (error) {
-        console.error('Failed to create default room:', error);
-      }
-    }
-
-    return createdRooms;
+    return data;
   }
 
-  async getRoomParticipants(roomId: string): Promise<VoiceRoomParticipant[]> {
-    // This would require a separate participants table or real-time presence tracking
-    // For now, return an empty array as this functionality needs to be implemented
-    // with LiveKit's participant tracking or a custom participants table
-    console.log('getRoomParticipants called for room:', roomId);
-    return [];
-  }
-
-  async updateRoom(roomId: string, updates: Partial<VoiceRoom>): Promise<VoiceRoom> {
+  static async updateVoiceRoom(roomId: string, updates: Partial<VoiceRoom>): Promise<VoiceRoom | null> {
     const { data, error } = await supabase
       .from('voice_rooms')
       .update(updates)
       .eq('id', roomId)
-      .select()
+      .select('*')
       .single();
 
     if (error) {
-      throw new Error(`Failed to update room: ${error.message}`);
+      console.error("Error updating voice room:", error);
+      return null;
     }
 
-    return {
-      ...data,
-      description: data.description || null,
-      updated_at: data.updated_at || new Date().toISOString()
-    };
+    return data || null;
   }
 
-  async deleteRoom(roomId: string): Promise<void> {
+  static async deleteVoiceRoom(roomId: string): Promise<boolean> {
     const { error } = await supabase
       .from('voice_rooms')
-      .update({ is_active: false })
+      .delete()
       .eq('id', roomId);
 
     if (error) {
-      throw new Error(`Failed to delete room: ${error.message}`);
+      console.error("Error deleting voice room:", error);
+      return false;
     }
+
+    return true;
   }
 }

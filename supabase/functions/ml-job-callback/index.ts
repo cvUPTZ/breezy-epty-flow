@@ -13,64 +13,56 @@ serve(async (req) => {
   }
 
   try {
-    const { job_id, status, progress, results, error_message } = await req.json()
+    const { jobId, status, progress, results, error: jobError } = await req.json()
+    
+    if (!jobId) {
+      throw new Error('Job ID is required')
+    }
 
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    console.log(`Received callback for job ${jobId}: status=${status}, progress=${progress}`)
 
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // Update job based on callback data
     const updateData: any = {
-      progress: progress || 0,
+      updated_at: new Date().toISOString()
     }
 
-    if (status === 'completed') {
-      updateData.status = 'completed'
-      updateData.results = results
-      updateData.completed_at = new Date().toISOString()
-      updateData.progress = 100
-    } else if (status === 'failed') {
-      updateData.status = 'failed'
-      updateData.error_message = error_message
-      updateData.completed_at = new Date().toISOString()
-    } else if (status === 'processing') {
-      updateData.progress = Math.min(progress, 99) // Don't set to 100 until completed
-    }
+    if (status) updateData.status = status
+    if (progress !== undefined) updateData.progress = progress
+    if (results) updateData.result_data = results
+    if (jobError) updateData.error_message = jobError
 
-    const { error } = await supabaseClient
-      .from('ml_detection_jobs')
+    const { error: updateError } = await supabase
+      .from('video_jobs')
       .update(updateData)
-      .eq('id', job_id)
+      .eq('id', jobId)
 
-    if (error) {
-      throw new Error(`Failed to update job: ${error.message}`)
+    if (updateError) {
+      throw new Error(`Failed to update job: ${updateError.message}`)
     }
 
-    // If completed, trigger any post-processing
-    if (status === 'completed' && results) {
-      // Store results in a separate table for better querying
-      await supabaseClient
-        .from('ml_detection_results')
-        .insert({
-          job_id,
-          results,
-          created_at: new Date().toISOString(),
-        })
-    }
+    console.log(`Successfully updated job ${jobId}`)
 
     return new Response(
-      JSON.stringify({ success: true }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ success: true, message: `Job ${jobId} updated successfully` }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      },
     )
 
   } catch (error) {
-    console.error('Error handling ML job callback:', error)
+    console.error('Error in ml-job-callback:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      },
     )
   }
 })

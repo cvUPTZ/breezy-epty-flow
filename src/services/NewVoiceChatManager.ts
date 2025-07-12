@@ -3,10 +3,13 @@ import { LiveKitService } from './LiveKitService';
 import { AudioLevelMonitor } from './AudioLevelMonitor';
 import { ConnectionState, Participant, LocalParticipant, RemoteParticipant } from 'livekit-client';
 
-interface VoiceRoomDetails {
+export interface VoiceRoomDetails {
   id: string;
   name: string;
-  max_participants?: number;
+  max_participants?: number | undefined;
+  participant_count?: number;
+  is_active?: boolean;
+  permissions?: string[];
 }
 
 export class NewVoiceChatManager {
