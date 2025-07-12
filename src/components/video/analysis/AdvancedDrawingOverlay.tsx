@@ -21,7 +21,7 @@ interface PlayerPosition {
 
 interface AnnotationElement {
   id: string;
-  type: 'circle' | 'line' | 'arrow' | 'distance' | 'spotlight' | 'trajectory' | 'area';
+  type: 'circle' | 'line' | 'arrow' | 'distance' | 'spotlight' | 'trajectory' | 'area' | 'offside-line' | 'pressure-zone' | 'passing-lane';
   points: { x: number; y: number }[];
   color: string;
   label?: string;
@@ -65,6 +65,28 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
   const overlayRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
+  // Isometric transformation parameters
+  const isometricScale = 0.866; // cos(30°) for isometric effect
+  const perspectiveAngle = 15; // degrees for depth perspective
+
+  // Transform coordinates to isometric view
+  const transformToIsometric = (x: number, y: number) => {
+    // Apply perspective transformation for stadium camera angle
+    const centerX = videoDimensions.width / 2;
+    const centerY = videoDimensions.height / 2;
+    
+    // Translate to center, apply isometric transform, translate back
+    const relativeX = x - centerX;
+    const relativeY = y - centerY;
+    
+    // Apply isometric scaling with depth effect
+    const depth = (relativeY / videoDimensions.height) * 0.3; // Create depth illusion
+    const isoX = centerX + relativeX + (relativeY * 0.5 * isometricScale);
+    const isoY = centerY + (relativeY * isometricScale) - (depth * 50);
+    
+    return { x: isoX, y: isoY };
+  };
+
   const tacticalRules: TacticalRule[] = [
     {
       id: '1',
@@ -104,9 +126,9 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
     const x = (event.clientX - rect.left) / zoomLevel[0] - panPosition.x;
     const y = (event.clientY - rect.top) / zoomLevel[0] - panPosition.y;
 
-    if (['line', 'arrow', 'distance', 'trajectory'].includes(activeAnnotationTool)) {
+    if (['line', 'arrow', 'distance', 'trajectory', 'offside-line', 'passing-lane'].includes(activeAnnotationTool)) {
       setDrawingPoints([drawingPoints[0], { x, y }]);
-    } else if (activeAnnotationTool === 'spotlight') {
+    } else if (['spotlight', 'pressure-zone'].includes(activeAnnotationTool)) {
       const radius = Math.sqrt(Math.pow(x - drawingPoints[0].x, 2) + Math.pow(y - drawingPoints[0].y, 2));
       setDrawingPoints([drawingPoints[0], { x: drawingPoints[0].x + radius, y: drawingPoints[0].y }]);
     }
@@ -122,7 +144,10 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
       distance: '#ef4444',
       spotlight: '#fbbf24',
       trajectory: '#f97316',
-      area: '#06b6d4'
+      area: '#06b6d4',
+      'offside-line': '#dc2626',
+      'pressure-zone': '#7c3aed',
+      'passing-lane': '#059669'
     };
 
     const newAnnotation: AnnotationElement = {
@@ -131,7 +156,7 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
       points: [...drawingPoints],
       color: colorMap[activeAnnotationTool as keyof typeof colorMap] || '#3b82f6',
       measurement: activeAnnotationTool === 'distance' ? calculateDistance(drawingPoints) : undefined,
-      intensity: activeAnnotationTool === 'spotlight' ? 0.7 : undefined
+      intensity: ['spotlight', 'pressure-zone'].includes(activeAnnotationTool) ? 0.7 : undefined
     };
 
     setAnnotations(prev => [...prev, newAnnotation]);
@@ -152,34 +177,39 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
   const renderAnnotation = (annotation: AnnotationElement) => {
     const { type, points, color, measurement, intensity } = annotation;
 
+    // Apply isometric transformation to all points
+    const isoPoints = points.map(point => transformToIsometric(point.x, point.y));
+
     switch (type) {
       case 'circle':
-        if (points.length > 0) {
+        if (isoPoints.length > 0) {
           return (
-            <circle
+            <ellipse
               key={annotation.id}
-              cx={points[0].x}
-              cy={points[0].y}
-              r="40"
+              cx={isoPoints[0].x}
+              cy={isoPoints[0].y}
+              rx="40"
+              ry={40 * isometricScale}
               fill="none"
               stroke={color}
               strokeWidth="3"
               strokeDasharray="8,4"
-              className="animate-pulse"
+              className="animate-pulse drop-shadow-lg"
+              transform={`skewX(-${perspectiveAngle})`}
             />
           );
         }
         break;
 
       case 'line':
-        if (points.length >= 2) {
+        if (isoPoints.length >= 2) {
           return (
             <line
               key={annotation.id}
-              x1={points[0].x}
-              y1={points[0].y}
-              x2={points[1].x}
-              y2={points[1].y}
+              x1={isoPoints[0].x}
+              y1={isoPoints[0].y}
+              x2={isoPoints[1].x}
+              y2={isoPoints[1].y}
               stroke={color}
               strokeWidth="3"
               className="drop-shadow-lg"
@@ -188,64 +218,152 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
         }
         break;
 
-      case 'arrow':
-        if (points.length >= 2) {
-          const dx = points[1].x - points[0].x;
-          const dy = points[1].y - points[0].y;
-          const angle = Math.atan2(dy, dx);
-          const arrowLength = 20;
-          
+      case 'offside-line':
+        if (isoPoints.length >= 2) {
           return (
             <g key={annotation.id} className="drop-shadow-lg">
               <line
-                x1={points[0].x}
-                y1={points[0].y}
-                x2={points[1].x}
-                y2={points[1].y}
+                x1={0}
+                y1={isoPoints[0].y}
+                x2={videoDimensions.width}
+                y2={isoPoints[0].y}
                 stroke={color}
                 strokeWidth="4"
-                markerEnd="url(#arrowhead)"
+                strokeDasharray="10,5"
+                className="animate-pulse"
               />
+              <text
+                x={videoDimensions.width - 80}
+                y={isoPoints[0].y - 10}
+                fill={color}
+                fontSize="14"
+                fontWeight="bold"
+                className="drop-shadow-md"
+              >
+                OFFSIDE LINE
+              </text>
+            </g>
+          );
+        }
+        break;
+
+      case 'passing-lane':
+        if (isoPoints.length >= 2) {
+          const width = 40;
+          const dx = isoPoints[1].x - isoPoints[0].x;
+          const dy = isoPoints[1].y - isoPoints[0].y;
+          const length = Math.sqrt(dx * dx + dy * dy);
+          const angle = Math.atan2(dy, dx);
+          
+          return (
+            <g key={annotation.id} className="drop-shadow-lg">
+              <rect
+                x={isoPoints[0].x}
+                y={isoPoints[0].y - width/2}
+                width={length}
+                height={width}
+                fill={`${color}30`}
+                stroke={color}
+                strokeWidth="2"
+                strokeDasharray="5,5"
+                transform={`rotate(${angle * 180 / Math.PI} ${isoPoints[0].x} ${isoPoints[0].y})`}
+                className="animate-pulse"
+              />
+            </g>
+          );
+        }
+        break;
+
+      case 'pressure-zone':
+        if (isoPoints.length >= 2) {
+          const radius = Math.abs(isoPoints[1].x - isoPoints[0].x);
+          return (
+            <g key={annotation.id}>
+              <ellipse
+                cx={isoPoints[0].x}
+                cy={isoPoints[0].y}
+                rx={radius}
+                ry={radius * isometricScale}
+                fill={`${color}40`}
+                stroke={color}
+                strokeWidth="3"
+                strokeDasharray="8,4"
+                className="animate-pulse drop-shadow-lg"
+                transform={`skewX(-${perspectiveAngle})`}
+              />
+              <text
+                x={isoPoints[0].x}
+                y={isoPoints[0].y - radius - 10}
+                textAnchor="middle"
+                fill={color}
+                fontSize="12"
+                fontWeight="bold"
+                className="drop-shadow-md"
+              >
+                PRESSURE ZONE
+              </text>
+            </g>
+          );
+        }
+        break;
+
+      case 'arrow':
+        if (isoPoints.length >= 2) {
+          return (
+            <g key={annotation.id} className="drop-shadow-lg">
               <defs>
                 <marker
-                  id="arrowhead"
-                  markerWidth="10"
-                  markerHeight="7"
-                  refX="9"
-                  refY="3.5"
+                  id={`arrowhead-${annotation.id}`}
+                  markerWidth="12"
+                  markerHeight="8"
+                  refX="11"
+                  refY="4"
                   orient="auto"
                 >
                   <polygon
-                    points="0 0, 10 3.5, 0 7"
+                    points="0 0, 12 4, 0 8"
                     fill={color}
                   />
                 </marker>
               </defs>
+              <line
+                x1={isoPoints[0].x}
+                y1={isoPoints[0].y}
+                x2={isoPoints[1].x}
+                y2={isoPoints[1].y}
+                stroke={color}
+                strokeWidth="4"
+                markerEnd={`url(#arrowhead-${annotation.id})`}
+              />
             </g>
           );
         }
         break;
 
       case 'spotlight':
-        if (points.length >= 2) {
-          const radius = Math.abs(points[1].x - points[0].x);
+        if (isoPoints.length >= 2) {
+          const radius = Math.abs(isoPoints[1].x - isoPoints[0].x);
           return (
             <g key={annotation.id}>
-              <circle
-                cx={points[0].x}
-                cy={points[0].y}
-                r={radius}
+              <ellipse
+                cx={isoPoints[0].x}
+                cy={isoPoints[0].y}
+                rx={radius}
+                ry={radius * isometricScale}
                 fill={`${color}40`}
                 stroke={color}
                 strokeWidth="3"
-                className="animate-pulse"
+                className="animate-pulse drop-shadow-lg"
+                transform={`skewX(-${perspectiveAngle})`}
               />
-              <circle
-                cx={points[0].x}
-                cy={points[0].y}
-                r={radius * 0.7}
+              <ellipse
+                cx={isoPoints[0].x}
+                cy={isoPoints[0].y}
+                rx={radius * 0.7}
+                ry={radius * 0.7 * isometricScale}
                 fill={`${color}20`}
                 className="animate-pulse"
+                transform={`skewX(-${perspectiveAngle})`}
               />
             </g>
           );
@@ -253,23 +371,23 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
         break;
 
       case 'distance':
-        if (points.length >= 2) {
-          const midX = (points[0].x + points[1].x) / 2;
-          const midY = (points[0].y + points[1].y) / 2;
+        if (isoPoints.length >= 2) {
+          const midX = (isoPoints[0].x + isoPoints[1].x) / 2;
+          const midY = (isoPoints[0].y + isoPoints[1].y) / 2;
           
           return (
             <g key={annotation.id} className="drop-shadow-lg">
               <line
-                x1={points[0].x}
-                y1={points[0].y}
-                x2={points[1].x}
-                y2={points[1].y}
+                x1={isoPoints[0].x}
+                y1={isoPoints[0].y}
+                x2={isoPoints[1].x}
+                y2={isoPoints[1].y}
                 stroke={color}
                 strokeWidth="3"
                 strokeDasharray="5,5"
               />
-              <circle cx={points[0].x} cy={points[0].y} r="4" fill={color} />
-              <circle cx={points[1].x} cy={points[1].y} r="4" fill={color} />
+              <circle cx={isoPoints[0].x} cy={isoPoints[0].y} r="4" fill={color} />
+              <circle cx={isoPoints[1].x} cy={isoPoints[1].y} r="4" fill={color} />
               <rect
                 x={midX - 25}
                 y={midY - 15}
@@ -296,20 +414,41 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
         break;
 
       case 'trajectory':
-        if (points.length >= 2) {
+        if (isoPoints.length >= 2) {
           return (
             <g key={annotation.id}>
               <path
-                d={`M ${points[0].x} ${points[0].y} Q ${(points[0].x + points[1].x) / 2} ${points[0].y - 50} ${points[1].x} ${points[1].y}`}
+                d={`M ${isoPoints[0].x} ${isoPoints[0].y} Q ${(isoPoints[0].x + isoPoints[1].x) / 2} ${isoPoints[0].y - 50} ${isoPoints[1].x} ${isoPoints[1].y}`}
                 fill="none"
                 stroke={color}
                 strokeWidth="4"
                 strokeDasharray="10,5"
                 className="animate-pulse drop-shadow-lg"
               />
-              <circle cx={points[0].x} cy={points[0].y} r="6" fill={color} className="animate-bounce" />
-              <circle cx={points[1].x} cy={points[1].y} r="6" fill={color} className="animate-bounce" />
+              <circle cx={isoPoints[0].x} cy={isoPoints[0].y} r="6" fill={color} className="animate-bounce" />
+              <circle cx={isoPoints[1].x} cy={isoPoints[1].y} r="6" fill={color} className="animate-bounce" />
             </g>
+          );
+        }
+        break;
+
+      case 'area':
+        if (isoPoints.length >= 2) {
+          const width = Math.abs(isoPoints[1].x - isoPoints[0].x);
+          const height = Math.abs(isoPoints[1].y - isoPoints[0].y);
+          return (
+            <rect
+              key={annotation.id}
+              x={Math.min(isoPoints[0].x, isoPoints[1].x)}
+              y={Math.min(isoPoints[0].y, isoPoints[1].y)}
+              width={width}
+              height={height * isometricScale}
+              fill={`${color}30`}
+              stroke={color}
+              strokeWidth="2"
+              strokeDasharray="8,4"
+              className="animate-pulse drop-shadow-lg"
+            />
           );
         }
         break;
@@ -322,16 +461,21 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
 
     return (
       <g>
-        {playerPositions.map(player => (
-          <circle
-            key={`heatmap-${player.id}`}
-            cx={player.x}
-            cy={player.y}
-            r={30 + (player.heatIntensity || 0) * 20}
-            fill={`rgba(255, 0, 0, ${0.1 + (player.heatIntensity || 0) * 0.3})`}
-            className="animate-pulse"
-          />
-        ))}
+        {playerPositions.map(player => {
+          const isoPos = transformToIsometric(player.x, player.y);
+          return (
+            <ellipse
+              key={`heatmap-${player.id}`}
+              cx={isoPos.x}
+              cy={isoPos.y}
+              rx={30 + (player.heatIntensity || 0) * 20}
+              ry={(30 + (player.heatIntensity || 0) * 20) * isometricScale}
+              fill={`rgba(255, 0, 0, ${0.1 + (player.heatIntensity || 0) * 0.3})`}
+              className="animate-pulse"
+              transform={`skewX(-${perspectiveAngle})`}
+            />
+          );
+        })}
       </g>
     );
   };
@@ -341,47 +485,54 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
 
     return (
       <g>
-        {playerPositions.map(player => (
-          <g key={player.id}>
-            <circle
-              cx={player.x}
-              cy={player.y}
-              r="18"
-              fill={player.team === 'home' ? '#3b82f6' : '#ef4444'}
-              stroke={
-                player.isCorrectPosition === false ? '#fbbf24' : 
-                player.isCorrectPosition === true ? '#10b981' : '#6b7280'
-              }
-              strokeWidth="4"
-              className={`transition-all duration-300 ${selectedPlayer === player.id ? 'animate-pulse scale-125' : ''}`}
-              onClick={() => setSelectedPlayer(selectedPlayer === player.id ? null : player.id)}
-            />
-            {player.jerseyNumber && (
-              <text
-                x={player.x}
-                y={player.y + 4}
-                textAnchor="middle"
-                fontSize="11"
-                fill="white"
-                fontWeight="bold"
-              >
-                {player.jerseyNumber}
-              </text>
-            )}
-            {selectedPlayer === player.id && (
-              <circle
-                cx={player.x}
-                cy={player.y}
-                r="35"
-                fill="none"
-                stroke="#fbbf24"
-                strokeWidth="3"
-                strokeDasharray="5,5"
-                className="animate-spin"
+        {playerPositions.map(player => {
+          const isoPos = transformToIsometric(player.x, player.y);
+          return (
+            <g key={player.id}>
+              <ellipse
+                cx={isoPos.x}
+                cy={isoPos.y}
+                rx="18"
+                ry={18 * isometricScale}
+                fill={player.team === 'home' ? '#3b82f6' : '#ef4444'}
+                stroke={
+                  player.isCorrectPosition === false ? '#fbbf24' : 
+                  player.isCorrectPosition === true ? '#10b981' : '#6b7280'
+                }
+                strokeWidth="4"
+                className={`transition-all duration-300 ${selectedPlayer === player.id ? 'animate-pulse scale-125' : ''}`}
+                onClick={() => setSelectedPlayer(selectedPlayer === player.id ? null : player.id)}
+                transform={`skewX(-${perspectiveAngle})`}
               />
-            )}
-          </g>
-        ))}
+              {player.jerseyNumber && (
+                <text
+                  x={isoPos.x}
+                  y={isoPos.y + 4}
+                  textAnchor="middle"
+                  fontSize="11"
+                  fill="white"
+                  fontWeight="bold"
+                >
+                  {player.jerseyNumber}
+                </text>
+              )}
+              {selectedPlayer === player.id && (
+                <ellipse
+                  cx={isoPos.x}
+                  cy={isoPos.y}
+                  rx="35"
+                  ry={35 * isometricScale}
+                  fill="none"
+                  stroke="#fbbf24"
+                  strokeWidth="3"
+                  strokeDasharray="5,5"
+                  className="animate-spin"
+                  transform={`skewX(-${perspectiveAngle})`}
+                />
+              )}
+            </g>
+          );
+        })}
       </g>
     );
   };
@@ -434,27 +585,39 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
           {/* Render saved annotations */}
           {annotations.map(renderAnnotation)}
           
-          {/* Render current drawing */}
+          {/* Render current drawing with isometric preview */}
           {isDrawing && drawingPoints.length > 0 && (
             <>
               {activeAnnotationTool === 'line' && drawingPoints.length === 2 && (
                 <line
-                  x1={drawingPoints[0].x}
-                  y1={drawingPoints[0].y}
-                  x2={drawingPoints[1].x}
-                  y2={drawingPoints[1].y}
+                  x1={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x}
+                  y1={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).y}
+                  x2={transformToIsometric(drawingPoints[1].x, drawingPoints[1].y).x}
+                  y2={transformToIsometric(drawingPoints[1].x, drawingPoints[1].y).y}
                   stroke="#10b981"
                   strokeWidth="3"
                   strokeDasharray="5,5"
                   className="animate-pulse"
                 />
               )}
+              {activeAnnotationTool === 'offside-line' && drawingPoints.length >= 1 && (
+                <line
+                  x1={0}
+                  y1={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).y}
+                  x2={videoDimensions.width}
+                  y2={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).y}
+                  stroke="#dc2626"
+                  strokeWidth="4"
+                  strokeDasharray="10,5"
+                  className="animate-pulse"
+                />
+              )}
               {activeAnnotationTool === 'arrow' && drawingPoints.length === 2 && (
                 <line
-                  x1={drawingPoints[0].x}
-                  y1={drawingPoints[0].y}
-                  x2={drawingPoints[1].x}
-                  y2={drawingPoints[1].y}
+                  x1={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x}
+                  y1={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).y}
+                  x2={transformToIsometric(drawingPoints[1].x, drawingPoints[1].y).x}
+                  y2={transformToIsometric(drawingPoints[1].x, drawingPoints[1].y).y}
                   stroke="#8b5cf6"
                   strokeWidth="4"
                   strokeDasharray="5,5"
@@ -463,10 +626,10 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
               )}
               {activeAnnotationTool === 'distance' && drawingPoints.length === 2 && (
                 <line
-                  x1={drawingPoints[0].x}
-                  y1={drawingPoints[0].y}
-                  x2={drawingPoints[1].x}
-                  y2={drawingPoints[1].y}
+                  x1={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x}
+                  y1={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).y}
+                  x2={transformToIsometric(drawingPoints[1].x, drawingPoints[1].y).x}
+                  y2={transformToIsometric(drawingPoints[1].x, drawingPoints[1].y).y}
                   stroke="#ef4444"
                   strokeWidth="3"
                   strokeDasharray="3,3"
@@ -474,19 +637,21 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
                 />
               )}
               {activeAnnotationTool === 'spotlight' && drawingPoints.length === 2 && (
-                <circle
-                  cx={drawingPoints[0].x}
-                  cy={drawingPoints[0].y}
-                  r={Math.abs(drawingPoints[1].x - drawingPoints[0].x)}
+                <ellipse
+                  cx={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x}
+                  cy={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).y}
+                  rx={Math.abs(transformToIsometric(drawingPoints[1].x, drawingPoints[1].y).x - transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x)}
+                  ry={Math.abs(transformToIsometric(drawingPoints[1].x, drawingPoints[1].y).x - transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x) * isometricScale}
                   fill="#fbbf2440"
                   stroke="#fbbf24"
                   strokeWidth="3"
                   className="animate-pulse"
+                  transform={`skewX(-${perspectiveAngle})`}
                 />
               )}
               {activeAnnotationTool === 'trajectory' && drawingPoints.length === 2 && (
                 <path
-                  d={`M ${drawingPoints[0].x} ${drawingPoints[0].y} Q ${(drawingPoints[0].x + drawingPoints[1].x) / 2} ${drawingPoints[0].y - 50} ${drawingPoints[1].x} ${drawingPoints[1].y}`}
+                  d={`M ${transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x} ${transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).y} Q ${(transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x + transformToIsometric(drawingPoints[1].x, drawingPoints[1].y).x) / 2} ${transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).y - 50} ${transformToIsometric(drawingPoints[1].x, drawingPoints[1].y).x} ${transformToIsometric(drawingPoints[1].x, drawingPoints[1].y).y}`}
                   fill="none"
                   stroke="#f97316"
                   strokeWidth="4"
