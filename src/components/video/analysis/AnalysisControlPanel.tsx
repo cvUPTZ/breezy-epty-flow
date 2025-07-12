@@ -3,14 +3,26 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Play, Pause, RotateCcw, Save, Target, Activity } from 'lucide-react';
 
-export interface AnalysisControlPanelProps {
+interface AnalysisControlPanelProps {
   currentTime: number;
   duration: number;
   onSeek: (time: number) => void;
-  onPlayPause?: () => void;
-  isPlaying?: boolean;
+  onPlayPause: () => void;
+  isPlaying: boolean;
+  isAnalyzing?: boolean;
+  analysisProgress?: number;
+  playerCount?: number;
+  avgConfidence?: number;
+  onStartAnalysis?: () => Promise<void>;
+  onStartTracking?: () => void;
+  onSaveAnnotations?: () => void;
+  onClearAnnotations?: () => void;
+  onPlayerTrackingToggle?: (enabled: boolean) => void;
+  onHeatmapToggle?: (enabled: boolean) => void;
+  onTrajectoryToggle?: (enabled: boolean) => void;
 }
 
 export const AnalysisControlPanel: React.FC<AnalysisControlPanelProps> = ({
@@ -18,7 +30,18 @@ export const AnalysisControlPanel: React.FC<AnalysisControlPanelProps> = ({
   duration,
   onSeek,
   onPlayPause,
-  isPlaying = false
+  isPlaying,
+  isAnalyzing = false,
+  analysisProgress = 0,
+  playerCount = 0,
+  avgConfidence = 0,
+  onStartAnalysis,
+  onStartTracking,
+  onSaveAnnotations,
+  onClearAnnotations,
+  onPlayerTrackingToggle,
+  onHeatmapToggle,
+  onTrajectoryToggle
 }) => {
   const formatTime = (time: number): string => {
     const minutes = Math.floor(time / 60);
@@ -26,63 +49,131 @@ export const AnalysisControlPanel: React.FC<AnalysisControlPanelProps> = ({
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
-  const handleSkipBackward = () => {
-    onSeek(Math.max(0, currentTime - 10));
-  };
-
-  const handleSkipForward = () => {
-    onSeek(Math.min(duration, currentTime + 10));
-  };
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Playback Controls</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSkipBackward}
-          >
-            <SkipBack className="w-4 h-4" />
-          </Button>
-          
-          {onPlayPause && (
+    <div className="space-y-4">
+      {/* Playback Controls */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Play className="w-5 h-5" />
+            Playback Controls
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-4">
             <Button
-              variant="outline"
               size="sm"
+              variant="outline"
               onClick={onPlayPause}
             >
               {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
             </Button>
+
+            <span className="text-sm min-w-20">
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </span>
+
+            <div className="flex-1">
+              <Slider
+                value={[currentTime]}
+                max={duration}
+                step={0.1}
+                onValueChange={(value) => onSeek(value[0])}
+                className="w-full"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Analysis Controls */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="w-5 h-5" />
+            Analysis Tools
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {onStartAnalysis && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onStartAnalysis}
+                disabled={isAnalyzing}
+              >
+                {isAnalyzing ? 'Analyzing...' : 'Start Analysis'}
+              </Button>
+            )}
+            
+            {onStartTracking && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onStartTracking}
+              >
+                <Activity className="w-4 h-4 mr-2" />
+                Start Tracking
+              </Button>
+            )}
+            
+            {onSaveAnnotations && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onSaveAnnotations}
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Save Analysis
+              </Button>
+            )}
+            
+            {onClearAnnotations && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onClearAnnotations}
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Clear All
+              </Button>
+            )}
+          </div>
+
+          {/* Analysis Stats */}
+          {(playerCount > 0 || avgConfidence > 0) && (
+            <div className="flex gap-4">
+              {playerCount > 0 && (
+                <Badge variant="secondary">
+                  Players: {playerCount}
+                </Badge>
+              )}
+              {avgConfidence > 0 && (
+                <Badge variant="secondary">
+                  Confidence: {Math.round(avgConfidence * 100)}%
+                </Badge>
+              )}
+            </div>
           )}
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSkipForward}
-          >
-            <SkipForward className="w-4 h-4" />
-          </Button>
-          
-          <span className="text-sm min-w-24">
-            {formatTime(currentTime)} / {formatTime(duration)}
-          </span>
-        </div>
-        
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Timeline</label>
-          <Slider
-            value={[currentTime]}
-            max={duration}
-            step={0.1}
-            onValueChange={(value) => onSeek(value[0])}
-            className="w-full"
-          />
-        </div>
-      </CardContent>
-    </Card>
+
+          {/* Analysis Progress */}
+          {isAnalyzing && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Analysis Progress</span>
+                <span>{Math.round(analysisProgress)}%</span>
+              </div>
+              <Slider
+                value={[analysisProgress]}
+                max={100}
+                disabled
+                className="w-full"
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
