@@ -1,11 +1,13 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, UserPlus, Settings, Trash2 } from 'lucide-react';
+import { Users, UserPlus, Settings, Trash2, ChevronRight } from 'lucide-react';
 import { TrackerAssignment, Player } from '@/types/trackerAssignment';
+import { EVENT_TYPE_CATEGORIES } from '@/constants/eventTypes';
 
 interface TrackerAssignmentSectionProps {
   homeTeamPlayers: Player[];
@@ -14,12 +16,6 @@ interface TrackerAssignmentSectionProps {
   assignments: TrackerAssignment[];
   onAssignmentsChange: (assignments: TrackerAssignment[]) => void;
 }
-
-const EVENT_TYPES = [
-  'pass', 'shot', 'goal', 'foul', 'card', 'substitution',
-  'corner', 'throw_in', 'offside', 'tackle', 'interception',
-  'cross', 'header', 'save', 'clearance'
-];
 
 // Helper function to get a unique identifier for players
 const getPlayerIdentifier = (player: any, team: 'home' | 'away', index: number): number => {
@@ -42,6 +38,7 @@ const TrackerAssignmentSection: React.FC<TrackerAssignmentSectionProps> = ({
   const [selectedTracker, setSelectedTracker] = useState<string>('');
   const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Create processed player lists with consistent IDs
   const processedHomePlayers = homeTeamPlayers.map((player, index) => ({
@@ -72,6 +69,18 @@ const TrackerAssignmentSection: React.FC<TrackerAssignmentSectionProps> = ({
         ? prev.filter(type => type !== eventType)
         : [...prev, eventType]
     );
+  };
+
+  const handleCategoryToggle = (categoryKey: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryKey)) {
+        newSet.delete(categoryKey);
+      } else {
+        newSet.add(categoryKey);
+      }
+      return newSet;
+    });
   };
 
   const handleCreateAssignment = () => {
@@ -123,6 +132,68 @@ const TrackerAssignmentSection: React.FC<TrackerAssignmentSectionProps> = ({
     </div>
   );
 
+  const renderEventTypeCategories = () => (
+    <div className="space-y-3">
+      {EVENT_TYPE_CATEGORIES.map((category) => (
+        <div key={category.key} className="border rounded-lg">
+          <div
+            className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50"
+            onClick={() => handleCategoryToggle(category.key)}
+          >
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={category.events.every(event => selectedEventTypes.includes(event.key))}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    setSelectedEventTypes(prev => [
+                      ...prev,
+                      ...category.events.map(e => e.key).filter(key => !prev.includes(key))
+                    ]);
+                  } else {
+                    setSelectedEventTypes(prev => 
+                      prev.filter(type => !category.events.some(e => e.key === type))
+                    );
+                  }
+                }}
+              />
+              <Badge 
+                style={{ backgroundColor: category.color }} 
+                className="text-white"
+              >
+                {category.label}
+              </Badge>
+            </div>
+            <ChevronRight 
+              className={`h-4 w-4 transition-transform ${
+                expandedCategories.has(category.key) ? 'rotate-90' : ''
+              }`}
+            />
+          </div>
+          
+          {expandedCategories.has(category.key) && (
+            <div className="px-3 pb-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {category.events.map((event) => (
+                  <div
+                    key={event.key}
+                    className={`p-2 border rounded cursor-pointer text-center text-xs transition-colors ${
+                      selectedEventTypes.includes(event.key)
+                        ? 'border-green-500 bg-green-50 text-green-700'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onClick={() => handleEventTypeToggle(event.key)}
+                  >
+                    {event.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -165,24 +236,10 @@ const TrackerAssignmentSection: React.FC<TrackerAssignmentSectionProps> = ({
             </div>
           </div>
 
-          {/* Event Type Selection */}
+          {/* Event Type Selection by Category */}
           <div>
             <label className="block text-sm font-medium mb-2">Select Event Types</label>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-              {EVENT_TYPES.map((eventType) => (
-                <div
-                  key={eventType}
-                  className={`p-2 border rounded cursor-pointer text-center text-xs transition-colors ${
-                    selectedEventTypes.includes(eventType)
-                      ? 'border-green-500 bg-green-50 text-green-700'
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                  onClick={() => handleEventTypeToggle(eventType)}
-                >
-                  {eventType}
-                </div>
-              ))}
-            </div>
+            {renderEventTypeCategories()}
           </div>
 
           <Button 
@@ -234,11 +291,20 @@ const TrackerAssignmentSection: React.FC<TrackerAssignmentSectionProps> = ({
                 <div>
                   <p className="text-sm font-medium mb-2">Event Types:</p>
                   <div className="flex flex-wrap gap-1">
-                    {assignment.assigned_event_types.map((eventType) => (
-                      <Badge key={eventType} className="text-xs">
-                        {eventType}
-                      </Badge>
-                    ))}
+                    {assignment.assigned_event_types.map((eventType) => {
+                      const category = EVENT_TYPE_CATEGORIES.find(cat => 
+                        cat.events.some(e => e.key === eventType)
+                      );
+                      return (
+                        <Badge 
+                          key={eventType} 
+                          className="text-xs text-white"
+                          style={{ backgroundColor: category?.color || '#6B7280' }}
+                        >
+                          {eventType}
+                        </Badge>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
