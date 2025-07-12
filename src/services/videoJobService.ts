@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 
-export type VideoJobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'queued' | 'uploading';
+export type VideoJobStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
 export interface VideoJobConfig {
   source_type: 'youtube' | 'upload';
@@ -24,6 +24,19 @@ export interface VideoJob {
   progress: number;
   user_id: string;
   job_config?: VideoJobConfig;
+}
+
+function parseJobConfig(jobConfig: any): VideoJobConfig | undefined {
+  if (!jobConfig || typeof jobConfig !== 'object') {
+    return undefined;
+  }
+  
+  return {
+    source_type: jobConfig.source_type || 'upload',
+    enableAIAnalysis: Boolean(jobConfig.enableAIAnalysis),
+    enableSegmentation: Boolean(jobConfig.enableSegmentation),
+    segmentDuration: jobConfig.segmentDuration || undefined
+  };
 }
 
 export class VideoJobService {
@@ -55,7 +68,7 @@ export class VideoJobService {
       error_message: data.error_message || undefined,
       progress: data.progress || 0,
       user_id: data.user_id!,
-      job_config: data.job_config ? data.job_config as VideoJobConfig : undefined
+      job_config: parseJobConfig(data.job_config)
     };
   }
 
@@ -77,7 +90,7 @@ export class VideoJobService {
       error_message: job.error_message || undefined,
       progress: job.progress || 0,
       user_id: job.user_id!,
-      job_config: job.job_config ? job.job_config as VideoJobConfig : undefined
+      job_config: parseJobConfig(job.job_config)
     }));
   }
 
@@ -150,7 +163,7 @@ export class VideoJobService {
           error_message: data.error_message || undefined,
           progress: data.progress || 0,
           user_id: data.user_id!,
-          job_config: data.job_config ? data.job_config as VideoJobConfig : undefined
+          job_config: parseJobConfig(data.job_config)
         };
 
         callback(job);

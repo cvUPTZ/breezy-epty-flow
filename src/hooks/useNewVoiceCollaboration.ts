@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import NewVoiceChatManager from '@/services/NewVoiceChatManager';
 import { Participant, ConnectionState } from 'livekit-client';
@@ -28,7 +29,7 @@ interface UseNewVoiceCollaborationReturn {
 }
 
 export const useNewVoiceCollaboration = (): UseNewVoiceCollaborationReturn => {
-  const [manager] = useState(() => new NewVoiceChatManager());
+  const [manager] = useState(() => NewVoiceChatManager.getInstance());
   const [availableRooms, setAvailableRooms] = useState<VoiceRoomDetails[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);

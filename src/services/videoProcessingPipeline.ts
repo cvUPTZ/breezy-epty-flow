@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { YouTubeService } from './youtubeService';
 import { AIProcessingService } from './aiProcessingService';
@@ -67,7 +68,7 @@ export class VideoProcessingPipeline {
       video_title: videoInfo.title,
       video_duration: videoInfo.duration,
       user_id: user.user.id,
-      status: 'pending' as VideoJobStatus,
+      status: 'pending' as const,
       progress: 0,
       job_config: {
         source_type: source.type,
@@ -108,7 +109,7 @@ export class VideoProcessingPipeline {
     // Immediately update job status to 'processing' after creation
     const updateResult = await supabase
       .from('video_jobs')
-      .update({ status: 'processing' as VideoJobStatus })
+      .update({ status: 'processing' as const })
       .eq('id', currentJobState.id)
       .select('*')
       .single();
@@ -137,7 +138,7 @@ export class VideoProcessingPipeline {
         
         const updateAfterPrimary = await supabase
           .from('video_jobs')
-          .update({ status: 'processing' as VideoJobStatus })
+          .update({ status: 'processing' as const })
           .eq('id', currentJobState.id)
           .select('*')
           .single();
@@ -174,7 +175,7 @@ export class VideoProcessingPipeline {
               const updateAfterFallbackFail = await supabase
                 .from('video_jobs')
                 .update({ 
-                  status: 'failed' as VideoJobStatus, 
+                  status: 'failed' as const, 
                   error_message: errorMsg 
                 })
                 .eq('id', currentJobState.id)
@@ -212,7 +213,7 @@ export class VideoProcessingPipeline {
             const updateAfterFallback = await supabase
               .from('video_jobs')
               .update({ 
-                status: 'completed' as VideoJobStatus, 
+                status: 'completed' as const, 
                 result_data: fallbackData.analysisResult, 
                 error_message: null 
               })
@@ -240,7 +241,7 @@ export class VideoProcessingPipeline {
             const updateAfterFallbackCatch = await supabase
               .from('video_jobs')
               .update({ 
-                status: 'failed' as VideoJobStatus, 
+                status: 'failed' as const, 
                 error_message: fallbackCatchError.message 
               })
               .eq('id', currentJobState.id)
@@ -266,7 +267,7 @@ export class VideoProcessingPipeline {
           const updateNoFallback = await supabase
             .from('video_jobs')
             .update({ 
-              status: 'failed' as VideoJobStatus, 
+              status: 'failed' as const, 
               error_message: primaryError.message 
             })
             .eq('id', currentJobState.id)
@@ -292,7 +293,7 @@ export class VideoProcessingPipeline {
       // AI analysis not enabled, update status accordingly
       const updateNoAI = await supabase
         .from('video_jobs')
-        .update({ status: 'completed' as VideoJobStatus })
+        .update({ status: 'completed' as const })
         .eq('id', currentJobState.id)
         .select('*')
         .single();
