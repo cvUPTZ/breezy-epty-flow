@@ -29,6 +29,7 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
   const [activeAnnotationTool, setActiveAnnotationTool] = useState('select');
   const [violationCount, setViolationCount] = useState(0);
   const [drawingMode, setDrawingMode] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Initialize tracking service
   useEffect(() => {
@@ -44,6 +45,16 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
     return () => {
       service.stopTracking();
     };
+  }, []);
+
+  // Monitor fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
   // Load existing annotations
@@ -105,10 +116,13 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
   };
 
   return (
-    <div className="absolute inset-0">
-      {/* Drawing Tools Panel - Use maximum z-index for fullscreen compatibility */}
+    <>
+      {/* Drawing Tools Panel - Portal to body when fullscreen */}
       {drawingMode && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2" style={{ zIndex: 2147483647 }}>
+        <div 
+          className={`${isFullscreen ? 'fixed' : 'absolute'} top-4 left-1/2 transform -translate-x-1/2`}
+          style={{ zIndex: 2147483647 }}
+        >
           <DrawingToolsPanel
             activeAnnotationTool={activeAnnotationTool}
             onToolChange={setActiveAnnotationTool}
@@ -123,7 +137,10 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
 
       {/* Toggle Drawing Mode Button - Always visible */}
       {!drawingMode && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2" style={{ zIndex: 2147483647 }}>
+        <div 
+          className={`${isFullscreen ? 'fixed' : 'absolute'} top-4 left-1/2 transform -translate-x-1/2`}
+          style={{ zIndex: 2147483647 }}
+        >
           <button
             onClick={handleDrawingModeToggle}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition-colors"
@@ -133,28 +150,31 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
         </div>
       )}
 
-      {/* Drawing Overlay - Only intercept pointer events when actively drawing */}
-      <div className={`absolute inset-0 ${
-        drawingMode && activeAnnotationTool !== 'select' 
-          ? 'pointer-events-auto' 
-          : 'pointer-events-none'
-      }`} style={{ zIndex: 2147483646 }}>
-        <AdvancedDrawingOverlay
-          videoDimensions={videoDimensions}
-          currentTime={currentTime}
-          onAnnotationSave={setAnnotations}
-          playerPositions={playerData.map(p => ({
-            id: p.playerId,
-            x: p.position.x,
-            y: p.position.y,
-            team: p.team,
-            jerseyNumber: p.jerseyNumber,
-            isCorrectPosition: p.confidence > 0.8,
-            heatIntensity: p.speed / 25
-          }))}
-        />
+      {/* Drawing Overlay Container */}
+      <div className="absolute inset-0">
+        {/* Drawing Overlay - Only intercept pointer events when actively drawing */}
+        <div className={`absolute inset-0 ${
+          drawingMode && activeAnnotationTool !== 'select' 
+            ? 'pointer-events-auto' 
+            : 'pointer-events-none'
+        }`} style={{ zIndex: 2147483646 }}>
+          <AdvancedDrawingOverlay
+            videoDimensions={videoDimensions}
+            currentTime={currentTime}
+            onAnnotationSave={setAnnotations}
+            playerPositions={playerData.map(p => ({
+              id: p.playerId,
+              x: p.position.x,
+              y: p.position.y,
+              team: p.team,
+              jerseyNumber: p.jerseyNumber,
+              isCorrectPosition: p.confidence > 0.8,
+              heatIntensity: p.speed / 25
+            }))}
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
