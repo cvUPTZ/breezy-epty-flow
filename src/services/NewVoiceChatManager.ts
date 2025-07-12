@@ -1,49 +1,23 @@
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
-export interface VoiceRoomDetails {
+interface VoiceRoomDetails {
   id: string;
   name: string;
   max_participants?: number;
-  is_active?: boolean;
-  match_id?: string;
 }
 
-export class NewVoiceChatManager {
+class NewVoiceChatManager {
   private static instance: NewVoiceChatManager;
-  private rooms: VoiceRoomDetails[] = [];
 
-  private constructor() {}
+  private constructor() {
+    // Private constructor to prevent direct instantiation
+  }
 
-  static getInstance(): NewVoiceChatManager {
+  public static getInstance(): NewVoiceChatManager {
     if (!NewVoiceChatManager.instance) {
       NewVoiceChatManager.instance = new NewVoiceChatManager();
     }
     return NewVoiceChatManager.instance;
-  }
-
-  async getAllRooms(): Promise<VoiceRoomDetails[]> {
-    try {
-      const { data, error } = await supabase
-        .from('voice_rooms')
-        .select('id, name, max_participants, is_active, match_id');
-
-      if (error) throw error;
-
-      this.rooms = data.map(room => ({
-        id: room.id,
-        name: room.name,
-        max_participants: room.max_participants || undefined,
-        is_active: room.is_active || undefined,
-        match_id: room.match_id || undefined
-      }));
-
-      return this.rooms;
-    } catch (error: any) {
-      console.error('Error fetching rooms:', error);
-      toast.error('Failed to fetch voice rooms');
-      return [];
-    }
   }
 
   async getRoomsForMatch(matchId: string): Promise<VoiceRoomDetails[]> {

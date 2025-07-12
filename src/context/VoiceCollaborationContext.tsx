@@ -1,8 +1,11 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
-import { useNewVoiceCollaboration, VoiceCollaborationState } from '@/hooks/useNewVoiceCollaboration';
+import { useNewVoiceCollaboration } from '@/hooks/useNewVoiceCollaboration';
 
-const VoiceCollaborationContext = createContext<VoiceCollaborationState | undefined>(undefined);
+// Prepare the context value type based on the hook return
+type VoiceCollabContextType = ReturnType<typeof useNewVoiceCollaboration>;
+
+const VoiceCollaborationContext = createContext<VoiceCollabContextType | undefined>(undefined);
 
 export const VoiceCollaborationProvider = ({ children }: { children: ReactNode }) => {
   const value = useNewVoiceCollaboration();
@@ -13,7 +16,7 @@ export const VoiceCollaborationProvider = ({ children }: { children: ReactNode }
   );
 };
 
-export function useVoiceCollaborationContext(): VoiceCollaborationState {
+export function useVoiceCollaborationContext() {
   const context = useContext(VoiceCollaborationContext);
   if (!context) {
     throw new Error('useVoiceCollaborationContext must be used within a VoiceCollaborationProvider');

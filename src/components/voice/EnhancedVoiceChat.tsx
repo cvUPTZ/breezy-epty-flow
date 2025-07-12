@@ -1,6 +1,5 @@
-
 import React, { useEffect, useRef, useState } from 'react';
-import { useVoiceCollaborationContext } from '@/context/VoiceCollaborationContext';
+import { useVoiceCollaborationContext } from '@/context/VoiceCollaborationContext'; // NEW
 import { Participant, ConnectionState, LocalParticipant } from 'livekit-client';
 import { toast } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
@@ -23,6 +22,7 @@ export const EnhancedVoiceChat: React.FC<EnhancedVoiceChatProps> = ({
   userName,
   voiceCollabCtx
 }) => {
+  // Consume the context. If a prop (from VoiceCollaborationWithTest), use it; else useContext (fallback).
   const ctx = voiceCollabCtx || useVoiceCollaborationContext();
 
   const {
@@ -65,12 +65,13 @@ export const EnhancedVoiceChat: React.FC<EnhancedVoiceChatProps> = ({
     }
   }, [fetchAvailableRooms, matchId]);
 
+  // Helper: check if participant metadata implies tracker role
   function isTrackerParticipant(participant: Participant): boolean {
     const { metadata, name } = participant;
     if (!metadata) return false;
     if (metadata === 'tracker') return true;
     try {
-      const parsed = JSON.parse(metadata as string);
+      const parsed = JSON.parse(metadata);
       if (parsed && typeof parsed === 'object' && parsed.role === 'tracker') {
         return true;
       }
@@ -83,13 +84,16 @@ export const EnhancedVoiceChat: React.FC<EnhancedVoiceChatProps> = ({
     await joinRoom(roomId, userId, userRole, userName);
   };
 
+  // Ensure correct mute check for local and remote
   const isParticipantMuted = (participant: Participant | null): boolean => {
     if (!participant) {
-      return true;
+      return true; // Default to muted if participant is null
     }
     if (participant.isLocal) {
+      // Use new logic: some implementations use muted flag, but here isMicrophoneEnabled is best.
       return !(participant as LocalParticipant).isMicrophoneEnabled;
     }
+    // For remote, treat as muted if no audio tracks or any publication is muted
     const audioTrackPublications = Array.from(participant.audioTrackPublications.values());
     return audioTrackPublications.length === 0 || audioTrackPublications.some(pub => pub.isMuted);
   };
@@ -101,17 +105,21 @@ export const EnhancedVoiceChat: React.FC<EnhancedVoiceChatProps> = ({
 
   const canModerate = userRole === 'admin' || userRole === 'coordinator';
 
+  // Find all tracker participants (excluding self)
   const trackerParticipants = participants.filter(
-    (p: Participant) => !p.isLocal && isTrackerParticipant(p)
+    p => !p.isLocal && isTrackerParticipant(p)
   );
 
+  // Fix: Mute self button works reliably
   const handleToggleMuteSelf = async () => {
     const result = await toggleMuteSelf();
     if (typeof result === "undefined") {
       toast.error("Failed to toggle mute.");
     }
+    // else, the state will update on re-render
   };
 
+  // Fix: Admin mute all only affects trackers
   const handleMuteAll = async () => {
     if (!canModerate) return;
     const newMuteState = !allMuted;
@@ -164,7 +172,7 @@ export const EnhancedVoiceChat: React.FC<EnhancedVoiceChatProps> = ({
           {!isLoadingRooms && availableRooms.length > 0 && (
             <div className="space-y-3 animate-fade-in">
               <h3 className="text-sm font-medium text-slate-500">Available Rooms</h3>
-              {availableRooms.map((room: any) => (
+              {availableRooms.map(room => (
                 <div key={room.id} className="flex items-center justify-between p-4 border border-slate-200/80 rounded-xl bg-white/50 hover:bg-slate-50/50 transition-colors">
                   <div>
                     <p className="font-semibold text-slate-800">{room.name}</p>
@@ -248,7 +256,7 @@ export const EnhancedVoiceChat: React.FC<EnhancedVoiceChatProps> = ({
         <div className="space-y-4">
           <h4 className="font-semibold text-slate-700 text-base">Participants ({participants.length})</h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[28rem] overflow-y-auto p-1 -m-1">
-            {participants.map((participant: Participant) => {
+            {participants.map(participant => {
               const isMuted = isParticipantMuted(participant);
               const isSpeaking = isParticipantSpeaking(participant);
               

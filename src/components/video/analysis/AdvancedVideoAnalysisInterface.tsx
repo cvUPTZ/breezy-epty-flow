@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,12 +6,14 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Settings, Loader2 } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Settings } from 'lucide-react';
+import { VideoPlayerControls } from './VideoPlayerControls';
+import EventTaggingSection from './EventTaggingSection';
+import { AnnotationToolbox } from './AnnotationToolbox';
 import TacticalAnnotationOverlay from './TacticalAnnotationOverlay';
 import PlayerTrackingService from './PlayerTrackingService';
 import EnhancedVideoPlayer, { VideoPlayerRef } from '../EnhancedVideoPlayer';
 import { toast } from 'sonner';
-import { DetectionJob, PlayerDetection } from '@/types/detection';
 
 interface AnalysisEvent {
   id: string;
@@ -25,7 +28,7 @@ interface PlayerPosition {
   id: string;
   x: number;
   y: number;
-  team: 'home' | 'away' | 'none';
+  team: 'home' | 'away';
   jerseyNumber?: number;
   isCorrectPosition?: boolean;
 }
@@ -34,89 +37,34 @@ interface AdvancedVideoAnalysisInterfaceProps {
   videoUrl: string;
 }
 
+const MOCK_EVENTS: AnalysisEvent[] = [
+  { id: '1', timestamp: 15, type: 'goal', title: 'Goal', description: 'Player A scores', color: '#22c55e' },
+  { id: '2', timestamp: 45, type: 'foul', title: 'Foul', description: 'Yellow card for Player B', color: '#eab308' },
+  { id: '3', timestamp: 67, type: 'substitution', title: 'Substitution', description: 'Player C out, Player D in', color: '#3b82f6' },
+  { id: '4', timestamp: 89, type: 'corner', title: 'Corner Kick', description: 'Corner awarded to home team', color: '#8b5cf6' },
+];
+
 export const AdvancedVideoAnalysisInterface: React.FC<AdvancedVideoAnalysisInterfaceProps> = ({ videoUrl }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [volume, setVolume] = useState(0.8);
-  const [events, setEvents] = useState<AnalysisEvent[]>([]);
+  const [events, setEvents] = useState<AnalysisEvent[]>(MOCK_EVENTS);
   const [selectedEventType, setSelectedEventType] = useState<string>('all');
   const [playerPositions, setPlayerPositions] = useState<PlayerPosition[]>([]);
+  const [isTrackingActive, setIsTrackingActive] = useState(false);
   const [videoDimensions, setVideoDimensions] = useState({ width: 0, height: 0 });
-  const [job, setJob] = useState<DetectionJob | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const videoRef = useRef<VideoPlayerRef>(null);
-  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
 
   const handleTimeUpdate = useCallback((time: number) => {
     setCurrentTime(time);
-    if (job?.results) {
-      const currentFrame = job.results.find(
-        (r) => Math.abs(r.timestamp - time) < 0.5
-      );
-      if (currentFrame) {
-        const positions: PlayerPosition[] = currentFrame.players.map(
-          (p: PlayerDetection) => ({
-            id: p.id,
-            x: p.position.x,
-            y: p.position.y,
-            team: p.team === 'home' ? 'home' : 'away',
-            jerseyNumber: p.jersey_number,
-          })
-        );
-        setPlayerPositions(positions);
-      }
-    }
-  }, [job]);
+  }, []);
 
   const handleDurationChange = useCallback((dur: number) => {
     setDuration(dur);
   }, []);
-
-  const startAnalysis = async () => {
-    try {
-      setError(null);
-      const jobId = await PlayerTrackingService.startDetection({
-        videoUrl,
-        useRealML: true,
-      });
-      setJob({ job_id: jobId, status: 'pending' });
-
-      pollingInterval.current = setInterval(async () => {
-        try {
-          const updatedJob = await PlayerTrackingService.getJobStatus(jobId);
-          setJob(updatedJob);
-          if (updatedJob.status === 'completed' || updatedJob.status === 'failed') {
-            if (pollingInterval.current) {
-              clearInterval(pollingInterval.current);
-            }
-            if (updatedJob.status === 'completed') {
-              const results = await PlayerTrackingService.getResults(jobId);
-              setJob({ ...updatedJob, results });
-            }
-          }
-        } catch (err) {
-          setError('Failed to poll job status');
-          if (pollingInterval.current) {
-            clearInterval(pollingInterval.current);
-          }
-        }
-      }, 5000);
-    } catch (err) {
-      setError('Failed to start analysis');
-    }
-  };
-
-  useEffect(() => {
-    startAnalysis();
-    return () => {
-      if (pollingInterval.current) {
-        clearInterval(pollingInterval.current);
-      }
-    };
-  }, [videoUrl]);
 
   const handlePlayPause = () => {
     if (videoRef.current) {
@@ -173,6 +121,24 @@ export const AdvancedVideoAnalysisInterface: React.FC<AdvancedVideoAnalysisInter
 
   const eventTypes = [...new Set(events.map(event => event.type))];
 
+  const handleTrackingData = useCallback((trackingData: any[]) => {
+    // Convert tracking data to player positions
+    const positions: PlayerPosition[] = trackingData.map(data => ({
+      id: data.playerId,
+      x: data.position.x,
+      y: data.position.y,
+      team: data.team,
+      jerseyNumber: data.jerseyNumber,
+      isCorrectPosition: Math.random() > 0.3 // Mock tactical analysis
+    }));
+    setPlayerPositions(positions);
+  }, []);
+
+  const handleAnalysisUpdate = useCallback((analysis: any) => {
+    // Handle analysis updates from the tracking service
+    console.log('Analysis update:', analysis);
+  }, []);
+
   const handleAnnotationSave = useCallback((annotations: any[]) => {
     console.log('Annotations saved:', annotations);
     toast.success('Tactical annotations saved successfully');
@@ -196,37 +162,13 @@ export const AdvancedVideoAnalysisInterface: React.FC<AdvancedVideoAnalysisInter
     return () => clearTimeout(timer);
   }, [videoUrl]);
 
+  // Start tracking when video plays
+  useEffect(() => {
+    setIsTrackingActive(isPlaying);
+  }, [isPlaying]);
+
   return (
     <div className="w-full space-y-6">
-      {job && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Analysis Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {job.status === 'pending' && (
-              <div className="flex items-center space-x-2">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Analysis is pending...</span>
-              </div>
-            )}
-            {job.status === 'processing' && (
-              <div className="flex items-center space-x-2">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Processing video... {job.progress?.toFixed(2)}%</span>
-              </div>
-            )}
-            {job.status === 'completed' && (
-              <div className="text-green-500">Analysis complete!</div>
-            )}
-            {job.status === 'failed' && (
-              <div className="text-red-500">
-                Analysis failed: {job.error}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
       {/* Video Player Section with Overlays */}
       <Card>
         <CardContent className="p-0">
@@ -373,7 +315,7 @@ export const AdvancedVideoAnalysisInterface: React.FC<AdvancedVideoAnalysisInter
                 value={[volume]}
                 max={1}
                 step={0.1}
-                onValue-change={handleVolumeChange}
+                onValueChange={handleVolumeChange}
                 className="w-full"
               />
             </div>
@@ -381,21 +323,13 @@ export const AdvancedVideoAnalysisInterface: React.FC<AdvancedVideoAnalysisInter
         </Card>
 
         {/* AI Player Tracking */}
-        <Card>
-          <CardHeader>
-            <CardTitle>AI Player Tracking</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {job && (
-              <div>
-                <p>Status: {job.status}</p>
-                {job.status === 'processing' && (
-                  <p>Progress: {job.progress?.toFixed(2)}%</p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <PlayerTrackingService
+          videoUrl={videoUrl}
+          currentTime={currentTime}
+          isTracking={isTrackingActive}
+          onTrackingData={handleTrackingData}
+          onAnalysisUpdate={handleAnalysisUpdate}
+        />
 
         {/* Quick Analysis Actions */}
         <Card>
@@ -475,7 +409,7 @@ export const AdvancedVideoAnalysisInterface: React.FC<AdvancedVideoAnalysisInter
                   <h4 className="font-medium">Team Performance</h4>
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
-                      <span>Possion</span>
+                      <span>Possession</span>
                       <span>58%</span>
                     </div>
                     <div className="flex justify-between">

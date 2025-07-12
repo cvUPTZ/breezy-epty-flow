@@ -316,17 +316,19 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
       )}
 
       {/* Main Interface Tabs */}
-      <Tabs defaultValue="advanced" className="w-full">
+      <Tabs defaultValue={isYoutubeUrl ? "basic" : "advanced"} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="basic">Basic Analysis</TabsTrigger>
-          <TabsTrigger value="advanced">
+          <TabsTrigger value="advanced" disabled={isYoutubeUrl}>
             <BarChart3 className="w-4 h-4 mr-2" />
             Advanced Analysis
           </TabsTrigger>
         </TabsList>
         
         <TabsContent value="advanced" className="space-y-6">
-          <AdvancedVideoAnalysisInterface videoUrl={videoUrl} />
+          {!isYoutubeUrl && (
+            <AdvancedVideoAnalysisInterface videoUrl={videoUrl} />
+          )}
         </TabsContent>
         
         <TabsContent value="basic" className="space-y-6">

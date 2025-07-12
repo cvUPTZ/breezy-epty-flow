@@ -1,223 +1,373 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { YouTubeService } from './youtubeService';
+import { AIProcessingService } from './aiProcessingService';
+import { VideoJob } from './videoJobService';
 
 export interface ProcessingPipelineConfig {
-  source_type: 'youtube' | 'upload';
+  enableYouTubeDownload: boolean;
   enableAIAnalysis: boolean;
   enableSegmentation: boolean;
-  segmentDuration?: number;
-}
-
-interface VideoJob {
-  id: string;
-  user_id: string;
-  status: string;
-  video_title?: string;
-  video_duration?: number;
-  progress: number;
-  error_message?: string;
-  job_config?: ProcessingPipelineConfig;
-  input_video_path?: string;
-  result_data?: any;
-  created_at: string;
-  updated_at?: string;
+  segmentDuration?: number; // in seconds
+  aiProcessingFocus?: 'events' | 'tracking' | 'statistics' | 'all';
 }
 
 export class VideoProcessingPipeline {
+  // Create complete processing pipeline
   static async processVideoComplete(
-    videoUrl: string,
-    userId: string,
+    source: { type: 'youtube', url: string } | { type: 'upload', file: File },
     config: ProcessingPipelineConfig
   ): Promise<VideoJob> {
-    try {
-      // Create initial job record
-      const { data: job, error: jobError } = await supabase
-        .from('video_jobs')
-        .insert({
-          user_id: userId,
-          status: 'pending',
-          job_config: config as any,
-          input_video_path: videoUrl,
-          progress: 0
-        })
-        .select()
-        .single();
+    let videoPath: string;
+    let videoInfo: any = {};
 
-      if (jobError || !job) {
-        throw new Error(`Failed to create job: ${jobError?.message}`);
+    // Step 1: Handle video source
+    if (source.type === 'youtube') {
+      if (!config.enableYouTubeDownload) {
+        throw new Error('YouTube download not enabled');
       }
 
-      const videoJob: VideoJob = {
-        ...job,
-        user_id: job.user_id || '',
-        created_at: job.created_at || new Date().toISOString(),
-        progress: job.progress || 0,
-        video_title: job.video_title || undefined,
-        video_duration: job.video_duration || undefined,
-        error_message: job.error_message || undefined,
-        job_config: job.job_config ? job.job_config as unknown as ProcessingPipelineConfig : undefined,
-        input_video_path: job.input_video_path || undefined,
-        result_data: job.result_data || undefined,
-        updated_at: job.updated_at || undefined,
+      // Get video info
+      const ytInfo = await YouTubeService.getVideoInfo(source.url);
+      videoInfo = {
+        title: ytInfo.title,
+        duration: this.parseDurationToSeconds(ytInfo.duration)
       };
 
-      // Update to processing
-      const processingJob = await this.updateJobStatus(job.id, 'processing', 10);
+      // Download video
+      videoPath = await YouTubeService.downloadVideo(source.url);
+    } else {
+      // Upload file directly
+      const timestamp = Date.now();
+      const fileName = `${timestamp}-${source.file.name}`;
+      const filePath = `public/${fileName}`;
 
-      try {
-        // Submit to Colab for processing
-        const { data: colabData, error: colabError } = await supabase.functions.invoke('submit-to-colab', {
-          body: {
-            video_url: videoUrl,
-            job_id: job.id,
-            config: config
-          }
-        });
+      const { data, error } = await supabase.storage
+        .from('videos')
+        .upload(filePath, source.file);
 
-        if (colabError) {
-          throw new Error(`Colab submission failed: ${colabError.message}`);
-        }
-
-        // Update progress
-        const progressJob = await this.updateJobStatus(job.id, 'processing', 50);
-
-        return processingJob;
-
-      } catch (processingError) {
-        console.error('Processing error:', processingError);
-        
-        // Fallback to Gemini processing for YouTube videos
-        if (config.source_type === 'youtube') {
-          return await this.fallbackToGeminiProcessing(job.id, videoUrl, config);
-        }
-        
-        throw processingError;
+      if (error) {
+        throw new Error(`Upload failed: ${error.message}`);
       }
 
-    } catch (error) {
-      console.error('Video processing pipeline error:', error);
-      toast.error(`Video processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      throw error;
-    }
-  }
-
-  private static async updateJobStatus(
-    jobId: string, 
-    status: string, 
-    progress?: number
-  ): Promise<VideoJob> {
-    const updateData: any = { status };
-    if (progress !== undefined) {
-      updateData.progress = progress;
+      videoPath = data.path;
+      videoInfo = {
+        title: source.file.name.replace(/\.[^/.]+$/, ""),
+        duration: 0 // Will be determined during processing
+      };
     }
 
-    const { data, error } = await supabase
+    // Step 2: Create job record
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user?.id) {
+      throw new Error('User must be authenticated');
+    }
+
+    const jobData = {
+      input_video_path: videoPath,
+      video_title: videoInfo.title,
+      video_duration: videoInfo.duration,
+      user_id: user.user.id,
+      status: 'pending' as const,
+      progress: 0
+    };
+
+    const insertResult = await supabase
       .from('video_jobs')
-      .update(updateData)
-      .eq('id', jobId)
-      .select()
+      .insert(jobData)
+      .select('*')
       .single();
 
-    if (error || !data) {
-      throw new Error(`Failed to update job status: ${error?.message}`);
+    if (insertResult.error) {
+      throw new Error(`Failed to create job: ${insertResult.error.message}`);
     }
 
-    return {
-      ...data,
-      user_id: data.user_id || '',
-      created_at: data.created_at || new Date().toISOString(),
-      progress: data.progress || 0,
-      video_title: data.video_title || undefined,
-      video_duration: data.video_duration || undefined,
-      error_message: data.error_message || undefined,
-      job_config: data.job_config ? data.job_config as unknown as ProcessingPipelineConfig : undefined,
-      input_video_path: data.input_video_path || undefined,
-      result_data: data.result_data || undefined,
-      updated_at: data.updated_at || undefined,
+    // Convert database response to VideoJob format - ensure user_id is string
+    let currentJobState: VideoJob = {
+      ...insertResult.data,
+      created_at: insertResult.data.created_at || new Date().toISOString(),
+      video_title: insertResult.data.video_title || undefined,
+      video_duration: insertResult.data.video_duration || undefined,
+      error_message: insertResult.data.error_message || undefined,
+      user_id: insertResult.data.user_id!, // Assert non-null since we checked earlier
+      job_config: {
+        source_type: source.type,
+        enableAIAnalysis: config.enableAIAnalysis,
+        enableSegmentation: config.enableSegmentation,
+        segmentDuration: config.segmentDuration
+      }
     };
+
+    // Immediately update job status to 'processing' after creation
+    const updateResult = await supabase
+      .from('video_jobs')
+      .update({ status: 'processing' as const })
+      .eq('id', currentJobState.id)
+      .select('*')
+      .single();
+
+    if (updateResult.error) {
+      console.error(`Failed to update job status to 'processing' for job ${currentJobState.id}:`, updateResult.error.message);
+    } else if (updateResult.data) {
+      currentJobState = {
+        ...updateResult.data,
+        created_at: updateResult.data.created_at || new Date().toISOString(),
+        video_title: updateResult.data.video_title || undefined,
+        video_duration: updateResult.data.video_duration || undefined,
+        error_message: updateResult.data.error_message || undefined,
+        user_id: updateResult.data.user_id!, // Assert non-null
+        job_config: currentJobState.job_config
+      };
+    }
+
+    // Step 3: AI Processing with fallback
+    if (config.enableAIAnalysis) {
+      try {
+        console.log(`Attempting primary AI processing for job ${currentJobState.id}...`);
+        await AIProcessingService.submitToColabWorker(currentJobState.id);
+        
+        const updateAfterPrimary = await supabase
+          .from('video_jobs')
+          .update({ status: 'processing' as const })
+          .eq('id', currentJobState.id)
+          .select('*')
+          .single();
+        
+        if (updateAfterPrimary.error) throw updateAfterPrimary.error;
+        if (updateAfterPrimary.data) {
+          currentJobState = {
+            ...updateAfterPrimary.data,
+            created_at: updateAfterPrimary.data.created_at || new Date().toISOString(),
+            video_title: updateAfterPrimary.data.video_title || undefined,
+            video_duration: updateAfterPrimary.data.video_duration || undefined,
+            error_message: updateAfterPrimary.data.error_message || undefined,
+            user_id: updateAfterPrimary.data.user_id!, // Assert non-null
+            job_config: currentJobState.job_config
+          };
+        }
+        console.log(`Job ${currentJobState.id} status updated to 'processing'.`);
+
+      } catch (primaryError: any) {
+        console.error(`Primary AI processing failed for job ${currentJobState.id}:`, primaryError.message);
+        
+        // Fallback logic for YouTube videos
+        if (source.type === 'youtube' && config.enableAIAnalysis) {
+          console.log(`Attempting fallback AI analysis for YouTube video (job ${currentJobState.id}) using 'analyze-youtube-video' function...`);
+          try {
+            // Fetch Gemini API Key
+            const { data: apiKeyData, error: apiKeyError } = await supabase.functions.invoke('get-gemini-api-key');
+            if (apiKeyError || !apiKeyData || !apiKeyData.apiKey) {
+              const errorMsg = apiKeyError?.message || "Gemini API key not found or function invocation failed.";
+              console.error(`Failed to retrieve Gemini API key for fallback analysis (job ${currentJobState.id}):`, errorMsg);
+              
+              const updateAfterFallbackFail = await supabase
+                .from('video_jobs')
+                .update({ 
+                  status: 'failed' as const, 
+                  error_message: errorMsg 
+                })
+                .eq('id', currentJobState.id)
+                .select('*')
+                .single();
+              
+              if (updateAfterFallbackFail.data) {
+                currentJobState = {
+                  ...updateAfterFallbackFail.data,
+                  created_at: updateAfterFallbackFail.data.created_at || new Date().toISOString(),
+                  video_title: updateAfterFallbackFail.data.video_title || undefined,
+                  video_duration: updateAfterFallbackFail.data.video_duration || undefined,
+                  error_message: updateAfterFallbackFail.data.error_message || undefined,
+                  user_id: updateAfterFallbackFail.data.user_id!, // Assert non-null
+                  job_config: currentJobState.job_config
+                };
+              }
+              return currentJobState;
+            }
+            const retrievedApiKey = apiKeyData.apiKey;
+
+            // Call 'analyze-youtube-video'
+            const { data: fallbackData, error: fallbackError } = await supabase.functions.invoke('analyze-youtube-video', {
+              body: { videoUrl: source.url, apiKey: retrievedApiKey }
+            });
+
+            if (fallbackError) {
+              throw fallbackError;
+            }
+
+            // Fallback succeeded
+            console.log(`Fallback AI analysis successful for job ${currentJobState.id}.`);
+            const updateAfterFallback = await supabase
+              .from('video_jobs')
+              .update({ 
+                status: 'completed' as const, 
+                result_data: fallbackData.analysisResult, 
+                error_message: null 
+              })
+              .eq('id', currentJobState.id)
+              .select('*')
+              .single();
+            
+            if (updateAfterFallback.error) throw updateAfterFallback.error;
+            if (updateAfterFallback.data) {
+              currentJobState = {
+                ...updateAfterFallback.data,
+                created_at: updateAfterFallback.data.created_at || new Date().toISOString(),
+                video_title: updateAfterFallback.data.video_title || undefined,
+                video_duration: updateAfterFallback.data.video_duration || undefined,
+                error_message: updateAfterFallback.data.error_message || undefined,
+                user_id: updateAfterFallback.data.user_id!, // Assert non-null
+                job_config: currentJobState.job_config
+              };
+            }
+
+          } catch (fallbackCatchError: any) {
+            console.error(`Fallback AI analysis failed for job ${currentJobState.id}:`, fallbackCatchError.message);
+            const updateAfterFallbackCatch = await supabase
+              .from('video_jobs')
+              .update({ 
+                status: 'failed' as const, 
+                error_message: fallbackCatchError.message 
+              })
+              .eq('id', currentJobState.id)
+              .select('*')
+              .single();
+            
+            if (updateAfterFallbackCatch.data) {
+              currentJobState = {
+                ...updateAfterFallbackCatch.data,
+                created_at: updateAfterFallbackCatch.data.created_at || new Date().toISOString(),
+                video_title: updateAfterFallbackCatch.data.video_title || undefined,
+                video_duration: updateAfterFallbackCatch.data.video_duration || undefined,
+                error_message: updateAfterFallbackCatch.data.error_message || undefined,
+                user_id: updateAfterFallbackCatch.data.user_id!, // Assert non-null
+                job_config: currentJobState.job_config
+              };
+            }
+          }
+        } else {
+          // No fallback applicable
+          const updateNoFallback = await supabase
+            .from('video_jobs')
+            .update({ 
+              status: 'failed' as const, 
+              error_message: primaryError.message 
+            })
+            .eq('id', currentJobState.id)
+            .select('*')
+            .single();
+          
+          if (updateNoFallback.data) {
+            currentJobState = {
+              ...updateNoFallback.data,
+              created_at: updateNoFallback.data.created_at || new Date().toISOString(),
+              video_title: updateNoFallback.data.video_title || undefined,
+              video_duration: updateNoFallback.data.video_duration || undefined,
+              error_message: updateNoFallback.data.error_message || undefined,
+              user_id: updateNoFallback.data.user_id!, // Assert non-null
+              job_config: currentJobState.job_config
+            };
+          }
+        }
+      }
+    } else {
+      // AI analysis not enabled, update status accordingly
+      const updateNoAI = await supabase
+        .from('video_jobs')
+        .update({ status: 'completed' as const })
+        .eq('id', currentJobState.id)
+        .select('*')
+        .single();
+      
+      if (updateNoAI.data) {
+        currentJobState = {
+          ...updateNoAI.data,
+          created_at: updateNoAI.data.created_at || new Date().toISOString(),
+          video_title: updateNoAI.data.video_title || undefined,
+          video_duration: updateNoAI.data.video_duration || undefined,
+          error_message: updateNoAI.data.error_message || undefined,
+          user_id: updateNoAI.data.user_id!, // Assert non-null
+          job_config: currentJobState.job_config
+        };
+      }
+    }
+    return currentJobState;
   }
 
-  private static async fallbackToGeminiProcessing(
-    jobId: string,
-    videoUrl: string,
-    config: ProcessingPipelineConfig
-  ): Promise<VideoJob> {
-    try {
-      console.log('Falling back to Gemini processing...');
-      
-      const progressJob = await this.updateJobStatus(jobId, 'processing', 25);
+  // Split video into segments for processing
+  static async splitVideoIntoSegments(
+    videoPath: string, 
+    segmentDuration: number = 300 // 5 minutes default
+  ): Promise<string[]> {
+    const { data, error } = await supabase.functions.invoke('split-video', {
+      body: { videoPath, segmentDuration }
+    });
 
-      const { data: geminiData, error: geminiError } = await supabase.functions.invoke('process-video-gemini', {
-        body: {
-          video_url: videoUrl,
-          job_id: jobId,
-          config: config
+    if (error) {
+      throw new Error(`Video splitting failed: ${error.message}`);
+    }
+
+    return data.segmentPaths;
+  }
+
+  // Process multiple segments in parallel
+  static async processSegmentsInParallel(
+    segmentPaths: string[],
+    maxConcurrent: number = 3
+  ): Promise<Array<{ segmentPath: string; result: any; error?: string }>> {
+    const results = [];
+    
+    for (let i = 0; i < segmentPaths.length; i += maxConcurrent) {
+      const batch = segmentPaths.slice(i, i + maxConcurrent);
+      
+      const batchPromises = batch.map(async (segmentPath) => {
+        try {
+          const result = await AIProcessingService.processVideoWithGemini(segmentPath);
+          return { segmentPath, result };
+        } catch (error: any) {
+          return { segmentPath, result: null, error: error.message };
         }
       });
 
-      if (geminiError) {
-        throw new Error(`Gemini processing failed: ${geminiError.message}`);
-      }
-
-      const processingJob = await this.updateJobStatus(jobId, 'processing', 75);
-
-      // Complete the job
-      const completedJob = await this.updateJobStatus(jobId, 'completed', 100);
-
-      return completedJob;
-
-    } catch (error) {
-      console.error('Gemini fallback failed:', error);
-      
-      // Mark job as failed
-      const failedJob = await this.updateJobStatus(jobId, 'failed', 0);
-      
-      const { error: updateError } = await supabase
-        .from('video_jobs')
-        .update({
-          error_message: error instanceof Error ? error.message : 'Unknown error during processing'
-        })
-        .eq('id', jobId);
-
-      if (updateError) {
-        console.error('Failed to update error message:', updateError);
-      }
-
-      return failedJob;
+      const batchResults = await Promise.all(batchPromises);
+      results.push(...batchResults);
     }
+
+    return results;
   }
 
-  static async handleJobCallback(jobId: string, status: string, results?: any, error?: string): Promise<void> {
-    try {
-      const updateData: any = {
-        status,
-        progress: status === 'completed' ? 100 : status === 'failed' ? 0 : undefined
-      };
+  // Monitor job progress
+  static async getJobProgress(jobId: string): Promise<{
+    status: string;
+    progress: number;
+    currentStep?: string;
+    error?: string;
+  }> {
+    const { data, error } = await supabase
+      .from('video_jobs')
+      .select('status, progress, error_message')
+      .eq('id', jobId)
+      .single();
 
-      if (results) {
-        updateData.result_data = results;
-      }
-
-      if (error) {
-        updateData.error_message = error;
-      }
-
-      const { error: updateError } = await supabase
-        .from('video_jobs')
-        .update(updateData)
-        .eq('id', jobId);
-
-      if (updateError) {
-        console.error('Failed to update job from callback:', updateError);
-        throw updateError;
-      }
-
-      console.log(`Job ${jobId} updated to status: ${status}`);
-
-    } catch (callbackError) {
-      console.error('Job callback handling failed:', callbackError);
-      throw callbackError;
+    if (error) {
+      throw new Error(`Failed to get job progress: ${error.message}`);
     }
+
+    return {
+      status: data.status || 'pending',
+      progress: data.progress || 0,
+      error: data.error_message || undefined
+    };
+  }
+
+  // Helper to parse ISO 8601 duration to seconds
+  private static parseDurationToSeconds(duration: string): number {
+    const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+    if (!match) return 0;
+
+    const hours = parseInt(match[1]?.replace('H', '') || '0');
+    const minutes = parseInt(match[2]?.replace('M', '') || '0');
+    const seconds = parseInt(match[3]?.replace('S', '') || '0');
+
+    return hours * 3600 + minutes * 60 + seconds;
   }
 }

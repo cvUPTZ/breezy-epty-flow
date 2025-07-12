@@ -1,58 +1,58 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { Database } from '@/integrations/supabase/types';
 
-export type VideoJobStatus = 'pending' | 'processing' | 'completed' | 'failed';
-
-export interface VideoJobConfig {
-  source_type: 'youtube' | 'upload';
-  enableAIAnalysis: boolean;
-  enableSegmentation: boolean;
-  segmentDuration?: number;
-}
+export type VideoJobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'queued' | 'uploading';
 
 export interface VideoJob {
   id: string;
-  user_id: string;
+  created_at: string;
+  updated_at: string | null;
   status: VideoJobStatus;
+  input_video_path: string;
   video_title?: string;
   video_duration?: number;
-  progress: number;
-  error_message?: string;
-  job_config?: VideoJobConfig;
-  input_video_path?: string;
   result_data?: any;
-  created_at: string;
-  updated_at?: string;
+  error_message?: string;
+  progress: number;
+  user_id: string;
+  job_config?: {
+    source_type: 'youtube' | 'upload';
+    enableAIAnalysis: boolean;
+    enableSegmentation: boolean;
+    segmentDuration?: number;
+  };
 }
 
 export class VideoJobService {
-  static async getJobsByUser(userId: string): Promise<VideoJob[]> {
+  static async createJob(jobData: {
+    input_video_path: string;
+    video_title?: string;
+    video_duration?: number;
+    user_id: string;
+    job_config?: any;
+  }): Promise<VideoJob> {
     const { data, error } = await supabase
       .from('video_jobs')
+      .insert({
+        ...jobData,
+        status: 'pending' as const,
+        progress: 0
+      })
       .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .single();
 
-    if (error) {
-      console.error('Error fetching video jobs:', error);
-      throw error;
-    }
-
-    return (data || []).map(job => ({
-      ...job,
-      user_id: job.user_id || '',
-      status: job.status as VideoJobStatus || 'pending',
-      created_at: job.created_at || new Date().toISOString(),
-      progress: job.progress || 0,
-      video_title: job.video_title || undefined,
-      video_duration: job.video_duration || undefined,
-      error_message: job.error_message || undefined,
-      job_config: job.job_config ? job.job_config as unknown as VideoJobConfig : undefined,
-      input_video_path: job.input_video_path || undefined,
-      result_data: job.result_data || undefined,
-      updated_at: job.updated_at || undefined,
-    }));
+    if (error) throw new Error(`Failed to create job: ${error.message}`);
+    
+    return {
+      ...data,
+      created_at: data.created_at || new Date().toISOString(),
+      status: (data.status || 'pending') as VideoJobStatus,
+      video_title: data.video_title || undefined,
+      video_duration: data.video_duration || undefined,
+      error_message: data.error_message || undefined,
+      user_id: data.user_id!
+    };
   }
 
   static async getUserJobs(userId: string): Promise<VideoJob[]> {
@@ -62,76 +62,66 @@ export class VideoJobService {
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching user video jobs:', error);
-      throw error;
-    }
-
-    return (data || []).map(job => ({
+    if (error) throw new Error(`Failed to fetch jobs: ${error.message}`);
+    
+    return data.map(job => ({
       ...job,
-      user_id: job.user_id || '',
-      status: job.status as VideoJobStatus || 'pending',
       created_at: job.created_at || new Date().toISOString(),
-      progress: job.progress || 0,
+      status: (job.status || 'pending') as VideoJobStatus,
       video_title: job.video_title || undefined,
       video_duration: job.video_duration || undefined,
       error_message: job.error_message || undefined,
-      job_config: job.job_config ? job.job_config as unknown as VideoJobConfig : undefined,
-      input_video_path: job.input_video_path || undefined,
-      result_data: job.result_data || undefined,
-      updated_at: job.updated_at || undefined,
+      user_id: job.user_id!
     }));
   }
 
-  static async uploadVideo(file: File): Promise<string> {
-    const fileName = `${Date.now()}-${file.name}`;
-    
+  static async uploadVideo(file: File, onProgress?: (progress: number) => void): Promise<string> {
+    const timestamp = Date.now();
+    const fileName = `${timestamp}-${file.name}`;
+    const filePath = `public/${fileName}`;
+
     const { data, error } = await supabase.storage
       .from('videos')
-      .upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
+      .upload(filePath, file);
 
-    if (error) {
-      console.error('Error uploading video:', error);
-      throw new Error(`Upload failed: ${error.message}`);
-    }
-
+    if (error) throw new Error(`Upload failed: ${error.message}`);
     return data.path;
   }
 
   static async getVideoDownloadUrl(path: string): Promise<string> {
     const { data } = await supabase.storage
       .from('videos')
-      .createSignedUrl(path, 3600);
+      .createSignedUrl(path, 3600); // 1 hour expiry
 
-    if (!data?.signedUrl) {
-      throw new Error('Failed to generate download URL');
-    }
-
+    if (!data?.signedUrl) throw new Error('Failed to get signed URL');
     return data.signedUrl;
   }
 
-  static async deleteJob(jobId: string): Promise<boolean> {
+  static async deleteJob(jobId: string): Promise<void> {
     const { error } = await supabase
       .from('video_jobs')
       .delete()
       .eq('id', jobId);
 
-    if (error) {
-      console.error('Error deleting video job:', error);
-      return false;
-    }
-
-    return true;
+    if (error) throw new Error(`Failed to delete job: ${error.message}`);
   }
 
-  static async pollJobStatus(
-    jobId: string, 
-    onUpdate: (job: VideoJob | null) => void
-  ): Promise<() => void> {
-    const pollInterval = setInterval(async () => {
+  static async updateJobStatus(jobId: string, status: VideoJobStatus, progress?: number, resultData?: any, errorMessage?: string): Promise<void> {
+    const updateData: any = { status };
+    if (progress !== undefined) updateData.progress = progress;
+    if (resultData) updateData.result_data = resultData;
+    if (errorMessage) updateData.error_message = errorMessage;
+
+    const { error } = await supabase
+      .from('video_jobs')
+      .update(updateData)
+      .eq('id', jobId);
+
+    if (error) throw new Error(`Failed to update job: ${error.message}`);
+  }
+
+  static async pollJobStatus(jobId: string, callback: (job: VideoJob | null) => void): Promise<() => void> {
+    const intervalId = setInterval(async () => {
       try {
         const { data, error } = await supabase
           .from('video_jobs')
@@ -141,38 +131,33 @@ export class VideoJobService {
 
         if (error) {
           console.error('Error polling job status:', error);
-          onUpdate(null);
+          callback(null);
           return;
         }
 
         const job: VideoJob = {
           ...data,
-          user_id: data.user_id || '',
-          status: data.status as VideoJobStatus || 'pending',
           created_at: data.created_at || new Date().toISOString(),
-          progress: data.progress || 0,
+          status: (data.status || 'pending') as VideoJobStatus,
           video_title: data.video_title || undefined,
           video_duration: data.video_duration || undefined,
           error_message: data.error_message || undefined,
-          job_config: data.job_config ? data.job_config as unknown as VideoJobConfig : undefined,
-          input_video_path: data.input_video_path || undefined,
-          result_data: data.result_data || undefined,
-          updated_at: data.updated_at || undefined,
+          user_id: data.user_id!
         };
 
-        onUpdate(job);
+        callback(job);
 
-        // Stop polling if job is complete
+        // Stop polling if job is complete or failed
         if (job.status === 'completed' || job.status === 'failed') {
-          clearInterval(pollInterval);
+          clearInterval(intervalId);
         }
       } catch (error) {
-        console.error('Error in poll job status:', error);
-        onUpdate(null);
+        console.error('Error in polling:', error);
+        callback(null);
       }
-    }, 2000);
+    }, 2000); // Poll every 2 seconds
 
-    // Return cleanup function
-    return () => clearInterval(pollInterval);
+    // Return stop function
+    return () => clearInterval(intervalId);
   }
 }
