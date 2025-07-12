@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { ProductionVideoAnalysisService } from '@/services/productionVideoAnalysisService';
 import { ProductionPlayerTrackingService, RealTimePlayerData } from '@/services/productionPlayerTrackingService';
@@ -116,24 +117,48 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
     }
   };
 
+  // Create portal container for fullscreen elements
+  const ToolsContainer = ({ children }: { children: React.ReactNode }) => {
+    if (isFullscreen) {
+      return (
+        <div 
+          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[2147483647]"
+          style={{ 
+            position: 'fixed',
+            top: '16px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 2147483647,
+            pointerEvents: 'auto'
+          }}
+        >
+          {children}
+        </div>
+      );
+    }
+    
+    return (
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50">
+        {children}
+      </div>
+    );
+  };
+
   return (
     <>
-      {/* Drawing Tools Panel - Simplified and cleaner */}
-      {drawingMode && (
-        <DrawingToolsPanel
-          activeAnnotationTool={activeAnnotationTool}
-          onToolChange={setActiveAnnotationTool}
-          onClearAll={handleClearAll}
-          onSaveAnalysis={handleSaveAnnotations}
-          violationCount={violationCount}
-          drawingMode={drawingMode}
-          onDrawingModeToggle={handleDrawingModeToggle}
-        />
-      )}
-
-      {/* Enable Drawing Button - Only show when not in drawing mode */}
-      {!drawingMode && (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50">
+      {/* Drawing Tools Panel */}
+      <ToolsContainer>
+        {drawingMode ? (
+          <DrawingToolsPanel
+            activeAnnotationTool={activeAnnotationTool}
+            onToolChange={setActiveAnnotationTool}
+            onClearAll={handleClearAll}
+            onSaveAnalysis={handleSaveAnnotations}
+            violationCount={violationCount}
+            drawingMode={drawingMode}
+            onDrawingModeToggle={handleDrawingModeToggle}
+          />
+        ) : (
           <button
             onClick={handleDrawingModeToggle}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition-colors pointer-events-auto"
@@ -141,11 +166,12 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
           >
             Enable Drawing
           </button>
-        </div>
-      )}
+        )}
+      </ToolsContainer>
 
       {/* Drawing Overlay Container */}
       <div className="absolute inset-0">
+        {/* Drawing Overlay - Only intercept pointer events when actively drawing */}
         <div className={`absolute inset-0 ${
           drawingMode && activeAnnotationTool !== 'select' 
             ? 'pointer-events-auto' 

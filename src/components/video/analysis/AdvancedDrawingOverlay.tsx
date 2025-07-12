@@ -21,7 +21,7 @@ interface PlayerPosition {
 
 interface AnnotationElement {
   id: string;
-  type: 'circle' | 'line' | 'arrow' | 'distance' | 'spotlight' | 'trajectory' | 'area' | 'offside-line' | 'pressure-zone' | 'passing-lane';
+  type: 'circle' | 'line' | 'arrow' | 'distance' | 'spotlight' | 'trajectory' | 'area';
   points: { x: number; y: number }[];
   color: string;
   label?: string;
@@ -57,7 +57,6 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
   const [showPlayerTracking, setShowPlayerTracking] = useState(true);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showTrajectories, setShowTrajectories] = useState(false);
-  const [showFieldLines, setShowFieldLines] = useState(true);
   const [zoomLevel, setZoomLevel] = useState([1]);
   const [panPosition, setPanPosition] = useState({ x: 0, y: 0 });
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
@@ -66,7 +65,6 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
   const overlayRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
-  // Enhanced tactical rules for stadium perspective
   const tacticalRules: TacticalRule[] = [
     {
       id: '1',
@@ -81,72 +79,8 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
       name: 'Formation Shape',
       parameters: { formation: '4-3-3' },
       active: true
-    },
-    {
-      id: '3',
-      type: 'offside',
-      name: 'Offside Detection',
-      parameters: { tolerance: 0.5 },
-      active: false
-    },
-    {
-      id: '4',
-      type: 'pressing',
-      name: 'High Pressing Intensity',
-      parameters: { radius: 15, playerCount: 3 },
-      active: false
     }
   ];
-
-  // Initialize with some stadium-perspective annotations
-  useEffect(() => {
-    if (videoDimensions.width > 0 && videoDimensions.height > 0 && annotations.length === 0) {
-      const stadiumAnnotations: AnnotationElement[] = [
-        {
-          id: 'penalty-area-top',
-          type: 'area',
-          points: [
-            { x: videoDimensions.width * 0.78, y: videoDimensions.height * 0.25 },
-            { x: videoDimensions.width * 0.95, y: videoDimensions.height * 0.25 },
-            { x: videoDimensions.width * 0.95, y: videoDimensions.height * 0.55 },
-            { x: videoDimensions.width * 0.78, y: videoDimensions.height * 0.55 }
-          ],
-          color: '#ffffff',
-          label: 'Penalty Area'
-        },
-        {
-          id: 'goal-area-top',
-          type: 'area',
-          points: [
-            { x: videoDimensions.width * 0.88, y: videoDimensions.height * 0.35 },
-            { x: videoDimensions.width * 0.95, y: videoDimensions.height * 0.35 },
-            { x: videoDimensions.width * 0.95, y: videoDimensions.height * 0.45 },
-            { x: videoDimensions.width * 0.88, y: videoDimensions.height * 0.45 }
-          ],
-          color: '#ffffff',
-          label: 'Goal Area'
-        },
-        {
-          id: 'center-circle',
-          type: 'circle',
-          points: [{ x: videoDimensions.width * 0.5, y: videoDimensions.height * 0.4 }],
-          color: '#ffffff',
-          label: 'Center Circle'
-        },
-        {
-          id: 'offside-line',
-          type: 'offside-line',
-          points: [
-            { x: videoDimensions.width * 0.65, y: videoDimensions.height * 0.15 },
-            { x: videoDimensions.width * 0.65, y: videoDimensions.height * 0.65 }
-          ],
-          color: '#ff6b6b',
-          label: 'Last Defender Line'
-        }
-      ];
-      setAnnotations(stadiumAnnotations);
-    }
-  }, [videoDimensions]);
 
   const handleMouseDown = (event: React.MouseEvent) => {
     if (activeAnnotationTool === 'select') return;
@@ -170,15 +104,11 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
     const x = (event.clientX - rect.left) / zoomLevel[0] - panPosition.x;
     const y = (event.clientY - rect.top) / zoomLevel[0] - panPosition.y;
 
-    if (['line', 'arrow', 'distance', 'trajectory', 'offside-line', 'passing-lane'].includes(activeAnnotationTool)) {
+    if (['line', 'arrow', 'distance', 'trajectory'].includes(activeAnnotationTool)) {
       setDrawingPoints([drawingPoints[0], { x, y }]);
-    } else if (activeAnnotationTool === 'spotlight' || activeAnnotationTool === 'pressure-zone') {
+    } else if (activeAnnotationTool === 'spotlight') {
       const radius = Math.sqrt(Math.pow(x - drawingPoints[0].x, 2) + Math.pow(y - drawingPoints[0].y, 2));
       setDrawingPoints([drawingPoints[0], { x: drawingPoints[0].x + radius, y: drawingPoints[0].y }]);
-    } else if (activeAnnotationTool === 'area') {
-      if (drawingPoints.length === 1) {
-        setDrawingPoints([drawingPoints[0], { x, y }]);
-      }
     }
   };
 
@@ -192,10 +122,7 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
       distance: '#ef4444',
       spotlight: '#fbbf24',
       trajectory: '#f97316',
-      area: '#06b6d4',
-      'offside-line': '#ff6b6b',
-      'pressure-zone': '#ff8c42',
-      'passing-lane': '#4ecdc4'
+      area: '#06b6d4'
     };
 
     const newAnnotation: AnnotationElement = {
@@ -204,14 +131,14 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
       points: [...drawingPoints],
       color: colorMap[activeAnnotationTool as keyof typeof colorMap] || '#3b82f6',
       measurement: activeAnnotationTool === 'distance' ? calculateDistance(drawingPoints) : undefined,
-      intensity: ['spotlight', 'pressure-zone'].includes(activeAnnotationTool) ? 0.7 : undefined
+      intensity: activeAnnotationTool === 'spotlight' ? 0.7 : undefined
     };
 
     setAnnotations(prev => [...prev, newAnnotation]);
     setDrawingPoints([]);
     setIsDrawing(false);
     
-    toast.success(`${activeAnnotationTool.replace('-', ' ')} annotation added`);
+    toast.success(`${activeAnnotationTool} annotation added`);
   };
 
   const calculateDistance = (points: { x: number; y: number }[]): number => {
@@ -223,163 +150,27 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
   };
 
   const renderAnnotation = (annotation: AnnotationElement) => {
-    const { type, points, color, measurement, intensity, label } = annotation;
+    const { type, points, color, measurement, intensity } = annotation;
 
     switch (type) {
       case 'circle':
         if (points.length > 0) {
           return (
-            <g key={annotation.id}>
-              <circle
-                cx={points[0].x}
-                cy={points[0].y}
-                r="40"
-                fill="none"
-                stroke={color}
-                strokeWidth="3"
-                strokeDasharray="8,4"
-                className="animate-pulse"
-              />
-              {label && (
-                <text
-                  x={points[0].x}
-                  y={points[0].y - 50}
-                  textAnchor="middle"
-                  fontSize="12"
-                  fill={color}
-                  fontWeight="bold"
-                >
-                  {label}
-                </text>
-              )}
-            </g>
+            <circle
+              key={annotation.id}
+              cx={points[0].x}
+              cy={points[0].y}
+              r="40"
+              fill="none"
+              stroke={color}
+              strokeWidth="3"
+              strokeDasharray="8,4"
+              className="animate-pulse"
+            />
           );
         }
         break;
 
-      case 'area':
-        if (points.length >= 2) {
-          const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
-          return (
-            <g key={annotation.id}>
-              <path
-                d={path}
-                fill={`${color}20`}
-                stroke={color}
-                strokeWidth="2"
-                strokeDasharray="5,5"
-              />
-              {label && points.length > 0 && (
-                <text
-                  x={points[0].x}
-                  y={points[0].y - 10}
-                  textAnchor="middle"
-                  fontSize="11"
-                  fill={color}
-                  fontWeight="bold"
-                >
-                  {label}
-                </text>
-              )}
-            </g>
-          );
-        }
-        break;
-
-      case 'offside-line':
-        if (points.length >= 2) {
-          return (
-            <g key={annotation.id}>
-              <line
-                x1={points[0].x}
-                y1={points[0].y}
-                x2={points[1].x}
-                y2={points[1].y}
-                stroke={color}
-                strokeWidth="3"
-                strokeDasharray="10,5"
-                className="animate-pulse"
-              />
-              <text
-                x={points[0].x + 10}
-                y={points[0].y - 5}
-                fontSize="10"
-                fill={color}
-                fontWeight="bold"
-              >
-                {label || 'Offside Line'}
-              </text>
-            </g>
-          );
-        }
-        break;
-
-      case 'pressure-zone':
-        if (points.length >= 2) {
-          const radius = Math.abs(points[1].x - points[0].x);
-          return (
-            <g key={annotation.id}>
-              <circle
-                cx={points[0].x}
-                cy={points[0].y}
-                r={radius}
-                fill={`${color}30`}
-                stroke={color}
-                strokeWidth="2"
-                strokeDasharray="3,3"
-                className="animate-pulse"
-              />
-              <circle
-                cx={points[0].x}
-                cy={points[0].y}
-                r={radius * 0.5}
-                fill={`${color}20`}
-                className="animate-pulse"
-              />
-              <text
-                x={points[0].x}
-                y={points[0].y + 5}
-                textAnchor="middle"
-                fontSize="10"
-                fill={color}
-                fontWeight="bold"
-              >
-                High Press
-              </text>
-            </g>
-          );
-        }
-        break;
-
-      case 'passing-lane':
-        if (points.length >= 2) {
-          return (
-            <g key={annotation.id}>
-              <line
-                x1={points[0].x}
-                y1={points[0].y}
-                x2={points[1].x}
-                y2={points[1].y}
-                stroke={color}
-                strokeWidth="6"
-                strokeDasharray="15,10"
-                opacity="0.7"
-              />
-              <line
-                x1={points[0].x}
-                y1={points[0].y}
-                x2={points[1].x}
-                y2={points[1].y}
-                stroke="white"
-                strokeWidth="2"
-                strokeDasharray="15,10"
-              />
-            </g>
-          );
-        }
-        break;
-
-      // Keep existing cases for line, arrow, distance, spotlight, trajectory
       case 'line':
         if (points.length >= 2) {
           return (
@@ -399,11 +190,25 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
 
       case 'arrow':
         if (points.length >= 2) {
+          const dx = points[1].x - points[0].x;
+          const dy = points[1].y - points[0].y;
+          const angle = Math.atan2(dy, dx);
+          const arrowLength = 20;
+          
           return (
             <g key={annotation.id} className="drop-shadow-lg">
+              <line
+                x1={points[0].x}
+                y1={points[0].y}
+                x2={points[1].x}
+                y2={points[1].y}
+                stroke={color}
+                strokeWidth="4"
+                markerEnd="url(#arrowhead)"
+              />
               <defs>
                 <marker
-                  id={`arrowhead-${annotation.id}`}
+                  id="arrowhead"
                   markerWidth="10"
                   markerHeight="7"
                   refX="9"
@@ -416,15 +221,6 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
                   />
                 </marker>
               </defs>
-              <line
-                x1={points[0].x}
-                y1={points[0].y}
-                x2={points[1].x}
-                y2={points[1].y}
-                stroke={color}
-                strokeWidth="4"
-                markerEnd={`url(#arrowhead-${annotation.id})`}
-              />
             </g>
           );
         }
@@ -638,7 +434,7 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
           {/* Render saved annotations */}
           {annotations.map(renderAnnotation)}
           
-          {/* Render current drawing - keep existing drawing preview code */}
+          {/* Render current drawing */}
           {isDrawing && drawingPoints.length > 0 && (
             <>
               {activeAnnotationTool === 'line' && drawingPoints.length === 2 && (
@@ -650,43 +446,6 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
                   stroke="#10b981"
                   strokeWidth="3"
                   strokeDasharray="5,5"
-                  className="animate-pulse"
-                />
-              )}
-              {activeAnnotationTool === 'offside-line' && drawingPoints.length === 2 && (
-                <line
-                  x1={drawingPoints[0].x}
-                  y1={drawingPoints[0].y}
-                  x2={drawingPoints[1].x}
-                  y2={drawingPoints[1].y}
-                  stroke="#ff6b6b"
-                  strokeWidth="3"
-                  strokeDasharray="10,5"
-                  className="animate-pulse"
-                />
-              )}
-              {activeAnnotationTool === 'passing-lane' && drawingPoints.length === 2 && (
-                <line
-                  x1={drawingPoints[0].x}
-                  y1={drawingPoints[0].y}
-                  x2={drawingPoints[1].x}
-                  y2={drawingPoints[1].y}
-                  stroke="#4ecdc4"
-                  strokeWidth="6"
-                  strokeDasharray="15,10"
-                  opacity="0.7"
-                  className="animate-pulse"
-                />
-              )}
-              {activeAnnotationTool === 'pressure-zone' && drawingPoints.length === 2 && (
-                <circle
-                  cx={drawingPoints[0].x}
-                  cy={drawingPoints[0].y}
-                  r={Math.abs(drawingPoints[1].x - drawingPoints[0].x)}
-                  fill="#ff8c4230"
-                  stroke="#ff8c42"
-                  strokeWidth="2"
-                  strokeDasharray="3,3"
                   className="animate-pulse"
                 />
               )}
@@ -740,7 +499,7 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
         </svg>
       </div>
 
-      {/* Enhanced control panels */}
+      {/* Control panels */}
       <div className="absolute top-4 right-4 z-20 space-y-3 pointer-events-none">
         {/* Zoom and Pan Controls */}
         <Card className="bg-black/80 backdrop-blur-md border-white/20 text-white pointer-events-auto">
@@ -760,7 +519,7 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
           </CardContent>
         </Card>
 
-        {/* Enhanced View Options */}
+        {/* View Options */}
         <Card className="bg-black/80 backdrop-blur-md border-white/20 text-white pointer-events-auto">
           <CardContent className="p-3 space-y-3">
             <div className="flex items-center justify-between">
@@ -781,16 +540,6 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
               <Switch
                 checked={showHeatmap}
                 onCheckedChange={setShowHeatmap}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4" />
-                <span className="text-sm">Field Lines</span>
-              </div>
-              <Switch
-                checked={showFieldLines}
-                onCheckedChange={setShowFieldLines}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -823,7 +572,7 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
         )}
       </div>
 
-      {/* Enhanced Drawing Tools Panel */}
+      {/* Drawing Tools Panel */}
       <DrawingToolsPanel
         activeAnnotationTool={activeAnnotationTool}
         onToolChange={setActiveAnnotationTool}
