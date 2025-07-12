@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { AdvancedDrawingOverlay } from './AdvancedDrawingOverlay';
+import { TacticalPlayerHighlighting } from './TacticalPlayerHighlighting';
 
 interface PlayerPosition {
   id: string;
@@ -68,6 +69,7 @@ export const TacticalAnnotationOverlay: React.FC<TacticalAnnotationOverlayProps>
   playerPositions = []
 }) => {
   const [mockPositions, setMockPositions] = useState<PlayerPosition[]>([]);
+  const [showPlayerHighlighting, setShowPlayerHighlighting] = useState(true);
 
   // Generate mock data when dimensions are available
   useEffect(() => {
@@ -79,13 +81,27 @@ export const TacticalAnnotationOverlay: React.FC<TacticalAnnotationOverlayProps>
   // Use provided positions or mock positions
   const effectivePositions = playerPositions.length > 0 ? playerPositions : mockPositions;
 
+  const togglePlayerHighlighting = useCallback(() => {
+    setShowPlayerHighlighting(prev => !prev);
+  }, []);
+
   return (
-    <AdvancedDrawingOverlay
-      videoDimensions={videoDimensions}
-      currentTime={currentTime}
-      onAnnotationSave={onAnnotationSave}
-      playerPositions={effectivePositions}
-    />
+    <div className="relative w-full h-full">
+      {/* Tactical Player Highlighting Overlay */}
+      <TacticalPlayerHighlighting
+        videoDimensions={videoDimensions}
+        isVisible={showPlayerHighlighting}
+        onToggle={togglePlayerHighlighting}
+      />
+      
+      {/* Advanced Drawing Overlay */}
+      <AdvancedDrawingOverlay
+        videoDimensions={videoDimensions}
+        currentTime={currentTime}
+        onAnnotationSave={onAnnotationSave}
+        playerPositions={effectivePositions}
+      />
+    </div>
   );
 };
 
