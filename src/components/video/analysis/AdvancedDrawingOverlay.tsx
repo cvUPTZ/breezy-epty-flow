@@ -460,7 +460,7 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
           const radius = Math.abs(isoPoints[1].x - isoPoints[0].x);
           return (
             <g key={annotation.id}>
-              {/* Vertical light beam */}
+              {/* Vertical light beam with width matching the base circle radius */}
               <defs>
                 <linearGradient id={`light-gradient-${annotation.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
                   <stop offset="0%" stopColor={`${color}80`} />
@@ -468,11 +468,11 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
                   <stop offset="100%" stopColor={`${color}10`} />
                 </linearGradient>
               </defs>
-              {/* Light beam extending upward */}
+              {/* Light beam extending upward with width = radius */}
               <rect
-                x={isoPoints[0].x - 20}
+                x={isoPoints[0].x - radius}
                 y={isoPoints[0].y - 200}
-                width="40"
+                width={radius * 2}
                 height="200"
                 fill={`url(#light-gradient-${annotation.id})`}
                 className="animate-pulse"
@@ -512,6 +512,24 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
           const coneHeight = radius * 1.5;
           return (
             <g key={annotation.id}>
+              {/* Vertical light beam extending upward from cone tip */}
+              <defs>
+                <linearGradient id={`cone-light-gradient-${annotation.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor={`${color}80`} />
+                  <stop offset="50%" stopColor={`${color}40`} />
+                  <stop offset="100%" stopColor={`${color}10`} />
+                </linearGradient>
+              </defs>
+              {/* Light beam from cone tip upward */}
+              <rect
+                x={isoPoints[0].x - radius * 0.3}
+                y={isoPoints[0].y - coneHeight - 150}
+                width={radius * 0.6}
+                height="150"
+                fill={`url(#cone-light-gradient-${annotation.id})`}
+                className="animate-pulse"
+                transform={`skewX(-${perspectiveAngle})`}
+              />
               {/* Cone shape using path */}
               <path
                 d={`M ${isoPoints[0].x} ${isoPoints[0].y - coneHeight} 
@@ -521,7 +539,7 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
                 fill={`${color}40`}
                 stroke={color}
                 strokeWidth="3"
-                className="drop-shadow-lg"
+                className="drop-shadow-lg animate-pulse"
                 transform={`skewX(-${perspectiveAngle})`}
               />
               {/* Cone base ellipse */}
@@ -766,35 +784,58 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
                       <stop offset="100%" stopColor="#f59e0b10" />
                     </linearGradient>
                   </defs>
-                  <rect
-                    x={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x - 20}
-                    y={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).y - 200}
-                    width="40"
-                    height="200"
-                    fill="url(#preview-light-gradient)"
-                    className="animate-pulse"
-                  />
-                  <ellipse
-                    cx={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x}
-                    cy={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).y}
-                    rx={Math.abs(transformToIsometric(drawingPoints[1].x, drawingPoints[1].y).x - transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x)}
-                    ry={Math.abs(transformToIsometric(drawingPoints[1].x, drawingPoints[1].y).x - transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x) * isometricScale}
-                    fill="#f59e0b30"
-                    stroke="#f59e0b"
-                    strokeWidth="3"
-                    className="animate-pulse"
-                    transform={`skewX(-${perspectiveAngle})`}
-                  />
+                  {(() => {
+                    const radius = Math.abs(transformToIsometric(drawingPoints[1].x, drawingPoints[1].y).x - transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x);
+                    return (
+                      <>
+                        <rect
+                          x={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x - radius}
+                          y={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).y - 200}
+                          width={radius * 2}
+                          height="200"
+                          fill="url(#preview-light-gradient)"
+                          className="animate-pulse"
+                        />
+                        <ellipse
+                          cx={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).x}
+                          cy={transformToIsometric(drawingPoints[0].x, drawingPoints[0].y).y}
+                          rx={radius}
+                          ry={radius * isometricScale}
+                          fill="#f59e0b30"
+                          stroke="#f59e0b"
+                          strokeWidth="3"
+                          className="animate-pulse"
+                          transform={`skewX(-${perspectiveAngle})`}
+                        />
+                      </>
+                    );
+                  })()}
                 </g>
               )}
               {activeAnnotationTool === 'cone' && drawingPoints.length === 2 && (
                 <g>
+                  <defs>
+                    <linearGradient id="preview-cone-light-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#ec489980" />
+                      <stop offset="50%" stopColor="#ec489940" />
+                      <stop offset="100%" stopColor="#ec489910" />
+                    </linearGradient>
+                  </defs>
                   {(() => {
                     const isoStart = transformToIsometric(drawingPoints[0].x, drawingPoints[0].y);
                     const radius = Math.abs(transformToIsometric(drawingPoints[1].x, drawingPoints[1].y).x - isoStart.x);
                     const coneHeight = radius * 1.5;
                     return (
                       <>
+                        {/* Light beam from cone tip upward */}
+                        <rect
+                          x={isoStart.x - radius * 0.3}
+                          y={isoStart.y - coneHeight - 150}
+                          width={radius * 0.6}
+                          height="150"
+                          fill="url(#preview-cone-light-gradient)"
+                          className="animate-pulse"
+                        />
                         <path
                           d={`M ${isoStart.x} ${isoStart.y - coneHeight} 
                               L ${isoStart.x - radius} ${isoStart.y} 

@@ -29,7 +29,7 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
   });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleVideoTimeUpdate = (time: number) => {
@@ -120,7 +120,7 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
         video.removeEventListener('resize', updateDimensions);
       };
     }
-  }, [videoRef.current]);
+  }, []);
 
   const handleStartAnalysis = async () => {
     setIsAnalyzing(true);
