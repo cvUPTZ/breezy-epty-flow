@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,22 +29,6 @@ export const AdvancedVideoAnalysisInterface: React.FC<AdvancedVideoAnalysisInter
   
   const videoRef = useRef<VideoPlayerRef>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Monitor video dimensions
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (videoRef.current?.videoElement) {
-        const video = videoRef.current.videoElement;
-        setVideoDimensions({
-          width: video.videoWidth || video.offsetWidth,
-          height: video.videoHeight || video.offsetHeight
-        });
-      }
-    };
-
-    const interval = setInterval(updateDimensions, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleTimeUpdate = (time: number) => {
     setCurrentTime(time);
@@ -122,6 +105,22 @@ export const AdvancedVideoAnalysisInterface: React.FC<AdvancedVideoAnalysisInter
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  // Monitor video dimensions
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (videoRef.current?.videoElement) {
+        const video = videoRef.current.videoElement;
+        setVideoDimensions({
+          width: video.videoWidth || video.offsetWidth,
+          height: video.videoHeight || video.offsetHeight
+        });
+      }
+    };
+
+    const interval = setInterval(updateDimensions, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
