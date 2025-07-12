@@ -1,4 +1,5 @@
 
+
 -- Create the 'videos' storage bucket if it doesn't already exist.
 -- We make it public so that videos can be easily viewed.
 -- RLS policies will still control who can upload, update, and delete.
@@ -33,3 +34,4 @@ CREATE POLICY "Users can delete videos" ON storage.objects
 
 -- Enable RLS on the storage.objects table if not already enabled
 ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
