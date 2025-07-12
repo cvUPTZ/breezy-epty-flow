@@ -21,67 +21,68 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
   violationCount
 }) => {
   const tools = [
+    { id: 'select', icon: MousePointer, label: 'Select', color: 'bg-gray-500' },
     { id: 'circle', icon: Circle, label: 'Circle', color: 'bg-blue-500' },
     { id: 'line', icon: Square, label: 'Line', color: 'bg-green-500' },
     { id: 'arrow', icon: ArrowRight, label: 'Arrow', color: 'bg-purple-500' },
     { id: 'distance', icon: Ruler, label: 'Distance', color: 'bg-red-500' },
     { id: 'spotlight', icon: Focus, label: 'Spotlight', color: 'bg-yellow-500' },
-    { id: 'trajectory', icon: Zap, label: 'Trajectory', color: 'bg-orange-500' },
   ];
 
   return (
-    <div className="absolute bottom-16 left-4 right-4 z-20 pointer-events-none">
-      <div className="flex justify-center">
-        <Card className="bg-black/80 backdrop-blur-md border-white/20 text-white pointer-events-auto max-w-4xl">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <h3 className="font-semibold text-lg">Tactical Analysis Tools</h3>
+    <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20 pointer-events-none">
+      <div className="pointer-events-auto">
+        <Card className="bg-black/80 backdrop-blur-md border-white/20 text-white">
+          <CardContent className="p-2">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Tools</span>
                 <Badge 
                   variant={violationCount > 0 ? "destructive" : "default"}
-                  className="bg-red-500/20 text-red-400 border-red-500/30"
+                  className="bg-red-500/20 text-red-400 border-red-500/30 text-xs"
                 >
-                  {violationCount} Issues
+                  {violationCount}
                 </Badge>
               </div>
-              <div className="flex gap-2">
+              
+              <div className="flex gap-1">
+                {tools.map((tool) => (
+                  <Button
+                    key={tool.id}
+                    size="sm"
+                    variant={activeAnnotationTool === tool.id ? 'default' : 'outline'}
+                    onClick={() => onToolChange(tool.id)}
+                    className={`
+                      h-8 w-8 p-0 transition-all duration-200
+                      ${activeAnnotationTool === tool.id 
+                        ? `${tool.color} text-white shadow-lg` 
+                        : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                      }
+                    `}
+                    title={tool.label}
+                  >
+                    <tool.icon className="w-4 h-4" />
+                  </Button>
+                ))}
+              </div>
+
+              <div className="flex gap-1 ml-2">
                 <Button 
                   size="sm" 
                   variant="outline" 
                   onClick={onClearAll}
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-8 px-2 text-xs"
                 >
-                  Clear All
+                  Clear
                 </Button>
                 <Button 
                   size="sm" 
                   onClick={onSaveAnalysis}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-blue-600 hover:bg-blue-700 text-white h-8 px-2 text-xs"
                 >
-                  Save Analysis
+                  Save
                 </Button>
               </div>
-            </div>
-
-            <div className="grid grid-cols-6 gap-3">
-              {tools.map((tool) => (
-                <Button
-                  key={tool.id}
-                  size="lg"
-                  variant={activeAnnotationTool === tool.id ? 'default' : 'outline'}
-                  onClick={() => onToolChange(tool.id)}
-                  className={`
-                    h-16 flex flex-col gap-1 transition-all duration-200
-                    ${activeAnnotationTool === tool.id 
-                      ? `${tool.color} text-white shadow-lg scale-105` 
-                      : 'bg-white/10 border-white/20 text-white hover:bg-white/20 hover:scale-105'
-                    }
-                  `}
-                >
-                  <tool.icon className="w-5 h-5" />
-                  <span className="text-xs font-medium">{tool.label}</span>
-                </Button>
-              ))}
             </div>
           </CardContent>
         </Card>

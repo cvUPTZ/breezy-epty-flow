@@ -41,35 +41,35 @@ export const AnalysisControlPanel: React.FC<AnalysisControlPanelProps> = ({
   onTrajectoryToggle
 }) => {
   return (
-    <div className="absolute top-4 right-4 w-80 space-y-3 z-20 pointer-events-auto">
+    <div className="absolute top-4 right-4 w-64 space-y-2 z-20 pointer-events-none">
       {/* Analysis Status */}
-      <Card className="bg-black/70 backdrop-blur-sm border-white/20 text-white">
-        <CardHeader className="pb-3">
+      <Card className="bg-black/80 backdrop-blur-sm border-white/20 text-white pointer-events-auto">
+        <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center justify-between">
-            <span>Production Analysis</span>
-            <Badge variant={isAnalyzing ? 'default' : 'secondary'} className="bg-blue-600">
+            <span>Analysis</span>
+            <Badge variant={isAnalyzing ? 'default' : 'secondary'} className="bg-blue-600 text-xs">
               {isAnalyzing ? 'Processing' : 'Ready'}
             </Badge>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex gap-2">
+        <CardContent className="space-y-2">
+          <div className="flex gap-1">
             <Button
               size="sm"
               onClick={onStartAnalysis}
               disabled={isAnalyzing}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 h-7 text-xs"
             >
-              <Play className="w-4 h-4 mr-1" />
-              Start Analysis
+              <Play className="w-3 h-3 mr-1" />
+              Start
             </Button>
             <Button
               size="sm"
               variant="outline"
               onClick={onStartTracking}
-              className="border-white/20 text-white hover:bg-white/20"
+              className="border-white/20 text-white hover:bg-white/20 h-7 w-7 p-0"
             >
-              <Settings className="w-4 h-4" />
+              <Settings className="w-3 h-3" />
             </Button>
           </div>
 
@@ -78,37 +78,37 @@ export const AnalysisControlPanel: React.FC<AnalysisControlPanelProps> = ({
               <div className="text-xs text-gray-300">
                 Processing: {analysisProgress}%
               </div>
-              <Progress value={analysisProgress} className="h-2" />
+              <Progress value={analysisProgress} className="h-1" />
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Tracking Options */}
-      <Card className="bg-black/70 backdrop-blur-sm border-white/20 text-white">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Tracking Options</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      {/* Compact Tracking Options */}
+      <Card className="bg-black/80 backdrop-blur-sm border-white/20 text-white pointer-events-auto">
+        <CardContent className="p-3 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm">Player Tracking</span>
+            <span className="text-xs">Player Tracking</span>
             <Switch
               checked={trackingEnabled}
               onCheckedChange={onTrackingToggle}
+              className="scale-75"
             />
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm">Heatmap</span>
+            <span className="text-xs">Heatmap</span>
             <Switch
               checked={heatmapEnabled}
               onCheckedChange={onHeatmapToggle}
+              className="scale-75"
             />
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm">Trajectories</span>
+            <span className="text-xs">Trajectories</span>
             <Switch
               checked={trajectoryEnabled}
               onCheckedChange={onTrajectoryToggle}
+              className="scale-75"
             />
           </div>
         </CardContent>
@@ -116,39 +116,36 @@ export const AnalysisControlPanel: React.FC<AnalysisControlPanelProps> = ({
 
       {/* Live Stats */}
       {playerCount > 0 && (
-        <Card className="bg-black/70 backdrop-blur-sm border-white/20 text-white">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Live Tracking</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="text-xs">Players detected: {playerCount}</div>
+        <Card className="bg-black/80 backdrop-blur-sm border-white/20 text-white pointer-events-auto">
+          <CardContent className="p-3 space-y-1">
+            <div className="text-xs">Players: {playerCount}</div>
             <div className="text-xs">
-              Avg confidence: {avgConfidence.toFixed(1)}%
+              Confidence: {avgConfidence.toFixed(1)}%
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Actions */}
-      <Card className="bg-black/70 backdrop-blur-sm border-white/20 text-white">
-        <CardContent className="pt-4">
-          <div className="flex gap-2">
+      {/* Compact Actions */}
+      <Card className="bg-black/80 backdrop-blur-sm border-white/20 text-white pointer-events-auto">
+        <CardContent className="p-2">
+          <div className="flex gap-1">
             <Button 
               size="sm" 
               variant="outline" 
               onClick={onSaveAnnotations}
-              className="flex-1 border-white/20 text-white hover:bg-white/20"
+              className="flex-1 border-white/20 text-white hover:bg-white/20 h-7 text-xs"
             >
-              <Save className="w-4 h-4 mr-1" />
+              <Save className="w-3 h-3 mr-1" />
               Save
             </Button>
             <Button 
               size="sm" 
               variant="outline" 
               onClick={onExportData}
-              className="flex-1 border-white/20 text-white hover:bg-white/20"
+              className="flex-1 border-white/20 text-white hover:bg-white/20 h-7 text-xs"
             >
-              <Download className="w-4 h-4 mr-1" />
+              <Download className="w-3 h-3 mr-1" />
               Export
             </Button>
           </div>

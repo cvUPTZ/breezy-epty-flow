@@ -97,8 +97,8 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
   };
 
   return (
-    <div className="absolute inset-0 pointer-events-none">
-      {/* Drawing Tools */}
+    <div className="absolute inset-0">
+      {/* Drawing Tools - Top Center, Compact */}
       <DrawingToolsPanel
         activeAnnotationTool={activeAnnotationTool}
         onToolChange={setActiveAnnotationTool}
@@ -107,21 +107,23 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
         violationCount={violationCount}
       />
 
-      {/* Drawing Overlay */}
-      <AdvancedDrawingOverlay
-        videoDimensions={videoDimensions}
-        currentTime={currentTime}
-        onAnnotationSave={setAnnotations}
-        playerPositions={playerData.map(p => ({
-          id: p.playerId,
-          x: p.position.x,
-          y: p.position.y,
-          team: p.team,
-          jerseyNumber: p.jerseyNumber,
-          isCorrectPosition: p.confidence > 0.8,
-          heatIntensity: p.speed / 25
-        }))}
-      />
+      {/* Drawing Overlay - Only intercept pointer events when not in select mode */}
+      <div className={`absolute inset-0 ${activeAnnotationTool === 'select' ? 'pointer-events-none' : 'pointer-events-auto'} z-10`}>
+        <AdvancedDrawingOverlay
+          videoDimensions={videoDimensions}
+          currentTime={currentTime}
+          onAnnotationSave={setAnnotations}
+          playerPositions={playerData.map(p => ({
+            id: p.playerId,
+            x: p.position.x,
+            y: p.position.y,
+            team: p.team,
+            jerseyNumber: p.jerseyNumber,
+            isCorrectPosition: p.confidence > 0.8,
+            heatIntensity: p.speed / 25
+          }))}
+        />
+      </div>
     </div>
   );
 };

@@ -51,9 +51,9 @@ export const ProductionVideoControls: React.FC<ProductionVideoControlsProps> = (
   };
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur-sm text-white p-4 z-30 pointer-events-auto">
+    <div className="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm text-white p-2 z-30 pointer-events-auto">
       {/* Timeline */}
-      <div className="mb-4">
+      <div className="mb-2">
         <Slider
           value={[currentTime]}
           max={duration || 100}
@@ -67,57 +67,57 @@ export const ProductionVideoControls: React.FC<ProductionVideoControlsProps> = (
         </div>
       </div>
 
-      {/* Controls Row */}
+      {/* Compact Controls Row */}
       <div className="flex items-center justify-between">
         {/* Left: Playback Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => handleSkip(-10)}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-white/20 h-8 w-8 p-0"
           >
             <SkipBack className="w-4 h-4" />
           </Button>
           
           <Button
             variant="ghost"
-            size="lg"
+            size="sm"
             onClick={onPlayPause}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-white/20 h-8 w-8 p-0"
           >
-            {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
           </Button>
           
           <Button
             variant="ghost"
             size="sm"
             onClick={() => handleSkip(10)}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-white/20 h-8 w-8 p-0"
           >
             <SkipForward className="w-4 h-4" />
           </Button>
         </div>
 
         {/* Center: Time Display */}
-        <div className="text-sm font-medium">
+        <div className="text-xs font-medium">
           {formatTime(currentTime)} / {formatTime(duration)}
         </div>
 
         {/* Right: Volume and Fullscreen */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {/* Volume Controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="sm"
               onClick={onMuteToggle}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:bg-white/20 h-8 w-8 p-0"
             >
               {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             </Button>
             
-            <div className="w-24">
+            <div className="w-16">
               <Slider
                 value={[isMuted ? 0 : volume]}
                 max={1}
@@ -133,7 +133,7 @@ export const ProductionVideoControls: React.FC<ProductionVideoControlsProps> = (
             variant="ghost"
             size="sm"
             onClick={onFullscreenToggle}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-white/20 h-8 w-8 p-0"
           >
             {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
           </Button>
