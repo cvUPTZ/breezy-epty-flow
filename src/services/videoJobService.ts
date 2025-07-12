@@ -1,3 +1,4 @@
+
 // src/services/videoJobService.ts
 import { supabase } from '@/integrations/supabase/client';
 import { VideoChunkingService, ChunkedVideoMetadata } from './videoChunkingService';
@@ -48,13 +49,18 @@ export class VideoJobService {
   static async uploadVideo(file: File, onProgress?: (progress: number) => void): Promise<string> {
     console.log(`Uploading video: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
 
-    // Check if file needs chunking
-    if (VideoChunkingService.needsChunking(file)) {
-      console.log('File size exceeds limit, using chunking approach');
-      return this.uploadVideoWithChunking(file, onProgress);
-    } else {
-      console.log('File size acceptable, using direct upload');
-      return this.uploadVideoDirectly(file, onProgress);
+    try {
+      // Check if file needs chunking
+      if (VideoChunkingService.needsChunking(file)) {
+        console.log('File size exceeds limit, using chunking approach');
+        return await this.uploadVideoWithChunking(file, onProgress);
+      } else {
+        console.log('File size acceptable, using direct upload');
+        return await this.uploadVideoDirectly(file, onProgress);
+      }
+    } catch (error: any) {
+      console.error('Upload failed:', error);
+      throw new Error(`Upload failed: ${error.message || 'Unknown error'}`);
     }
   }
 
@@ -89,51 +95,61 @@ export class VideoJobService {
   private static async uploadVideoWithChunking(file: File, onProgress?: (progress: number) => void): Promise<string> {
     console.log('Starting chunked upload process');
     
-    if (onProgress) onProgress(5);
+    try {
+      if (onProgress) onProgress(5);
 
-    // Split file into chunks
-    const { chunks, metadata } = await VideoChunkingService.splitVideoFile(file);
-    console.log(`File split into ${chunks.length} chunks`);
+      // Split file into chunks
+      const { chunks, metadata } = await VideoChunkingService.splitVideoFile(file);
+      console.log(`File split into ${chunks.length} chunks`);
 
-    if (onProgress) onProgress(15);
+      if (onProgress) onProgress(15);
 
-    // Upload chunks with progress tracking
-    const chunkProgress = (chunkProgressPercent: number) => {
-      if (onProgress) {
-        // Reserve 15-95% for chunk upload progress
-        const totalProgress = 15 + (chunkProgressPercent * 0.8);
-        onProgress(totalProgress);
-      }
-    };
+      // Upload chunks with progress tracking
+      const chunkProgress = (chunkProgressPercent: number) => {
+        if (onProgress) {
+          // Reserve 15-95% for chunk upload progress
+          const totalProgress = 15 + (chunkProgressPercent * 0.8);
+          onProgress(totalProgress);
+        }
+      };
 
-    const chunkedMetadata = await VideoChunkingService.uploadVideoChunks(
-      chunks, 
-      metadata, 
-      chunkProgress
-    );
+      const chunkedMetadata = await VideoChunkingService.uploadVideoChunks(
+        chunks, 
+        metadata, 
+        chunkProgress
+      );
 
-    if (onProgress) onProgress(100);
+      if (onProgress) onProgress(100);
 
-    // Store chunking metadata in the path (we'll use JSON encoding)
-    const metadataPath = `chunked:${JSON.stringify(chunkedMetadata)}`;
-    console.log('Chunked upload completed');
-    
-    return metadataPath;
+      // Store chunking metadata in the path (we'll use JSON encoding)
+      const metadataPath = `chunked:${JSON.stringify(chunkedMetadata)}`;
+      console.log('Chunked upload completed successfully');
+      
+      return metadataPath;
+    } catch (error: any) {
+      console.error('Chunked upload failed:', error);
+      throw new Error(`Chunked upload failed: ${error.message || 'Unknown error'}`);
+    }
   }
 
   static async getVideoDownloadUrl(videoPath: string): Promise<string> {
-    // Check if this is a chunked video
-    if (videoPath.startsWith('chunked:')) {
-      const metadataJson = videoPath.replace('chunked:', '');
-      const metadata: ChunkedVideoMetadata = JSON.parse(metadataJson);
-      
-      console.log('Reassembling chunked video for playback');
-      return await VideoChunkingService.reassembleVideoFromChunks(metadata);
-    } else {
-      // Regular file - get signed URL
-      const { data, error } = await supabase.storage.from('videos').createSignedUrl(videoPath, 3600);
-      if (error) throw new Error(`Failed to get download URL: ${error.message}`);
-      return data.signedUrl;
+    try {
+      // Check if this is a chunked video
+      if (videoPath.startsWith('chunked:')) {
+        const metadataJson = videoPath.replace('chunked:', '');
+        const metadata: ChunkedVideoMetadata = JSON.parse(metadataJson);
+        
+        console.log('Reassembling chunked video for playback');
+        return await VideoChunkingService.reassembleVideoFromChunks(metadata);
+      } else {
+        // Regular file - get signed URL
+        const { data, error } = await supabase.storage.from('videos').createSignedUrl(videoPath, 3600);
+        if (error) throw new Error(`Failed to get download URL: ${error.message}`);
+        return data.signedUrl;
+      }
+    } catch (error: any) {
+      console.error('Failed to get video download URL:', error);
+      throw new Error(`Failed to get video URL: ${error.message || 'Unknown error'}`);
     }
   }
 
