@@ -1,126 +1,223 @@
 
-import { VideoJobService, VideoJob, VideoJobStatus } from './videoJobService';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+export interface ProcessingPipelineConfig {
+  source_type: 'youtube' | 'upload';
+  enableAIAnalysis: boolean;
+  enableSegmentation: boolean;
+  segmentDuration?: number;
+}
+
+interface VideoJob {
+  id: string;
+  user_id: string;
+  status: string;
+  video_title?: string;
+  video_duration?: number;
+  progress: number;
+  error_message?: string;
+  job_config?: ProcessingPipelineConfig;
+  input_video_path?: string;
+  output_video_path?: string;
+  created_at: string;
+  updated_at?: string;
+}
 
 export class VideoProcessingPipeline {
-  private static processJob(data: any): VideoJob {
+  static async processVideoComplete(
+    videoUrl: string,
+    userId: string,
+    config: ProcessingPipelineConfig
+  ): Promise<VideoJob> {
+    try {
+      // Create initial job record
+      const { data: job, error: jobError } = await supabase
+        .from('video_jobs')
+        .insert({
+          user_id: userId,
+          status: 'pending',
+          job_config: config,
+          input_video_path: videoUrl,
+          progress: 0
+        })
+        .select()
+        .single();
+
+      if (jobError || !job) {
+        throw new Error(`Failed to create job: ${jobError?.message}`);
+      }
+
+      const videoJob: VideoJob = {
+        ...job,
+        created_at: job.created_at || new Date().toISOString(),
+        progress: job.progress || 0,
+        video_title: job.video_title || undefined,
+        video_duration: job.video_duration || undefined,
+        error_message: job.error_message || undefined,
+        job_config: job.job_config ? job.job_config as ProcessingPipelineConfig : undefined,
+        input_video_path: job.input_video_path || undefined,
+        output_video_path: job.output_video_path || undefined,
+        updated_at: job.updated_at || undefined,
+      };
+
+      // Update to processing
+      const processingJob = await this.updateJobStatus(job.id, 'processing', 10);
+
+      try {
+        // Submit to Colab for processing
+        const { data: colabData, error: colabError } = await supabase.functions.invoke('submit-to-colab', {
+          body: {
+            video_url: videoUrl,
+            job_id: job.id,
+            config: config
+          }
+        });
+
+        if (colabError) {
+          throw new Error(`Colab submission failed: ${colabError.message}`);
+        }
+
+        // Update progress
+        const progressJob = await this.updateJobStatus(job.id, 'processing', 50);
+
+        // Poll for completion or handle webhook
+        // For now, return the job in processing state
+        return processingJob;
+
+      } catch (processingError) {
+        console.error('Processing error:', processingError);
+        
+        // Fallback to Gemini processing for YouTube videos
+        if (config.source_type === 'youtube') {
+          return await this.fallbackToGeminiProcessing(job.id, videoUrl, config);
+        }
+        
+        throw processingError;
+      }
+
+    } catch (error) {
+      console.error('Video processing pipeline error:', error);
+      toast.error(`Video processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw error;
+    }
+  }
+
+  private static async updateJobStatus(
+    jobId: string, 
+    status: string, 
+    progress?: number
+  ): Promise<VideoJob> {
+    const updateData: any = { status };
+    if (progress !== undefined) {
+      updateData.progress = progress;
+    }
+
+    const { data, error } = await supabase
+      .from('video_jobs')
+      .update(updateData)
+      .eq('id', jobId)
+      .select()
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to update job status: ${error?.message}`);
+    }
+
     return {
       ...data,
       created_at: data.created_at || new Date().toISOString(),
-      status: (data.status || 'pending') as VideoJobStatus,
+      progress: data.progress || 0,
       video_title: data.video_title || undefined,
       video_duration: data.video_duration || undefined,
       error_message: data.error_message || undefined,
-      user_id: data.user_id!,
-      progress: data.progress || 0
+      job_config: data.job_config ? data.job_config as ProcessingPipelineConfig : undefined,
+      input_video_path: data.input_video_path || undefined,
+      output_video_path: data.output_video_path || undefined,
+      updated_at: data.updated_at || undefined,
     };
   }
 
-  static async processVideo(videoUrl: string, userId: string, options: {
-    enableAIAnalysis?: boolean;
-    enableSegmentation?: boolean;
-    segmentDuration?: number;
-  } = {}): Promise<VideoJob> {
-    const jobConfig = {
-      source_type: videoUrl.includes('youtube') ? 'youtube' as const : 'upload' as const,
-      enableAIAnalysis: options.enableAIAnalysis || true,
-      enableSegmentation: options.enableSegmentation || false,
-      segmentDuration: options.segmentDuration
-    };
-
-    const job = await VideoJobService.createJob({
-      input_video_path: videoUrl,
-      user_id: userId,
-      job_config: jobConfig
-    });
-
+  private static async fallbackToGeminiProcessing(
+    jobId: string,
+    videoUrl: string,
+    config: ProcessingPipelineConfig
+  ): Promise<VideoJob> {
     try {
-      await VideoJobService.updateJobStatus(job.id, 'processing', 10);
+      console.log('Falling back to Gemini processing...');
+      
+      const progressJob = await this.updateJobStatus(jobId, 'processing', 25);
 
-      if (jobConfig.source_type === 'youtube') {
-        return await this.processYouTubeVideo(job);
-      } else {
-        return await this.processUploadedVideo(job);
-      }
-    } catch (error: any) {
-      await VideoJobService.updateJobStatus(job.id, 'failed', undefined, undefined, error.message);
-      throw error;
-    }
-  }
-
-  private static async processYouTubeVideo(job: VideoJob): Promise<VideoJob> {
-    try {
-      const { data, error } = await supabase.functions.invoke('process-video-gemini', {
+      const { data: geminiData, error: geminiError } = await supabase.functions.invoke('process-video-gemini', {
         body: {
-          videoPath: job.input_video_path,
-          jobId: job.id
+          video_url: videoUrl,
+          job_id: jobId,
+          config: config
         }
       });
 
-      if (error) throw error;
+      if (geminiError) {
+        throw new Error(`Gemini processing failed: ${geminiError.message}`);
+      }
 
-      const updatedJob = await this.refreshJob(job.id);
-      return this.processJob(updatedJob);
-    } catch (error: any) {
-      await VideoJobService.updateJobStatus(job.id, 'failed', undefined, undefined, error.message);
-      throw error;
+      const processingJob = await this.updateJobStatus(jobId, 'processing', 75);
+
+      // Complete the job
+      const completedJob = await this.updateJobStatus(jobId, 'completed', 100);
+
+      return completedJob;
+
+    } catch (error) {
+      console.error('Gemini fallback failed:', error);
+      
+      // Mark job as failed
+      const failedJob = await this.updateJobStatus(jobId, 'failed', 0);
+      
+      const { error: updateError } = await supabase
+        .from('video_jobs')
+        .update({
+          error_message: error instanceof Error ? error.message : 'Unknown error during processing'
+        })
+        .eq('id', jobId);
+
+      if (updateError) {
+        console.error('Failed to update error message:', updateError);
+      }
+
+      return failedJob;
     }
   }
 
-  private static async processUploadedVideo(job: VideoJob): Promise<VideoJob> {
+  static async handleJobCallback(jobId: string, status: string, results?: any, error?: string): Promise<void> {
     try {
-      const { data, error } = await supabase.functions.invoke('submit-to-colab', {
-        body: {
-          videoUrl: job.input_video_path,
-          jobId: job.id,
-          config: job.job_config
-        }
-      });
+      const updateData: any = {
+        status,
+        progress: status === 'completed' ? 100 : status === 'failed' ? 0 : undefined
+      };
 
-      if (error) throw error;
+      if (results) {
+        updateData.results = results;
+      }
 
-      const updatedJob = await this.refreshJob(job.id);
-      return this.processJob(updatedJob);
-    } catch (error: any) {
-      await VideoJobService.updateJobStatus(job.id, 'failed', undefined, undefined, error.message);
-      throw error;
+      if (error) {
+        updateData.error_message = error;
+      }
+
+      const { error: updateError } = await supabase
+        .from('video_jobs')
+        .update(updateData)
+        .eq('id', jobId);
+
+      if (updateError) {
+        console.error('Failed to update job from callback:', updateError);
+        throw updateError;
+      }
+
+      console.log(`Job ${jobId} updated to status: ${status}`);
+
+    } catch (callbackError) {
+      console.error('Job callback handling failed:', callbackError);
+      throw callbackError;
     }
-  }
-
-  private static async refreshJob(jobId: string): Promise<any> {
-    const { data, error } = await supabase
-      .from('video_jobs')
-      .select('*')
-      .eq('id', jobId)
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-
-  static async processVideoSegment(videoUrl: string, startTime: number, endTime: number, focus: string = 'events'): Promise<any> {
-    const { data, error } = await supabase.functions.invoke('process-video-segment', {
-      body: {
-        videoPath: videoUrl,
-        startTime,
-        endTime,
-        focus
-      }
-    });
-
-    if (error) throw error;
-    return data;
-  }
-
-  static async splitVideo(videoUrl: string, segmentDuration: number = 60): Promise<string[]> {
-    const { data, error } = await supabase.functions.invoke('split-video', {
-      body: {
-        videoUrl,
-        segmentDuration
-      }
-    });
-
-    if (error) throw error;
-    return data.segments || [];
   }
 }

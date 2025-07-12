@@ -68,7 +68,7 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
     if (!metadata) return false;
     if (metadata === 'tracker') return true;
     try {
-      const parsed = JSON.parse(metadata);
+      const parsed = JSON.parse(metadata as string);
       if (parsed && typeof parsed === 'object' && parsed.role === 'tracker') {
         return true;
       }
@@ -100,7 +100,7 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
   const canModerate = userRole === 'admin' || userRole === 'coordinator';
 
   const trackerParticipants = participants.filter(
-    p => !p.isLocal && isTrackerParticipant(p)
+    (p: Participant) => !p.isLocal && isTrackerParticipant(p)
   );
 
   const handleToggleMuteSelf = async () => {
@@ -153,7 +153,7 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
         )}
         {!isLoadingRooms && availableRooms.length > 0 && (
           <div className="space-y-2">
-            {availableRooms.map(room => (
+            {availableRooms.map((room: any) => (
               <div key={room.id} className="flex items-center justify-between p-2 border border-white/10 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
                 <div>
                   <p className="font-medium text-white text-xs">{room.name}</p>
@@ -234,7 +234,7 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
       <div className="space-y-2">
         <h4 className="font-medium text-white text-xs">Participants ({participants.length})</h4>
         <div className="grid grid-cols-2 gap-2">
-          {participants.map(participant => {
+          {participants.map((participant: Participant) => {
             const isMuted = isParticipantMuted(participant);
             const isSpeaking = isParticipantSpeaking(participant);
             

@@ -1,86 +1,83 @@
 
-// src/hooks/useVideoJobs.ts
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { VideoJob, VideoJobService } from '@/services/videoJobService';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { VideoJobService, VideoJob } from '@/services/videoJobService';
+import { VideoProcessingPipeline, ProcessingPipelineConfig } from '@/services/videoProcessingPipeline';
 import { toast } from 'sonner';
-import { VideoProcessingPipeline, ProcessingPipelineConfig } from '../services/videoProcessingPipeline';
 
 export const useVideoJobs = () => {
+  const { user } = useAuth();
   const [jobs, setJobs] = useState<VideoJob[]>([]);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchJobs = useCallback(async () => {
-    setLoading(true);
+  const loadJobs = async () => {
+    if (!user?.id) return;
+
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (user.user) {
-        const userJobs = await VideoJobService.getUserJobs(user.user.id);
-        setJobs(userJobs);
-      }
-    } catch (error: any) {
-      toast.error(`Failed to load jobs: ${error.message}`);
+      setLoading(true);
+      setError(null);
+      const userJobs = await VideoJobService.getUserJobs(user.id);
+      setJobs(userJobs);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load video jobs';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    fetchJobs();
-  }, [fetchJobs]);
-
-  /**
-   * The single, unified function to submit ANY kind of job.
-   */
-  const submitJob = async (
-    source: { type: 'upload', file: File } | { type: 'youtube', url: string },
-    config: { title: string, duration?: number, segmentDuration?: number }
-  ): Promise<VideoJob | null> => {
-    setSubmitting(true);
-    toast.info("Submitting job to processing pipeline...");
-    try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('You must be logged in to submit a job.');
-
-      const pipelineConfig: ProcessingPipelineConfig = {
-        enableAIAnalysis: true,
-        enableYouTubeDownload: true, // Assumed true, VPP handles based on source type
-        enableSegmentation: (config.segmentDuration || 0) > 0,
-        segmentDuration: config.segmentDuration,
-        // aiProcessingFocus: 'all', // Optional: Add if you want to specify focus
-      };
-
-      // The source object is passed directly.
-      // If it's a YouTube URL, VPP handles download.
-      // If it's a file upload, VPP handles upload.
-      const returnedJob = await VideoProcessingPipeline.processVideoComplete(source, pipelineConfig);
-      
-      toast.success(`Job "${returnedJob.video_title || 'Video'}" submitted successfully!`);
-      setJobs(prevJobs => [returnedJob, ...prevJobs]);
-      return returnedJob;
-
-    } catch (error: any) {
-      toast.error(`Failed to submit job: ${error.message}`);
+  const createJob = async (videoUrl: string, config: ProcessingPipelineConfig): Promise<VideoJob | null> => {
+    if (!user?.id) {
+      toast.error('User not authenticated');
       return null;
-    } finally {
-      setSubmitting(false);
+    }
+
+    try {
+      const job = await VideoProcessingPipeline.processVideoComplete(videoUrl, user.id, config);
+      setJobs(prev => [job, ...prev]);
+      toast.success('Video processing started');
+      return job;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create video job';
+      toast.error(errorMessage);
+      return null;
     }
   };
 
-  const deleteJob = async (jobId: string) => {
+  const deleteJob = async (jobId: string): Promise<boolean> => {
     try {
-      await VideoJobService.deleteJob(jobId);
-      setJobs(prev => prev.filter(j => j.id !== jobId));
-      toast.success('Job deleted successfully.');
-    } catch (error: any) {
-      toast.error(`Failed to delete job: ${error.message}`);
+      const success = await VideoJobService.deleteJob(jobId);
+      if (success) {
+        setJobs(prev => prev.filter(job => job.id !== jobId));
+        toast.success('Job deleted successfully');
+      } else {
+        toast.error('Failed to delete job');
+      }
+      return success;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete job';
+      toast.error(errorMessage);
+      return false;
     }
   };
 
   const updateJob = (updatedJob: VideoJob) => {
-    setJobs(prev => prev.map(j => j.id === updatedJob.id ? updatedJob : j));
+    setJobs(prev => prev.map(job => job.id === updatedJob.id ? updatedJob : job));
   };
 
-  return { jobs, loading, submitting, submitJob, deleteJob, updateJob };
+  useEffect(() => {
+    loadJobs();
+  }, [user?.id]);
+
+  return {
+    jobs,
+    loading,
+    error,
+    createJob,
+    deleteJob,
+    updateJob,
+    refreshJobs: loadJobs,
+  };
 };

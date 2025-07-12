@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { ProductionVideoAnalysisService } from '@/services/productionVideoAnalysisService';
 import { ProductionPlayerTrackingService, RealTimePlayerData } from '@/services/productionPlayerTrackingService';
@@ -38,7 +37,13 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
       detectionThreshold: 0.7,
       trackingAlgorithm: 'yolo',
       enableHeatmap: true,
-      enableTrajectory: true
+      enableTrajectory: true,
+      playerDetectionSensitivity: 0.8,
+      teamColorAnalysis: {
+        homeTeamColors: ['#FF0000', '#0000FF'],
+        awayTeamColors: ['#00FF00', '#FFFF00'],
+        refereeColors: ['#000000', '#FFFFFF']
+      }
     });
     setTrackingService(service);
 
