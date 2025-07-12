@@ -85,12 +85,17 @@ class ProductionMLDetectionService {
   }
 
   private async attemptDetection(request: DetectionRequest): Promise<string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (request.modelConfig.apiKey) {
+      headers['Authorization'] = `Bearer ${request.modelConfig.apiKey}`;
+    }
+
     const response = await fetch(`${this.baseUrl}/api/detect/start`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': request.modelConfig.apiKey ? `Bearer ${request.modelConfig.apiKey}` : undefined,
-      }.filter(Boolean),
+      headers,
       body: JSON.stringify({
         video_url: request.videoUrl,
         model_config: request.modelConfig,

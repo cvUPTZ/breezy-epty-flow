@@ -38,18 +38,13 @@ class MLJobQueueService {
       throw new Error('User not authenticated');
     }
 
-    const { data, error } = await supabase
-      .from('ml_detection_jobs')
-      .insert({
-        video_url: videoUrl,
-        user_id: user.user.id,
-        status: 'queued',
-        priority,
-        config,
-        progress: 0,
-      })
-      .select()
-      .single();
+    // Use raw SQL query since ml_detection_jobs isn't in the generated types yet
+    const { data, error } = await supabase.rpc('create_ml_job', {
+      p_video_url: videoUrl,
+      p_user_id: user.user.id,
+      p_priority: priority,
+      p_config: config
+    });
 
     if (error) {
       throw new Error(`Failed to queue job: ${error.message}`);
@@ -58,77 +53,92 @@ class MLJobQueueService {
     // Trigger job processing
     await this.triggerJobProcessing();
     
-    return data.id;
+    return data;
   }
 
   async getJob(jobId: string): Promise<QueuedMLJob | null> {
-    const { data, error } = await supabase
-      .from('ml_detection_jobs')
-      .select('*')
-      .eq('id', jobId)
-      .single();
+    try {
+      const { data, error } = await supabase.rpc('get_ml_job', {
+        p_job_id: jobId
+      });
 
-    if (error) {
+      if (error) {
+        console.error('Error fetching job:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
       console.error('Error fetching job:', error);
       return null;
     }
-
-    return data;
   }
 
   async getUserJobs(limit: number = 10): Promise<QueuedMLJob[]> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) return [];
 
-    const { data, error } = await supabase
-      .from('ml_detection_jobs')
-      .select('*')
-      .eq('user_id', user.user.id)
-      .order('created_at', { ascending: false })
-      .limit(limit);
+    try {
+      const { data, error } = await supabase.rpc('get_user_ml_jobs', {
+        p_user_id: user.user.id,
+        p_limit: limit
+      });
 
-    if (error) {
+      if (error) {
+        console.error('Error fetching user jobs:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
       console.error('Error fetching user jobs:', error);
       return [];
     }
-
-    return data || [];
   }
 
   async cancelJob(jobId: string): Promise<boolean> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) return false;
 
-    const { error } = await supabase
-      .from('ml_detection_jobs')
-      .update({ 
-        status: 'cancelled',
-        completed_at: new Date().toISOString()
-      })
-      .eq('id', jobId)
-      .eq('user_id', user.user.id);
+    try {
+      const { error } = await supabase.rpc('cancel_ml_job', {
+        p_job_id: jobId,
+        p_user_id: user.user.id
+      });
 
-    return !error;
+      return !error;
+    } catch (error) {
+      console.error('Error cancelling job:', error);
+      return false;
+    }
   }
 
   async getQueueStats(): Promise<QueueStats> {
-    const { data, error } = await supabase
-      .rpc('get_ml_queue_stats');
+    try {
+      const { data, error } = await supabase.rpc('get_ml_queue_stats');
 
-    if (error) {
+      if (error) {
+        console.error('Error fetching queue stats:', error);
+        return this.getDefaultStats();
+      }
+
+      return data || this.getDefaultStats();
+    } catch (error) {
       console.error('Error fetching queue stats:', error);
-      return {
-        total_jobs: 0,
-        queued_jobs: 0,
-        processing_jobs: 0,
-        completed_jobs: 0,
-        failed_jobs: 0,
-        average_processing_time: 0,
-        estimated_wait_time: 0,
-      };
+      return this.getDefaultStats();
     }
+  }
 
-    return data;
+  private getDefaultStats(): QueueStats {
+    return {
+      total_jobs: 0,
+      queued_jobs: 0,
+      processing_jobs: 0,
+      completed_jobs: 0,
+      failed_jobs: 0,
+      average_processing_time: 0,
+      estimated_wait_time: 0,
+    };
   }
 
   private async triggerJobProcessing(): Promise<void> {
