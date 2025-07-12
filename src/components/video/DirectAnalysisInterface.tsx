@@ -82,7 +82,45 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
 
   const handleVideoDimensionsChange = (dimensions: { width: number; height: number }) => {
     setVideoDimensions(dimensions);
+    console.log('Video dimensions updated:', dimensions);
   };
+
+  // Get video element reference when component mounts
+  useEffect(() => {
+    const video = containerRef.current?.querySelector('video');
+    if (video && video !== videoRef.current) {
+      videoRef.current = video;
+      console.log('Video element reference set:', video);
+    }
+  }, [videoDimensions]);
+
+  // Update video dimensions when video loads
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      const updateDimensions = () => {
+        const rect = video.getBoundingClientRect();
+        setVideoDimensions({
+          width: rect.width,
+          height: rect.height
+        });
+        console.log('Video dimensions from rect:', rect.width, rect.height);
+      };
+
+      video.addEventListener('loadedmetadata', updateDimensions);
+      video.addEventListener('resize', updateDimensions);
+      
+      // Initial dimension check
+      if (video.readyState >= 2) {
+        updateDimensions();
+      }
+
+      return () => {
+        video.removeEventListener('loadedmetadata', updateDimensions);
+        video.removeEventListener('resize', updateDimensions);
+      };
+    }
+  }, [videoRef.current]);
 
   const handleStartAnalysis = async () => {
     setIsAnalyzing(true);
@@ -176,13 +214,15 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
                 />
                 
                 {/* Production Tactical Overlay with Drawing Tools */}
-                <ProductionTacticalOverlay
-                  videoElement={videoRef.current}
-                  videoUrl={videoUrl}
-                  videoDimensions={videoDimensions}
-                  currentTime={currentTime}
-                  isPlaying={isPlaying}
-                />
+                {videoDimensions.width > 0 && videoDimensions.height > 0 && (
+                  <ProductionTacticalOverlay
+                    videoElement={videoRef.current}
+                    videoUrl={videoUrl}
+                    videoDimensions={videoDimensions}
+                    currentTime={currentTime}
+                    isPlaying={isPlaying}
+                  />
+                )}
               </div>
             </CardContent>
           </Card>
