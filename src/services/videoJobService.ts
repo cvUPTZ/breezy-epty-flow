@@ -33,16 +33,40 @@ export interface VideoJob {
  * Focuses on basic video upload and URL handling.
  */
 export class VideoJobService {
+  static sanitizeFileName(fileName: string): string {
+    // Remove or replace characters that might cause issues in storage
+    return fileName
+      .normalize('NFD') // Normalize Unicode
+      .replace(/[\u0300-\u036f]/g, '') // Remove diacritical marks
+      .replace(/[^a-zA-Z0-9.-]/g, '_') // Replace non-alphanumeric chars with underscore
+      .replace(/_{2,}/g, '_') // Replace multiple underscores with single
+      .replace(/^_|_$/g, '') // Remove leading/trailing underscores
+      .toLowerCase();
+  }
+
   static async uploadVideo(file: File): Promise<string> {
     const timestamp = Date.now();
-    const fileName = `${timestamp}-${file.name}`;
-    const filePath = `public/${fileName}`;
+    const fileExtension = file.name.split('.').pop() || 'mp4';
+    const sanitizedName = this.sanitizeFileName(file.name.replace(/\.[^/.]+$/, ''));
+    const fileName = `${timestamp}_${sanitizedName}.${fileExtension}`;
+    const filePath = fileName; // Remove 'public/' prefix as it's handled by the bucket
+
+    console.log('Uploading file:', { originalName: file.name, sanitizedName, fileName, filePath });
 
     const { data, error } = await supabase.storage
       .from('videos')
-      .upload(filePath, file, { cacheControl: '3600', upsert: false });
+      .upload(filePath, file, { 
+        cacheControl: '3600', 
+        upsert: false,
+        contentType: file.type
+      });
 
-    if (error) throw new Error(`Failed to upload video: ${error.message}`);
+    if (error) {
+      console.error('Upload error:', error);
+      throw new Error(`Failed to upload video: ${error.message}`);
+    }
+    
+    console.log('Upload successful:', data);
     return data.path;
   }
 
