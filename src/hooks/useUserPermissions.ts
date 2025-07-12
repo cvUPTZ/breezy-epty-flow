@@ -126,21 +126,36 @@ export const useUserPermissions = (userId?: string) => {
         setIsLoading(true);
         setError(null);
 
-        // CHANGED: Fetch custom_permissions along with the role
+        console.log('Fetching permissions for user:', userId);
+
+        // CHANGED: Use .maybeSingle() instead of .single() to handle cases where no profile exists
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role, custom_permissions')
           .eq('id', userId)
-          .single();
+          .maybeSingle();
 
         if (profileError) {
+          console.error('Profile query error:', profileError);
           throw new Error(`Failed to fetch user profile: ${profileError.message}`);
         }
 
-        const userRole = profile?.role as UserRole;
+        // CHANGED: Handle case where no profile exists by creating default permissions
+        if (!profile) {
+          console.log('No profile found for user, using default viewer permissions');
+          setRole('viewer');
+          setPermissions(DEFAULT_PERMISSIONS.viewer);
+          return;
+        }
+
+        const userRole = profile.role as UserRole;
+        console.log('User role found:', userRole);
         
         if (!userRole || !DEFAULT_PERMISSIONS[userRole]) {
-          throw new Error(`Invalid or missing role: ${userRole}`);
+          console.warn(`Invalid or missing role: ${userRole}, defaulting to viewer`);
+          setRole('viewer');
+          setPermissions(DEFAULT_PERMISSIONS.viewer);
+          return;
         }
 
         setRole(userRole);
@@ -150,12 +165,15 @@ export const useUserPermissions = (userId?: string) => {
         const customPermissions = (profile.custom_permissions as Partial<RolePermissions>) || {};
         const finalPermissions = { ...roleDefaults, ...customPermissions };
 
+        console.log('Final permissions:', finalPermissions);
         setPermissions(finalPermissions);
 
       } catch (err) {
         console.error('Error fetching user permissions:', err);
         setError(err instanceof Error ? err : new Error('Unknown error occurred'));
         
+        // Fallback to viewer permissions on error
+        setRole('viewer');
         setPermissions({
           ...DEFAULT_PERMISSIONS.viewer,
           canViewDashboard: true,
