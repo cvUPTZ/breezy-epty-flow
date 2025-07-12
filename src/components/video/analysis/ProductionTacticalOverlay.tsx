@@ -226,7 +226,6 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
         <DrawingToolsPanel
           activeAnnotationTool={activeAnnotationTool}
           onToolChange={setActiveAnnotationTool}
-          onClearAnnotations={() => setAnnotations([])}
         />
       </div>
 
@@ -244,7 +243,6 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
           isCorrectPosition: p.confidence > 0.8,
           heatIntensity: p.speed / 25
         }))}
-        activeAnnotationTool={activeAnnotationTool}
         existingAnnotations={annotations}
       />
     </div>

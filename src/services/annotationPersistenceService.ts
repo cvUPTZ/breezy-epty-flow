@@ -1,12 +1,10 @@
 
-import { supabase } from '@/integrations/supabase/client';
-
-export interface PersistentAnnotation {
+interface AnnotationData {
   id: string;
   videoId: string;
   timestamp: number;
-  type: 'circle' | 'line' | 'arrow' | 'distance' | 'spotlight' | 'trajectory' | 'area';
-  points: Array<{ x: number; y: number }>;
+  type: string;
+  points: any;
   color: string;
   label?: string;
   measurement?: number;
@@ -16,116 +14,116 @@ export interface PersistentAnnotation {
 }
 
 export class AnnotationPersistenceService {
-  static async saveAnnotations(videoId: string, timestamp: number, annotations: any[]): Promise<void> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('Authentication required');
+  private static STORAGE_KEY = 'video_annotations';
 
-    const annotationRecords = annotations.map(annotation => ({
-      video_id: videoId,
-      timestamp: timestamp,
-      type: annotation.type,
-      points: annotation.points,
-      color: annotation.color,
-      label: annotation.label,
-      measurement: annotation.measurement,
-      user_id: user.user.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }));
+  static async saveAnnotations(
+    videoId: string,
+    timestamp: number,
+    annotations: any[]
+  ): Promise<void> {
+    try {
+      const userId = 'current-user'; // In production, get from auth context
+      const now = new Date().toISOString();
 
-    const { error } = await supabase
-      .from('video_annotations')
-      .insert(annotationRecords);
+      const annotationData: AnnotationData[] = annotations.map((annotation, index) => ({
+        id: `${videoId}-${timestamp}-${index}`,
+        videoId,
+        timestamp,
+        type: annotation.type,
+        points: annotation.points,
+        color: annotation.color,
+        label: annotation.label,
+        measurement: annotation.measurement,
+        userId,
+        createdAt: now,
+        updatedAt: now
+      }));
 
-    if (error) {
-      throw new Error(`Failed to save annotations: ${error.message}`);
+      // Get existing annotations
+      const existing = this.getStoredAnnotations();
+      
+      // Remove old annotations for this video and timestamp
+      const filtered = existing.filter(
+        ann => !(ann.videoId === videoId && Math.abs(ann.timestamp - timestamp) < 1)
+      );
+
+      // Add new annotations
+      const updated = [...filtered, ...annotationData];
+
+      // Store back
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
+
+      console.log(`Saved ${annotationData.length} annotations for video ${videoId} at ${timestamp}s`);
+    } catch (error) {
+      console.error('Failed to save annotations:', error);
+      throw error;
     }
   }
 
-  static async loadAnnotations(videoId: string, timestamp?: number): Promise<PersistentAnnotation[]> {
-    let query = supabase
-      .from('video_annotations')
-      .select('*')
-      .eq('video_id', videoId)
-      .order('created_at', { ascending: true });
+  static async loadAnnotations(videoId: string): Promise<any[]> {
+    try {
+      const stored = this.getStoredAnnotations();
+      const videoAnnotations = stored.filter(ann => ann.videoId === videoId);
 
-    if (timestamp !== undefined) {
-      query = query.eq('timestamp', timestamp);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
+      console.log(`Loaded ${videoAnnotations.length} annotations for video ${videoId}`);
+      
+      return videoAnnotations.map(ann => ({
+        id: ann.id,
+        type: ann.type,
+        points: ann.points,
+        color: ann.color,
+        label: ann.label,
+        measurement: ann.measurement,
+        timestamp: ann.timestamp
+      }));
+    } catch (error) {
       console.error('Failed to load annotations:', error);
       return [];
     }
-
-    return (data || []).map(record => ({
-      id: record.id,
-      videoId: record.video_id,
-      timestamp: record.timestamp,
-      type: record.type,
-      points: record.points,
-      color: record.color,
-      label: record.label,
-      measurement: record.measurement,
-      userId: record.user_id,
-      createdAt: record.created_at,
-      updatedAt: record.updated_at
-    }));
   }
 
-  static async updateAnnotation(annotationId: string, updates: Partial<PersistentAnnotation>): Promise<void> {
-    const { error } = await supabase
-      .from('video_annotations')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', annotationId);
+  static async deleteAnnotations(videoId: string, timestamp?: number): Promise<void> {
+    try {
+      const existing = this.getStoredAnnotations();
+      
+      const filtered = existing.filter(ann => {
+        if (ann.videoId !== videoId) return true;
+        if (timestamp !== undefined) {
+          return Math.abs(ann.timestamp - timestamp) >= 1;
+        }
+        return false;
+      });
 
-    if (error) {
-      throw new Error(`Failed to update annotation: ${error.message}`);
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(filtered));
+      console.log(`Deleted annotations for video ${videoId}${timestamp ? ` at ${timestamp}s` : ''}`);
+    } catch (error) {
+      console.error('Failed to delete annotations:', error);
+      throw error;
     }
   }
 
-  static async deleteAnnotation(annotationId: string): Promise<void> {
-    const { error } = await supabase
-      .from('video_annotations')
-      .delete()
-      .eq('id', annotationId);
-
-    if (error) {
-      throw new Error(`Failed to delete annotation: ${error.message}`);
-    }
-  }
-
-  static async getAnnotationsByTimeRange(videoId: string, startTime: number, endTime: number): Promise<PersistentAnnotation[]> {
-    const { data, error } = await supabase
-      .from('video_annotations')
-      .select('*')
-      .eq('video_id', videoId)
-      .gte('timestamp', startTime)
-      .lte('timestamp', endTime)
-      .order('timestamp', { ascending: true });
-
-    if (error) {
-      console.error('Failed to load annotations by time range:', error);
+  static async getUserAnnotations(userId: string): Promise<any[]> {
+    try {
+      const stored = this.getStoredAnnotations();
+      return stored.filter(ann => ann.userId === userId);
+    } catch (error) {
+      console.error('Failed to get user annotations:', error);
       return [];
     }
+  }
 
-    return (data || []).map(record => ({
-      id: record.id,
-      videoId: record.video_id,
-      timestamp: record.timestamp,
-      type: record.type,
-      points: record.points,
-      color: record.color,
-      label: record.label,
-      measurement: record.measurement,
-      userId: record.user_id,
-      createdAt: record.created_at,
-      updatedAt: record.updated_at
-    }));
+  private static getStoredAnnotations(): AnnotationData[] {
+    try {
+      const stored = localStorage.getItem(this.STORAGE_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error('Failed to parse stored annotations:', error);
+      return [];
+    }
+  }
+
+  static clearAllAnnotations(): void {
+    localStorage.removeItem(this.STORAGE_KEY);
+    console.log('Cleared all stored annotations');
   }
 }

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Play, Pause, RotateCcw, Download } from 'lucide-react';
+import { Upload, Play, Pause, RotateCcw, Download, Maximize, Volume2, VolumeX } from 'lucide-react';
 import { ProductionTacticalOverlay } from './ProductionTacticalOverlay';
 import { ProductionVideoAnalysisService } from '@/services/productionVideoAnalysisService';
 import { toast } from 'sonner';
@@ -12,13 +12,27 @@ import { toast } from 'sonner';
 export const ProductionVideoAnalysisInterface: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const [videoSrc, setVideoSrc] = useState<string>('');
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [videoDimensions, setVideoDimensions] = useState({ width: 0, height: 0 });
   const [analysisJobs, setAnalysisJobs] = useState<any[]>([]);
+
+  // Handle fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   // Load user's analysis jobs
   useEffect(() => {
@@ -84,6 +98,41 @@ export const ProductionVideoAnalysisInterface: React.FC = () => {
     }
   };
 
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (videoRef.current) {
+      const newVolume = parseFloat(e.target.value);
+      videoRef.current.volume = newVolume;
+      setVolume(newVolume);
+      setIsMuted(newVolume === 0);
+    }
+  };
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      if (isMuted) {
+        videoRef.current.volume = volume || 0.5;
+        setIsMuted(false);
+      } else {
+        videoRef.current.volume = 0;
+        setIsMuted(true);
+      }
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (containerRef.current) {
+      if (!isFullscreen) {
+        if (containerRef.current.requestFullscreen) {
+          containerRef.current.requestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -135,7 +184,7 @@ export const ProductionVideoAnalysisInterface: React.FC = () => {
         {videoSrc && (
           <Card>
             <CardContent className="p-0">
-              <div className="relative bg-black">
+              <div ref={containerRef} className="relative bg-black">
                 <video
                   ref={videoRef}
                   src={videoSrc}
@@ -145,6 +194,36 @@ export const ProductionVideoAnalysisInterface: React.FC = () => {
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
                 />
+                
+                {/* Custom Video Controls Overlay */}
+                <div className={`absolute top-4 right-4 flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2 z-40 ${isFullscreen ? 'z-[10000]' : ''}`}>
+                  <button
+                    onClick={toggleMute}
+                    className="text-white hover:text-gray-300 transition-colors"
+                    title={isMuted ? "Unmute" : "Mute"}
+                  >
+                    {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                  </button>
+                  
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={isMuted ? 0 : volume}
+                    onChange={handleVolumeChange}
+                    className="w-20 h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer slider"
+                    title="Volume"
+                  />
+                  
+                  <button
+                    onClick={toggleFullscreen}
+                    className="text-white hover:text-gray-300 transition-colors ml-2"
+                    title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                  >
+                    <Maximize size={20} />
+                  </button>
+                </div>
                 
                 {/* Tactical Overlay */}
                 <ProductionTacticalOverlay
@@ -181,6 +260,14 @@ export const ProductionVideoAnalysisInterface: React.FC = () => {
                   <div className="text-sm text-gray-600">
                     {formatTime(currentTime)} / {formatTime(duration)}
                   </div>
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={toggleFullscreen}
+                  >
+                    <Maximize className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
             </CardContent>
