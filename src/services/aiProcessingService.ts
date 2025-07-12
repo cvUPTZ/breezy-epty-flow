@@ -1,3 +1,4 @@
+
 // src/services/aiProcessingService.ts
 
 import { supabase } from '@/integrations/supabase/client';
@@ -58,7 +59,6 @@ export class AIProcessingService {
   }
 
   static async processVideoWithGemini(videoPath: string): Promise<AIAnalysisResult> {
-    console.warn("Attempting to call 'process-video-gemini' Supabase function. This function is currently missing in the repository. Analysis via this path will likely fail or be incomplete.");
     const { data, error } = await supabase.functions.invoke('process-video-gemini', {
       body: { videoPath }
     });
@@ -76,7 +76,6 @@ export class AIProcessingService {
     endTime: number,
     focus?: 'events' | 'tracking' | 'statistics'
   ): Promise<AIAnalysisResult> {
-    console.warn("Attempting to call 'process-video-segment' Supabase function. This function is currently missing in the repository. Analysis via this path will likely fail or be incomplete.");
     const { data, error } = await supabase.functions.invoke('process-video-segment', {
       body: { 
         videoPath, 
@@ -94,7 +93,6 @@ export class AIProcessingService {
   }
 
   static async submitToColabWorker(jobId: string): Promise<void> {
-    console.warn("Attempting to call 'submit-to-colab' Supabase function. This function is currently missing in the repository. Colab submission will not occur.");
     const { error } = await supabase.functions.invoke('submit-to-colab', {
       body: { jobId }
     });
