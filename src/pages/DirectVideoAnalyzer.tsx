@@ -1,9 +1,9 @@
 
-// src/pages/DirectVideoAnalyzer.tsx
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { DirectAnalysisInterface } from '@/components/video/DirectAnalysisInterface';
 import { VideoJobService } from '@/services/videoJobService';
 import { Upload, Link, X } from 'lucide-react';
@@ -15,6 +15,7 @@ const DirectVideoAnalyzer: React.FC = () => {
   const [submittedUrl, setSubmittedUrl] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUrlSubmit = (e: React.FormEvent) => {
@@ -39,17 +40,40 @@ const DirectVideoAnalyzer: React.FC = () => {
     if (!file) return;
 
     setIsUploading(true);
+    setUploadProgress(0);
     setError('');
 
     try {
+      // Simulate progress during upload
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + Math.random() * 15;
+        });
+      }, 200);
+
       const videoPath = await VideoJobService.uploadVideo(file);
+      
+      // Complete the progress
+      clearInterval(progressInterval);
+      setUploadProgress(95);
+      
       const signedUrl = await VideoJobService.getVideoDownloadUrl(videoPath);
+      
+      setUploadProgress(100);
       setUploadedVideoUrl(signedUrl);
       setSubmittedUrl(signedUrl);
       toast.success('Video uploaded successfully');
+      
+      // Reset progress after a short delay
+      setTimeout(() => setUploadProgress(0), 1000);
     } catch (e: any) {
       setError('Failed to upload video: ' + e.message);
       toast.error('Failed to upload video: ' + e.message);
+      setUploadProgress(0);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -127,8 +151,16 @@ const DirectVideoAnalyzer: React.FC = () => {
                       className="w-full"
                     />
                     {isUploading && (
-                      <div className="text-center text-blue-600">
-                        Uploading video...
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-blue-600">Uploading video...</span>
+                          <span className="text-blue-600">{Math.round(uploadProgress)}%</span>
+                        </div>
+                        <Progress 
+                          value={uploadProgress} 
+                          className="w-full h-2"
+                          indicatorClassName="bg-blue-500 transition-all duration-300"
+                        />
                       </div>
                     )}
                   </div>
