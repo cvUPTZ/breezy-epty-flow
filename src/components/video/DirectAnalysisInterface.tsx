@@ -1,8 +1,8 @@
 // src/components/video/DirectAnalysisInterface.tsx
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ReactSketchCanvasRef } from 'react-sketch-canvas'; // CanvasPath removed
-import { VideoPlayerControls } from './analysis/VideoPlayerControls';
+import { ReactSketchCanvasRef } from 'react-sketch-canvas';
+import { EnhancedVideoPlayer, VideoPlayerRef } from './EnhancedVideoPlayer';
 import { AnnotationToolbox } from './analysis/AnnotationToolbox';
 import { CameraMovementEstimator } from './analysis/CameraMovementEstimator';
 import { toast } from 'sonner';
@@ -77,8 +77,8 @@ interface DirectAnalysisInterfaceProps {
 }
 
 export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = ({ videoUrl }) => {
-  const videoPlayerRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<ReactSketchCanvasRef>(null); // Still needed for AnnotationToolbox interaction
+  const videoPlayerRef = useRef<VideoPlayerRef>(null);
+  const canvasRef = useRef<ReactSketchCanvasRef>(null);
 
   const [videoDimensions, setVideoDimensions] = useState({ width: 0, height: 0 });
   const [isPlaying, setIsPlaying] = useState(false);
@@ -118,7 +118,28 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
     return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Convert YouTube URL to direct video URL if possible
+  const getDirectVideoUrl = useCallback((url: string): string => {
+    try {
+      const urlObj = new URL(url);
+      
+      // Handle YouTube URLs
+      if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
+        // For now, return the original URL - we'll need a backend service to get direct URLs
+        toast.info('YouTube videos require special handling. Consider using direct video URLs for better compatibility.');
+        return url;
+      }
+      
+      return url;
+    } catch (error) {
+      return url;
+    }
+  }, []);
+
+  const processedVideoUrl = useMemo(() => getDirectVideoUrl(videoUrl), [videoUrl, getDirectVideoUrl]);
+
   useEffect(() => {
+    // Reset state when video URL changes
     setTaggedEvents([]);
     setSelectedEventForAnnotation(null);
     setIsPlaying(false);
@@ -126,18 +147,39 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
     setDuration(0);
     setCameraMovements([]);
     setIsCameraAnalysisEnabled(false);
-    if (videoPlayerRef.current) {
-      videoPlayerRef.current.currentTime = 0;
-      videoPlayerRef.current.pause();
-      videoPlayerRef.current.src = videoUrl;
-      videoPlayerRef.current.load();
-    }
     if (canvasRef.current) canvasRef.current.resetCanvas();
     setFilterEventTypeId('');
     setFilterPropertyId('');
     setFilterPropertyValue('');
     setActiveFiltersDescription(null);
   }, [videoUrl]);
+
+  const handleVideoLoadedMetadata = useCallback(() => {
+    if (videoPlayerRef.current) {
+      const videoDuration = videoPlayerRef.current.getDuration();
+      setDuration(videoDuration);
+      // Set dimensions based on a standard video aspect ratio
+      setVideoDimensions({
+        width: 1280,
+        height: 720,
+      });
+    }
+  }, []);
+
+  const handlePlayPause = useCallback(() => {
+    if (videoPlayerRef.current) {
+      if (isPlaying) {
+        videoPlayerRef.current.pause();
+      } else {
+        videoPlayerRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  }, [isPlaying]);
+
+  const handleTimeUpdate = useCallback((time: number) => {
+    setCurrentTime(time);
+  }, []);
 
   const handleCameraMovementDetected = useCallback((movement: CameraMovement) => {
     setCameraMovements(prev => [...prev.slice(-100), movement]); // Keep last 100 movements
@@ -148,28 +190,6 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
     }
   }, []);
 
-  const handleVideoLoadedMetadata = () => {
-    if (videoPlayerRef.current) {
-      setDuration(videoPlayerRef.current.duration);
-      setVideoDimensions({
-        width: videoPlayerRef.current.offsetWidth,
-        height: videoPlayerRef.current.offsetHeight,
-      });
-    }
-  };
-  
-  const handlePlayPause = () => {
-    if (videoPlayerRef.current) {
-      if (isPlaying) videoPlayerRef.current.pause();
-      else videoPlayerRef.current.play();
-      setIsPlaying(!isPlaying);
-    }
-  };
-
-  const handleTimeUpdate = () => {
-    if (videoPlayerRef.current) setCurrentTime(videoPlayerRef.current.currentTime);
-  };
-  
   const handleSaveAnnotationToEvent = useCallback(async (newAnnotations: AnnotationObject[]) => {
     if (selectedEventForAnnotation) {
       setTaggedEvents(prevEvents =>
@@ -241,7 +261,7 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
     const eventType = eventTypeDefs.find(et => et.id === selectedEventTypeIdForTagging);
     if (!eventType) { toast.error("Selected event type not found."); return; }
 
-    const timestamp = videoPlayerRef.current.currentTime;
+    const timestamp = videoPlayerRef.current.getCurrentTime();
     const newEvent: LocalTaggedEvent = {
       id: crypto.randomUUID(), timestamp, typeId: eventType.id, typeName: eventType.name,
       notes: '', annotations: null, customPropertyValues: { ...currentCustomPropValues }, // Initialize annotations as null
@@ -449,20 +469,24 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
           </div>
         )}
 
-        <div className="mb-4 bg-black rounded-md relative">
-           <video ref={videoPlayerRef} controls={false} width="100%" className="rounded-md"
-            onLoadedMetadata={handleVideoLoadedMetadata} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)}
-            onTimeUpdate={handleTimeUpdate} onSeeked={handleTimeUpdate}>
-            Your browser does not support the video tag.
-          </video>
-          <AnnotationToolbox canvasRef={canvasRef} videoDimensions={videoDimensions}
+        <div className="mb-4">
+          <EnhancedVideoPlayer
+            ref={videoPlayerRef}
+            videoUrl={processedVideoUrl}
+            onTimeUpdate={handleTimeUpdate}
+            onDurationChange={setDuration}
+            onLoadedMetadata={handleVideoLoadedMetadata}
+            className="w-full"
+          />
+          <AnnotationToolbox 
+            canvasRef={canvasRef} 
+            videoDimensions={videoDimensions}
             initialAnnotations={selectedEventForAnnotation?.annotations || null}
             onSaveAnnotations={handleSaveAnnotationToEvent}
             canSave={!!selectedEventForAnnotation && videoDimensions.width > 0}
-            disabled={videoDimensions.width === 0} />
+            disabled={videoDimensions.width === 0} 
+          />
         </div>
-        
-        <VideoPlayerControls videoPlayerRef={videoPlayerRef} isPlayingPlaylist={false} />
 
         {/* Filter Section */}
         <div className="my-3 p-3 border rounded-md bg-gray-50">
