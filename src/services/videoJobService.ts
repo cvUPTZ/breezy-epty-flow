@@ -1,6 +1,6 @@
-
 // src/services/videoJobService.ts
 import { supabase } from '@/integrations/supabase/client';
+import { VideoChunkingService, ChunkedVideoMetadata } from './videoChunkingService';
 
 export interface VideoJob {
   id: string;
@@ -26,11 +26,12 @@ export interface VideoJob {
     enableSegmentation: boolean;
     segmentDuration?: number;
   };
+  chunked_video_metadata?: ChunkedVideoMetadata;
 }
 
 /**
  * Simplified Video Service for direct video processing without job queues.
- * Focuses on basic video upload and URL handling.
+ * Focuses on basic video upload and URL handling with chunking support.
  */
 export class VideoJobService {
   static sanitizeFileName(fileName: string): string {
@@ -44,18 +45,32 @@ export class VideoJobService {
       .toLowerCase();
   }
 
-  static async uploadVideo(file: File): Promise<string> {
+  static async uploadVideo(file: File, onProgress?: (progress: number) => void): Promise<string> {
+    console.log(`Uploading video: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+
+    // Check if file needs chunking
+    if (VideoChunkingService.needsChunking(file)) {
+      console.log('File size exceeds limit, using chunking approach');
+      return this.uploadVideoWithChunking(file, onProgress);
+    } else {
+      console.log('File size acceptable, using direct upload');
+      return this.uploadVideoDirectly(file, onProgress);
+    }
+  }
+
+  private static async uploadVideoDirectly(file: File, onProgress?: (progress: number) => void): Promise<string> {
     const timestamp = Date.now();
     const fileExtension = file.name.split('.').pop() || 'mp4';
     const sanitizedName = this.sanitizeFileName(file.name.replace(/\.[^/.]+$/, ''));
     const fileName = `${timestamp}_${sanitizedName}.${fileExtension}`;
-    const filePath = fileName; // Remove 'public/' prefix as it's handled by the bucket
 
-    console.log('Uploading file:', { originalName: file.name, sanitizedName, fileName, filePath });
+    console.log('Direct upload:', { originalName: file.name, fileName });
+
+    if (onProgress) onProgress(10);
 
     const { data, error } = await supabase.storage
       .from('videos')
-      .upload(filePath, file, { 
+      .upload(fileName, file, { 
         cacheControl: '3600', 
         upsert: false,
         contentType: file.type
@@ -66,20 +81,74 @@ export class VideoJobService {
       throw new Error(`Failed to upload video: ${error.message}`);
     }
     
-    console.log('Upload successful:', data);
+    if (onProgress) onProgress(100);
+    console.log('Direct upload successful:', data);
     return data.path;
   }
 
+  private static async uploadVideoWithChunking(file: File, onProgress?: (progress: number) => void): Promise<string> {
+    console.log('Starting chunked upload process');
+    
+    if (onProgress) onProgress(5);
+
+    // Split file into chunks
+    const { chunks, metadata } = await VideoChunkingService.splitVideoFile(file);
+    console.log(`File split into ${chunks.length} chunks`);
+
+    if (onProgress) onProgress(15);
+
+    // Upload chunks with progress tracking
+    const chunkProgress = (chunkProgressPercent: number) => {
+      if (onProgress) {
+        // Reserve 15-95% for chunk upload progress
+        const totalProgress = 15 + (chunkProgressPercent * 0.8);
+        onProgress(totalProgress);
+      }
+    };
+
+    const chunkedMetadata = await VideoChunkingService.uploadVideoChunks(
+      chunks, 
+      metadata, 
+      chunkProgress
+    );
+
+    if (onProgress) onProgress(100);
+
+    // Store chunking metadata in the path (we'll use JSON encoding)
+    const metadataPath = `chunked:${JSON.stringify(chunkedMetadata)}`;
+    console.log('Chunked upload completed');
+    
+    return metadataPath;
+  }
+
   static async getVideoDownloadUrl(videoPath: string): Promise<string> {
-    const { data, error } = await supabase.storage.from('videos').createSignedUrl(videoPath, 3600);
-    if (error) throw new Error(`Failed to get download URL: ${error.message}`);
-    return data.signedUrl;
+    // Check if this is a chunked video
+    if (videoPath.startsWith('chunked:')) {
+      const metadataJson = videoPath.replace('chunked:', '');
+      const metadata: ChunkedVideoMetadata = JSON.parse(metadataJson);
+      
+      console.log('Reassembling chunked video for playback');
+      return await VideoChunkingService.reassembleVideoFromChunks(metadata);
+    } else {
+      // Regular file - get signed URL
+      const { data, error } = await supabase.storage.from('videos').createSignedUrl(videoPath, 3600);
+      if (error) throw new Error(`Failed to get download URL: ${error.message}`);
+      return data.signedUrl;
+    }
   }
 
   static async deleteVideoFile(videoPath: string): Promise<void> {
     // Only delete from storage if it's not a YouTube URL
     if (videoPath && !videoPath.includes('youtube.com') && !videoPath.includes('youtu.be')) {
-      await supabase.storage.from('videos').remove([videoPath]);
+      if (videoPath.startsWith('chunked:')) {
+        // Delete chunked video
+        const metadataJson = videoPath.replace('chunked:', '');
+        const metadata: ChunkedVideoMetadata = JSON.parse(metadataJson);
+        await VideoChunkingService.deleteVideoChunks(metadata);
+      } else {
+        // Delete regular file
+        await supabase.storage.from('videos').remove([videoPath]);
+      }
     }
   }
 

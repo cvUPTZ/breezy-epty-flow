@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { DirectAnalysisInterface } from '@/components/video/DirectAnalysisInterface';
 import { VideoJobService } from '@/services/videoJobService';
-import { Upload, Link, X } from 'lucide-react';
+import { VideoChunkingService } from '@/services/videoChunkingService';
+import { Upload, Link, X, FileVideo } from 'lucide-react';
 import { toast } from 'sonner';
 
 const DirectVideoAnalyzer: React.FC = () => {
@@ -16,6 +17,7 @@ const DirectVideoAnalyzer: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUrlSubmit = (e: React.FormEvent) => {
@@ -44,36 +46,51 @@ const DirectVideoAnalyzer: React.FC = () => {
     setError('');
 
     try {
-      // Simulate progress during upload
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + Math.random() * 15;
-        });
-      }, 200);
-
-      const videoPath = await VideoJobService.uploadVideo(file);
+      // Check file size and show appropriate message
+      const fileSizeMB = file.size / 1024 / 1024;
+      const needsChunking = VideoChunkingService.needsChunking(file);
       
-      // Complete the progress
-      clearInterval(progressInterval);
-      setUploadProgress(95);
+      if (needsChunking) {
+        setUploadStatus(`Large file detected (${fileSizeMB.toFixed(1)}MB). Splitting into chunks...`);
+        toast.info('Large file detected. Using chunked upload for optimal performance.');
+      } else {
+        setUploadStatus(`Uploading ${file.name} (${fileSizeMB.toFixed(1)}MB)...`);
+      }
+
+      const videoPath = await VideoJobService.uploadVideo(file, (progress) => {
+        setUploadProgress(progress);
+        
+        if (needsChunking) {
+          if (progress < 15) {
+            setUploadStatus('Preparing file for chunked upload...');
+          } else if (progress < 95) {
+            setUploadStatus(`Uploading video chunks... ${Math.round(progress)}%`);
+          } else {
+            setUploadStatus('Finalizing upload...');
+          }
+        } else {
+          setUploadStatus(`Uploading... ${Math.round(progress)}%`);
+        }
+      });
       
       const signedUrl = await VideoJobService.getVideoDownloadUrl(videoPath);
       
       setUploadProgress(100);
       setUploadedVideoUrl(signedUrl);
       setSubmittedUrl(signedUrl);
+      setUploadStatus('Upload completed successfully!');
       toast.success('Video uploaded successfully');
       
       // Reset progress after a short delay
-      setTimeout(() => setUploadProgress(0), 1000);
+      setTimeout(() => {
+        setUploadProgress(0);
+        setUploadStatus('');
+      }, 2000);
     } catch (e: any) {
       setError('Failed to upload video: ' + e.message);
       toast.error('Failed to upload video: ' + e.message);
       setUploadProgress(0);
+      setUploadStatus('');
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -87,6 +104,8 @@ const DirectVideoAnalyzer: React.FC = () => {
     setUploadedVideoUrl('');
     setSubmittedUrl('');
     setError('');
+    setUploadStatus('');
+    setUploadProgress(0);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -99,7 +118,7 @@ const DirectVideoAnalyzer: React.FC = () => {
           <CardTitle>Direct Video Analyzer</CardTitle>
           {!submittedUrl && (
             <CardDescription>
-              Upload a video file or enter a video URL to start analyzing directly. No jobs, no fuss.
+              Upload a video file or enter a video URL to start analyzing directly. Files larger than 40MB will be automatically split into chunks for optimal upload performance.
             </CardDescription>
           )}
         </CardHeader>
@@ -139,6 +158,9 @@ const DirectVideoAnalyzer: React.FC = () => {
                     <Upload className="h-5 w-5" />
                     Upload Video File
                   </CardTitle>
+                  <CardDescription className="text-sm">
+                    Supports files up to several GB. Large files will be automatically chunked for reliable upload.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -151,14 +173,17 @@ const DirectVideoAnalyzer: React.FC = () => {
                       className="w-full"
                     />
                     {isUploading && (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-blue-600">Uploading video...</span>
-                          <span className="text-blue-600">{Math.round(uploadProgress)}%</span>
+                          <span className="text-blue-600 flex items-center gap-2">
+                            <FileVideo className="h-4 w-4" />
+                            {uploadStatus}
+                          </span>
+                          <span className="text-blue-600 font-medium">{Math.round(uploadProgress)}%</span>
                         </div>
                         <Progress 
                           value={uploadProgress} 
-                          className="w-full h-2"
+                          className="w-full h-3"
                           indicatorClassName="bg-blue-500 transition-all duration-300"
                         />
                       </div>
