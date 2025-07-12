@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,7 +21,7 @@ interface PlayerPosition {
 
 interface AnnotationElement {
   id: string;
-  type: 'circle' | 'line' | 'arrow' | 'distance' | 'spotlight' | 'trajectory' | 'heatmap';
+  type: 'circle' | 'line' | 'arrow' | 'distance' | 'spotlight' | 'trajectory' | 'area';
   points: { x: number; y: number }[];
   color: string;
   label?: string;
@@ -121,7 +120,8 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
       arrow: '#8b5cf6',
       distance: '#ef4444',
       spotlight: '#fbbf24',
-      trajectory: '#f97316'
+      trajectory: '#f97316',
+      area: '#06b6d4'
     };
 
     const newAnnotation: AnnotationElement = {

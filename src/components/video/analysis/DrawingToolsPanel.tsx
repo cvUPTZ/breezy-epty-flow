@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Circle, Square, ArrowRight, Ruler, Target, Zap, MousePointer, Spotlight } from 'lucide-react';
+import { Circle, Square, ArrowRight, Ruler, Target, Zap, MousePointer, Focus } from 'lucide-react';
 
 interface DrawingToolsPanelProps {
   activeAnnotationTool: string;
@@ -25,7 +25,7 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
     { id: 'line', icon: Square, label: 'Line', color: 'bg-green-500' },
     { id: 'arrow', icon: ArrowRight, label: 'Arrow', color: 'bg-purple-500' },
     { id: 'distance', icon: Ruler, label: 'Distance', color: 'bg-red-500' },
-    { id: 'spotlight', icon: Spotlight, label: 'Spotlight', color: 'bg-yellow-500' },
+    { id: 'spotlight', icon: Focus, label: 'Spotlight', color: 'bg-yellow-500' },
     { id: 'trajectory', icon: Zap, label: 'Trajectory', color: 'bg-orange-500' },
   ];
 
