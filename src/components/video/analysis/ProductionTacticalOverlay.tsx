@@ -105,19 +105,37 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
 
   return (
     <div className="absolute inset-0">
-      {/* Drawing Tools Panel */}
-      <DrawingToolsPanel
-        activeAnnotationTool={activeAnnotationTool}
-        onToolChange={setActiveAnnotationTool}
-        onClearAll={handleClearAll}
-        onSaveAnalysis={handleSaveAnnotations}
-        violationCount={violationCount}
-        drawingMode={drawingMode}
-        onDrawingModeToggle={handleDrawingModeToggle}
-      />
+      {/* Drawing Tools Panel - Only show when drawing mode is enabled */}
+      {drawingMode && (
+        <DrawingToolsPanel
+          activeAnnotationTool={activeAnnotationTool}
+          onToolChange={setActiveAnnotationTool}
+          onClearAll={handleClearAll}
+          onSaveAnalysis={handleSaveAnnotations}
+          violationCount={violationCount}
+          drawingMode={drawingMode}
+          onDrawingModeToggle={handleDrawingModeToggle}
+        />
+      )}
 
-      {/* Drawing Overlay - Only active when drawing mode is enabled and not in select mode */}
-      <div className={`absolute inset-0 ${drawingMode && activeAnnotationTool !== 'select' ? 'pointer-events-auto' : 'pointer-events-none'} z-10`}>
+      {/* Toggle Drawing Mode Button - Always visible */}
+      {!drawingMode && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+          <button
+            onClick={handleDrawingModeToggle}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition-colors"
+          >
+            Enable Drawing
+          </button>
+        </div>
+      )}
+
+      {/* Drawing Overlay - Only intercept pointer events when actively drawing */}
+      <div className={`absolute inset-0 z-10 ${
+        drawingMode && activeAnnotationTool !== 'select' 
+          ? 'pointer-events-auto' 
+          : 'pointer-events-none'
+      }`}>
         <AdvancedDrawingOverlay
           videoDimensions={videoDimensions}
           currentTime={currentTime}
