@@ -1,8 +1,7 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { YouTubeService } from './youtubeService';
 import { AIProcessingService } from './aiProcessingService';
-import { VideoJob } from './videoJobService';
+import { VideoJob, VideoJobStatus } from './videoJobService';
 
 export interface ProcessingPipelineConfig {
   enableYouTubeDownload: boolean;
@@ -68,8 +67,14 @@ export class VideoProcessingPipeline {
       video_title: videoInfo.title,
       video_duration: videoInfo.duration,
       user_id: user.user.id,
-      status: 'pending' as const,
-      progress: 0
+      status: 'pending' as VideoJobStatus,
+      progress: 0,
+      job_config: {
+        source_type: source.type,
+        enableAIAnalysis: config.enableAIAnalysis,
+        enableSegmentation: config.enableSegmentation,
+        segmentDuration: config.segmentDuration
+      }
     };
 
     const insertResult = await supabase
@@ -90,6 +95,8 @@ export class VideoProcessingPipeline {
       video_duration: insertResult.data.video_duration || undefined,
       error_message: insertResult.data.error_message || undefined,
       user_id: insertResult.data.user_id!, // Assert non-null since we checked earlier
+      status: (insertResult.data.status || 'pending') as VideoJobStatus,
+      progress: insertResult.data.progress || 0,
       job_config: {
         source_type: source.type,
         enableAIAnalysis: config.enableAIAnalysis,
@@ -101,7 +108,7 @@ export class VideoProcessingPipeline {
     // Immediately update job status to 'processing' after creation
     const updateResult = await supabase
       .from('video_jobs')
-      .update({ status: 'processing' as const })
+      .update({ status: 'processing' as VideoJobStatus })
       .eq('id', currentJobState.id)
       .select('*')
       .single();
@@ -116,6 +123,8 @@ export class VideoProcessingPipeline {
         video_duration: updateResult.data.video_duration || undefined,
         error_message: updateResult.data.error_message || undefined,
         user_id: updateResult.data.user_id!, // Assert non-null
+        status: (updateResult.data.status || 'processing') as VideoJobStatus,
+        progress: updateResult.data.progress || 0,
         job_config: currentJobState.job_config
       };
     }
@@ -128,7 +137,7 @@ export class VideoProcessingPipeline {
         
         const updateAfterPrimary = await supabase
           .from('video_jobs')
-          .update({ status: 'processing' as const })
+          .update({ status: 'processing' as VideoJobStatus })
           .eq('id', currentJobState.id)
           .select('*')
           .single();
@@ -142,6 +151,8 @@ export class VideoProcessingPipeline {
             video_duration: updateAfterPrimary.data.video_duration || undefined,
             error_message: updateAfterPrimary.data.error_message || undefined,
             user_id: updateAfterPrimary.data.user_id!, // Assert non-null
+            status: (updateAfterPrimary.data.status || 'processing') as VideoJobStatus,
+            progress: updateAfterPrimary.data.progress || 0,
             job_config: currentJobState.job_config
           };
         }
@@ -163,7 +174,7 @@ export class VideoProcessingPipeline {
               const updateAfterFallbackFail = await supabase
                 .from('video_jobs')
                 .update({ 
-                  status: 'failed' as const, 
+                  status: 'failed' as VideoJobStatus, 
                   error_message: errorMsg 
                 })
                 .eq('id', currentJobState.id)
@@ -178,6 +189,8 @@ export class VideoProcessingPipeline {
                   video_duration: updateAfterFallbackFail.data.video_duration || undefined,
                   error_message: updateAfterFallbackFail.data.error_message || undefined,
                   user_id: updateAfterFallbackFail.data.user_id!, // Assert non-null
+                  status: (updateAfterFallbackFail.data.status || 'failed') as VideoJobStatus,
+                  progress: updateAfterFallbackFail.data.progress || 0,
                   job_config: currentJobState.job_config
                 };
               }
@@ -199,7 +212,7 @@ export class VideoProcessingPipeline {
             const updateAfterFallback = await supabase
               .from('video_jobs')
               .update({ 
-                status: 'completed' as const, 
+                status: 'completed' as VideoJobStatus, 
                 result_data: fallbackData.analysisResult, 
                 error_message: null 
               })
@@ -216,6 +229,8 @@ export class VideoProcessingPipeline {
                 video_duration: updateAfterFallback.data.video_duration || undefined,
                 error_message: updateAfterFallback.data.error_message || undefined,
                 user_id: updateAfterFallback.data.user_id!, // Assert non-null
+                status: (updateAfterFallback.data.status || 'completed') as VideoJobStatus,
+                progress: updateAfterFallback.data.progress || 0,
                 job_config: currentJobState.job_config
               };
             }
@@ -225,7 +240,7 @@ export class VideoProcessingPipeline {
             const updateAfterFallbackCatch = await supabase
               .from('video_jobs')
               .update({ 
-                status: 'failed' as const, 
+                status: 'failed' as VideoJobStatus, 
                 error_message: fallbackCatchError.message 
               })
               .eq('id', currentJobState.id)
@@ -240,6 +255,8 @@ export class VideoProcessingPipeline {
                 video_duration: updateAfterFallbackCatch.data.video_duration || undefined,
                 error_message: updateAfterFallbackCatch.data.error_message || undefined,
                 user_id: updateAfterFallbackCatch.data.user_id!, // Assert non-null
+                status: (updateAfterFallbackCatch.data.status || 'failed') as VideoJobStatus,
+                progress: updateAfterFallbackCatch.data.progress || 0,
                 job_config: currentJobState.job_config
               };
             }
@@ -249,7 +266,7 @@ export class VideoProcessingPipeline {
           const updateNoFallback = await supabase
             .from('video_jobs')
             .update({ 
-              status: 'failed' as const, 
+              status: 'failed' as VideoJobStatus, 
               error_message: primaryError.message 
             })
             .eq('id', currentJobState.id)
@@ -264,6 +281,8 @@ export class VideoProcessingPipeline {
               video_duration: updateNoFallback.data.video_duration || undefined,
               error_message: updateNoFallback.data.error_message || undefined,
               user_id: updateNoFallback.data.user_id!, // Assert non-null
+              status: (updateNoFallback.data.status || 'failed') as VideoJobStatus,
+              progress: updateNoFallback.data.progress || 0,
               job_config: currentJobState.job_config
             };
           }
@@ -273,7 +292,7 @@ export class VideoProcessingPipeline {
       // AI analysis not enabled, update status accordingly
       const updateNoAI = await supabase
         .from('video_jobs')
-        .update({ status: 'completed' as const })
+        .update({ status: 'completed' as VideoJobStatus })
         .eq('id', currentJobState.id)
         .select('*')
         .single();
@@ -286,6 +305,8 @@ export class VideoProcessingPipeline {
           video_duration: updateNoAI.data.video_duration || undefined,
           error_message: updateNoAI.data.error_message || undefined,
           user_id: updateNoAI.data.user_id!, // Assert non-null
+          status: (updateNoAI.data.status || 'completed') as VideoJobStatus,
+          progress: updateNoAI.data.progress || 0,
           job_config: currentJobState.job_config
         };
       }

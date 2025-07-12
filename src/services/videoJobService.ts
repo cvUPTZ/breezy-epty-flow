@@ -4,6 +4,13 @@ import { Database } from '@/integrations/supabase/types';
 
 export type VideoJobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'queued' | 'uploading';
 
+export interface VideoJobConfig {
+  source_type: 'youtube' | 'upload';
+  enableAIAnalysis: boolean;
+  enableSegmentation: boolean;
+  segmentDuration?: number;
+}
+
 export interface VideoJob {
   id: string;
   created_at: string;
@@ -16,12 +23,7 @@ export interface VideoJob {
   error_message?: string;
   progress: number;
   user_id: string;
-  job_config?: {
-    source_type: 'youtube' | 'upload';
-    enableAIAnalysis: boolean;
-    enableSegmentation: boolean;
-    segmentDuration?: number;
-  };
+  job_config?: VideoJobConfig;
 }
 
 export class VideoJobService {
@@ -51,7 +53,9 @@ export class VideoJobService {
       video_title: data.video_title || undefined,
       video_duration: data.video_duration || undefined,
       error_message: data.error_message || undefined,
-      user_id: data.user_id!
+      progress: data.progress || 0,
+      user_id: data.user_id!,
+      job_config: data.job_config ? data.job_config as VideoJobConfig : undefined
     };
   }
 
@@ -71,7 +75,9 @@ export class VideoJobService {
       video_title: job.video_title || undefined,
       video_duration: job.video_duration || undefined,
       error_message: job.error_message || undefined,
-      user_id: job.user_id!
+      progress: job.progress || 0,
+      user_id: job.user_id!,
+      job_config: job.job_config ? job.job_config as VideoJobConfig : undefined
     }));
   }
 
@@ -142,7 +148,9 @@ export class VideoJobService {
           video_title: data.video_title || undefined,
           video_duration: data.video_duration || undefined,
           error_message: data.error_message || undefined,
-          user_id: data.user_id!
+          progress: data.progress || 0,
+          user_id: data.user_id!,
+          job_config: data.job_config ? data.job_config as VideoJobConfig : undefined
         };
 
         callback(job);

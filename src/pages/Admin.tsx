@@ -52,7 +52,7 @@ import AuditLogs from '@/components/admin/AuditLogs';
 import { TrackerConnectionMonitor } from '@/components/admin/TrackerConnectionMonitor';
 import VideoMatchSetup from '@/components/admin/VideoMatchSetup';
 import TrackerNotificationSystem from '@/components/admin/TrackerNotificationSystem';
-import VoiceCollaborationManager from '@/components/admin/VoiceCollaborationManager';
+import { VoiceCollaborationManager } from '@/components/admin/VoiceCollaborationManager';
 import MockDataGenerator from '@/components/admin/MockDataGenerator';
 import EventAssignments from '@/components/admin/EventAssignments';
 import PlayerAssignments from '@/components/admin/PlayerAssignments';
