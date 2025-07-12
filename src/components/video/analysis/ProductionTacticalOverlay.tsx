@@ -144,20 +144,30 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
     );
   };
 
+  // Get the target container for rendering
+  const getPortalTarget = () => {
+    if (isFullscreen && document.fullscreenElement) {
+      return document.fullscreenElement as Element;
+    }
+    return document.body;
+  };
+
   return (
     <>
-      {/* Drawing Tools - Always positioned correctly */}
-      {isFullscreen ? (
-        createPortal(
-          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9999] pointer-events-auto">
-            <DrawingTools />
-          </div>,
-          document.fullscreenElement || document.body
-        )
-      ) : (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50">
+      {/* Drawing Tools - Always positioned correctly using portal */}
+      {createPortal(
+        <div 
+          className={`fixed top-4 left-1/2 transform -translate-x-1/2 pointer-events-auto ${
+            isFullscreen ? 'z-[2147483647]' : 'z-50'
+          }`}
+          style={{ 
+            position: isFullscreen ? 'fixed' : 'absolute',
+            zIndex: isFullscreen ? 2147483647 : 50
+          }}
+        >
           <DrawingTools />
-        </div>
+        </div>,
+        getPortalTarget()
       )}
 
       {/* Drawing Overlay Container */}
