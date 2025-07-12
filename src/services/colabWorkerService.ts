@@ -76,7 +76,22 @@ export class ColabWorkerService {
       throw new Error(`Failed to fetch pending job: ${error.message}`);
     }
 
-    return data as VideoJob | null;
+    if (!data) return null;
+
+    return {
+      ...data,
+      user_id: data.user_id || '',
+      status: data.status as any,
+      created_at: data.created_at || new Date().toISOString(),
+      progress: data.progress || 0,
+      video_title: data.video_title || undefined,
+      video_duration: data.video_duration || undefined,
+      error_message: data.error_message || undefined,
+      job_config: data.job_config ? data.job_config as any : undefined,
+      input_video_path: data.input_video_path || undefined,
+      result_data: data.result_data || undefined,
+      updated_at: data.updated_at || undefined,
+    };
   }
 
   // Claim a job by updating its status to 'processing'
@@ -104,7 +119,7 @@ export class ColabWorkerService {
     try {
       // Step 1: Download video from Supabase Storage
       await this.updateJobProgress(job.id, 10, 'Downloading video...');
-      const videoBlob = await this.downloadVideoFromStorage(job.input_video_path);
+      const videoBlob = await this.downloadVideoFromStorage(job.input_video_path || '');
       
       // Step 2: Initialize AI models
       await this.updateJobProgress(job.id, 20, 'Loading AI models...');

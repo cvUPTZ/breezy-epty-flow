@@ -21,7 +21,7 @@ export interface VideoJob {
   error_message?: string;
   job_config?: VideoJobConfig;
   input_video_path?: string;
-  output_video_path?: string;
+  result_data?: any;
   created_at: string;
   updated_at?: string;
 }
@@ -41,14 +41,16 @@ export class VideoJobService {
 
     return (data || []).map(job => ({
       ...job,
+      user_id: job.user_id || '',
+      status: job.status as VideoJobStatus || 'pending',
       created_at: job.created_at || new Date().toISOString(),
       progress: job.progress || 0,
       video_title: job.video_title || undefined,
       video_duration: job.video_duration || undefined,
       error_message: job.error_message || undefined,
-      job_config: job.job_config ? job.job_config as VideoJobConfig : undefined,
+      job_config: job.job_config ? job.job_config as unknown as VideoJobConfig : undefined,
       input_video_path: job.input_video_path || undefined,
-      output_video_path: job.output_video_path || undefined,
+      result_data: job.result_data || undefined,
       updated_at: job.updated_at || undefined,
     }));
   }
@@ -67,14 +69,16 @@ export class VideoJobService {
 
     return (data || []).map(job => ({
       ...job,
+      user_id: job.user_id || '',
+      status: job.status as VideoJobStatus || 'pending',
       created_at: job.created_at || new Date().toISOString(),
       progress: job.progress || 0,
       video_title: job.video_title || undefined,
       video_duration: job.video_duration || undefined,
       error_message: job.error_message || undefined,
-      job_config: job.job_config ? job.job_config as VideoJobConfig : undefined,
+      job_config: job.job_config ? job.job_config as unknown as VideoJobConfig : undefined,
       input_video_path: job.input_video_path || undefined,
-      output_video_path: job.output_video_path || undefined,
+      result_data: job.result_data || undefined,
       updated_at: job.updated_at || undefined,
     }));
   }
@@ -143,14 +147,16 @@ export class VideoJobService {
 
         const job: VideoJob = {
           ...data,
+          user_id: data.user_id || '',
+          status: data.status as VideoJobStatus || 'pending',
           created_at: data.created_at || new Date().toISOString(),
           progress: data.progress || 0,
           video_title: data.video_title || undefined,
           video_duration: data.video_duration || undefined,
           error_message: data.error_message || undefined,
-          job_config: data.job_config ? data.job_config as VideoJobConfig : undefined,
+          job_config: data.job_config ? data.job_config as unknown as VideoJobConfig : undefined,
           input_video_path: data.input_video_path || undefined,
-          output_video_path: data.output_video_path || undefined,
+          result_data: data.result_data || undefined,
           updated_at: data.updated_at || undefined,
         };
 

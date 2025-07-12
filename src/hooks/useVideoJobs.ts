@@ -36,7 +36,7 @@ export const useVideoJobs = () => {
 
     try {
       const job = await VideoProcessingPipeline.processVideoComplete(videoUrl, user.id, config);
-      setJobs(prev => [job, ...prev]);
+      setJobs((prev: VideoJob[]) => [job, ...prev]);
       toast.success('Video processing started');
       return job;
     } catch (err) {

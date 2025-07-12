@@ -66,7 +66,7 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
   useEffect(() => {
     const loadAnnotations = async () => {
       try {
-        const videoId = btoa(videoUrl); // Simple video ID generation
+        const videoId = btoa(videoUrl);
         const savedAnnotations = await AnnotationPersistenceService.loadAnnotations(videoId);
         setAnnotations(savedAnnotations);
       } catch (error) {
@@ -86,7 +86,6 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
     try {
       await trackingService.startTracking(videoElement, (data) => {
         setPlayerData(data);
-        // Update violation count based on tracking data
         const violations = data.filter(p => p.confidence < 0.6).length;
         setViolationCount(violations);
       });

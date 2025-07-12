@@ -19,7 +19,7 @@ interface VideoJob {
   error_message?: string;
   job_config?: ProcessingPipelineConfig;
   input_video_path?: string;
-  output_video_path?: string;
+  result_data?: any;
   created_at: string;
   updated_at?: string;
 }
@@ -37,7 +37,7 @@ export class VideoProcessingPipeline {
         .insert({
           user_id: userId,
           status: 'pending',
-          job_config: config,
+          job_config: config as any,
           input_video_path: videoUrl,
           progress: 0
         })
@@ -50,14 +50,15 @@ export class VideoProcessingPipeline {
 
       const videoJob: VideoJob = {
         ...job,
+        user_id: job.user_id || '',
         created_at: job.created_at || new Date().toISOString(),
         progress: job.progress || 0,
         video_title: job.video_title || undefined,
         video_duration: job.video_duration || undefined,
         error_message: job.error_message || undefined,
-        job_config: job.job_config ? job.job_config as ProcessingPipelineConfig : undefined,
+        job_config: job.job_config ? job.job_config as unknown as ProcessingPipelineConfig : undefined,
         input_video_path: job.input_video_path || undefined,
-        output_video_path: job.output_video_path || undefined,
+        result_data: job.result_data || undefined,
         updated_at: job.updated_at || undefined,
       };
 
@@ -81,8 +82,6 @@ export class VideoProcessingPipeline {
         // Update progress
         const progressJob = await this.updateJobStatus(job.id, 'processing', 50);
 
-        // Poll for completion or handle webhook
-        // For now, return the job in processing state
         return processingJob;
 
       } catch (processingError) {
@@ -126,14 +125,15 @@ export class VideoProcessingPipeline {
 
     return {
       ...data,
+      user_id: data.user_id || '',
       created_at: data.created_at || new Date().toISOString(),
       progress: data.progress || 0,
       video_title: data.video_title || undefined,
       video_duration: data.video_duration || undefined,
       error_message: data.error_message || undefined,
-      job_config: data.job_config ? data.job_config as ProcessingPipelineConfig : undefined,
+      job_config: data.job_config ? data.job_config as unknown as ProcessingPipelineConfig : undefined,
       input_video_path: data.input_video_path || undefined,
-      output_video_path: data.output_video_path || undefined,
+      result_data: data.result_data || undefined,
       updated_at: data.updated_at || undefined,
     };
   }
@@ -196,7 +196,7 @@ export class VideoProcessingPipeline {
       };
 
       if (results) {
-        updateData.results = results;
+        updateData.result_data = results;
       }
 
       if (error) {
