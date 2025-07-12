@@ -25,7 +25,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const fetchUserRole = async (userId: string) => {
     try {
-      const { data, error } = await supabase.rpc('get_user_role', { user_id: userId });
+      const { data, error } = await supabase.rpc('get_user_role_from_auth', { user_id_param: userId });
       if (error) {
         console.error('Error fetching user role:', error);
         return null;
