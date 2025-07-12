@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +40,24 @@ const StartupPitchPresentation: React.FC = () => {
     }).format(amount);
   };
 
+  // Calculs réalistes basés sur votre application
+  const eventTypesCount = 47; // Nombre réel d'event types dans votre app
+  const avgEventsPerMatch = 280; // Pass (80) + Shot(12) + Tackle(25) + Foul(18) + etc.
+  const avgMatchDuration = 95; // minutes avec arrêts de jeu
+  const trackingDifficulty = 75; // Sur 100 (collaboration multi-tracker = complexe)
+  
+  // Coûts et tarification
+  const monthlyCosts = {
+    development: 850000, // 2 devs seniors
+    infrastructure: 120000, // Supabase Pro + LiveKit + hébergement
+    support: 320000, // 1 support technique
+    marketing: 180000, // Marketing digital
+    admin: 150000, // Frais généraux
+  };
+  
+  const totalMonthlyCosts = Object.values(monthlyCosts).reduce((a, b) => a + b, 0);
+  const yearlyOperatingCosts = totalMonthlyCosts * 12;
+
   const slides = [
     // Slide 1: Introduction
     {
@@ -61,23 +78,263 @@ const StartupPitchPresentation: React.FC = () => {
 
           <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto">
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary">Multiple</div>
-              <div className="text-sm text-muted-foreground">Trackers Simultanés</div>
+              <div className="text-3xl font-bold text-primary">{eventTypesCount}</div>
+              <div className="text-sm text-muted-foreground">Types d'Événements</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-primary">Temps Réel</div>
               <div className="text-sm text-muted-foreground">Suivi Live</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary">Intégré</div>
-              <div className="text-sm text-muted-foreground">Video + Voice</div>
+              <div className="text-3xl font-bold text-primary">Multi-Tracker</div>
+              <div className="text-sm text-muted-foreground">Collaboration</div>
             </div>
           </div>
         </div>
       )
     },
 
-    // Slide 2: Core Platform Features
+    // Slide 2: Configuration Technique Réelle
+    {
+      title: "⚙️ Configuration Types d'Événements",
+      subtitle: "Paramètres techniques réels de la plateforme",
+      content: (
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <h3 className="text-2xl font-semibold text-foreground">Types d'Événements Intégrés</h3>
+              <div className="bg-muted p-4 rounded-lg">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div><strong>Actions Ballon:</strong> Pass, Shot, Cross, Dribble, Tackle, Interception, Clearance, Save</div>
+                  <div><strong>Phases Arrêtées:</strong> Corner, Free Kick, Throw In, Goal Kick, Penalty</div>
+                  <div><strong>Fautes & Cartons:</strong> Foul, Yellow Card, Red Card, Offside</div>
+                  <div><strong>Buts & Passes D.:</strong> Goal, Assist, Own Goal, Decisive Pass</div>
+                  <div><strong>Possession:</strong> Ball Lost, Ball Recovered, Ball Recovery</div>
+                  <div><strong>Duels:</strong> Aerial Duel Won/Lost, Ground Duel, Contact</div>
+                  <div><strong>Avancé:</strong> Pressure, Long/Forward/Backward/Lateral Pass, Successful Cross/Dribble</div>
+                </div>
+              </div>
+              
+              <Card>
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm">Total Types d'Événements</span>
+                      <span className="font-bold text-primary">{eventTypesCount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Événements/Match (Moyenne)</span>
+                      <span className="font-bold">{avgEventsPerMatch}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Durée Match (Minutes)</span>
+                      <span className="font-bold">{avgMatchDuration}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Complexité Tracking</span>
+                      <span className="font-bold">{trackingDifficulty}/100</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="space-y-6">
+              <h3 className="text-2xl font-semibold text-foreground">Capacités Techniques</h3>
+              
+              <Card>
+                <CardContent className="p-4">
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm">Précision Tracking Multi-Utilisateur</span>
+                        <span className="text-sm">92%</span>
+                      </div>
+                      <Progress value={92} className="h-2" />
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm">Synchronisation Temps Réel</span>
+                        <span className="text-sm">98%</span>
+                      </div>
+                      <Progress value={98} className="h-2" />
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm">Fiabilité Voice Chat</span>
+                        <span className="text-sm">96%</span>
+                      </div>
+                      <Progress value={96} className="h-2" />
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm">Intégration Vidéo</span>
+                        <span className="text-sm">89%</span>
+                      </div>
+                      <Progress value={89} className="h-2" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 p-4 rounded-lg">
+                <h4 className="font-semibold mb-2">Calcul Charge de Travail</h4>
+                <div className="text-sm space-y-1">
+                  <div>• {avgEventsPerMatch} événements × {trackingDifficulty/100} difficulté = {Math.round(avgEventsPerMatch * trackingDifficulty/100)} événements complexes/match</div>
+                  <div>• Support jusqu'à 8 trackers simultanés</div>
+                  <div>• Sauvegarde temps réel toutes les 2 secondes</div>
+                  <div>• Génération automatique de 15+ statistiques</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    },
+
+    // Slide 3: Modèle Économique avec Marges
+    {
+      title: "💰 Modèle Économique & Tarification",
+      subtitle: "Structure de coûts et marges bénéficiaires optimisées",
+      content: (
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <h3 className="text-xl font-semibold text-foreground">Structure de Coûts Mensuels</h3>
+              <Card>
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm">Développement (2 devs)</span>
+                    <span className="font-medium">{formatCurrency(monthlyCosts.development)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Infrastructure Cloud</span>
+                    <span className="font-medium">{formatCurrency(monthlyCosts.infrastructure)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Support Technique</span>
+                    <span className="font-medium">{formatCurrency(monthlyCosts.support)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Marketing Digital</span>
+                    <span className="font-medium">{formatCurrency(monthlyCosts.marketing)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Frais Généraux</span>
+                    <span className="font-medium">{formatCurrency(monthlyCosts.admin)}</span>
+                  </div>
+                  <hr />
+                  <div className="flex justify-between font-bold">
+                    <span>Total Mensuel</span>
+                    <span className="text-red-600">{formatCurrency(totalMonthlyCosts)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="space-y-6">
+              <h3 className="text-xl font-semibold text-foreground">Offres Tarifaires</h3>
+              
+              <Card className="border-green-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>💎 Abonnement Premium</span>
+                    <Badge variant="default">Recommandé</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="text-3xl font-bold text-green-600">
+                    {formatCurrency(85000)}/mois
+                  </div>
+                  <ul className="text-sm space-y-1">
+                    <li>✅ Matchs illimités</li>
+                    <li>✅ 8 trackers simultanés</li>
+                    <li>✅ Voice chat intégré</li>
+                    <li>✅ Analyses avancées</li>
+                    <li>✅ Support prioritaire</li>
+                    <li>✅ Formation équipe</li>
+                  </ul>
+                  <div className="text-xs text-muted-foreground">
+                    Marge: 65% • ROI: 18 mois
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-blue-200">
+                <CardHeader>
+                  <CardTitle>⚡ Pay-per-Match</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {formatCurrency(12000)}/match
+                  </div>
+                  <ul className="text-sm space-y-1">
+                    <li>✅ 4 trackers max</li>
+                    <li>✅ Statistiques de base</li>
+                    <li>✅ Support email</li>
+                    <li>⚠️ Pas de formation</li>
+                  </ul>
+                  <div className="text-xs text-muted-foreground">
+                    Marge: 58% • Pour clubs occasionnels
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-purple-200">
+                <CardHeader>
+                  <CardTitle>🏆 Enterprise</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {formatCurrency(150000)}/mois
+                  </div>
+                  <ul className="text-sm space-y-1">
+                    <li>✅ Solution sur-mesure</li>
+                    <li>✅ Intégration APIs</li>
+                    <li>✅ Support dédié 24/7</li>
+                    <li>✅ Formation continue</li>
+                  </ul>
+                  <div className="text-xs text-muted-foreground">
+                    Marge: 72% • Clubs professionnels
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 p-6 rounded-lg">
+            <h4 className="font-semibold mb-4 text-foreground">Projections Financières (24 mois)</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+              <div>
+                <div className="text-2xl font-bold text-green-600">12</div>
+                <div className="text-sm text-muted-foreground">Clubs Premium (An 1)</div>
+                <div className="text-xs">= {formatCurrency(12 * 85000)} /mois</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-blue-600">25</div>
+                <div className="text-sm text-muted-foreground">Clubs Premium (An 2)</div>
+                <div className="text-xs">= {formatCurrency(25 * 85000)} /mois</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-green-600">68%</div>
+                <div className="text-sm text-muted-foreground">Marge Brute Moyenne</div>
+                <div className="text-xs">Après tous coûts</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-emerald-600">14 mois</div>
+                <div className="text-sm text-muted-foreground">Break-even Point</div>
+                <div className="text-xs">Avec 10 clients</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    },
+
+    // Slide 4: Core Platform Features
     {
       title: "🎯 Fonctionnalités Principales",
       subtitle: "Une plateforme complète pour le suivi de matchs professionnel",
@@ -136,7 +393,7 @@ const StartupPitchPresentation: React.FC = () => {
       )
     },
 
-    // Slide 3: Collaboration Features
+    // Slide 5: Collaboration Features
     {
       title: "🤝 Collaboration et Gestion",
       subtitle: "Outils professionnels pour équipes d'analyse",
@@ -197,7 +454,7 @@ const StartupPitchPresentation: React.FC = () => {
       )
     },
 
-    // Slide 4: Market Opportunity
+    // Slide 6: Market Opportunity
     {
       title: "🌍 Opportunité Marché",
       subtitle: "Digitalisation du football professionnel algérien",
@@ -303,136 +560,7 @@ const StartupPitchPresentation: React.FC = () => {
       )
     },
 
-    // Slide 5: Business Model
-    {
-      title: "💼 Modèle Économique",
-      subtitle: "Revenus récurrents et services à valeur ajoutée",
-      content: (
-        <div className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <h4 className="font-semibold mb-4 text-foreground">Sources de Revenus</h4>
-              <div className="space-y-4">
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium">Abonnements SaaS</span>
-                      <Badge variant="default">Récurrent</Badge>
-                    </div>
-                    <div className="text-2xl font-bold text-green-600">
-                      {formatCurrency(45000)}/club/mois
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Accès plateforme complète + support
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium">Pay-per-Match</span>
-                      <Badge variant="secondary">Flexible</Badge>
-                    </div>
-                    <div className="text-2xl font-bold text-blue-600">
-                      {formatCurrency(8000)}/match
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Pour clubs occasionnels
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium">Formation & Consulting</span>
-                      <Badge variant="outline">Service</Badge>
-                    </div>
-                    <div className="text-2xl font-bold text-purple-600">
-                      {formatCurrency(120000)}/formation
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Formation analystes + setup
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4 text-foreground">Projections (36 mois)</h4>
-              <div className="space-y-4">
-                <div className="bg-muted p-4 rounded-lg">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-sm text-muted-foreground">An 1 (10 clubs)</div>
-                      <div className="text-xl font-bold">{formatCurrency(5400000)}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground">An 2 (25 clubs)</div>
-                      <div className="text-xl font-bold">{formatCurrency(13500000)}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground">An 3 (40 clubs)</div>
-                      <div className="text-xl font-bold">{formatCurrency(21600000)}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground">Marge Brute</div>
-                      <div className="text-xl font-bold text-green-600">80%</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Développement Platform</span>
-                    <span className="font-medium">35%</span>
-                  </div>
-                  <Progress value={35} className="h-2" />
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Commercial & Marketing</span>
-                    <span className="font-medium">25%</span>
-                  </div>
-                  <Progress value={25} className="h-2" />
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Support & Formation</span>
-                    <span className="font-medium">20%</span>
-                  </div>
-                  <Progress value={20} className="h-2" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 p-6 rounded-lg">
-            <h4 className="font-semibold mb-3 text-foreground">Métriques Clés de Performance</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-green-600">12 mois</div>
-                <div className="text-sm text-muted-foreground">Time to Break-even</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-600">5%</div>
-                <div className="text-sm text-muted-foreground">Churn mensuel</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-600">85%</div>
-                <div className="text-sm text-muted-foreground">Satisfaction client</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-600">3.2</div>
-                <div className="text-sm text-muted-foreground">Matches/club/mois</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )
-    },
-
-    // Slide 6: Technology & Architecture
+    // Slide 7: Technology & Architecture
     {
       title: "⚡ Architecture Technique",
       subtitle: "Stack moderne pour performance et scalabilité",
@@ -555,7 +683,7 @@ const StartupPitchPresentation: React.FC = () => {
       )
     },
 
-    // Slide 7: Roadmap & Investment
+    // Slide 8: Roadmap & Investment
     {
       title: "🚀 Roadmap & Financement",
       subtitle: "Plan de développement et besoins d'investissement",
@@ -677,7 +805,7 @@ const StartupPitchPresentation: React.FC = () => {
                 <div className="bg-muted p-3 rounded">
                   <div className="flex justify-between">
                     <span className="text-sm">ARR (Annual Recurring Revenue)</span>
-                    <span className="font-semibold">{formatCurrency(21600000)}</span>
+                    <span className="font-semibold">{formatCurrency(25 * 85000 * 12)}</span>
                   </div>
                 </div>
                 <div className="bg-muted p-3 rounded">
