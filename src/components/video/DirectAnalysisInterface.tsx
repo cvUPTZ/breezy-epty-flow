@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,10 +19,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { format } from 'date-fns'
-import { CalendarIcon } from "@radix-ui/react-icons"
+import { CalendarIcon } from "lucide-react"
 import { DateRange } from "react-day-picker"
 import { addMinutes, formatISO } from 'date-fns';
-import { EnhancedVideoPlayer, VideoPlayerRef } from './EnhancedVideoPlayer';
+import EnhancedVideoPlayer, { VideoPlayerRef } from './EnhancedVideoPlayer';
 
 interface DirectAnalysisInterfaceProps {
   videoUrl: string;
@@ -56,7 +57,7 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
   const [isDescriptionValid, setIsDescriptionValid] = useState(false);
   const { toast } = useToast();
 
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<VideoPlayerRef>(null);
 
   const handleTimeUpdate = (time: number) => {
     setCurrentTime(time);
@@ -402,7 +403,7 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
         <CardContent className="space-y-4">
           <h4 className="text-sm font-medium">YouTube URL</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input type="url" placeholder="Enter YouTube URL" value={videoUrl} onChange={(e) => setIsYoutubeUrl(e.target.value)} />
+            <Input type="url" placeholder="Enter YouTube URL" value={videoUrl} onChange={(e) => setIsYoutubeUrl(!!e.target.value)} />
             <Button onClick={handleYouTubeURL} disabled={isExtracting}>
               {isExtracting ? 'Extracting...' : 'Extract Video ID'}
             </Button>
