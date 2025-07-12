@@ -30,6 +30,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { toast } from 'sonner';
+import StartupPitchPresentation from './StartupPitchPresentation';
 
 interface BusinessGoal {
   id: string;
@@ -276,14 +277,19 @@ const BusinessPlanManagement: React.FC = () => {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="pitch">Pitch Startup</TabsTrigger>
           <TabsTrigger value="goals">Objectifs</TabsTrigger>
           <TabsTrigger value="revenue">Revenus</TabsTrigger>
           <TabsTrigger value="budget">Budget Trackers</TabsTrigger>
           <TabsTrigger value="market">Marché Local</TabsTrigger>
           <TabsTrigger value="compliance">Conformité</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="pitch" className="space-y-6">
+          <StartupPitchPresentation />
+        </TabsContent>
 
         <TabsContent value="overview" className="space-y-6">
           {/* Key Metrics */}
