@@ -6,6 +6,7 @@ import { AnnotationPersistenceService } from '@/services/annotationPersistenceSe
 import { AdvancedDrawingOverlay } from './AdvancedDrawingOverlay';
 import { DrawingToolsPanel } from './DrawingToolsPanel';
 import { toast } from 'sonner';
+import { createPortal } from 'react-dom';
 
 interface ProductionTacticalOverlayProps {
   videoElement: HTMLVideoElement | null;
@@ -117,57 +118,47 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
     }
   };
 
-  // Create portal container for fullscreen elements
-  const ToolsContainer = ({ children }: { children: React.ReactNode }) => {
-    if (isFullscreen) {
+  // Create drawing tools component
+  const DrawingTools = () => {
+    if (drawingMode) {
       return (
-        <div 
-          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[2147483647]"
-          style={{ 
-            position: 'fixed',
-            top: '16px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 2147483647,
-            pointerEvents: 'auto'
-          }}
-        >
-          {children}
-        </div>
+        <DrawingToolsPanel
+          activeAnnotationTool={activeAnnotationTool}
+          onToolChange={setActiveAnnotationTool}
+          onClearAll={handleClearAll}
+          onSaveAnalysis={handleSaveAnnotations}
+          violationCount={violationCount}
+          drawingMode={drawingMode}
+          onDrawingModeToggle={handleDrawingModeToggle}
+        />
       );
     }
     
     return (
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50">
-        {children}
-      </div>
+      <button
+        onClick={handleDrawingModeToggle}
+        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition-colors"
+      >
+        Enable Drawing
+      </button>
     );
   };
 
   return (
     <>
-      {/* Drawing Tools Panel */}
-      <ToolsContainer>
-        {drawingMode ? (
-          <DrawingToolsPanel
-            activeAnnotationTool={activeAnnotationTool}
-            onToolChange={setActiveAnnotationTool}
-            onClearAll={handleClearAll}
-            onSaveAnalysis={handleSaveAnnotations}
-            violationCount={violationCount}
-            drawingMode={drawingMode}
-            onDrawingModeToggle={handleDrawingModeToggle}
-          />
-        ) : (
-          <button
-            onClick={handleDrawingModeToggle}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition-colors pointer-events-auto"
-            style={{ pointerEvents: 'auto' }}
-          >
-            Enable Drawing
-          </button>
-        )}
-      </ToolsContainer>
+      {/* Drawing Tools - Always positioned correctly */}
+      {isFullscreen ? (
+        createPortal(
+          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9999] pointer-events-auto">
+            <DrawingTools />
+          </div>,
+          document.fullscreenElement || document.body
+        )
+      ) : (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50">
+          <DrawingTools />
+        </div>
+      )}
 
       {/* Drawing Overlay Container */}
       <div className="absolute inset-0">
