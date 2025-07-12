@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,6 +10,7 @@ import { toast } from 'sonner';
 import EnhancedVideoPlayer from './EnhancedVideoPlayer';
 import { ProductionTacticalOverlay } from './analysis/ProductionTacticalOverlay';
 import { AnalysisControlPanel } from './analysis/AnalysisControlPanel';
+import { ExternalVideoControls } from './analysis/ExternalVideoControls';
 
 interface DirectAnalysisInterfaceProps {
   videoUrl: string;
@@ -19,6 +21,7 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [videoDimensions, setVideoDimensions] = useState({ width: 0, height: 0 });
   const [analysisStats, setAnalysisStats] = useState({
@@ -70,6 +73,23 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
     if (videoRef.current) {
       videoRef.current.volume = newVolume;
     }
+    if (newVolume === 0) {
+      setIsMuted(true);
+    } else if (isMuted) {
+      setIsMuted(false);
+    }
+  };
+
+  const handleMuteToggle = () => {
+    if (videoRef.current) {
+      if (isMuted) {
+        videoRef.current.volume = volume;
+        setIsMuted(false);
+      } else {
+        videoRef.current.volume = 0;
+        setIsMuted(true);
+      }
+    }
   };
 
   const handleFullscreenToggle = () => {
@@ -91,6 +111,44 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
     if (video && video !== videoRef.current) {
       videoRef.current = video;
       console.log('Video element reference set:', video);
+      
+      // Set up video event listeners
+      const handleLoadedMetadata = () => {
+        setDuration(video.duration);
+        setVolume(video.volume);
+        setIsMuted(video.muted);
+      };
+
+      const handleTimeUpdate = () => {
+        setCurrentTime(video.currentTime);
+      };
+
+      const handlePlay = () => {
+        setIsPlaying(true);
+      };
+
+      const handlePause = () => {
+        setIsPlaying(false);
+      };
+
+      const handleVolumeChangeEvent = () => {
+        setVolume(video.volume);
+        setIsMuted(video.muted);
+      };
+
+      video.addEventListener('loadedmetadata', handleLoadedMetadata);
+      video.addEventListener('timeupdate', handleTimeUpdate);
+      video.addEventListener('play', handlePlay);
+      video.addEventListener('pause', handlePause);
+      video.addEventListener('volumechange', handleVolumeChangeEvent);
+
+      return () => {
+        video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        video.removeEventListener('timeupdate', handleTimeUpdate);
+        video.removeEventListener('play', handlePlay);
+        video.removeEventListener('pause', handlePause);
+        video.removeEventListener('volumechange', handleVolumeChangeEvent);
+      };
     }
   }, [videoDimensions]);
 
@@ -201,6 +259,21 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
               </div>
             </CardContent>
           </Card>
+          
+          {/* External Video Controls for Basic Tab */}
+          <ExternalVideoControls
+            isPlaying={isPlaying}
+            currentTime={currentTime}
+            duration={duration}
+            volume={volume}
+            isMuted={isMuted}
+            isFullscreen={isFullscreen}
+            onPlayPause={handlePlayPause}
+            onSeek={handleSeek}
+            onVolumeChange={handleVolumeChange}
+            onMuteToggle={handleMuteToggle}
+            onFullscreenToggle={handleFullscreenToggle}
+          />
         </TabsContent>
 
         <TabsContent value="advanced" className="space-y-4">
@@ -226,6 +299,21 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
               </div>
             </CardContent>
           </Card>
+
+          {/* External Video Controls for Advanced Tab */}
+          <ExternalVideoControls
+            isPlaying={isPlaying}
+            currentTime={currentTime}
+            duration={duration}
+            volume={volume}
+            isMuted={isMuted}
+            isFullscreen={isFullscreen}
+            onPlayPause={handlePlayPause}
+            onSeek={handleSeek}
+            onVolumeChange={handleVolumeChange}
+            onMuteToggle={handleMuteToggle}
+            onFullscreenToggle={handleFullscreenToggle}
+          />
 
           {/* Analysis Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
