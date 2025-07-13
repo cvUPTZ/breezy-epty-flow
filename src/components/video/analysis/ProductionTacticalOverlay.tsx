@@ -174,6 +174,31 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
   const shouldInterceptPointerEvents = drawingMode && activeAnnotationTool !== 'select';
   const isDrawingActive = drawingMode && activeAnnotationTool !== 'select';
 
+  // Apply cursor styles dynamically
+  useEffect(() => {
+    if (isDrawingActive) {
+      // Add global cursor styles
+      const style = document.createElement('style');
+      style.id = 'drawing-cursor-styles';
+      style.textContent = `
+        .drawing-overlay-active,
+        .drawing-overlay-active *,
+        video {
+          cursor: crosshair !important;
+        }
+      `;
+      document.head.appendChild(style);
+
+      return () => {
+        // Clean up styles when component unmounts or drawing is disabled
+        const existingStyle = document.getElementById('drawing-cursor-styles');
+        if (existingStyle) {
+          existingStyle.remove();
+        }
+      };
+    }
+  }, [isDrawingActive]);
+
   return (
     <>
       {/* Drawing Tools Panel - Always positioned correctly using portal */}
@@ -196,7 +221,7 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
         <div 
           className={`absolute inset-0 transition-all duration-200 ${
             shouldInterceptPointerEvents 
-              ? 'pointer-events-auto z-30' 
+              ? 'pointer-events-auto z-30 drawing-overlay-active' 
               : 'pointer-events-none z-10'
           }`}
           style={{ 
@@ -207,7 +232,7 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
           {/* Cursor overlay for better visual feedback */}
           {isDrawingActive && (
             <div 
-              className="absolute inset-0 cursor-crosshair"
+              className="absolute inset-0"
               style={{ 
                 cursor: 'crosshair !important',
                 zIndex: 35
@@ -270,20 +295,6 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
           </div>
         )}
       </div>
-
-      {/* Global cursor style injection for drawing mode */}
-      {isDrawingActive && (
-        <style jsx global>{`
-          .cursor-crosshair,
-          .cursor-crosshair * {
-            cursor: crosshair !important;
-          }
-          
-          video {
-            cursor: ${isDrawingActive ? 'crosshair !important' : 'default'};
-          }
-        `}</style>
-      )}
     </>
   );
 };
