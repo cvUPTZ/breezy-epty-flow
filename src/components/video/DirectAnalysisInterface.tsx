@@ -292,13 +292,11 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
             volume={volume}
             isMuted={isMuted}
             isFullscreen={isFullscreen}
-            drawingMode={drawingMode}
             onPlayPause={handlePlayPause}
             onSeek={handleSeek}
             onVolumeChange={handleVolumeChange}
             onMuteToggle={handleMuteToggle}
             onFullscreenToggle={handleFullscreenToggle}
-            onDrawingModeToggle={handleDrawingModeToggle}
           />
 
           <ComprehensiveAnnotationSystem
@@ -340,13 +338,11 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
             volume={volume}
             isMuted={isMuted}
             isFullscreen={isFullscreen}
-            drawingMode={drawingMode}
             onPlayPause={handlePlayPause}
             onSeek={handleSeek}
             onVolumeChange={handleVolumeChange}
             onMuteToggle={handleMuteToggle}
             onFullscreenToggle={handleFullscreenToggle}
-            onDrawingModeToggle={handleDrawingModeToggle}
           />
 
           <ComprehensiveAnnotationSystem

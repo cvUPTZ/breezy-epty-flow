@@ -67,6 +67,7 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
         const videoId = btoa(videoUrl); // Simple video ID generation
         const savedAnnotations = await AnnotationPersistenceService.loadAnnotations(videoId);
         setAnnotations(savedAnnotations);
+        console.log(`Loaded ${savedAnnotations.length} annotations for video ${videoId}`);
       } catch (error) {
         console.error('Failed to load annotations:', error);
       }
@@ -94,6 +95,12 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
     }
   }, [trackingService, videoElement]);
 
+  // Handle annotation save
+  const handleAnnotationSave = (newAnnotation: any) => {
+    setAnnotations(prev => [...prev, newAnnotation]);
+    toast.success(`${activeAnnotationTool} annotation saved at ${Math.floor(currentTime / 60)}:${Math.floor(currentTime % 60).toString().padStart(2, '0')}`);
+  };
+
   // Save annotations
   const handleSaveAnnotations = async () => {
     try {
@@ -115,33 +122,15 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
     setDrawingMode(!drawingMode);
     if (!drawingMode) {
       setActiveAnnotationTool('select');
+      toast.info('Drawing mode enabled - Start annotating tactical moments');
+    } else {
+      toast.info('Drawing mode disabled');
     }
   };
 
-  // Create drawing tools component
-  const DrawingTools = () => {
-    if (drawingMode) {
-      return (
-        <DrawingToolsPanel
-          activeAnnotationTool={activeAnnotationTool}
-          onToolChange={setActiveAnnotationTool}
-          onClearAll={handleClearAll}
-          onSaveAnalysis={handleSaveAnnotations}
-          violationCount={violationCount}
-          drawingMode={drawingMode}
-          onDrawingModeToggle={handleDrawingModeToggle}
-        />
-      );
-    }
-    
-    return (
-      <button
-        onClick={handleDrawingModeToggle}
-        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition-colors"
-      >
-        Enable Drawing
-      </button>
-    );
+  const handleToolChange = (tool: string) => {
+    setActiveAnnotationTool(tool);
+    console.log('Active annotation tool changed to:', tool);
   };
 
   // Get the target container for rendering
@@ -154,19 +143,17 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
 
   return (
     <>
-      {/* Drawing Tools - Always positioned correctly using portal */}
+      {/* Drawing Tools Panel - Always positioned correctly using portal */}
       {createPortal(
-        <div 
-          className={`fixed top-4 left-1/2 transform -translate-x-1/2 pointer-events-auto ${
-            isFullscreen ? 'z-[2147483647]' : 'z-50'
-          }`}
-          style={{ 
-            position: isFullscreen ? 'fixed' : 'absolute',
-            zIndex: isFullscreen ? 2147483647 : 50
-          }}
-        >
-          <DrawingTools />
-        </div>,
+        <DrawingToolsPanel
+          activeAnnotationTool={activeAnnotationTool}
+          onToolChange={handleToolChange}
+          onClearAll={handleClearAll}
+          onSaveAnalysis={handleSaveAnnotations}
+          violationCount={violationCount}
+          drawingMode={drawingMode}
+          onDrawingModeToggle={handleDrawingModeToggle}
+        />,
         getPortalTarget()
       )}
 
@@ -175,13 +162,13 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
         {/* Drawing Overlay - Only intercept pointer events when actively drawing */}
         <div className={`absolute inset-0 ${
           drawingMode && activeAnnotationTool !== 'select' 
-            ? 'pointer-events-auto' 
+            ? 'pointer-events-auto cursor-crosshair' 
             : 'pointer-events-none'
-        }`} style={{ zIndex: 2147483646 }}>
+        }`} style={{ zIndex: 10 }}>
           <AdvancedDrawingOverlay
             videoDimensions={videoDimensions}
             currentTime={currentTime}
-            onAnnotationSave={setAnnotations}
+            onAnnotationSave={handleAnnotationSave}
             playerPositions={playerData.map(p => ({
               id: p.playerId,
               x: p.position.x,

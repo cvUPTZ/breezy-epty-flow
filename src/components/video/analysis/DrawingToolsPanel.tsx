@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Circle, Square, ArrowRight, Ruler, Search, MousePointer, PenTool, PenOff, Zap, Triangle } from 'lucide-react';
+import { Circle, Square, ArrowRight, Ruler, Search, MousePointer, PenTool, PenOff, Zap, Triangle, Users, Shield, Target, Flag, ArrowRightLeft } from 'lucide-react';
 
 interface DrawingToolsPanelProps {
   activeAnnotationTool: string;
@@ -33,6 +33,15 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
     { id: 'spotlight', icon: Search, label: 'Spotlight', color: 'bg-yellow-500' },
     { id: 'ellipse-light', icon: Zap, label: 'Light Zone', color: 'bg-orange-500' },
     { id: 'cone', icon: Triangle, label: 'Cone', color: 'bg-pink-500' },
+  ];
+
+  const annotationTools = [
+    { id: 'formation', icon: Users, label: 'Formation', color: 'bg-blue-600' },
+    { id: 'pressing', icon: Zap, label: 'Pressing', color: 'bg-red-600' },
+    { id: 'defensive-lines', icon: Shield, label: 'Defense', color: 'bg-green-600' },
+    { id: 'attacking-patterns', icon: Target, label: 'Attack', color: 'bg-orange-600' },
+    { id: 'set-pieces', icon: Flag, label: 'Set Piece', color: 'bg-purple-600' },
+    { id: 'transitions', icon: ArrowRightLeft, label: 'Transition', color: 'bg-yellow-600' },
   ];
 
   return (
@@ -75,6 +84,30 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
                 <div className="w-px h-6 bg-white/20" />
                 <div className="flex gap-1">
                   {tools.map((tool) => (
+                    <Button
+                      key={tool.id}
+                      size="sm"
+                      variant={activeAnnotationTool === tool.id ? 'default' : 'outline'}
+                      onClick={() => onToolChange(tool.id)}
+                      className={`
+                        h-8 w-8 p-0 transition-all duration-200
+                        ${activeAnnotationTool === tool.id 
+                          ? `${tool.color} text-white shadow-lg` 
+                          : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                        }
+                      `}
+                      title={tool.label}
+                    >
+                      <tool.icon className="w-4 h-4" />
+                    </Button>
+                  ))}
+                </div>
+                
+                <div className="w-px h-6 bg-white/20" />
+                
+                {/* Tactical Annotation Tools */}
+                <div className="flex gap-1">
+                  {annotationTools.map((tool) => (
                     <Button
                       key={tool.id}
                       size="sm"
