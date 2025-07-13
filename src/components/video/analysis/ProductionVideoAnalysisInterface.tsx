@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import { ProductionTacticalOverlay } from './ProductionTacticalOverlay';
 import { ProductionVideoControls } from './ProductionVideoControls';
 import { AnalysisControlPanel } from './AnalysisControlPanel';
 import { ProductionVideoAnalysisService } from '@/services/productionVideoAnalysisService';
+import { DetectionResult } from '@/services/pythonDetectionService';
 import { toast } from 'sonner';
 
 export const ProductionVideoAnalysisInterface: React.FC = () => {
@@ -34,6 +34,7 @@ export const ProductionVideoAnalysisInterface: React.FC = () => {
   const [trackingEnabled, setTrackingEnabled] = useState(true);
   const [heatmapEnabled, setHeatmapEnabled] = useState(true);
   const [trajectoryEnabled, setTrajectoryEnabled] = useState(true);
+  const [detectionResults, setDetectionResults] = useState<DetectionResult[]>([]);
 
   // Handle fullscreen changes
   useEffect(() => {
@@ -293,6 +294,7 @@ export const ProductionVideoAnalysisInterface: React.FC = () => {
               videoDimensions={videoDimensions}
               currentTime={currentTime}
               isPlaying={isPlaying}
+              detectionResults={detectionResults}
             />
           </div>
         )}

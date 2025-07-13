@@ -46,7 +46,13 @@ const VideoAnalyzer: React.FC<VideoAnalyzerProps> = ({
     toast.info('Starting video analysis job...');
 
     try {
-      const job = await pythonDetectionService.startDetection({ videoUrl });
+      const jobResponse = await pythonDetectionService.startDetection({ videoUrl });
+      // Create a proper DetectionJob object with all required properties
+      const job: DetectionJob = {
+        job_id: jobResponse.job_id,
+        status: 'pending',
+        progress: 0
+      };
       setDetectionJob(job);
       toast.success(`Detection job started with ID: ${job.job_id}`);
     } catch (error: any) {

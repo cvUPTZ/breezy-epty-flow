@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -227,7 +226,13 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
     toast.info('Starting video analysis job...');
 
     try {
-      const job = await pythonDetectionService.startDetection({ videoUrl });
+      const jobResponse = await pythonDetectionService.startDetection({ videoUrl });
+      // Create a proper DetectionJob object with all required properties
+      const job: DetectionJob = {
+        job_id: jobResponse.job_id,
+        status: 'pending',
+        progress: 0
+      };
       setDetectionJob(job);
       toast.success(`Detection job started with ID: ${job.job_id}`);
     } catch (error: any) {

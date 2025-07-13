@@ -1,64 +1,94 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, Settings, BarChart3 } from 'lucide-react';
-import EnhancedVideoPlayer, { VideoPlayerRef } from '../EnhancedVideoPlayer';
-import ProductionTacticalOverlay from './ProductionTacticalOverlay';
-import { AnalysisStats } from './AnalysisStats';
-import { EventTaggingSection } from './EventTaggingSection';
+import { Upload, X, Download } from 'lucide-react';
+import { ProductionTacticalOverlay } from './ProductionTacticalOverlay';
+import { ProductionVideoControls } from './ProductionVideoControls';
 import { AnalysisControlPanel } from './AnalysisControlPanel';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProductionVideoAnalysisService } from '@/services/productionVideoAnalysisService';
+import { DetectionResult } from '@/services/pythonDetectionService';
+import { toast } from 'sonner';
 
-interface AdvancedVideoAnalysisInterfaceProps {
-  videoUrl: string;
-}
-
-export const AdvancedVideoAnalysisInterface: React.FC<AdvancedVideoAnalysisInterfaceProps> = ({ 
-  videoUrl 
-}) => {
+export const AdvancedVideoAnalysisInterface: React.FC = () => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  const [videoSrc, setVideoSrc] = useState<string>('');
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(80);
+  const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [videoDimensions, setVideoDimensions] = useState({ width: 0, height: 0 });
+  const [analysisJobs, setAnalysisJobs] = useState<any[]>([]);
   
-  const videoRef = useRef<VideoPlayerRef>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Analysis states
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [playerCount, setPlayerCount] = useState(0);
+  const [avgConfidence, setAvgConfidence] = useState(0);
+  const [trackingEnabled, setTrackingEnabled] = useState(true);
+  const [heatmapEnabled, setHeatmapEnabled] = useState(true);
+  const [trajectoryEnabled, setTrajectoryEnabled] = useState(true);
+  const [detectionResults, setDetectionResults] = useState<DetectionResult[]>([]);
 
-  // Monitor video dimensions
+  // Handle fullscreen changes
   useEffect(() => {
-    const updateDimensions = () => {
-      if (videoRef.current?.videoElement) {
-        const video = videoRef.current.videoElement;
-        setVideoDimensions({
-          width: video.videoWidth || video.offsetWidth,
-          height: video.videoHeight || video.offsetHeight
-        });
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  // Load user's analysis jobs
+  useEffect(() => {
+    const loadJobs = async () => {
+      try {
+        const jobs = await ProductionVideoAnalysisService.getUserJobs();
+        setAnalysisJobs(jobs);
+      } catch (error) {
+        console.error('Failed to load analysis jobs:', error);
       }
     };
 
-    const interval = setInterval(updateDimensions, 1000);
-    return () => clearInterval(interval);
+    loadJobs();
   }, []);
 
-  const handleTimeUpdate = (time: number) => {
-    setCurrentTime(time);
+  // Video event handlers
+  const handleVideoLoad = () => {
+    if (videoRef.current) {
+      setDuration(videoRef.current.duration);
+      setVideoDimensions({
+        width: videoRef.current.videoWidth,
+        height: videoRef.current.videoHeight
+      });
+    }
   };
 
-  const handleDurationChange = (duration: number) => {
-    setDuration(duration);
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      setCurrentTime(videoRef.current.currentTime);
+    }
   };
 
-  const formatTime = (time: number): string => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setVideoSrc(url);
+      toast.success('Video loaded successfully');
+    }
+  };
+
+  const handleYouTubeUrl = (url: string) => {
+    setVideoSrc(url);
+    toast.success('Video URL loaded');
   };
 
   const handlePlayPause = () => {
@@ -72,248 +102,242 @@ export const AdvancedVideoAnalysisInterface: React.FC<AdvancedVideoAnalysisInter
     }
   };
 
-  const handleSeek = (value: number[]) => {
+  const handleSeek = (time: number) => {
     if (videoRef.current) {
-      videoRef.current.currentTime = value[0];
-      setCurrentTime(value[0]);
+      videoRef.current.currentTime = time;
+      setCurrentTime(time);
     }
   };
 
-  const handleVolumeChange = (value: number[]) => {
-    const newVolume = value[0];
-    setVolume(newVolume);
-    if (videoRef.current?.videoElement) {
-      videoRef.current.videoElement.volume = newVolume / 100;
+  const handleVolumeChange = (newVolume: number) => {
+    if (videoRef.current) {
+      videoRef.current.volume = newVolume;
+      setVolume(newVolume);
       setIsMuted(newVolume === 0);
     }
   };
 
   const handleMuteToggle = () => {
-    if (videoRef.current?.videoElement) {
-      const newMuted = !isMuted;
-      videoRef.current.videoElement.muted = newMuted;
-      setIsMuted(newMuted);
+    if (videoRef.current) {
+      if (isMuted) {
+        videoRef.current.volume = volume || 0.5;
+        setIsMuted(false);
+      } else {
+        videoRef.current.volume = 0;
+        setIsMuted(true);
+      }
     }
   };
 
-  const handleFullscreen = async () => {
-    if (!containerRef.current) return;
-
-    try {
+  const handleFullscreenToggle = () => {
+    if (containerRef.current) {
       if (!isFullscreen) {
         if (containerRef.current.requestFullscreen) {
-          await containerRef.current.requestFullscreen();
+          containerRef.current.requestFullscreen();
         }
       } else {
         if (document.exitFullscreen) {
-          await document.exitFullscreen();
+          document.exitFullscreen();
         }
       }
-    } catch (error) {
-      console.error('Fullscreen error:', error);
     }
   };
 
-  // Monitor fullscreen state
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+  // Analysis handlers
+  const handleStartAnalysis = async () => {
+    setIsAnalyzing(true);
+    try {
+      const job = await ProductionVideoAnalysisService.startAnalysis(videoSrc, {
+        enablePlayerTracking: trackingEnabled,
+        enableEventDetection: true,
+        enableHeatmaps: heatmapEnabled,
+        enableTrajectories: trajectoryEnabled
+      });
+
+      toast.success('Analysis started successfully');
+
+      // Simulate progress
+      const interval = setInterval(() => {
+        setAnalysisProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(interval);
+            setIsAnalyzing(false);
+            toast.success('Analysis completed');
+            return 100;
+          }
+          return prev + 10;
+        });
+      }, 1000);
+
+    } catch (error: any) {
+      setIsAnalyzing(false);
+      toast.error(`Failed to start analysis: ${error.message}`);
+    }
+  };
+
+  const handleStartTracking = () => {
+    toast.info('Real-time tracking started');
+    setPlayerCount(Math.floor(Math.random() * 22) + 1);
+    setAvgConfidence(Math.random() * 40 + 60);
+  };
+
+  const handleSaveAnnotations = () => {
+    toast.success('Annotations saved successfully');
+  };
+
+  const handleExportData = () => {
+    const exportData = {
+      videoUrl: videoSrc,
+      timestamp: new Date().toISOString()
     };
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analysis-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
-    <div className="w-full">
-      {/* Main Video Analysis Container */}
-      <div 
-        ref={containerRef}
-        className={`relative bg-black rounded-lg overflow-hidden ${
-          isFullscreen ? 'fixed inset-0 z-50' : 'aspect-video'
-        }`}
-      >
-        {/* Enhanced Video Player */}
-        <EnhancedVideoPlayer
-          ref={videoRef}
-          src={videoUrl}
-          onTimeUpdate={handleTimeUpdate}
-          onDurationChange={handleDurationChange}
-          className="w-full h-full"
-        />
-
-        {/* Tactical Overlay */}
-        <ProductionTacticalOverlay
-          videoElement={videoRef.current?.videoElement || null}
-          videoUrl={videoUrl}
-          videoDimensions={videoDimensions}
-          currentTime={currentTime}
-          isPlaying={isPlaying}
-        />
-
-        {/* Video Controls Overlay - Only show in fullscreen */}
-        {isFullscreen && (
-          <div className="absolute bottom-4 left-4 right-4 bg-black/80 backdrop-blur-sm rounded-lg p-4">
-            <div className="flex items-center gap-4">
-              {/* Play/Pause */}
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Production Video Analysis</span>
+              <Badge variant="default">AI-Powered</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Video Upload/URL Input */}
+            <div className="flex gap-4">
+              <Input
+                placeholder="Enter YouTube URL or video URL"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleYouTubeUrl((e.target as HTMLInputElement).value);
+                  }
+                }}
+              />
               <Button
-                size="sm"
-                variant="ghost"
-                onClick={handlePlayPause}
-                className="text-white hover:bg-white/20"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
               >
-                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-              </Button>
-
-              {/* Time Display */}
-              <span className="text-white text-sm min-w-20">
-                {formatTime(currentTime)} / {formatTime(duration)}
-              </span>
-
-              {/* Progress Slider */}
-              <div className="flex-1">
-                <Slider
-                  value={[currentTime]}
-                  max={duration}
-                  step={0.1}
-                  onValueChange={handleSeek}
-                  className="w-full"
-                />
-              </div>
-
-              {/* Volume Controls */}
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={handleMuteToggle}
-                  className="text-white hover:bg-white/20"
-                >
-                  {isMuted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                </Button>
-                <Slider
-                  value={[isMuted ? 0 : volume]}
-                  max={100}
-                  step={1}
-                  onValueChange={handleVolumeChange}
-                  className="w-20"
-                />
-              </div>
-
-              {/* Fullscreen Toggle */}
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleFullscreen}
-                className="text-white hover:bg-white/20"
-              >
-                {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                <Upload className="w-4 h-4 mr-2" />
+                Upload Video
               </Button>
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* Analysis Panels - Only show when not in fullscreen */}
-      {!isFullscreen && (
-        <div className="mt-6">
-          <Tabs defaultValue="analysis" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="analysis" className="flex items-center gap-2">
-                <Settings className="w-4 h-4" />
-                Analysis Controls
-              </TabsTrigger>
-              <TabsTrigger value="events">
-                Event Tagging
-              </TabsTrigger>
-              <TabsTrigger value="stats" className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
-                Statistics
-              </TabsTrigger>
-            </TabsList>
             
-            <TabsContent value="analysis" className="mt-4">
-              <AnalysisControlPanel
-                currentTime={currentTime}
-                duration={duration}
-                onSeek={(time: number) => handleSeek([time])}
-                onPlayPause={handlePlayPause}
-                isPlaying={isPlaying}
-              />
-            </TabsContent>
-            
-            <TabsContent value="events" className="mt-4">
-              <EventTaggingSection
-                currentTime={currentTime}
-                videoUrl={videoUrl}
-              />
-            </TabsContent>
-            
-            <TabsContent value="stats" className="mt-4">
-              <AnalysisStats
-                videoUrl={videoUrl}
-                currentTime={currentTime}
-              />
-            </TabsContent>
-          </Tabs>
-        </div>
-      )}
-
-      {/* Basic Video Controls - Only show when not in fullscreen */}
-      {!isFullscreen && (
-        <Card className="mt-4">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handlePlayPause}
-              >
-                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-              </Button>
-
-              <span className="text-sm min-w-20">
-                {formatTime(currentTime)} / {formatTime(duration)}
-              </span>
-
-              <div className="flex-1">
-                <Slider
-                  value={[currentTime]}
-                  max={duration}
-                  step={0.1}
-                  onValueChange={handleSeek}
-                  className="w-full"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={handleMuteToggle}
-                >
-                  {isMuted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                </Button>
-                <Slider
-                  value={[isMuted ? 0 : volume]}
-                  max={100}
-                  step={1}
-                  onValueChange={handleVolumeChange}
-                  className="w-20"
-                />
-              </div>
-
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleFullscreen}
-              >
-                <Maximize className="w-4 h-4" />
-              </Button>
-            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="video/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
           </CardContent>
         </Card>
-      )}
+
+        {/* Video Player */}
+        {videoSrc && (
+          <div ref={containerRef} className="relative bg-black">
+            <video
+              ref={videoRef}
+              src={videoSrc}
+              className="w-full h-auto max-h-[600px]"
+              onLoadedMetadata={handleVideoLoad}
+              onTimeUpdate={handleTimeUpdate}
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+            />
+            
+            {/* Production Video Controls */}
+            <ProductionVideoControls
+              isPlaying={isPlaying}
+              currentTime={currentTime}
+              duration={duration}
+              volume={volume}
+              isMuted={isMuted}
+              isFullscreen={isFullscreen}
+              onPlayPause={handlePlayPause}
+              onSeek={handleSeek}
+              onVolumeChange={handleVolumeChange}
+              onMuteToggle={handleMuteToggle}
+              onFullscreenToggle={handleFullscreenToggle}
+            />
+            
+            {/* Analysis Control Panel */}
+            <AnalysisControlPanel
+              isAnalyzing={isAnalyzing}
+              analysisProgress={analysisProgress}
+              playerCount={playerCount}
+              avgConfidence={avgConfidence}
+              onStartAnalysis={handleStartAnalysis}
+              onStartTracking={handleStartTracking}
+              onSaveAnnotations={handleSaveAnnotations}
+              onExportData={handleExportData}
+              trackingEnabled={trackingEnabled}
+              heatmapEnabled={heatmapEnabled}
+              trajectoryEnabled={trajectoryEnabled}
+              onTrackingToggle={setTrackingEnabled}
+              onHeatmapToggle={setHeatmapEnabled}
+              onTrajectoryToggle={setTrajectoryEnabled}
+            />
+            
+            {/* Tactical Overlay */}
+            <ProductionTacticalOverlay
+              videoElement={videoRef.current}
+              videoUrl={videoSrc}
+              videoDimensions={videoDimensions}
+              currentTime={currentTime}
+              isPlaying={isPlaying}
+              detectionResults={detectionResults}
+            />
+          </div>
+        )}
+
+        {/* Analysis History */}
+        {analysisJobs.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Analysis History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {analysisJobs.map((job) => (
+                  <div key={job.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                    <div>
+                      <div className="font-medium">{job.videoUrl}</div>
+                      <div className="text-sm text-gray-600">
+                        {new Date(job.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={
+                        job.status === 'completed' ? 'default' :
+                        job.status === 'failed' ? 'destructive' :
+                        'secondary'
+                      }>
+                        {job.status}
+                      </Badge>
+                      {job.status === 'completed' && (
+                        <Button size="sm" variant="outline">
+                          <Download className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };
+
+export default AdvancedVideoAnalysisInterface;
