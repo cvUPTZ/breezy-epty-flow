@@ -170,8 +170,9 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
     return document.body;
   };
 
-  // Check if we should intercept pointer events
+  // Check if we should intercept pointer events and show drawing cursor
   const shouldInterceptPointerEvents = drawingMode && activeAnnotationTool !== 'select';
+  const isDrawingActive = drawingMode && activeAnnotationTool !== 'select';
 
   return (
     <>
@@ -191,18 +192,29 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
 
       {/* Drawing Overlay Container */}
       <div className="absolute inset-0 overflow-hidden">
-        {/* Drawing Overlay - Only intercept pointer events when actively drawing */}
+        {/* Drawing Overlay - Enhanced cursor and pointer event handling */}
         <div 
-          className={`absolute inset-0 ${
+          className={`absolute inset-0 transition-all duration-200 ${
             shouldInterceptPointerEvents 
-              ? 'pointer-events-auto cursor-crosshair z-30' 
+              ? 'pointer-events-auto z-30' 
               : 'pointer-events-none z-10'
           }`}
           style={{ 
-            cursor: shouldInterceptPointerEvents ? 'crosshair' : 'default',
+            cursor: isDrawingActive ? 'crosshair' : 'default',
             touchAction: shouldInterceptPointerEvents ? 'none' : 'auto'
           }}
         >
+          {/* Cursor overlay for better visual feedback */}
+          {isDrawingActive && (
+            <div 
+              className="absolute inset-0 cursor-crosshair"
+              style={{ 
+                cursor: 'crosshair !important',
+                zIndex: 35
+              }}
+            />
+          )}
+          
           <AdvancedDrawingOverlay
             videoDimensions={videoDimensions}
             currentTime={currentTime}
@@ -258,6 +270,20 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
           </div>
         )}
       </div>
+
+      {/* Global cursor style injection for drawing mode */}
+      {isDrawingActive && (
+        <style jsx global>{`
+          .cursor-crosshair,
+          .cursor-crosshair * {
+            cursor: crosshair !important;
+          }
+          
+          video {
+            cursor: ${isDrawingActive ? 'crosshair !important' : 'default'};
+          }
+        `}</style>
+      )}
     </>
   );
 };
