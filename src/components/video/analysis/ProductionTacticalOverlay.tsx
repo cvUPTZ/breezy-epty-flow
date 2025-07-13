@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { AnnotationPersistenceService } from '@/services/annotationPersistenceService';
 import { AdvancedDrawingOverlay } from './AdvancedDrawingOverlay';
@@ -217,7 +216,7 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
 
       {/* Drawing Overlay Container */}
       <div className="absolute inset-0 overflow-hidden">
-        {/* Drawing Overlay - Enhanced cursor and pointer event handling */}
+        {/* Drawing Overlay - Enhanced pointer event handling */}
         <div 
           className={`absolute inset-0 transition-all duration-200 ${
             shouldInterceptPointerEvents 
@@ -229,17 +228,6 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
             touchAction: shouldInterceptPointerEvents ? 'none' : 'auto'
           }}
         >
-          {/* Cursor overlay for better visual feedback */}
-          {isDrawingActive && (
-            <div 
-              className="absolute inset-0"
-              style={{ 
-                cursor: 'crosshair !important',
-                zIndex: 35
-              }}
-            />
-          )}
-          
           <AdvancedDrawingOverlay
             videoDimensions={videoDimensions}
             currentTime={currentTime}
