@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -32,7 +33,6 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
     analysisProgress: 0
   });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [drawingMode, setDrawingMode] = useState(false);
   const [annotations, setAnnotations] = useState<AnnotationType[]>([]);
   const [detectionJob, setDetectionJob] = useState<DetectionJob | null>(null);
   const [detectionResults, setDetectionResults] = useState<DetectionResult[]>([]);
@@ -40,6 +40,7 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Video event handlers
   const handleVideoTimeUpdate = (time: number) => {
     setCurrentTime(time);
   };
@@ -56,8 +57,9 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
     setIsPlaying(false);
   };
 
+  // Control handlers
   const handleSeek = (time: number) => {
-    if (videoRef.current) {
+    if (videoRef.current && isFinite(time)) {
       videoRef.current.currentTime = time;
       setCurrentTime(time);
     }
@@ -68,12 +70,14 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
       if (isPlaying) {
         videoRef.current.pause();
       } else {
-        videoRef.current.play();
+        videoRef.current.play().catch(console.error);
       }
     }
   };
 
   const handleVolumeChange = (newVolume: number) => {
+    if (!isFinite(newVolume)) return;
+    
     setVolume(newVolume);
     if (videoRef.current) {
       videoRef.current.volume = newVolume;
@@ -99,26 +103,20 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
 
   const handleFullscreenToggle = () => {
     if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen();
+      containerRef.current?.requestFullscreen().catch(console.error);
     } else {
-      document.exitFullscreen();
+      document.exitFullscreen().catch(console.error);
     }
   };
 
   const handleVideoDimensionsChange = (dimensions: { width: number; height: number }) => {
-    setVideoDimensions(dimensions);
-    console.log('Video dimensions updated:', dimensions);
-  };
-
-  const handleDrawingModeToggle = () => {
-    setDrawingMode(!drawingMode);
-    if (!drawingMode) {
-      toast.info('Drawing mode enabled - Start annotating tactical moments');
-    } else {
-      toast.info('Drawing mode disabled');
+    if (dimensions.width > 0 && dimensions.height > 0) {
+      setVideoDimensions(dimensions);
+      console.log('Video dimensions updated:', dimensions);
     }
   };
 
+  // Annotation handlers
   const handleAnnotationSave = (annotation: AnnotationType) => {
     setAnnotations(prev => [...prev, annotation]);
     toast.success(`${annotation.type.replace('-', ' ')} annotation saved at ${Math.floor(annotation.timestamp / 60)}:${Math.floor(annotation.timestamp % 60).toString().padStart(2, '0')}`);
@@ -134,36 +132,45 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
     const video = containerRef.current?.querySelector('video');
     if (video && video !== videoRef.current) {
       videoRef.current = video;
-      console.log('Video element reference set:', video);
+      console.log('Video element reference set');
       
       const handleLoadedMetadata = () => {
-        setDuration(video.duration);
-        setVolume(video.volume);
+        if (video.duration && isFinite(video.duration)) {
+          setDuration(video.duration);
+        }
+        if (isFinite(video.volume)) {
+          setVolume(video.volume);
+        }
         setIsMuted(video.muted);
       };
 
       const handleTimeUpdate = () => {
-        setCurrentTime(video.currentTime);
+        if (isFinite(video.currentTime)) {
+          setCurrentTime(video.currentTime);
+        }
       };
 
-      const handlePlay = () => {
-        setIsPlaying(true);
-      };
-
-      const handlePause = () => {
-        setIsPlaying(false);
-      };
-
+      const handlePlay = () => setIsPlaying(true);
+      const handlePause = () => setIsPlaying(false);
       const handleVolumeChangeEvent = () => {
-        setVolume(video.volume);
+        if (isFinite(video.volume)) {
+          setVolume(video.volume);
+        }
         setIsMuted(video.muted);
       };
 
+      const handleError = (e: Event) => {
+        console.error('Video error:', e);
+        toast.error('Video playback error occurred');
+      };
+
+      // Add event listeners
       video.addEventListener('loadedmetadata', handleLoadedMetadata);
       video.addEventListener('timeupdate', handleTimeUpdate);
       video.addEventListener('play', handlePlay);
       video.addEventListener('pause', handlePause);
       video.addEventListener('volumechange', handleVolumeChangeEvent);
+      video.addEventListener('error', handleError);
 
       return () => {
         video.removeEventListener('loadedmetadata', handleLoadedMetadata);
@@ -171,6 +178,7 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
         video.removeEventListener('play', handlePlay);
         video.removeEventListener('pause', handlePause);
         video.removeEventListener('volumechange', handleVolumeChangeEvent);
+        video.removeEventListener('error', handleError);
       };
     }
   }, [videoDimensions]);
@@ -181,11 +189,12 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
     if (video) {
       const updateDimensions = () => {
         const rect = video.getBoundingClientRect();
-        setVideoDimensions({
-          width: rect.width,
-          height: rect.height
-        });
-        console.log('Video dimensions from rect:', rect.width, rect.height);
+        if (rect.width > 0 && rect.height > 0) {
+          setVideoDimensions({
+            width: rect.width,
+            height: rect.height
+          });
+        }
       };
 
       video.addEventListener('loadedmetadata', updateDimensions);
@@ -196,13 +205,21 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
         updateDimensions();
       }
 
+      // Also check on window resize
+      const handleWindowResize = () => {
+        setTimeout(updateDimensions, 100);
+      };
+      window.addEventListener('resize', handleWindowResize);
+
       return () => {
         video.removeEventListener('loadedmetadata', updateDimensions);
         video.removeEventListener('resize', updateDimensions);
+        window.removeEventListener('resize', handleWindowResize);
       };
     }
   }, []);
 
+  // Analysis handlers
   const handleStartAnalysis = async () => {
     setIsAnalyzing(true);
     setDetectionJob(null);
@@ -214,16 +231,37 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
       setDetectionJob(job);
       toast.success(`Detection job started with ID: ${job.job_id}`);
     } catch (error: any) {
+      console.error('Analysis start error:', error);
       toast.error(`Failed to start detection job: ${error.message}`);
       setIsAnalyzing(false);
     }
   };
 
   const handleSaveAnnotations = () => {
-    toast.success('Annotations saved successfully!');
+    if (annotations.length === 0) {
+      toast.warning('No annotations to save');
+      return;
+    }
+    toast.success(`${annotations.length} annotations saved successfully!`);
   };
 
   const handleExportData = () => {
+    const data = {
+      annotations,
+      detectionResults,
+      analysisStats,
+      videoUrl,
+      exportTime: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `video-analysis-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
     toast.success('Analysis data exported!');
   };
 
@@ -242,22 +280,28 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
           toast.success('Analysis completed!');
           const results = await pythonDetectionService.getResults(detectionJob.job_id);
           setDetectionResults(results);
+          setAnalysisStats(prev => ({ ...prev, analysisProgress: 100 }));
           setIsAnalyzing(false);
           clearInterval(intervalId);
-        } else if (status.status === 'failed') {
+        } else if (status.status === 'failed') {  
           toast.error(`Analysis failed: ${status.error}`);
           setIsAnalyzing(false);
           clearInterval(intervalId);
+        } else if (status.status === 'processing') {
+          // Update progress if available
+          const progress = status.progress || Math.min(95, analysisStats.analysisProgress + 5);
+          setAnalysisStats(prev => ({ ...prev, analysisProgress: progress }));
         }
       } catch (error: any) {
+        console.error('Job status error:', error);
         toast.error(`Error fetching job status: ${error.message}`);
         setIsAnalyzing(false);
         clearInterval(intervalId);
       }
-    }, 5000); // Poll every 5 seconds
+    }, 5000);
 
     return () => clearInterval(intervalId);
-  }, [detectionJob, isAnalyzing]);
+  }, [detectionJob, isAnalyzing, analysisStats.analysisProgress]);
 
   // Monitor fullscreen changes
   useEffect(() => {
@@ -266,7 +310,16 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
   }, []);
 
   return (
@@ -341,14 +394,14 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
             annotations={annotations}
             onAnnotationSave={handleAnnotationSave}
             onAnnotationDelete={handleAnnotationDelete}
-            drawingMode={drawingMode}
+            drawingMode={false}
           />
         </TabsContent>
 
         <TabsContent value="advanced" className="space-y-4">
           <Card>
             <CardContent className="p-0">
-              <div ref={containerRef} className="relative bg-black">
+              <div ref={containerRef} className="relative bg-black overflow-hidden">
                 <EnhancedVideoPlayer
                   src={videoUrl}
                   onTimeUpdate={handleVideoTimeUpdate}
@@ -383,14 +436,7 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
             onFullscreenToggle={handleFullscreenToggle}
           />
 
-          <ComprehensiveAnnotationSystem
-            currentTime={currentTime}
-            annotations={annotations}
-            onAnnotationSave={handleAnnotationSave}
-            onAnnotationDelete={handleAnnotationDelete}
-            drawingMode={drawingMode}
-          />
-
+          {/* Analysis Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4">
@@ -465,11 +511,11 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <Button variant="outline" className="flex items-center gap-2">
+                  <Button variant="outline" className="flex items-center gap-2" onClick={handleExportData}>
                     <Download className="w-4 h-4" />
                     Export Video
                   </Button>
-                  <Button variant="outline" className="flex items-center gap-2">
+                  <Button variant="outline" className="flex items-center gap-2" onClick={handleExportData}>
                     <Download className="w-4 h-4" />
                     Export Data
                   </Button>

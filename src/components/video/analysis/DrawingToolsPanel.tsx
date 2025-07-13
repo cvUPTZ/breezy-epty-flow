@@ -24,7 +24,7 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
   drawingMode,
   onDrawingModeToggle
 }) => {
-  const tools = [
+  const basicTools = [
     { id: 'select', icon: MousePointer, label: 'Select', color: 'bg-gray-500' },
     { id: 'circle', icon: Circle, label: 'Circle', color: 'bg-blue-500' },
     { id: 'line', icon: Square, label: 'Line', color: 'bg-green-500' },
@@ -35,7 +35,7 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
     { id: 'cone', icon: Triangle, label: 'Cone', color: 'bg-pink-500' },
   ];
 
-  const annotationTools = [
+  const tacticalTools = [
     { id: 'formation', icon: Users, label: 'Formation', color: 'bg-blue-600' },
     { id: 'pressing', icon: Zap, label: 'Pressing', color: 'bg-red-600' },
     { id: 'defensive-lines', icon: Shield, label: 'Defense', color: 'bg-green-600' },
@@ -44,107 +44,126 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
     { id: 'transitions', icon: ArrowRightLeft, label: 'Transition', color: 'bg-yellow-600' },
   ];
 
+  const handleToolSelect = (toolId: string) => {
+    if (!drawingMode && toolId !== 'select') {
+      onDrawingModeToggle();
+    }
+    onToolChange(toolId);
+  };
+
   return (
-    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto">
-      <Card className="bg-black/80 backdrop-blur-sm border-white/20 text-white shadow-2xl">
-        <CardContent className="p-2">
-          <div className="flex items-center gap-2">
+    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 pointer-events-auto">
+      <Card className="bg-black/90 backdrop-blur-md border-white/20 text-white shadow-2xl">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-3">
             {/* Drawing Mode Toggle */}
             <Button
               size="sm"
               variant={drawingMode ? 'default' : 'outline'}
               onClick={onDrawingModeToggle}
               className={`
-                h-8 px-3 transition-all duration-200
+                h-10 px-4 transition-all duration-300 font-medium
                 ${drawingMode 
-                  ? 'bg-blue-600 text-white shadow-lg' 
-                  : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg border-blue-500' 
+                  : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/40'
                 }
               `}
               title={drawingMode ? 'Disable Drawing Mode' : 'Enable Drawing Mode'}
             >
-              {drawingMode ? <PenTool className="w-4 h-4 mr-1" /> : <PenOff className="w-4 h-4 mr-1" />}
-              <span className="text-xs">{drawingMode ? 'Draw' : 'View'}</span>
+              {drawingMode ? <PenTool className="w-4 h-4 mr-2" /> : <PenOff className="w-4 h-4 mr-2" />}
+              <span className="text-sm">{drawingMode ? 'Drawing' : 'Viewing'}</span>
             </Button>
             
-            <div className="w-px h-6 bg-white/20" />
+            <div className="w-px h-8 bg-white/20" />
             
+            {/* Violations Counter */}
             <div className="flex items-center gap-2">
               <Badge 
                 variant={violationCount > 0 ? "destructive" : "default"}
-                className="bg-red-500/20 text-red-400 border-red-500/30 text-xs px-2 py-0"
+                className="bg-red-500/20 text-red-400 border-red-500/30 text-xs px-3 py-1"
               >
-                {violationCount}
+                {violationCount} Issues
               </Badge>
             </div>
             
             {/* Drawing Tools - only show when drawing mode is enabled */}
             {drawingMode && (
               <>
-                <div className="w-px h-6 bg-white/20" />
+                <div className="w-px h-8 bg-white/20" />
+                
+                {/* Basic Drawing Tools */}
                 <div className="flex gap-1">
-                  {tools.map((tool) => (
+                  {basicTools.map((tool) => (
                     <Button
                       key={tool.id}
                       size="sm"
                       variant={activeAnnotationTool === tool.id ? 'default' : 'outline'}
-                      onClick={() => onToolChange(tool.id)}
+                      onClick={() => handleToolSelect(tool.id)}
                       className={`
-                        h-8 w-8 p-0 transition-all duration-200
+                        h-10 w-10 p-0 transition-all duration-200 relative
                         ${activeAnnotationTool === tool.id 
-                          ? `${tool.color} text-white shadow-lg` 
-                          : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                          ? `${tool.color} text-white shadow-lg ring-2 ring-white/30` 
+                          : 'bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30'
                         }
                       `}
                       title={tool.label}
                     >
                       <tool.icon className="w-4 h-4" />
+                      {activeAnnotationTool === tool.id && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full" />
+                      )}
                     </Button>
                   ))}
                 </div>
                 
-                <div className="w-px h-6 bg-white/20" />
+                <div className="w-px h-8 bg-white/20" />
                 
                 {/* Tactical Annotation Tools */}
                 <div className="flex gap-1">
-                  {annotationTools.map((tool) => (
+                  {tacticalTools.map((tool) => (
                     <Button
                       key={tool.id}
                       size="sm"
                       variant={activeAnnotationTool === tool.id ? 'default' : 'outline'}
-                      onClick={() => onToolChange(tool.id)}
+                      onClick={() => handleToolSelect(tool.id)}
                       className={`
-                        h-8 w-8 p-0 transition-all duration-200
+                        h-10 w-10 p-0 transition-all duration-200 relative
                         ${activeAnnotationTool === tool.id 
-                          ? `${tool.color} text-white shadow-lg` 
-                          : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                          ? `${tool.color} text-white shadow-lg ring-2 ring-white/30` 
+                          : 'bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30'
                         }
                       `}
                       title={tool.label}
                     >
                       <tool.icon className="w-4 h-4" />
+                      {activeAnnotationTool === tool.id && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full" />
+                      )}
                     </Button>
                   ))}
                 </div>
               </>
             )}
 
-            <div className="w-px h-6 bg-white/20" />
-            <div className="flex gap-1">
+            <div className="w-px h-8 bg-white/20" />
+            
+            {/* Action Buttons */}
+            <div className="flex gap-2">
               <Button 
                 size="sm" 
                 variant="outline" 
                 onClick={onClearAll}
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-8 px-2 text-xs"
+                disabled={!drawingMode}
+                className="bg-white/10 border-white/20 text-white hover:bg-red-500/20 hover:border-red-500/30 h-10 px-3 text-sm transition-all duration-200"
               >
-                Clear
+                Clear All
               </Button>
               <Button 
                 size="sm" 
                 onClick={onSaveAnalysis}
-                className="bg-blue-600 hover:bg-blue-700 text-white h-8 px-2 text-xs"
+                className="bg-green-600 hover:bg-green-700 text-white h-10 px-3 text-sm transition-all duration-200 shadow-lg"
               >
-                Save
+                Save Analysis
               </Button>
             </div>
           </div>
