@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,6 +10,7 @@ import EnhancedVideoPlayer from './EnhancedVideoPlayer';
 import { ProductionTacticalOverlay } from './analysis/ProductionTacticalOverlay';
 import { AnalysisControlPanel } from './analysis/AnalysisControlPanel';
 import { ExternalVideoControls } from './analysis/ExternalVideoControls';
+import { ComprehensiveAnnotationSystem, AnnotationType } from './analysis/ComprehensiveAnnotationSystem';
 
 interface DirectAnalysisInterfaceProps {
   videoUrl: string;
@@ -31,6 +31,8 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
     analysisProgress: 0
   });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [drawingMode, setDrawingMode] = useState(false);
+  const [annotations, setAnnotations] = useState<AnnotationType[]>([]);
   
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -105,6 +107,25 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
     console.log('Video dimensions updated:', dimensions);
   };
 
+  const handleDrawingModeToggle = () => {
+    setDrawingMode(!drawingMode);
+    if (!drawingMode) {
+      toast.info('Drawing mode enabled - Start annotating tactical moments');
+    } else {
+      toast.info('Drawing mode disabled');
+    }
+  };
+
+  const handleAnnotationSave = (annotation: AnnotationType) => {
+    setAnnotations(prev => [...prev, annotation]);
+    toast.success(`${annotation.type.replace('-', ' ')} annotation saved at ${Math.floor(annotation.timestamp / 60)}:${Math.floor(annotation.timestamp % 60).toString().padStart(2, '0')}`);
+  };
+
+  const handleAnnotationDelete = (id: string) => {
+    setAnnotations(prev => prev.filter(a => a.id !== id));
+    toast.success('Annotation deleted');
+  };
+
   // Get video element reference when component mounts
   useEffect(() => {
     const video = containerRef.current?.querySelector('video');
@@ -112,7 +133,6 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
       videoRef.current = video;
       console.log('Video element reference set:', video);
       
-      // Set up video event listeners
       const handleLoadedMetadata = () => {
         setDuration(video.duration);
         setVolume(video.volume);
@@ -228,6 +248,11 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
             <Users className="w-3 h-3 mr-1" />
             {analysisStats.playerCount} Players
           </Badge>
+          {annotations.length > 0 && (
+            <Badge variant="outline" className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+              {annotations.length} Annotations
+            </Badge>
+          )}
         </div>
       </div>
 
@@ -260,7 +285,6 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
             </CardContent>
           </Card>
           
-          {/* External Video Controls for Basic Tab */}
           <ExternalVideoControls
             isPlaying={isPlaying}
             currentTime={currentTime}
@@ -268,11 +292,21 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
             volume={volume}
             isMuted={isMuted}
             isFullscreen={isFullscreen}
+            drawingMode={drawingMode}
             onPlayPause={handlePlayPause}
             onSeek={handleSeek}
             onVolumeChange={handleVolumeChange}
             onMuteToggle={handleMuteToggle}
             onFullscreenToggle={handleFullscreenToggle}
+            onDrawingModeToggle={handleDrawingModeToggle}
+          />
+
+          <ComprehensiveAnnotationSystem
+            currentTime={currentTime}
+            annotations={annotations}
+            onAnnotationSave={handleAnnotationSave}
+            onAnnotationDelete={handleAnnotationDelete}
+            drawingMode={drawingMode}
           />
         </TabsContent>
 
@@ -286,7 +320,6 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
                   onDurationChange={handleVideoDurationChange}
                 />
                 
-                {/* Production Tactical Overlay with Drawing Tools */}
                 {videoDimensions.width > 0 && videoDimensions.height > 0 && (
                   <ProductionTacticalOverlay
                     videoElement={videoRef.current}
@@ -300,7 +333,6 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
             </CardContent>
           </Card>
 
-          {/* External Video Controls for Advanced Tab */}
           <ExternalVideoControls
             isPlaying={isPlaying}
             currentTime={currentTime}
@@ -308,14 +340,23 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
             volume={volume}
             isMuted={isMuted}
             isFullscreen={isFullscreen}
+            drawingMode={drawingMode}
             onPlayPause={handlePlayPause}
             onSeek={handleSeek}
             onVolumeChange={handleVolumeChange}
             onMuteToggle={handleMuteToggle}
             onFullscreenToggle={handleFullscreenToggle}
+            onDrawingModeToggle={handleDrawingModeToggle}
           />
 
-          {/* Analysis Stats */}
+          <ComprehensiveAnnotationSystem
+            currentTime={currentTime}
+            annotations={annotations}
+            onAnnotationSave={handleAnnotationSave}
+            onAnnotationDelete={handleAnnotationDelete}
+            drawingMode={drawingMode}
+          />
+
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4">

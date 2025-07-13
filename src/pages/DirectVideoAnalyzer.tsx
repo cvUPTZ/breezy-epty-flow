@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +8,8 @@ import { VideoJobService } from '@/services/videoJobService';
 import { VideoChunkingService } from '@/services/videoChunkingService';
 import { Upload, Link, X, FileVideo, Clock, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/AppSidebar';
 
 interface CachedVideo {
   fileName: string;
@@ -205,164 +206,171 @@ const DirectVideoAnalyzer: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <Card className="max-w-4xl mx-auto">
-        <CardHeader>
-          <CardTitle>Direct Video Analyzer</CardTitle>
-          {!submittedUrl && (
-            <CardDescription>
-              Upload a video file or enter a video URL to start analyzing directly. Files larger than 40MB will be automatically split into chunks for optimal upload performance.
-              {cachedVideos.length > 0 && " Previously uploaded videos are cached for quick access."}
-            </CardDescription>
-          )}
-        </CardHeader>
-        <CardContent>
-          {!submittedUrl ? (
-            <div className="space-y-6">
-              {/* Cached Videos Section */}
-              {cachedVideos.length > 0 && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Clock className="h-5 w-5" />
-                      Recently Uploaded Videos
-                    </CardTitle>
-                    <CardDescription className="text-sm">
-                      Click on any video to use it without re-uploading.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {cachedVideos.map((video, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <FileVideo className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                              <span className="font-medium text-sm truncate">{video.fileName}</span>
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {formatFileSize(video.fileSize)} • {formatDate(video.uploadDate)}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 ml-2">
-                            <Button
-                              onClick={() => handleUseCachedVideo(video)}
-                              size="sm"
-                              variant="outline"
-                              className="text-xs"
-                            >
-                              Use Video
-                            </Button>
-                            <Button
-                              onClick={() => deleteCachedVideo(video.fileName)}
-                              size="sm"
-                              variant="ghost"
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* URL Input Section */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Link className="h-5 w-5" />
-                    Video URL
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleUrlSubmit} className="space-y-4">
-                    <Input
-                      type="url"
-                      value={videoUrl}
-                      onChange={(e) => setVideoUrl(e.target.value)}
-                      placeholder="e.g., https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-                      className="w-full"
-                    />
-                    <Button type="submit" disabled={!videoUrl.trim()}>
-                      Load Video
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-
-              <div className="text-center text-gray-500 font-medium">OR</div>
-
-              {/* File Upload Section */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Upload className="h-5 w-5" />
-                    Upload Video File
-                  </CardTitle>
-                  <CardDescription className="text-sm">
-                    Supports files up to several GB. Large files will be automatically chunked for reliable upload.
-                    Uploaded videos are cached to avoid re-uploading.
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <SidebarInset>
+          <div className="container mx-auto p-4">
+            <Card className="max-w-4xl mx-auto">
+              <CardHeader>
+                <CardTitle>Direct Video Analyzer</CardTitle>
+                {!submittedUrl && (
+                  <CardDescription>
+                    Upload a video file or enter a video URL to start analyzing directly. Files larger than 40MB will be automatically split into chunks for optimal upload performance.
+                    {cachedVideos.length > 0 && " Previously uploaded videos are cached for quick access."}
                   </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <Input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="video/*"
-                      onChange={handleFileUpload}
-                      disabled={isUploading}
-                      className="w-full"
-                    />
-                    {isUploading && (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-blue-600 flex items-center gap-2">
-                            <FileVideo className="h-4 w-4" />
-                            {uploadStatus}
-                          </span>
-                          <span className="text-blue-600 font-medium">{Math.round(uploadProgress)}%</span>
+                )}
+              </CardHeader>
+              <CardContent>
+                {!submittedUrl ? (
+                  <div className="space-y-6">
+                    {/* Cached Videos Section */}
+                    {cachedVideos.length > 0 && (
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <Clock className="h-5 w-5" />
+                            Recently Uploaded Videos
+                          </CardTitle>
+                          <CardDescription className="text-sm">
+                            Click on any video to use it without re-uploading.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2 max-h-48 overflow-y-auto">
+                            {cachedVideos.map((video, index) => (
+                              <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <FileVideo className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                                    <span className="font-medium text-sm truncate">{video.fileName}</span>
+                                  </div>
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {formatFileSize(video.fileSize)} • {formatDate(video.uploadDate)}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 ml-2">
+                                  <Button
+                                    onClick={() => handleUseCachedVideo(video)}
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-xs"
+                                  >
+                                    Use Video
+                                  </Button>
+                                  <Button
+                                    onClick={() => deleteCachedVideo(video.fileName)}
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-red-600 hover:text-red-700"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* URL Input Section */}
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Link className="h-5 w-5" />
+                          Video URL
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <form onSubmit={handleUrlSubmit} className="space-y-4">
+                          <Input
+                            type="url"
+                            value={videoUrl}
+                            onChange={(e) => setVideoUrl(e.target.value)}
+                            placeholder="e.g., https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+                            className="w-full"
+                          />
+                          <Button type="submit" disabled={!videoUrl.trim()}>
+                            Load Video
+                          </Button>
+                        </form>
+                      </CardContent>
+                    </Card>
+
+                    <div className="text-center text-gray-500 font-medium">OR</div>
+
+                    {/* File Upload Section */}
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Upload className="h-5 w-5" />
+                          Upload Video File
+                        </CardTitle>
+                        <CardDescription className="text-sm">
+                          Supports files up to several GB. Large files will be automatically chunked for reliable upload.
+                          Uploaded videos are cached to avoid re-uploading.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <Input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="video/*"
+                            onChange={handleFileUpload}
+                            disabled={isUploading}
+                            className="w-full"
+                          />
+                          {isUploading && (
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-blue-600 flex items-center gap-2">
+                                  <FileVideo className="h-4 w-4" />
+                                  {uploadStatus}
+                                </span>
+                                <span className="text-blue-600 font-medium">{Math.round(uploadProgress)}%</span>
+                              </div>
+                              <Progress 
+                                value={uploadProgress} 
+                                className="w-full h-3"
+                                indicatorClassName="bg-blue-500 transition-all duration-300"
+                              />
+                            </div>
+                          )}
                         </div>
-                        <Progress 
-                          value={uploadProgress} 
-                          className="w-full h-3"
-                          indicatorClassName="bg-blue-500 transition-all duration-300"
-                        />
+                      </CardContent>
+                    </Card>
+
+                    {error && (
+                      <div className="text-red-500 text-sm text-center bg-red-50 p-3 rounded-md">
+                        {error}
                       </div>
                     )}
                   </div>
-                </CardContent>
-              </Card>
-
-              {error && (
-                <div className="text-red-500 text-sm text-center bg-red-50 p-3 rounded-md">
-                  {error}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div>
-              <div className="mb-4 flex justify-between items-center">
-                <div className="truncate mr-2">
-                  <p className="text-sm font-medium">Loaded Video:</p>
-                  <p className="text-sm text-blue-600 truncate">
-                    {uploadedVideoUrl ? 'Uploaded video file' : submittedUrl}
-                  </p>
-                </div>
-                <Button onClick={handleReset} variant="outline" size="sm">
-                  <X className="h-4 w-4 mr-2" />
-                  Load Different Video
-                </Button>
-              </div>
-              <DirectAnalysisInterface videoUrl={submittedUrl} />
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                ) : (
+                  <div>
+                    <div className="mb-4 flex justify-between items-center">
+                      <div className="truncate mr-2">
+                        <p className="text-sm font-medium">Loaded Video:</p>
+                        <p className="text-sm text-blue-600 truncate">
+                          {uploadedVideoUrl ? 'Uploaded video file' : submittedUrl}
+                        </p>
+                      </div>
+                      <Button onClick={handleReset} variant="outline" size="sm">
+                        <X className="h-4 w-4 mr-2" />
+                        Load Different Video
+                      </Button>
+                    </div>
+                    <DirectAnalysisInterface videoUrl={submittedUrl} />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 };
 

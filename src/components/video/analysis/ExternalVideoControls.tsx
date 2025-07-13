@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, Edit3 } from 'lucide-react';
 
 interface ExternalVideoControlsProps {
   isPlaying: boolean;
@@ -11,11 +11,13 @@ interface ExternalVideoControlsProps {
   volume: number;
   isMuted: boolean;
   isFullscreen: boolean;
+  drawingMode?: boolean;
   onPlayPause: () => void;
   onSeek: (time: number) => void;
   onVolumeChange: (volume: number) => void;
   onMuteToggle: () => void;
   onFullscreenToggle: () => void;
+  onDrawingModeToggle?: () => void;
 }
 
 export const ExternalVideoControls: React.FC<ExternalVideoControlsProps> = ({
@@ -25,11 +27,13 @@ export const ExternalVideoControls: React.FC<ExternalVideoControlsProps> = ({
   volume,
   isMuted,
   isFullscreen,
+  drawingMode = false,
   onPlayPause,
   onSeek,
   onVolumeChange,
   onMuteToggle,
-  onFullscreenToggle
+  onFullscreenToggle,
+  onDrawingModeToggle
 }) => {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -106,19 +110,34 @@ export const ExternalVideoControls: React.FC<ExternalVideoControlsProps> = ({
           </span>
         </div>
 
-        {/* Fullscreen Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onFullscreenToggle}
-          className="h-8 w-8"
-        >
-          {isFullscreen ? (
-            <Minimize className="w-4 h-4" />
-          ) : (
-            <Maximize className="w-4 h-4" />
+        <div className="flex items-center gap-2">
+          {/* Drawing Mode Toggle */}
+          {onDrawingModeToggle && (
+            <Button
+              variant={drawingMode ? "default" : "ghost"}
+              size="sm"
+              onClick={onDrawingModeToggle}
+              className="h-8"
+            >
+              <Edit3 className="w-4 h-4 mr-2" />
+              {drawingMode ? 'Disable Drawing' : 'Enable Drawing'}
+            </Button>
           )}
-        </Button>
+
+          {/* Fullscreen Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onFullscreenToggle}
+            className="h-8 w-8"
+          >
+            {isFullscreen ? (
+              <Minimize className="w-4 h-4" />
+            ) : (
+              <Maximize className="w-4 h-4" />
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );
