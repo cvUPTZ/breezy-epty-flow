@@ -1,12 +1,11 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { ProductionVideoAnalysisService } from '@/services/productionVideoAnalysisService';
-import { ProductionPlayerTrackingService, RealTimePlayerData } from '@/services/productionPlayerTrackingService';
 import { AnnotationPersistenceService } from '@/services/annotationPersistenceService';
 import { AdvancedDrawingOverlay } from './AdvancedDrawingOverlay';
 import { DrawingToolsPanel } from './DrawingToolsPanel';
 import { toast } from 'sonner';
 import { createPortal } from 'react-dom';
+import { DetectionResult } from '@/services/pythonDetectionService';
 
 interface ProductionTacticalOverlayProps {
   videoElement: HTMLVideoElement | null;
@@ -14,6 +13,7 @@ interface ProductionTacticalOverlayProps {
   videoDimensions: { width: number; height: number };
   currentTime: number;
   isPlaying: boolean;
+  detectionResults: DetectionResult[];
 }
 
 export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps> = ({
@@ -21,32 +21,14 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
   videoUrl,
   videoDimensions,
   currentTime,
-  isPlaying
+  isPlaying,
+  detectionResults
 }) => {
-  const [analysisJob, setAnalysisJob] = useState<any>(null);
-  const [playerData, setPlayerData] = useState<RealTimePlayerData[]>([]);
-  const [trackingService, setTrackingService] = useState<ProductionPlayerTrackingService | null>(null);
   const [annotations, setAnnotations] = useState<any[]>([]);
   const [activeAnnotationTool, setActiveAnnotationTool] = useState('select');
   const [violationCount, setViolationCount] = useState(0);
   const [drawingMode, setDrawingMode] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-
-  // Initialize tracking service
-  useEffect(() => {
-    const service = new ProductionPlayerTrackingService({
-      frameRate: 15,
-      detectionThreshold: 0.7,
-      trackingAlgorithm: 'yolo',
-      enableHeatmap: true,
-      enableTrajectory: true
-    });
-    setTrackingService(service);
-
-    return () => {
-      service.stopTracking();
-    };
-  }, []);
 
   // Monitor fullscreen changes
   useEffect(() => {
@@ -78,22 +60,21 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
     }
   }, [videoUrl]);
 
-  // Start real-time tracking
-  const handleStartTracking = useCallback(async () => {
-    if (!trackingService || !videoElement) return;
+  const [playerData, setPlayerData] = useState<any[]>([]);
+  const [ballData, setBallData] = useState<any | null>(null);
 
-    try {
-      await trackingService.startTracking(videoElement, (data) => {
-        setPlayerData(data);
-        // Update violation count based on tracking data
-        const violations = data.filter(p => p.confidence < 0.6).length;
-        setViolationCount(violations);
-      });
-      toast.success('Real-time tracking started');
-    } catch (error: any) {
-      toast.error(`Failed to start tracking: ${error.message}`);
+  useEffect(() => {
+    if (detectionResults.length > 0) {
+      const currentResult = detectionResults.find(
+        (r) => Math.abs(r.timestamp - currentTime) < 0.5
+      );
+
+      if (currentResult) {
+        setPlayerData(currentResult.players);
+        setBallData(currentResult.ball);
+      }
     }
-  }, [trackingService, videoElement]);
+  }, [currentTime, detectionResults]);
 
   // Handle annotation save
   const handleAnnotationSave = (newAnnotation: any) => {
@@ -170,14 +151,15 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
             currentTime={currentTime}
             onAnnotationSave={handleAnnotationSave}
             playerPositions={playerData.map(p => ({
-              id: p.playerId,
+              id: p.id,
               x: p.position.x,
               y: p.position.y,
               team: p.team,
-              jerseyNumber: p.jerseyNumber,
+              jerseyNumber: p.jersey_number,
               isCorrectPosition: p.confidence > 0.8,
-              heatIntensity: p.speed / 25
+              heatIntensity: 0
             }))}
+            ballPosition={ballData ? { x: ballData.position.x, y: ballData.position.y } : null}
           />
         </div>
       </div>

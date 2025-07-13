@@ -11,6 +11,7 @@ import { ProductionTacticalOverlay } from './analysis/ProductionTacticalOverlay'
 import { AnalysisControlPanel } from './analysis/AnalysisControlPanel';
 import { ExternalVideoControls } from './analysis/ExternalVideoControls';
 import { ComprehensiveAnnotationSystem, AnnotationType } from './analysis/ComprehensiveAnnotationSystem';
+import { pythonDetectionService, DetectionJob, DetectionResult } from '@/services/pythonDetectionService';
 
 interface DirectAnalysisInterfaceProps {
   videoUrl: string;
@@ -33,6 +34,8 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [drawingMode, setDrawingMode] = useState(false);
   const [annotations, setAnnotations] = useState<AnnotationType[]>([]);
+  const [detectionJob, setDetectionJob] = useState<DetectionJob | null>(null);
+  const [detectionResults, setDetectionResults] = useState<DetectionResult[]>([]);
   
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -202,16 +205,18 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
 
   const handleStartAnalysis = async () => {
     setIsAnalyzing(true);
-    toast.info('Starting video analysis...');
-    
-    // Simulate analysis progress
-    for (let i = 0; i <= 100; i += 10) {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      setAnalysisStats(prev => ({ ...prev, analysisProgress: i }));
+    setDetectionJob(null);
+    setDetectionResults([]);
+    toast.info('Starting video analysis job...');
+
+    try {
+      const job = await pythonDetectionService.startDetection({ videoUrl });
+      setDetectionJob(job);
+      toast.success(`Detection job started with ID: ${job.job_id}`);
+    } catch (error: any) {
+      toast.error(`Failed to start detection job: ${error.message}`);
+      setIsAnalyzing(false);
     }
-    
-    setIsAnalyzing(false);
-    toast.success('Analysis completed successfully!');
   };
 
   const handleSaveAnnotations = () => {
@@ -221,6 +226,38 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
   const handleExportData = () => {
     toast.success('Analysis data exported!');
   };
+
+  // Poll for job status
+  useEffect(() => {
+    if (!detectionJob || !isAnalyzing) {
+      return;
+    }
+
+    const intervalId = setInterval(async () => {
+      try {
+        const status = await pythonDetectionService.getJobStatus(detectionJob.job_id);
+        setDetectionJob(status);
+
+        if (status.status === 'completed') {
+          toast.success('Analysis completed!');
+          const results = await pythonDetectionService.getResults(detectionJob.job_id);
+          setDetectionResults(results);
+          setIsAnalyzing(false);
+          clearInterval(intervalId);
+        } else if (status.status === 'failed') {
+          toast.error(`Analysis failed: ${status.error}`);
+          setIsAnalyzing(false);
+          clearInterval(intervalId);
+        }
+      } catch (error: any) {
+        toast.error(`Error fetching job status: ${error.message}`);
+        setIsAnalyzing(false);
+        clearInterval(intervalId);
+      }
+    }, 5000); // Poll every 5 seconds
+
+    return () => clearInterval(intervalId);
+  }, [detectionJob, isAnalyzing]);
 
   // Monitor fullscreen changes
   useEffect(() => {
@@ -325,6 +362,7 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
                     videoDimensions={videoDimensions}
                     currentTime={currentTime}
                     isPlaying={isPlaying}
+                    detectionResults={detectionResults}
                   />
                 )}
               </div>

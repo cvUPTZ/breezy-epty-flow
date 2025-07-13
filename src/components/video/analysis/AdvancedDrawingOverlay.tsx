@@ -42,13 +42,15 @@ interface AdvancedDrawingOverlayProps {
   currentTime: number;
   onAnnotationSave: (annotations: AnnotationElement[]) => void;
   playerPositions?: PlayerPosition[];
+  ballPosition?: { x: number; y: number } | null;
 }
 
 export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
   videoDimensions,
   currentTime,
   onAnnotationSave,
-  playerPositions = []
+  playerPositions = [],
+  ballPosition = null
 }) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [activeAnnotationTool, setActiveAnnotationTool] = useState<string>('select');
@@ -57,6 +59,7 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
   const [showPlayerTracking, setShowPlayerTracking] = useState(true);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showTrajectories, setShowTrajectories] = useState(false);
+  const [showBall, setShowBall] = useState(true);
   const [zoomLevel, setZoomLevel] = useState([1]);
   const [panPosition, setPanPosition] = useState({ x: 0, y: 0 });
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
@@ -596,6 +599,27 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
     );
   };
 
+  const renderBall = () => {
+    if (!showBall || !ballPosition) return null;
+
+    const isoPos = transformToIsometric(ballPosition.x, ballPosition.y);
+    return (
+      <g>
+        <ellipse
+          cx={isoPos.x}
+          cy={isoPos.y}
+          rx="8"
+          ry={8 * isometricScale}
+          fill="#ffffff"
+          stroke="#000000"
+          strokeWidth="2"
+          className="animate-pulse"
+          transform={`skewX(-${perspectiveAngle})`}
+        />
+      </g>
+    );
+  };
+
   const renderPlayerTracking = () => {
     if (!showPlayerTracking) return null;
 
@@ -697,6 +721,9 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
           
           {/* Render player tracking */}
           {renderPlayerTracking()}
+
+          {/* Render ball tracking */}
+          {renderBall()}
           
           {/* Render saved annotations */}
           {annotations.map(renderAnnotation)}
@@ -919,6 +946,16 @@ export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
               <Switch
                 checked={showTrajectories}
                 onCheckedChange={setShowTrajectories}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                <span className="text-sm">Ball</span>
+              </div>
+              <Switch
+                checked={showBall}
+                onCheckedChange={setShowBall}
               />
             </div>
           </CardContent>
