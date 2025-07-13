@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { AnnotationPersistenceService } from '@/services/annotationPersistenceService';
 import { AdvancedDrawingOverlay } from './AdvancedDrawingOverlay';
@@ -173,7 +174,7 @@ export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps>
   const shouldInterceptPointerEvents = drawingMode && activeAnnotationTool !== 'select';
   const isDrawingActive = drawingMode && activeAnnotationTool !== 'select';
 
-  // Apply cursor styles dynamically
+  // Apply cursor styles dynamically - Fixed to remove invalid attributes
   useEffect(() => {
     if (isDrawingActive) {
       // Add global cursor styles
