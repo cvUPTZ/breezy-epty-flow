@@ -1,31 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trash2, Users, Target, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import SpecializedTrackerAssignment from '@/components/admin/SpecializedTrackerAssignment';
-import TrackerAbsenceManager from '@/components/admin/TrackerAbsenceManager';
-
-interface TrackerUser {
-  id: string;
-  email: string;
-  full_name: string;
-}
-
-interface Assignment {
-  id: string;
-  tracker_user_id: string;
-  match_id: string;
-  player_team_id?: 'home' | 'away';
-  player_id?: number;
-  assigned_event_types?: string[];
-  tracker_name?: string;
-  tracker_email?: string;
-}
+import { useToast } from '@/hooks/use-toast';
+import { Users } from 'lucide-react';
+import TrackerAssignmentTabs from '@/components/admin/TrackerAssignmentTabs';
 
 interface TrackerAssignmentProps {
   matchId: string;
@@ -38,217 +19,86 @@ const TrackerAssignment: React.FC<TrackerAssignmentProps> = ({
   homeTeamPlayers,
   awayTeamPlayers
 }) => {
-  const [trackerUsers, setTrackerUsers] = useState<TrackerUser[]>([]);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [selectedTracker, setSelectedTracker] = useState<string>('');
+  const [assignments, setAssignments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
-    fetchTrackerUsers();
     fetchAssignments();
   }, [matchId]);
 
-  const fetchTrackerUsers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, email, full_name')
-        .eq('role', 'tracker')
-        .order('full_name');
-
-      if (error) throw error;
-
-      const typedUsers: TrackerUser[] = (data || [])
-        .filter(user => user.id)
-        .map(user => ({
-          id: user.id!,
-          email: user.email || 'No email',
-          full_name: user.full_name || 'No name',
-        }));
-
-      setTrackerUsers(typedUsers);
-    } catch (error: any) {
-      console.error('Error fetching tracker users:', error);
-      toast.error('Failed to fetch tracker users');
-    }
-  };
-
   const fetchAssignments = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('match_tracker_assignments')
         .select(`
-          id,
-          tracker_user_id,
-          match_id,
-          player_team_id,
-          player_id,
-          assigned_event_types,
-          profiles!tracker_user_id (
+          *,
+          profiles:tracker_user_id (
             full_name,
             email
           )
         `)
-        .eq('match_id', matchId)
-        .is('player_id', null);
+        .eq('match_id', matchId);
 
       if (error) throw error;
-
-      const transformedAssignments: Assignment[] = (data || [])
-        .filter(item => item.id && item.tracker_user_id)
-        .map(item => ({
-          id: item.id!,
-          tracker_user_id: item.tracker_user_id!,
-          match_id: item.match_id!,
-          player_team_id: item.player_team_id as 'home' | 'away' | undefined,
-          player_id: item.player_id || undefined,
-          assigned_event_types: item.assigned_event_types || undefined,
-          tracker_name: (item.profiles as any)?.full_name || undefined,
-          tracker_email: (item.profiles as any)?.email || undefined,
-        }));
-
-      setAssignments(transformedAssignments);
+      setAssignments(data || []);
     } catch (error: any) {
       console.error('Error fetching assignments:', error);
-      toast.error('Failed to fetch assignments');
-    }
-  };
-
-  const handleCreateAssignment = async () => {
-    if (!selectedTracker) {
-      toast.error('Please select a tracker to assign');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { error } = await supabase
-        .from('match_tracker_assignments')
-        .insert({
-          match_id: matchId,
-          tracker_user_id: selectedTracker,
-          player_team_id: 'home'
-        });
-
-      if (error) throw error;
-
-      toast.success('Tracker assigned successfully');
-      setSelectedTracker('');
-      await fetchAssignments();
-    } catch (error: any) {
-      console.error('Error creating assignment:', error);
-      toast.error('Failed to create assignment');
+      toast({
+        title: "Error",
+        description: "Failed to fetch tracker assignments",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteAssignment = async (assignmentId: string) => {
-    if (!confirm('Are you sure you want to delete this assignment?')) return;
-
-    try {
-      const { error } = await supabase
-        .from('match_tracker_assignments')
-        .delete()
-        .eq('id', assignmentId);
-
-      if (error) throw error;
-
-      toast.success('Assignment deleted successfully');
-      await fetchAssignments();
-    } catch (error: any) {
-      console.error('Error deleting assignment:', error);
-      toast.error('Failed to delete assignment');
-    }
-  };
-
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="general">General Assignment</TabsTrigger>
-          <TabsTrigger value="specialized">Specialized Assignment</TabsTrigger>
-          <TabsTrigger value="absence">Absence Management</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="general" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                General Tracker Assignment
-              </CardTitle>
-              <p className="text-sm text-gray-600">
-                Assign trackers to cover multiple event types for teams or players
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Tracker</label>
-                  <Select value={selectedTracker} onValueChange={setSelectedTracker}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select tracker" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {trackerUsers.map(user => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.full_name}
-                        </SelectItem>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Tracker Assignments
+          </CardTitle>
+          <p className="text-sm text-gray-600">
+            Manage how trackers are assigned to this match
+          </p>
+        </CardHeader>
+        <CardContent>
+          {/* Current Assignments Summary */}
+          {assignments.length > 0 && (
+            <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h3 className="font-medium text-blue-900 mb-2">Current Assignments</h3>
+              <div className="space-y-2">
+                {assignments.map((assignment) => (
+                  <div key={assignment.id} className="flex items-center justify-between text-sm">
+                    <span className="text-blue-700">
+                      {assignment.profiles?.full_name || assignment.profiles?.email || 'Unknown Tracker'}
+                    </span>
+                    <div className="flex gap-1">
+                      {assignment.assigned_event_types?.map((eventType: string) => (
+                        <Badge key={eventType} variant="outline" className="text-xs">
+                          {eventType}
+                        </Badge>
                       ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-end">
-                  <Button onClick={handleCreateAssignment} disabled={loading || !selectedTracker} className="w-full">
-                    Assign
-                  </Button>
-                </div>
-              </div>
-
-              <div className="divide-y divide-gray-200">
-                {assignments.map((assignment: Assignment) => (
-                  <div key={assignment.id} className="py-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">{assignment.tracker_name || 'Unknown Tracker'}</p>
-                      <p className="text-xs text-gray-500">{assignment.tracker_email || 'No email'}</p>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => handleDeleteAssignment(assignment.id)}>
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Remove
-                    </Button>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="specialized" className="mt-6">
-          <SpecializedTrackerAssignment
+            </div>
+          )}
+
+          {/* New Assignment Interface */}
+          <TrackerAssignmentTabs
             matchId={matchId}
             homeTeamPlayers={homeTeamPlayers}
             awayTeamPlayers={awayTeamPlayers}
           />
-        </TabsContent>
-
-        <TabsContent value="absence" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
-                Tracker Absence Management
-              </CardTitle>
-              <p className="text-sm text-gray-600">
-                Monitor tracker activity and manage replacements for absent trackers
-              </p>
-            </CardHeader>
-            <CardContent>
-              <TrackerAbsenceManager matchId={matchId} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };
