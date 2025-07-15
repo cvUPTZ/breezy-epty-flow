@@ -23,6 +23,14 @@ interface PlayerAssignment {
   tracker_id: string;
 }
 
+interface Player {
+  id: number;
+  name?: string;
+  player_name?: string;
+  position?: string;
+  jersey_number?: number;
+}
+
 const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
   onRecordEvent,
   onClose,
@@ -45,6 +53,12 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
   }, [user?.id]);
 
   const fetchTrackerAssignments = async () => {
+    if (!user?.id) {
+      console.error('No user ID available');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       
@@ -67,7 +81,7 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
         .from('match_tracker_assignments')
         .select('*')
         .eq('match_id', matchId)
-        .eq('tracker_user_id', user?.id);
+        .eq('tracker_user_id', user.id);
 
       if (error) throw error;
 
@@ -90,9 +104,9 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
             ? (Array.isArray(match.home_team_players) ? match.home_team_players : [])
             : (Array.isArray(match.away_team_players) ? match.away_team_players : []);
           
-          const player = teamPlayers?.find((p: any) => p.id === assignment.player_id);
-          if (player) {
-            const position = player.position?.toLowerCase() || '';
+          const player = teamPlayers?.find((p: Player) => p.id === assignment.player_id);
+          if (player && typeof player === 'object' && player !== null) {
+            const position = (player as Player).position?.toLowerCase() || '';
             let line: 'defense' | 'midfield' | 'attack' = 'midfield';
             
             if (position.includes('def') || position.includes('back') || position.includes('gk')) {
@@ -117,7 +131,7 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
           line: line as 'defense' | 'midfield' | 'attack',
           team: team as 'home' | 'away',
           players,
-          tracker_id: user?.id || ''
+          tracker_id: user.id || ''
         });
       });
 
@@ -234,9 +248,9 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
                       <div className="mb-4">
                         <h4 className="text-sm font-medium mb-2">Assigned Players:</h4>
                         <div className="flex flex-wrap gap-1">
-                          {assignment.players.map((player) => (
+                          {assignment.players.map((player: Player) => (
                             <Badge key={player.id} variant="secondary" className="text-xs">
-                              #{player.jersey_number} {player.name}
+                              #{player.jersey_number} {player.name || player.player_name}
                             </Badge>
                           ))}
                         </div>
