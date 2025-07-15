@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,8 +43,6 @@ const FOOTBALL_POSITIONS = {
   Midfield: ['DM', 'CM', 'AM', 'LM', 'RM', 'CDM', 'CAM'],
   Attack: ['CF', 'ST', 'LW', 'RW', 'LF', 'RF', 'SS']
 };
-
-const ALL_POSITIONS = Object.values(FOOTBALL_POSITIONS).flat();
 
 const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
   homeTeamPlayers,
