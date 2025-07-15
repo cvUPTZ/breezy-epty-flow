@@ -10,7 +10,7 @@ import { Users, Target, Shield, Zap, Globe } from 'lucide-react';
 
 interface Match {
   id: string;
-  name?: string;
+  name?: string | null;
   home_team_name: string;
   away_team_name: string;
   home_team_players: any[];
@@ -19,8 +19,8 @@ interface Match {
 
 interface Tracker {
   id: string;
-  full_name: string;
-  email: string;
+  full_name: string | null;
+  email: string | null;
 }
 
 interface LineAssignment {
@@ -60,7 +60,18 @@ const LineBasedTrackerAssignment: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setMatches(data || []);
+      
+      // Transform data to handle Json types properly
+      const transformedMatches: Match[] = (data || []).map(match => ({
+        id: match.id,
+        name: match.name,
+        home_team_name: match.home_team_name,
+        away_team_name: match.away_team_name,
+        home_team_players: Array.isArray(match.home_team_players) ? match.home_team_players : [],
+        away_team_players: Array.isArray(match.away_team_players) ? match.away_team_players : []
+      }));
+      
+      setMatches(transformedMatches);
     } catch (error: any) {
       console.error('Error fetching matches:', error);
       toast({
@@ -80,7 +91,15 @@ const LineBasedTrackerAssignment: React.FC = () => {
         .order('full_name');
 
       if (error) throw error;
-      setTrackers(data || []);
+      
+      // Handle nullable fields properly
+      const transformedTrackers: Tracker[] = (data || []).map(tracker => ({
+        id: tracker.id,
+        full_name: tracker.full_name,
+        email: tracker.email
+      }));
+      
+      setTrackers(transformedTrackers);
     } catch (error: any) {
       console.error('Error fetching trackers:', error);
       toast({
@@ -122,11 +141,11 @@ const LineBasedTrackerAssignment: React.FC = () => {
 
   const getLineColor = (line: string) => {
     switch (line) {
-      case 'defense': return 'bg-blue-500';
-      case 'midfield': return 'bg-green-500';
-      case 'attack': return 'bg-red-500';
-      case 'all_events': return 'bg-purple-500';
-      default: return 'bg-gray-500';
+      case 'defense': return 'border-blue-200';
+      case 'midfield': return 'border-green-200';
+      case 'attack': return 'border-red-200';
+      case 'all_events': return 'border-purple-200';
+      default: return 'border-gray-200';
     }
   };
 
@@ -138,7 +157,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
     }
 
     // Filter players by position/line
-    return players.filter(player => {
+    return players.filter((player: any) => {
       const position = player.position?.toLowerCase() || '';
       switch (line) {
         case 'defense':
@@ -300,7 +319,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                 </div>
 
                 {/* Defense Line */}
-                <Card className="border-blue-200">
+                <Card className={getLineColor('defense')}>
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-blue-700">
                       <Shield className="h-5 w-5" />
@@ -313,7 +332,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                       <div className="space-y-2">
                         <h4 className="font-medium text-sm">{selectedMatchData.home_team_name} Defense</h4>
                         <div className="space-y-1">
-                          {getLinePlayersForPosition(selectedMatchData, 'defense', 'home').map(player => (
+                          {getLinePlayersForPosition(selectedMatchData, 'defense', 'home').map((player: any) => (
                             <Badge key={player.id} variant="outline" className="text-xs">
                               #{player.jersey_number} {player.name}
                             </Badge>
@@ -326,7 +345,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                           <SelectContent>
                             {trackers.map((tracker) => (
                               <SelectItem key={tracker.id} value={tracker.id}>
-                                {tracker.full_name}
+                                {tracker.full_name || tracker.email || 'Unknown'}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -337,7 +356,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                       <div className="space-y-2">
                         <h4 className="font-medium text-sm">{selectedMatchData.away_team_name} Defense</h4>
                         <div className="space-y-1">
-                          {getLinePlayersForPosition(selectedMatchData, 'defense', 'away').map(player => (
+                          {getLinePlayersForPosition(selectedMatchData, 'defense', 'away').map((player: any) => (
                             <Badge key={player.id} variant="outline" className="text-xs">
                               #{player.jersey_number} {player.name}
                             </Badge>
@@ -350,7 +369,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                           <SelectContent>
                             {trackers.map((tracker) => (
                               <SelectItem key={tracker.id} value={tracker.id}>
-                                {tracker.full_name}
+                                {tracker.full_name || tracker.email || 'Unknown'}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -368,7 +387,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                           <SelectContent>
                             {trackers.map((tracker) => (
                               <SelectItem key={tracker.id} value={tracker.id}>
-                                {tracker.full_name}
+                                {tracker.full_name || tracker.email || 'Unknown'}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -379,7 +398,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                 </Card>
 
                 {/* Midfield Line */}
-                <Card className="border-green-200">
+                <Card className={getLineColor('midfield')}>
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-green-700">
                       <Target className="h-5 w-5" />
@@ -392,7 +411,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                       <div className="space-y-2">
                         <h4 className="font-medium text-sm">{selectedMatchData.home_team_name} Midfield</h4>
                         <div className="space-y-1">
-                          {getLinePlayersForPosition(selectedMatchData, 'midfield', 'home').map(player => (
+                          {getLinePlayersForPosition(selectedMatchData, 'midfield', 'home').map((player: any) => (
                             <Badge key={player.id} variant="outline" className="text-xs">
                               #{player.jersey_number} {player.name}
                             </Badge>
@@ -405,7 +424,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                           <SelectContent>
                             {trackers.map((tracker) => (
                               <SelectItem key={tracker.id} value={tracker.id}>
-                                {tracker.full_name}
+                                {tracker.full_name || tracker.email || 'Unknown'}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -416,7 +435,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                       <div className="space-y-2">
                         <h4 className="font-medium text-sm">{selectedMatchData.away_team_name} Midfield</h4>
                         <div className="space-y-1">
-                          {getLinePlayersForPosition(selectedMatchData, 'midfield', 'away').map(player => (
+                          {getLinePlayersForPosition(selectedMatchData, 'midfield', 'away').map((player: any) => (
                             <Badge key={player.id} variant="outline" className="text-xs">
                               #{player.jersey_number} {player.name}
                             </Badge>
@@ -429,7 +448,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                           <SelectContent>
                             {trackers.map((tracker) => (
                               <SelectItem key={tracker.id} value={tracker.id}>
-                                {tracker.full_name}
+                                {tracker.full_name || tracker.email || 'Unknown'}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -447,7 +466,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                           <SelectContent>
                             {trackers.map((tracker) => (
                               <SelectItem key={tracker.id} value={tracker.id}>
-                                {tracker.full_name}
+                                {tracker.full_name || tracker.email || 'Unknown'}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -458,7 +477,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                 </Card>
 
                 {/* Attack Line */}
-                <Card className="border-red-200">
+                <Card className={getLineColor('attack')}>
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-red-700">
                       <Zap className="h-5 w-5" />
@@ -471,7 +490,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                       <div className="space-y-2">
                         <h4 className="font-medium text-sm">{selectedMatchData.home_team_name} Attack</h4>
                         <div className="space-y-1">
-                          {getLinePlayersForPosition(selectedMatchData, 'attack', 'home').map(player => (
+                          {getLinePlayersForPosition(selectedMatchData, 'attack', 'home').map((player: any) => (
                             <Badge key={player.id} variant="outline" className="text-xs">
                               #{player.jersey_number} {player.name}
                             </Badge>
@@ -484,7 +503,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                           <SelectContent>
                             {trackers.map((tracker) => (
                               <SelectItem key={tracker.id} value={tracker.id}>
-                                {tracker.full_name}
+                                {tracker.full_name || tracker.email || 'Unknown'}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -495,7 +514,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                       <div className="space-y-2">
                         <h4 className="font-medium text-sm">{selectedMatchData.away_team_name} Attack</h4>
                         <div className="space-y-1">
-                          {getLinePlayersForPosition(selectedMatchData, 'attack', 'away').map(player => (
+                          {getLinePlayersForPosition(selectedMatchData, 'attack', 'away').map((player: any) => (
                             <Badge key={player.id} variant="outline" className="text-xs">
                               #{player.jersey_number} {player.name}
                             </Badge>
@@ -508,7 +527,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                           <SelectContent>
                             {trackers.map((tracker) => (
                               <SelectItem key={tracker.id} value={tracker.id}>
-                                {tracker.full_name}
+                                {tracker.full_name || tracker.email || 'Unknown'}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -526,7 +545,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                           <SelectContent>
                             {trackers.map((tracker) => (
                               <SelectItem key={tracker.id} value={tracker.id}>
-                                {tracker.full_name}
+                                {tracker.full_name || tracker.email || 'Unknown'}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -537,7 +556,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                 </Card>
 
                 {/* All Events Assignment */}
-                <Card className="border-purple-200">
+                <Card className={getLineColor('all_events')}>
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-purple-700">
                       <Globe className="h-5 w-5" />
@@ -557,7 +576,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                           <SelectContent>
                             {trackers.map((tracker) => (
                               <SelectItem key={tracker.id} value={tracker.id}>
-                                {tracker.full_name}
+                                {tracker.full_name || tracker.email || 'Unknown'}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -575,7 +594,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                           <SelectContent>
                             {trackers.map((tracker) => (
                               <SelectItem key={tracker.id} value={tracker.id}>
-                                {tracker.full_name}
+                                {tracker.full_name || tracker.email || 'Unknown'}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -593,7 +612,7 @@ const LineBasedTrackerAssignment: React.FC = () => {
                           <SelectContent>
                             {trackers.map((tracker) => (
                               <SelectItem key={tracker.id} value={tracker.id}>
-                                {tracker.full_name}
+                                {tracker.full_name || tracker.email || 'Unknown'}
                               </SelectItem>
                             ))}
                           </SelectContent>

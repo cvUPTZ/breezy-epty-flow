@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -110,7 +111,7 @@ const VoiceCollaborationManager: React.FC = () => {
 
       if (error) throw error;
 
-      // Transform the data to match our Participant interface
+      // Transform the data to match our Participant interface, handling null values properly
       const transformedData: Participant[] = (data || []).map(participant => ({
         id: participant.id,
         user_id: participant.user_id || '',
@@ -121,8 +122,8 @@ const VoiceCollaborationManager: React.FC = () => {
         connection_quality: participant.connection_quality || undefined,
         joined_at: participant.joined_at || undefined,
         last_activity: participant.last_activity || undefined,
-        user_name: participant.profiles?.full_name,
-        user_email: participant.profiles?.email,
+        user_name: participant.profiles?.full_name || undefined,
+        user_email: participant.profiles?.email || undefined,
         profiles: participant.profiles
       }));
 

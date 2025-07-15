@@ -80,15 +80,15 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
           // This is an "all events" assignment
           lineAssignments.push({
             line: 'all_events',
-            team: assignment.player_team_id,
+            team: assignment.player_team_id as 'home' | 'away',
             players: [],
-            tracker_id: assignment.tracker_user_id
+            tracker_id: assignment.tracker_user_id || ''
           });
         } else {
           // Get player info and determine line based on position
           const teamPlayers = assignment.player_team_id === 'home' 
-            ? match.home_team_players 
-            : match.away_team_players;
+            ? (Array.isArray(match.home_team_players) ? match.home_team_players : [])
+            : (Array.isArray(match.away_team_players) ? match.away_team_players : []);
           
           const player = teamPlayers?.find((p: any) => p.id === assignment.player_id);
           if (player) {
