@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import CreateMatchForm from '@/components/CreateMatchForm';
 import TrackerAssignment from '@/components/match/TrackerAssignment';
+import TrackerAssignmentTabs from '@/components/admin/TrackerAssignmentTabs';
 import { useToast } from '@/hooks/use-toast';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import MatchAnalysisSidebar from '@/components/match/MatchAnalysisSidebar';
@@ -121,15 +121,29 @@ const CreateMatch: React.FC = () => {
                 
                 <TabsContent value="tracker-assignment" className="mt-6">
                   {matchId ? (
-                    <Card className="bg-white/80 backdrop-blur-sm border-slate-200/80 shadow-xl rounded-2xl">
-                      <CardContent className="p-6 sm:p-8">
-                        <TrackerAssignment
-                          matchId={matchId}
-                          homeTeamPlayers={[]}
-                          awayTeamPlayers={[]}
-                        />
-                      </CardContent>
-                    </Card>
+                    <div className="space-y-6">
+                      {/* Enhanced Tracker Assignment with New Options */}
+                      <Card className="bg-white/80 backdrop-blur-sm border-slate-200/80 shadow-xl rounded-2xl">
+                        <CardContent className="p-6 sm:p-8">
+                          <TrackerAssignmentTabs
+                            matchId={matchId}
+                            homeTeamPlayers={[]}
+                            awayTeamPlayers={[]}
+                          />
+                        </CardContent>
+                      </Card>
+                      
+                      {/* Original Tracker Assignment (keeping existing functionality) */}
+                      <Card className="bg-white/80 backdrop-blur-sm border-slate-200/80 shadow-xl rounded-2xl">
+                        <CardContent className="p-6 sm:p-8">
+                          <TrackerAssignment
+                            matchId={matchId}
+                            homeTeamPlayers={[]}
+                            awayTeamPlayers={[]}
+                          />
+                        </CardContent>
+                      </Card>
+                    </div>
                   ) : (
                     <Card className="bg-white/80 backdrop-blur-sm border-slate-200/80 shadow-xl rounded-2xl">
                       <CardContent className="text-center py-16 px-6 text-gray-500">
