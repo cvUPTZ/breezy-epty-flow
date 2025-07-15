@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +8,7 @@ import { YouTubeService } from '@/services/youtubeService';
 import MatchBasicInfo from './match/form/MatchBasicInfo';
 import TeamSetupSection from './match/form/TeamSetupSection';
 import TrackerAssignmentTabs from './match/form/TrackerAssignementTabs'; // Fixed import path
-import VideoSetupSection from './VideoSetupSection';
+import VideoSetupSection from './match/form/VideoSetupSection'; // Fixed import path
 import { Button } from './ui/button';
 import { Player as TrackerPlayer } from '@/types/trackerAssignment';
 
