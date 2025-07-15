@@ -63,6 +63,7 @@ import AbsenceSummaryDashboard from '@/components/admin/AbsenceSummaryDashboard'
 import QuickPlanningActions from '@/components/admin/QuickPlanningActions';
 import BusinessPlanManagement from '@/components/admin/BusinessPlanManagement';
 import BudgetTrackerConfig from '@/components/admin/BudgetTrackerConfig';
+import LineBasedTrackerAssignment from '@/components/admin/LineBasedTrackerAssignment';
 
 const sidebarItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -364,6 +365,11 @@ const Admin: React.FC = () => {
         return (
           <div className="space-y-6">
             <SpecializedTrackerAssignment 
+              matchId={liveMatches[0]?.id || 'default-match-id'}
+              homeTeamPlayers={mockPlayers}
+              awayTeamPlayers={mockAwayPlayers}
+            />
+            <LineBasedTrackerAssignment
               matchId={liveMatches[0]?.id || 'default-match-id'}
               homeTeamPlayers={mockPlayers}
               awayTeamPlayers={mockAwayPlayers}
