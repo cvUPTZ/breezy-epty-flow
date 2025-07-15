@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 type Formation = '4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '5-3-2' | '3-4-3';
 
 interface Player {
-  id: number;
+  id: number; // IMPORTANT: This ID must be unique for each player.
   name: string;
   number: number | null;
   position: string;
@@ -44,6 +43,18 @@ const FOOTBALL_POSITIONS = {
   Attack: ['CF', 'ST', 'LW', 'RW', 'LF', 'RF', 'SS']
 };
 
+// ====================================================================================
+// NOTE: The code in this component appears to be correct. The issue you are
+// describing is a classic sign that the initial state for `homeTeamPlayers` and
+// `awayTeamPlayers` in your PARENT component was created incorrectly.
+//
+// Please ensure that when you create the initial player arrays, you are creating
+// a NEW object for each player, not filling an array with references to the
+// same object.
+//
+// See the "Solution" in the explanation for the correct way to initialize your state.
+// ====================================================================================
+
 const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
   homeTeamPlayers,
   awayTeamPlayers,
@@ -56,22 +67,20 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [isProcessingImage, setIsProcessingImage] = useState<boolean>(false);
 
+  // This function is correctly written for immutable updates.
+  // It creates a new array and replaces the single updated player with a new object.
   const updatePlayer = (team: 'home' | 'away', playerId: number, field: keyof Player, value: any) => {
-    console.log('Updating player:', { team, playerId, field, value });
-    
     const players = team === 'home' ? homeTeamPlayers : awayTeamPlayers;
-    console.log('Current players:', players);
     
-    // Create a new array with the updated player
     const updatedPlayers = players.map(player => {
+      // It finds the player by their unique ID
       if (player.id === playerId) {
-        console.log('Found matching player:', player);
+        // It returns a *new* object for this player, leaving others untouched.
         return { ...player, [field]: value };
       }
       return player;
     });
     
-    console.log('Updated players:', updatedPlayers);
     onPlayersChange(team, updatedPlayers);
   };
 
@@ -150,6 +159,7 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
     };
   };
 
+  // This function correctly renders the inputs for each player.
   const renderPlayerInputs = (players: Player[], team: 'home' | 'away') => (
     <div className="space-y-2">
       <div className="grid grid-cols-5 gap-2 items-center text-sm font-medium px-2 text-muted-foreground">
@@ -157,9 +167,10 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
         <div className="col-span-2">Name</div>
         <div className="col-span-2">Position</div>
       </div>
+      {/* The .map() function iterates over the list of players */}
       {players.map((player) => {
-        console.log('Rendering player:', player);
         return (
+          // The key is unique and stable, which is correct.
           <div key={`${team}-${player.id}`} className="grid grid-cols-5 gap-2 items-center text-sm">
             <Input
               type="number"
@@ -177,9 +188,10 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
               className="h-8 col-span-2"
             />
             <Select
+              // The value is correctly bound to the individual player's position.
               value={player.position || 'none'}
+              // The onValueChange correctly calls updatePlayer with the specific player's ID.
               onValueChange={(value) => {
-                console.log('Position change:', { playerId: player.id, value, team });
                 updatePlayer(team, player.id, 'position', value === 'none' ? '' : value);
               }}
             >
