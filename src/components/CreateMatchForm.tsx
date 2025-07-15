@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { YouTubeService } from '@/services/youtubeService';
 import MatchBasicInfo from './match/form/MatchBasicInfo';
 import TeamSetupSection from './match/form/TeamSetupSection';
-import TrackerAssignmentSection from './match/form/TrackerAssignmentSection';
+import TrackerAssignmentTabs from './match/form/TrackerAssignmentTabs'; // Replaced with new component
 import VideoSetupSection from './match/form/VideoSetupSection';
 import { Button } from './ui/button';
 import { Player as TrackerPlayer } from '@/types/trackerAssignment';
@@ -192,11 +192,21 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
         }
 
         if (assignmentsData) {
-          setTrackerAssignments(assignmentsData.map(assignment => ({
-            tracker_user_id: assignment.tracker_user_id,
-            assigned_event_types: assignment.assigned_event_types || [],
-            player_ids: assignment.player_id ? [assignment.player_id] : [],
-          })));
+          // This logic needs to reconstruct the assignments. If multiple rows exist for one tracker, they should be grouped.
+          const groupedAssignments: { [key: string]: TrackerAssignment } = {};
+          assignmentsData.forEach(assignment => {
+            if (!groupedAssignments[assignment.tracker_user_id]) {
+              groupedAssignments[assignment.tracker_user_id] = {
+                tracker_user_id: assignment.tracker_user_id,
+                assigned_event_types: assignment.assigned_event_types || [],
+                player_ids: []
+              };
+            }
+            if (assignment.player_id) {
+              groupedAssignments[assignment.tracker_user_id].player_ids.push(assignment.player_id);
+            }
+          });
+          setTrackerAssignments(Object.values(groupedAssignments));
         }
       }
     };
@@ -243,7 +253,8 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
       id: player.id || (team === 'home' ? 1000 + index : 2000 + index),
       jersey_number: player.number || 0,
       player_name: player.name || '',
-      team: team
+      team: team,
+      position: player.position || '' // Pass position for line-based assignment
     }));
   };
 
@@ -310,7 +321,7 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
 
       // Step 2: Handle tracker assignments with improved notification system
       if (trackerAssignments.length > 0) {
-        // Clear existing assignments
+        // Clear existing assignments for this match
         if (matchId) {
           await supabase
             .from('match_tracker_assignments')
@@ -318,16 +329,16 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
             .eq('match_id', matchId);
         }
 
-        // Insert new assignments with proper TypeScript handling
+        // Insert new assignments
         const assignmentData: AssignmentData[] = [];
         
         for (const assignment of trackerAssignments) {
           // If there are specific player IDs, create assignments for each player
           if (assignment.player_ids.length > 0) {
             for (const playerId of assignment.player_ids) {
-              // Determine which team the player belongs to
-              const isHomePlayer = homeTeamPlayers.some(p => p.id === playerId);
-              const playerTeamId = isHomePlayer ? 'home' : 'away';
+              const homePlayer = homeTeamPlayers.find(p => p.id === playerId);
+              const awayPlayer = awayTeamPlayers.find(p => p.id === playerId);
+              const playerTeamId = homePlayer ? 'home' : (awayPlayer ? 'away' : 'unknown');
               
               assignmentData.push({
                 match_id: savedMatch.id,
@@ -338,29 +349,31 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
               });
             }
           } else {
-            // If no specific players, create a general assignment for home team
+            // Create a general assignment (no specific player)
             assignmentData.push({
               match_id: savedMatch.id,
               tracker_user_id: assignment.tracker_user_id,
               assigned_event_types: assignment.assigned_event_types,
               player_id: null,
-              player_team_id: 'home' // Default to home
+              player_team_id: 'home' // Default or based on logic
             });
           }
         }
 
-        const { error: assignmentError } = await supabase
-          .from('match_tracker_assignments')
-          .insert(assignmentData);
+        if (assignmentData.length > 0) {
+            const { error: assignmentError } = await supabase
+              .from('match_tracker_assignments')
+              .insert(assignmentData);
 
-        if (assignmentError) {
-          console.error('Error saving tracker assignments:', assignmentError);
-          throw assignmentError;
+            if (assignmentError) {
+              console.error('Error saving tracker assignments:', assignmentError);
+              throw assignmentError;
+            }
+
+            console.log('Tracker assignments saved:', assignmentData);
         }
 
-        console.log('Tracker assignments saved:', assignmentData);
-
-        // Send notifications to assigned trackers with comprehensive error handling
+        // Send notifications to assigned trackers
         for (const assignment of trackerAssignments) {
           const notificationData = {
             match_id: savedMatch.id,
@@ -370,10 +383,6 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
           };
 
           try {
-            console.log('Attempting to send notification to tracker:', assignment.tracker_user_id);
-            console.log('Current user session:', user);
-            console.log('Auth status:', await supabase.auth.getSession());
-            
             const { error: notificationError } = await supabase
               .from('notifications')
               .insert({
@@ -388,12 +397,6 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
 
             if (notificationError) {
               console.error('Error sending tracker notification:', notificationError);
-              console.error('Notification error details:', {
-                code: notificationError.code,
-                message: notificationError.message,
-                details: notificationError.details,
-                hint: notificationError.hint
-              });
             } else {
               console.log('Match assignment notification sent successfully to tracker:', assignment.tracker_user_id);
             }
@@ -408,23 +411,17 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
         console.log('Processing video URL:', videoUrl);
         
         try {
-          // Create video assignments from tracker assignments if they exist
           const videoAssignments = trackerAssignments.map(assignment => ({
             tracker_id: assignment.tracker_user_id,
             assigned_event_types: assignment.assigned_event_types,
           }));
 
-          console.log('Video assignments to be created:', videoAssignments);
-
-          // Use YouTubeService to save video setup and send notifications
-          const videoResult = await YouTubeService.saveVideoMatchSetup(
+          await YouTubeService.saveVideoMatchSetup(
             savedMatch.id,
             videoUrl,
             videoAssignments,
             user.id
           );
-
-          console.log('Video setup result:', videoResult);
           
           toast({
             title: 'Success',
@@ -445,7 +442,6 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
         });
       }
 
-      // Call the callback with the saved match
       if (onMatchSubmit) {
         onMatchSubmit(savedMatch);
       }
@@ -473,9 +469,10 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
         onPlayersChange={handlePlayersChange}
         onFlagChange={handleFlagChange}
       />
-      <TrackerAssignmentSection
-        homeTeamPlayers={convertToTrackerPlayers(homeTeamPlayers, 'home')}
-        awayTeamPlayers={convertToTrackerPlayers(awayTeamPlayers, 'away')}
+      {/* The TrackerAssignmentSection is replaced by the new TrackerAssignmentTabs component */}
+      <TrackerAssignmentTabs
+        homeTeamPlayers={convertToTrackerPlayers(homeTeamPlayers.filter(p => !p.isSubstitute), 'home')}
+        awayTeamPlayers={convertToTrackerPlayers(awayTeamPlayers.filter(p => !p.isSubstitute), 'away')}
         trackerUsers={trackers}
         assignments={trackerAssignments}
         onAssignmentsChange={handleTrackerAssignmentsChange}
