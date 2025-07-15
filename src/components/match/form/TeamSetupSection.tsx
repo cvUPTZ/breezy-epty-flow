@@ -162,14 +162,14 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
             className="h-8 col-span-2"
           />
           <Select
-            value={p.position || ''}
-            onValueChange={(value) => updatePlayer(team, p.id, 'position', value)}
+            value={p.position || 'none'}
+            onValueChange={(value) => updatePlayer(team, p.id, 'position', value === 'none' ? '' : value)}
           >
             <SelectTrigger className="h-8 col-span-2">
               <SelectValue placeholder={p.isSubstitute ? 'Substitute' : 'Select position'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No Position</SelectItem>
+              <SelectItem value="none">No Position</SelectItem>
               {Object.entries(FOOTBALL_POSITIONS).map(([line, positions]) => (
                 <React.Fragment key={line}>
                   <div className="px-2 py-1 text-xs font-semibold text-muted-foreground bg-muted">{line}</div>
