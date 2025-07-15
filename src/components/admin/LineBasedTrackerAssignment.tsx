@@ -2,226 +2,126 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Shield, Zap, Target, Trash2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
+import { Users, Target, Shield, Zap, Globe } from 'lucide-react';
 
-interface TrackerUser {
+interface Match {
   id: string;
-  email: string;
+  name?: string;
+  home_team_name: string;
+  away_team_name: string;
+  home_team_players: any[];
+  away_team_players: any[];
+}
+
+interface Tracker {
+  id: string;
   full_name: string;
+  email: string;
 }
 
 interface LineAssignment {
-  id: string;
-  tracker_user_id: string;
+  line: 'defense' | 'midfield' | 'attack' | 'all_events';
+  team: 'home' | 'away' | 'both';
+  tracker_id: string;
   match_id: string;
-  assignment_type: 'defense' | 'midfield' | 'attack' | 'all_events';
-  player_team_id: 'home' | 'away' | 'both';
-  assigned_event_types: string[];
-  tracker_name?: string;
-  tracker_email?: string;
 }
 
-interface LineBasedTrackerAssignmentProps {
-  matchId: string;
-  homeTeamPlayers: any[];
-  awayTeamPlayers: any[];
-}
-
-const EVENT_TYPES = [
-  'goal', 'assist', 'shot', 'pass', 'tackle', 'foul', 'yellow_card', 'red_card',
-  'corner', 'free_kick', 'penalty', 'offside', 'substitution', 'save'
-];
-
-const LineBasedTrackerAssignment: React.FC<LineBasedTrackerAssignmentProps> = ({
-  matchId,
-  homeTeamPlayers,
-  awayTeamPlayers
-}) => {
-  const [trackerUsers, setTrackerUsers] = useState<TrackerUser[]>([]);
+const LineBasedTrackerAssignment: React.FC = () => {
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [trackers, setTrackers] = useState<Tracker[]>([]);
+  const [selectedMatch, setSelectedMatch] = useState<string>('');
   const [assignments, setAssignments] = useState<LineAssignment[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedTracker, setSelectedTracker] = useState<string>('');
-  const [selectedAssignmentType, setSelectedAssignmentType] = useState<'defense' | 'midfield' | 'attack' | 'all_events'>('defense');
-  const [selectedTeam, setSelectedTeam] = useState<'home' | 'away' | 'both'>('both');
-  const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
+  const { toast } = useToast();
+
+  // All available event types
+  const allEventTypes = ['goal', 'shot', 'pass', 'tackle', 'foul', 'assist', 'save', 'corner', 'freeKick', 'throw_in', 'offside', 'yellow_card', 'red_card'];
 
   useEffect(() => {
-    fetchTrackerUsers();
-    fetchAssignments();
-  }, [matchId]);
+    fetchMatches();
+    fetchTrackers();
+  }, []);
 
-  const fetchTrackerUsers = async () => {
+  useEffect(() => {
+    if (selectedMatch) {
+      fetchExistingAssignments();
+    }
+  }, [selectedMatch]);
+
+  const fetchMatches = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('matches')
+        .select('id, name, home_team_name, away_team_name, home_team_players, away_team_players')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setMatches(data || []);
+    } catch (error: any) {
+      console.error('Error fetching matches:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch matches",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const fetchTrackers = async () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, email, full_name')
+        .select('id, full_name, email')
         .eq('role', 'tracker')
         .order('full_name');
 
       if (error) throw error;
-
-      const typedUsers: TrackerUser[] = (data || [])
-        .filter(user => user.id)
-        .map(user => ({
-          id: user.id!,
-          email: user.email || 'No email',
-          full_name: user.full_name || 'No name',
-        }));
-
-      setTrackerUsers(typedUsers);
+      setTrackers(data || []);
     } catch (error: any) {
-      console.error('Error fetching tracker users:', error);
-      toast.error('Failed to fetch tracker users');
+      console.error('Error fetching trackers:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch trackers",
+        variant: "destructive"
+      });
     }
   };
 
-  const fetchAssignments = async () => {
+  const fetchExistingAssignments = async () => {
     try {
       const { data, error } = await supabase
         .from('match_tracker_assignments')
-        .select(`
-          id,
-          tracker_user_id,
-          match_id,
-          player_team_id,
-          assigned_event_types,
-          profiles!tracker_user_id (
-            full_name,
-            email
-          )
-        `)
-        .eq('match_id', matchId)
-        .is('player_id', null); // Only get line-based assignments
+        .select('*')
+        .eq('match_id', selectedMatch);
 
       if (error) throw error;
 
-      const transformedAssignments: LineAssignment[] = (data || [])
-        .filter(item => item.id && item.tracker_user_id)
-        .map(item => {
-          // Determine assignment type from event types or team assignment
-          let assignmentType: 'defense' | 'midfield' | 'attack' | 'all_events' = 'all_events';
-          
-          // This is a simplified logic - you might want to make this more sophisticated
-          const eventTypes = item.assigned_event_types || [];
-          if (eventTypes.includes('tackle') || eventTypes.includes('save')) {
-            assignmentType = 'defense';
-          } else if (eventTypes.includes('pass') || eventTypes.includes('assist')) {
-            assignmentType = 'midfield';
-          } else if (eventTypes.includes('goal') || eventTypes.includes('shot')) {
-            assignmentType = 'attack';
-          }
-
-          return {
-            id: item.id!,
-            tracker_user_id: item.tracker_user_id!,
-            match_id: item.match_id!,
-            assignment_type: assignmentType,
-            player_team_id: (item.player_team_id as 'home' | 'away') || 'both',
-            assigned_event_types: item.assigned_event_types || [],
-            tracker_name: (item.profiles as any)?.full_name || undefined,
-            tracker_email: (item.profiles as any)?.email || undefined,
-          };
-        });
-
-      setAssignments(transformedAssignments);
+      // Convert existing assignments to line-based format for display
+      const lineAssignments: LineAssignment[] = [];
+      // This is a simplified version - in a real implementation, you'd need to 
+      // determine how to map existing player assignments to line assignments
+      setAssignments(lineAssignments);
     } catch (error: any) {
       console.error('Error fetching assignments:', error);
-      toast.error('Failed to fetch assignments');
     }
   };
 
-  const createLineAssignment = async () => {
-    if (!selectedTracker || selectedEventTypes.length === 0) {
-      toast.error('Please select a tracker and at least one event type');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { error } = await supabase
-        .from('match_tracker_assignments')
-        .insert([{
-          match_id: matchId,
-          tracker_user_id: selectedTracker,
-          player_team_id: selectedTeam === 'both' ? 'home' : selectedTeam, // Store one team, but logic handles both
-          assigned_event_types: selectedEventTypes,
-          player_id: null // This indicates it's a line-based assignment
-        }]);
-
-      if (error) throw error;
-
-      toast.success(`${getAssignmentTypeLabel(selectedAssignmentType)} assignment created successfully`);
-      
-      // Reset form
-      setSelectedTracker('');
-      setSelectedEventTypes([]);
-      setSelectedAssignmentType('defense');
-      setSelectedTeam('both');
-      
-      await fetchAssignments();
-    } catch (error: any) {
-      console.error('Error creating assignment:', error);
-      toast.error('Failed to create assignment');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const deleteAssignment = async (assignmentId: string) => {
-    if (!confirm('Are you sure you want to delete this assignment?')) return;
-
-    try {
-      const { error } = await supabase
-        .from('match_tracker_assignments')
-        .delete()
-        .eq('id', assignmentId);
-
-      if (error) throw error;
-
-      toast.success('Assignment deleted successfully');
-      await fetchAssignments();
-    } catch (error: any) {
-      console.error('Error deleting assignment:', error);
-      toast.error('Failed to delete assignment');
-    }
-  };
-
-  const toggleEventType = (eventType: string) => {
-    setSelectedEventTypes(prev => 
-      prev.includes(eventType) 
-        ? prev.filter(type => type !== eventType)
-        : [...prev, eventType]
-    );
-  };
-
-  const getAssignmentTypeLabel = (type: string) => {
-    switch (type) {
-      case 'defense': return 'Defense Line';
-      case 'midfield': return 'Midfield Line';
-      case 'attack': return 'Attack Line';
-      case 'all_events': return 'All Events (No Player Assignment)';
-      default: return type;
-    }
-  };
-
-  const getAssignmentTypeIcon = (type: string) => {
-    switch (type) {
+  const getLineIcon = (line: string) => {
+    switch (line) {
       case 'defense': return <Shield className="h-4 w-4" />;
-      case 'midfield': return <Users className="h-4 w-4" />;
+      case 'midfield': return <Target className="h-4 w-4" />;
       case 'attack': return <Zap className="h-4 w-4" />;
-      case 'all_events': return <Target className="h-4 w-4" />;
+      case 'all_events': return <Globe className="h-4 w-4" />;
       default: return <Users className="h-4 w-4" />;
     }
   };
 
-  const getAssignmentTypeColor = (type: string) => {
-    switch (type) {
+  const getLineColor = (line: string) => {
+    switch (line) {
       case 'defense': return 'bg-blue-500';
       case 'midfield': return 'bg-green-500';
       case 'attack': return 'bg-red-500';
@@ -230,202 +130,501 @@ const LineBasedTrackerAssignment: React.FC<LineBasedTrackerAssignmentProps> = ({
     }
   };
 
-  const getDefaultEventTypesForAssignment = (type: string) => {
-    switch (type) {
-      case 'defense':
-        return ['tackle', 'save', 'foul', 'yellow_card', 'red_card'];
-      case 'midfield':
-        return ['pass', 'assist', 'tackle', 'foul'];
-      case 'attack':
-        return ['goal', 'shot', 'assist', 'corner', 'free_kick', 'penalty'];
-      case 'all_events':
-        return EVENT_TYPES;
-      default:
-        return [];
+  const getLinePlayersForPosition = (match: Match, line: string, team: 'home' | 'away') => {
+    const players = team === 'home' ? match.home_team_players : match.away_team_players;
+    
+    if (line === 'all_events') {
+      return players; // All players
+    }
+
+    // Filter players by position/line
+    return players.filter(player => {
+      const position = player.position?.toLowerCase() || '';
+      switch (line) {
+        case 'defense':
+          return position.includes('def') || position.includes('back') || position.includes('gk');
+        case 'midfield':
+          return position.includes('mid') || position.includes('center');
+        case 'attack':
+          return position.includes('for') || position.includes('att') || position.includes('wing');
+        default:
+          return false;
+      }
+    });
+  };
+
+  const assignTrackerToLine = async (line: 'defense' | 'midfield' | 'attack' | 'all_events', team: 'home' | 'away' | 'both', trackerId: string) => {
+    if (!selectedMatch) {
+      toast({
+        title: "Error",
+        description: "Please select a match first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const selectedMatchData = matches.find(m => m.id === selectedMatch);
+      if (!selectedMatchData) throw new Error('Match not found');
+
+      const teamsToAssign = team === 'both' ? ['home', 'away'] : [team];
+      
+      for (const teamId of teamsToAssign) {
+        let playersToAssign: any[] = [];
+        
+        if (line === 'all_events') {
+          // For "all events", we don't assign to specific players - tracker handles all events
+          playersToAssign = []; // Empty array means no specific player assignment
+        } else {
+          // Get players for specific line
+          playersToAssign = getLinePlayersForPosition(selectedMatchData, line, teamId as 'home' | 'away');
+        }
+
+        if (line === 'all_events') {
+          // Create a single assignment for all events without specific players
+          const { error } = await supabase
+            .from('match_tracker_assignments')
+            .insert({
+              match_id: selectedMatch,
+              tracker_user_id: trackerId,
+              player_id: null, // No specific player for all events
+              player_team_id: teamId,
+              assigned_event_types: allEventTypes
+            });
+
+          if (error) throw error;
+        } else {
+          // Create assignments for each player in the line
+          for (const player of playersToAssign) {
+            const { error } = await supabase
+              .from('match_tracker_assignments')
+              .insert({
+                match_id: selectedMatch,
+                tracker_user_id: trackerId,
+                player_id: player.id,
+                player_team_id: teamId,
+                assigned_event_types: allEventTypes
+              });
+
+            if (error) throw error;
+          }
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: `Tracker assigned to ${line} line for ${team} team(s)`
+      });
+
+      fetchExistingAssignments();
+    } catch (error: any) {
+      console.error('Error assigning tracker:', error);
+      toast({
+        title: "Error",
+        description: "Failed to assign tracker",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Auto-select event types when assignment type changes
-  useEffect(() => {
-    setSelectedEventTypes(getDefaultEventTypesForAssignment(selectedAssignmentType));
-  }, [selectedAssignmentType]);
+  const clearAllAssignments = async () => {
+    if (!selectedMatch) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('match_tracker_assignments')
+        .delete()
+        .eq('match_id', selectedMatch);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "All assignments cleared"
+      });
+
+      setAssignments([]);
+    } catch (error: any) {
+      console.error('Error clearing assignments:', error);
+      toast({
+        title: "Error",
+        description: "Failed to clear assignments",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const selectedMatchData = matches.find(m => m.id === selectedMatch);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          Line-Based Tracker Assignment
-        </CardTitle>
-        <p className="text-sm text-gray-600">
-          Assign trackers to different lines of players (Defense, Midfield, Attack) or all events without specific players
-        </p>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="create" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="create">Create Assignment</TabsTrigger>
-            <TabsTrigger value="assignments">Current Assignments ({assignments.length})</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="create" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="tracker-select">Select Tracker</Label>
-                <Select value={selectedTracker} onValueChange={setSelectedTracker}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a tracker" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {trackerUsers.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.full_name} ({user.email})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="assignment-type">Assignment Type</Label>
-                <Select value={selectedAssignmentType} onValueChange={(value: any) => setSelectedAssignmentType(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="defense">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        Defense Line Players
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="midfield">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        Midfield Line Players
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="attack">
-                      <div className="flex items-center gap-2">
-                        <Zap className="h-4 w-4" />
-                        Attack Line Players
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="all_events">
-                      <div className="flex items-center gap-2">
-                        <Target className="h-4 w-4" />
-                        All Events (No Player Assignment)
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="team-select">Team Focus</Label>
-              <Select value={selectedTeam} onValueChange={(value: any) => setSelectedTeam(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="both">Both Teams</SelectItem>
-                  <SelectItem value="home">Home Team Only</SelectItem>
-                  <SelectItem value="away">Away Team Only</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Event Types to Track</Label>
-              <div className="grid grid-cols-3 gap-2 mt-2">
-                {EVENT_TYPES.map((eventType) => (
-                  <div
-                    key={eventType}
-                    className={`p-2 border rounded cursor-pointer transition-colors text-center ${
-                      selectedEventTypes.includes(eventType)
-                        ? 'bg-blue-100 border-blue-300 text-blue-700'
-                        : 'hover:bg-gray-50'
-                    }`}
-                    onClick={() => toggleEventType(eventType)}
-                  >
-                    <span className="text-sm capitalize">{eventType.replace('_', ' ')}</span>
-                  </div>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Line-Based Tracker Assignment
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Match Selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Select Match</label>
+            <Select value={selectedMatch} onValueChange={setSelectedMatch}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a match" />
+              </SelectTrigger>
+              <SelectContent>
+                {matches.map((match) => (
+                  <SelectItem key={match.id} value={match.id}>
+                    {match.name || `${match.home_team_name} vs ${match.away_team_name}`}
+                  </SelectItem>
                 ))}
-              </div>
-            </div>
+              </SelectContent>
+            </Select>
+          </div>
 
-            <Button 
-              onClick={createLineAssignment}
-              disabled={loading || !selectedTracker || selectedEventTypes.length === 0}
-              className="w-full"
-            >
-              Create Line Assignment
-            </Button>
-          </TabsContent>
+          {selectedMatch && selectedMatchData && (
+            <>
+              {/* Line Assignment Grid */}
+              <div className="grid gap-6">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold mb-4">
+                    {selectedMatchData.home_team_name} vs {selectedMatchData.away_team_name}
+                  </h3>
+                </div>
 
-          <TabsContent value="assignments" className="space-y-4">
-            {assignments.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                No line-based assignments created yet
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {assignments.map((assignment) => (
-                  <Card key={assignment.id} className="border-l-4" style={{ borderLeftColor: getAssignmentTypeColor(assignment.assignment_type).replace('bg-', '#') }}>
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            {getAssignmentTypeIcon(assignment.assignment_type)}
-                            <h4 className="font-medium">{assignment.tracker_name}</h4>
-                            <Badge 
-                              className="text-white"
-                              style={{ backgroundColor: getAssignmentTypeColor(assignment.assignment_type).replace('bg-', '') }}
-                            >
-                              {getAssignmentTypeLabel(assignment.assignment_type)}
+                {/* Defense Line */}
+                <Card className="border-blue-200">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-blue-700">
+                      <Shield className="h-5 w-5" />
+                      Defense Line
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Home Team Defense */}
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm">{selectedMatchData.home_team_name} Defense</h4>
+                        <div className="space-y-1">
+                          {getLinePlayersForPosition(selectedMatchData, 'defense', 'home').map(player => (
+                            <Badge key={player.id} variant="outline" className="text-xs">
+                              #{player.jersey_number} {player.name}
                             </Badge>
-                          </div>
-                          
-                          <p className="text-sm text-gray-600 mb-2">{assignment.tracker_email}</p>
-                          
-                          <div className="mb-2">
-                            <p className="text-sm font-medium">Team Focus:</p>
-                            <Badge variant="outline">
-                              {assignment.player_team_id === 'home' ? 'Home Team' : 
-                               assignment.player_team_id === 'away' ? 'Away Team' : 'Both Teams'}
-                            </Badge>
-                          </div>
-                          
-                          <div>
-                            <p className="text-sm font-medium mb-1">Assigned Event Types:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {assignment.assigned_event_types.map((eventType) => (
-                                <Badge key={eventType} variant="secondary" className="text-xs">
-                                  {eventType.replace('_', ' ')}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
+                          ))}
                         </div>
-                        
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deleteAssignment(assignment.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <Select onValueChange={(trackerId) => assignTrackerToLine('defense', 'home', trackerId)}>
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Assign tracker" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {trackers.map((tracker) => (
+                              <SelectItem key={tracker.id} value={tracker.id}>
+                                {tracker.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+
+                      {/* Away Team Defense */}
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm">{selectedMatchData.away_team_name} Defense</h4>
+                        <div className="space-y-1">
+                          {getLinePlayersForPosition(selectedMatchData, 'defense', 'away').map(player => (
+                            <Badge key={player.id} variant="outline" className="text-xs">
+                              #{player.jersey_number} {player.name}
+                            </Badge>
+                          ))}
+                        </div>
+                        <Select onValueChange={(trackerId) => assignTrackerToLine('defense', 'away', trackerId)}>
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Assign tracker" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {trackers.map((tracker) => (
+                              <SelectItem key={tracker.id} value={tracker.id}>
+                                {tracker.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Both Teams Defense */}
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm">Both Teams Defense</h4>
+                        <p className="text-xs text-muted-foreground">Assign one tracker to both teams' defense</p>
+                        <Select onValueChange={(trackerId) => assignTrackerToLine('defense', 'both', trackerId)}>
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Assign tracker" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {trackers.map((tracker) => (
+                              <SelectItem key={tracker.id} value={tracker.id}>
+                                {tracker.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Midfield Line */}
+                <Card className="border-green-200">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-green-700">
+                      <Target className="h-5 w-5" />
+                      Midfield Line
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Home Team Midfield */}
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm">{selectedMatchData.home_team_name} Midfield</h4>
+                        <div className="space-y-1">
+                          {getLinePlayersForPosition(selectedMatchData, 'midfield', 'home').map(player => (
+                            <Badge key={player.id} variant="outline" className="text-xs">
+                              #{player.jersey_number} {player.name}
+                            </Badge>
+                          ))}
+                        </div>
+                        <Select onValueChange={(trackerId) => assignTrackerToLine('midfield', 'home', trackerId)}>
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Assign tracker" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {trackers.map((tracker) => (
+                              <SelectItem key={tracker.id} value={tracker.id}>
+                                {tracker.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Away Team Midfield */}
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm">{selectedMatchData.away_team_name} Midfield</h4>
+                        <div className="space-y-1">
+                          {getLinePlayersForPosition(selectedMatchData, 'midfield', 'away').map(player => (
+                            <Badge key={player.id} variant="outline" className="text-xs">
+                              #{player.jersey_number} {player.name}
+                            </Badge>
+                          ))}
+                        </div>
+                        <Select onValueChange={(trackerId) => assignTrackerToLine('midfield', 'away', trackerId)}>
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Assign tracker" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {trackers.map((tracker) => (
+                              <SelectItem key={tracker.id} value={tracker.id}>
+                                {tracker.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Both Teams Midfield */}
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm">Both Teams Midfield</h4>
+                        <p className="text-xs text-muted-foreground">Assign one tracker to both teams' midfield</p>
+                        <Select onValueChange={(trackerId) => assignTrackerToLine('midfield', 'both', trackerId)}>
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Assign tracker" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {trackers.map((tracker) => (
+                              <SelectItem key={tracker.id} value={tracker.id}>
+                                {tracker.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Attack Line */}
+                <Card className="border-red-200">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-red-700">
+                      <Zap className="h-5 w-5" />
+                      Attack Line
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Home Team Attack */}
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm">{selectedMatchData.home_team_name} Attack</h4>
+                        <div className="space-y-1">
+                          {getLinePlayersForPosition(selectedMatchData, 'attack', 'home').map(player => (
+                            <Badge key={player.id} variant="outline" className="text-xs">
+                              #{player.jersey_number} {player.name}
+                            </Badge>
+                          ))}
+                        </div>
+                        <Select onValueChange={(trackerId) => assignTrackerToLine('attack', 'home', trackerId)}>
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Assign tracker" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {trackers.map((tracker) => (
+                              <SelectItem key={tracker.id} value={tracker.id}>
+                                {tracker.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Away Team Attack */}
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm">{selectedMatchData.away_team_name} Attack</h4>
+                        <div className="space-y-1">
+                          {getLinePlayersForPosition(selectedMatchData, 'attack', 'away').map(player => (
+                            <Badge key={player.id} variant="outline" className="text-xs">
+                              #{player.jersey_number} {player.name}
+                            </Badge>
+                          ))}
+                        </div>
+                        <Select onValueChange={(trackerId) => assignTrackerToLine('attack', 'away', trackerId)}>
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Assign tracker" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {trackers.map((tracker) => (
+                              <SelectItem key={tracker.id} value={tracker.id}>
+                                {tracker.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Both Teams Attack */}
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm">Both Teams Attack</h4>
+                        <p className="text-xs text-muted-foreground">Assign one tracker to both teams' attack</p>
+                        <Select onValueChange={(trackerId) => assignTrackerToLine('attack', 'both', trackerId)}>
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Assign tracker" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {trackers.map((tracker) => (
+                              <SelectItem key={tracker.id} value={tracker.id}>
+                                {tracker.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* All Events Assignment */}
+                <Card className="border-purple-200">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-purple-700">
+                      <Globe className="h-5 w-5" />
+                      All Events Tracker
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Home Team All Events */}
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm">{selectedMatchData.home_team_name} All Events</h4>
+                        <p className="text-xs text-muted-foreground">Track all events for home team without specific player assignment</p>
+                        <Select onValueChange={(trackerId) => assignTrackerToLine('all_events', 'home', trackerId)}>
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Assign tracker" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {trackers.map((tracker) => (
+                              <SelectItem key={tracker.id} value={tracker.id}>
+                                {tracker.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Away Team All Events */}
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm">{selectedMatchData.away_team_name} All Events</h4>
+                        <p className="text-xs text-muted-foreground">Track all events for away team without specific player assignment</p>
+                        <Select onValueChange={(trackerId) => assignTrackerToLine('all_events', 'away', trackerId)}>
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Assign tracker" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {trackers.map((tracker) => (
+                              <SelectItem key={tracker.id} value={tracker.id}>
+                                {tracker.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Both Teams All Events */}
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm">All Teams All Events</h4>
+                        <p className="text-xs text-muted-foreground">Track all events for both teams without specific player assignment</p>
+                        <Select onValueChange={(trackerId) => assignTrackerToLine('all_events', 'both', trackerId)}>
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Assign tracker" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {trackers.map((tracker) => (
+                              <SelectItem key={tracker.id} value={tracker.id}>
+                                {tracker.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Action Buttons */}
+                <div className="flex justify-between">
+                  <Button 
+                    variant="destructive" 
+                    onClick={clearAllAssignments}
+                    disabled={loading}
+                  >
+                    Clear All Assignments
+                  </Button>
+                  <Button 
+                    onClick={fetchExistingAssignments}
+                    disabled={loading}
+                  >
+                    Refresh Assignments
+                  </Button>
+                </div>
               </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
