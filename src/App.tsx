@@ -1,6 +1,6 @@
 
-// src/App.tsx
-import React, { useEffect } from 'react';
+import * as React from 'react';
+import { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -36,8 +36,8 @@ import ProfileListPage from './pages/Admin/ProfileListPage';
 import NewVoiceChatPage from './pages/NewVoiceChatPage';
 import ChromeExtensionBridge from './pages/ChromeExtensionBridge';
 import NotFound from './pages/NotFound';
-import VideoTrackerPage from './pages/VideoTrackerPage'; // New Page
-import VideoSetupPage from './pages/Admin/VideoSetupPage'; // New Admin Page
+import VideoTrackerPage from './pages/VideoTrackerPage';
+import VideoSetupPage from './pages/Admin/VideoSetupPage';
 
 const queryClient = new QueryClient();
 
@@ -50,7 +50,7 @@ interface MatchPayload {
   [key: string]: any;
 }
 
-const AppContent: React.FC = () => {
+const AppContent = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -139,7 +139,7 @@ const AppContent: React.FC = () => {
         {/* Public routes */}
         <Route path="/landing" element={<LandingPage />} />
         <Route path="/auth" element={<Auth />} />
-        <Route path="/extension-bridge" element={    <ChromeExtensionBridge /> } />
+        <Route path="/extension-bridge" element={<ChromeExtensionBridge />} />
 
         {/* Protected routes - General Access */}
         <Route path="/" element={
@@ -153,8 +153,6 @@ const AppContent: React.FC = () => {
             <Settings />
           </RequireAuth>
         } />
-        
-        {/* Chrome Extension Bridge - Check for admin role more carefully */}
         
         {/* Match Management Routes */}
         <Route path="/match" element={
@@ -282,7 +280,7 @@ const AppContent: React.FC = () => {
           </RequireAuth>
         } />
         <Route path="/admin/video-setup" element={
-          <AdminOnly> {/* Or use RequireAuth with specific admin role/permission */}
+          <AdminOnly>
             <VideoSetupPage />
           </AdminOnly>
         } />
@@ -291,7 +289,6 @@ const AppContent: React.FC = () => {
         <Route path="/video-tracker" element={
           <RequireAuth
             requiredRoles={['admin', 'tracker']}
-            // Add specific permission if available, e.g., ['canAccessVideoTracker']
           >
             <VideoTrackerPage />
           </RequireAuth>
@@ -340,7 +337,7 @@ const AppContent: React.FC = () => {
   );
 };
 
-const App: React.FC = () => (
+const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <Toaster />
