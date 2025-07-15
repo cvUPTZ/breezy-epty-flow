@@ -6,8 +6,8 @@ import { useToast } from '@/hooks/use-toast';
 import { YouTubeService } from '@/services/youtubeService';
 import MatchBasicInfo from './match/form/MatchBasicInfo';
 import TeamSetupSection from './match/form/TeamSetupSection';
-import TrackerAssignmentTabs from './match/form/TrackerAssignmentTabs'; // Updated import
-import VideoSetupSection from './match/form/VideoSetupSection';
+import TrackerAssignmentTabs from './match/form/TrackerAssignementTabs'; // Fixed import path
+import VideoSetupSection from './VideoSetupSection';
 import { Button } from './ui/button';
 import { Player as TrackerPlayer } from '@/types/trackerAssignment';
 
@@ -95,7 +95,6 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // ... useEffect logic remains the same
     const fetchMatchData = async () => {
       if (matchId) {
         const { data, error } = await supabase
@@ -260,7 +259,6 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    // ... handleSubmit logic remains the same
     e.preventDefault();
     if (!user?.id) {
       toast({

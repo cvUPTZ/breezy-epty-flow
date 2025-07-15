@@ -13,6 +13,7 @@ export interface Player {
   jersey_number: number;
   player_name: string;
   team?: 'home' | 'away';
+  position?: string; // Add optional position property
 }
 
 export interface TeamData {

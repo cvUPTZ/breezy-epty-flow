@@ -120,11 +120,13 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
     const linePositions = LINE_DEFINITIONS[selectedLine] || [];
 
     const assignedPlayerIds = targetPlayers
-      .filter(player => linePositions.includes((player.position || '').toUpperCase().trim()))
+      .filter(player => {
+        const playerPosition = player.position || '';
+        return linePositions.includes(playerPosition.toUpperCase().trim());
+      })
       .map(player => player.id);
     
     if (assignedPlayerIds.length === 0) {
-        // Optionally show a toast notification here
         console.warn(`No players found for ${selectedLine} in the ${selectedTeam} team.`);
         return;
     }
@@ -136,7 +138,6 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
     });
     setLineTabState(prev => ({ ...prev, selectedTracker: '', selectedEventTypes: [] }));
   };
-
 
   // --- Reusable Render Functions ---
   const renderPlayerGrid = (players: Player[], selectedPlayerIds: number[], onToggle: (id: number) => void) => (
