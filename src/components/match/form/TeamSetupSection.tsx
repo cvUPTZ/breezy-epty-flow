@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,6 +35,15 @@ interface TeamSetupSectionProps {
 
 const FORMATIONS: Formation[] = ['4-4-2', '4-3-3', '3-5-2', '4-2-3-1', '5-3-2', '3-4-3'];
 const STARTERS_COUNT = 11;
+
+// Football positions organized by lines
+const FOOTBALL_POSITIONS = {
+  Defense: ['GK', 'CB', 'LB', 'RB', 'LWB', 'RWB', 'SW'],
+  Midfield: ['DM', 'CM', 'AM', 'LM', 'RM', 'CDM', 'CAM'],
+  Attack: ['CF', 'ST', 'LW', 'RW', 'LF', 'RF', 'SS']
+};
+
+const ALL_POSITIONS = Object.values(FOOTBALL_POSITIONS).flat();
 
 const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
   homeTeamPlayers,
@@ -132,13 +140,13 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
 
   const renderPlayerInputs = (players: Player[], team: 'home' | 'away') => (
     <div className="space-y-2">
-      <div className="grid grid-cols-4 gap-2 items-center text-sm font-medium px-2 text-muted-foreground">
+      <div className="grid grid-cols-5 gap-2 items-center text-sm font-medium px-2 text-muted-foreground">
         <div className="col-span-1">Number</div>
         <div className="col-span-2">Name</div>
-        <div className="col-span-1">Position</div>
+        <div className="col-span-2">Position</div>
       </div>
       {players.map((p) => (
-        <div key={p.id} className="grid grid-cols-4 gap-2 items-center text-sm">
+        <div key={p.id} className="grid grid-cols-5 gap-2 items-center text-sm">
           <Input
             type="number"
             value={p.number ?? ''}
@@ -154,9 +162,27 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
             placeholder="Player name"
             className="h-8 col-span-2"
           />
-          <div className="text-xs text-muted-foreground truncate" title={p.position}>
-            {p.position || (p.isSubstitute ? 'Substitute' : 'Starter')}
-          </div>
+          <Select
+            value={p.position || ''}
+            onValueChange={(value) => updatePlayer(team, p.id, 'position', value)}
+          >
+            <SelectTrigger className="h-8 col-span-2">
+              <SelectValue placeholder={p.isSubstitute ? 'Substitute' : 'Select position'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">No Position</SelectItem>
+              {Object.entries(FOOTBALL_POSITIONS).map(([line, positions]) => (
+                <React.Fragment key={line}>
+                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground bg-muted">{line}</div>
+                  {positions.map(position => (
+                    <SelectItem key={position} value={position}>
+                      {position}
+                    </SelectItem>
+                  ))}
+                </React.Fragment>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       ))}
     </div>

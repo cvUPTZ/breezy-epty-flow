@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,10 +18,11 @@ interface TrackerAssignmentTabsProps {
   onAssignmentsChange: (assignments: TrackerAssignment[]) => void;
 }
 
+// Updated and more comprehensive line definitions for football positions
 const LINE_DEFINITIONS: Record<string, string[]> = {
-  Defense: ['GK', 'CB', 'LB', 'RB', 'LWB', 'RWB', 'DC', 'DR', 'DL', 'SW'],
-  Midfield: ['DM', 'CM', 'AM', 'LM', 'RM', 'DMC', 'MC', 'AMC', 'ML', 'MR'],
-  Attack: ['CF', 'ST', 'LW', 'RW', 'FW', 'SS'],
+  Defense: ['GK', 'CB', 'LB', 'RB', 'LWB', 'RWB', 'SW', 'DC', 'DR', 'DL'],
+  Midfield: ['DM', 'CM', 'AM', 'LM', 'RM', 'CDM', 'CAM', 'DMC', 'MC', 'AMC', 'ML', 'MR'],
+  Attack: ['CF', 'ST', 'LW', 'RW', 'LF', 'RF', 'SS', 'FW'],
 };
 
 const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
@@ -121,13 +123,16 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
 
     const assignedPlayerIds = targetPlayers
       .filter(player => {
-        const playerPosition = player.position || '';
-        return linePositions.includes(playerPosition.toUpperCase().trim());
+        // Safely handle player position - check if it exists and matches line positions
+        if (!player.position) return false;
+        const playerPosition = player.position.toUpperCase().trim();
+        return linePositions.includes(playerPosition);
       })
       .map(player => player.id);
     
     if (assignedPlayerIds.length === 0) {
-        console.warn(`No players found for ${selectedLine} in the ${selectedTeam} team.`);
+        console.warn(`No players found for ${selectedLine} in the ${selectedTeam} team. Available positions:`, 
+          targetPlayers.map(p => p.position).filter(Boolean));
         return;
     }
     
@@ -137,6 +142,17 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
       assigned_event_types: selectedEventTypes,
     });
     setLineTabState(prev => ({ ...prev, selectedTracker: '', selectedEventTypes: [] }));
+  };
+
+  // Get players count for each line to help with selection
+  const getLinePlayersCount = (team: 'home' | 'away', line: string) => {
+    const targetPlayers = team === 'home' ? homeTeamPlayers : awayTeamPlayers;
+    const linePositions = LINE_DEFINITIONS[line] || [];
+    return targetPlayers.filter(player => {
+      if (!player.position) return false;
+      const playerPosition = player.position.toUpperCase().trim();
+      return linePositions.includes(playerPosition);
+    }).length;
   };
 
   // --- Reusable Render Functions ---
@@ -150,6 +166,9 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
         >
           <div className="text-xs font-medium">#{player.jersey_number}</div>
           <div className="text-xs text-gray-600 truncate">{player.player_name}</div>
+          {player.position && (
+            <div className="text-xs text-blue-600 font-semibold">{player.position}</div>
+          )}
         </div>
       ))}
     </div>
@@ -232,7 +251,7 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
           <TabsContent value="by-line" className="pt-4">
             <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
               <h3 className="font-medium flex items-center gap-2"><UserPlus className="h-4 w-4" />Create Line Assignment</h3>
-               <div>
+              <div>
                 <label className="block text-sm font-medium mb-2">1. Select Tracker</label>
                 <Select value={lineTabState.selectedTracker} onValueChange={v => setLineTabState(p => ({...p, selectedTracker: v}))}>
                   <SelectTrigger><SelectValue placeholder="Choose a tracker" /></SelectTrigger>
@@ -255,11 +274,42 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
                   <Select value={lineTabState.selectedLine} onValueChange={v => setLineTabState(p => ({...p, selectedLine: v}))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {Object.keys(LINE_DEFINITIONS).map(line => <SelectItem key={line} value={line}>{line}</SelectItem>)}
+                      {Object.keys(LINE_DEFINITIONS).map(line => {
+                        const playersCount = getLinePlayersCount(lineTabState.selectedTeam as 'home' | 'away', line);
+                        return (
+                          <SelectItem key={line} value={line}>
+                            {line} ({playersCount} players)
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
+              
+              {/* Show which players will be assigned */}
+              {lineTabState.selectedLine && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm font-medium text-blue-900 mb-2">
+                    Players in {lineTabState.selectedLine} line ({lineTabState.selectedTeam} team):
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {(lineTabState.selectedTeam === 'home' ? homeTeamPlayers : awayTeamPlayers)
+                      .filter(player => {
+                        if (!player.position) return false;
+                        const playerPosition = player.position.toUpperCase().trim();
+                        return LINE_DEFINITIONS[lineTabState.selectedLine]?.includes(playerPosition);
+                      })
+                      .map(player => (
+                        <Badge key={player.id} variant="outline" className="text-xs">
+                          #{player.jersey_number} {player.player_name} ({player.position})
+                        </Badge>
+                      ))
+                    }
+                  </div>
+                </div>
+              )}
+              
               <div>
                 <label className="block text-sm font-medium mb-2">4. Select Event Types</label>
                 {renderEventTypeCategories(lineTabState.selectedEventTypes, handleLineEventToggle, (checked, keys) => {
@@ -291,7 +341,12 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
                   <div className="flex flex-wrap gap-1">
                     {assignment.player_ids.map(playerId => {
                       const player = allPlayers.find(p => p.id === playerId);
-                      return player ? <Badge key={playerId} variant="outline" className="text-xs">#{player.jersey_number} {player.player_name} ({player.team})</Badge> : null;
+                      return player ? (
+                        <Badge key={playerId} variant="outline" className="text-xs">
+                          #{player.jersey_number} {player.player_name} ({player.team}) 
+                          {player.position && ` - ${player.position}`}
+                        </Badge>
+                      ) : null;
                     })}
                   </div>
                 </div>
