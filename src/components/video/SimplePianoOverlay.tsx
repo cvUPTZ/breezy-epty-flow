@@ -31,6 +31,15 @@ interface Player {
   jersey_number?: number;
 }
 
+// Type guard to check if a Json object is a valid Player
+const isValidPlayer = (obj: any): obj is Player => {
+  return obj && 
+         typeof obj === 'object' && 
+         obj !== null &&
+         typeof obj.id === 'number' &&
+         (typeof obj.name === 'string' || typeof obj.player_name === 'string' || obj.name === undefined || obj.player_name === undefined);
+};
+
 const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
   onRecordEvent,
   onClose,
@@ -104,9 +113,14 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
             ? (Array.isArray(match.home_team_players) ? match.home_team_players : [])
             : (Array.isArray(match.away_team_players) ? match.away_team_players : []);
           
-          const player = teamPlayers?.find((p: Player) => p.id === assignment.player_id);
-          if (player && typeof player === 'object' && player !== null) {
-            const position = (player as Player).position?.toLowerCase() || '';
+          // Safely find and validate player
+          const foundPlayer = teamPlayers?.find((p: any) => {
+            return isValidPlayer(p) && p.id === assignment.player_id;
+          });
+          
+          if (foundPlayer && isValidPlayer(foundPlayer)) {
+            const player = foundPlayer as Player;
+            const position = player.position?.toLowerCase() || '';
             let line: 'defense' | 'midfield' | 'attack' = 'midfield';
             
             if (position.includes('def') || position.includes('back') || position.includes('gk')) {
