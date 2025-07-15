@@ -57,8 +57,21 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
   const [isProcessingImage, setIsProcessingImage] = useState<boolean>(false);
 
   const updatePlayer = (team: 'home' | 'away', playerId: number, field: keyof Player, value: any) => {
+    console.log('Updating player:', { team, playerId, field, value });
+    
     const players = team === 'home' ? homeTeamPlayers : awayTeamPlayers;
-    const updatedPlayers = players.map(p => p.id === playerId ? { ...p, [field]: value } : p);
+    console.log('Current players:', players);
+    
+    // Create a new array with the updated player
+    const updatedPlayers = players.map(player => {
+      if (player.id === playerId) {
+        console.log('Found matching player:', player);
+        return { ...player, [field]: value };
+      }
+      return player;
+    });
+    
+    console.log('Updated players:', updatedPlayers);
     onPlayersChange(team, updatedPlayers);
   };
 
@@ -144,46 +157,52 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
         <div className="col-span-2">Name</div>
         <div className="col-span-2">Position</div>
       </div>
-      {players.map((p) => (
-        <div key={p.id} className="grid grid-cols-5 gap-2 items-center text-sm">
-          <Input
-            type="number"
-            value={p.number ?? ''}
-            onChange={(e) => updatePlayer(team, p.id, 'number', e.target.value ? parseInt(e.target.value) : null)}
-            className="h-8 w-16"
-            min="1"
-            max="99"
-            placeholder="#"
-          />
-          <Input
-            value={p.name}
-            onChange={(e) => updatePlayer(team, p.id, 'name', e.target.value)}
-            placeholder="Player name"
-            className="h-8 col-span-2"
-          />
-          <Select
-            value={p.position || 'none'}
-            onValueChange={(value) => updatePlayer(team, p.id, 'position', value === 'none' ? '' : value)}
-          >
-            <SelectTrigger className="h-8 col-span-2">
-              <SelectValue placeholder={p.isSubstitute ? 'Substitute' : 'Select position'} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">No Position</SelectItem>
-              {Object.entries(FOOTBALL_POSITIONS).map(([line, positions]) => (
-                <React.Fragment key={line}>
-                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground bg-muted">{line}</div>
-                  {positions.map(position => (
-                    <SelectItem key={position} value={position}>
-                      {position}
-                    </SelectItem>
-                  ))}
-                </React.Fragment>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      ))}
+      {players.map((player) => {
+        console.log('Rendering player:', player);
+        return (
+          <div key={`${team}-${player.id}`} className="grid grid-cols-5 gap-2 items-center text-sm">
+            <Input
+              type="number"
+              value={player.number ?? ''}
+              onChange={(e) => updatePlayer(team, player.id, 'number', e.target.value ? parseInt(e.target.value) : null)}
+              className="h-8 w-16"
+              min="1"
+              max="99"
+              placeholder="#"
+            />
+            <Input
+              value={player.name}
+              onChange={(e) => updatePlayer(team, player.id, 'name', e.target.value)}
+              placeholder="Player name"
+              className="h-8 col-span-2"
+            />
+            <Select
+              value={player.position || 'none'}
+              onValueChange={(value) => {
+                console.log('Position change:', { playerId: player.id, value, team });
+                updatePlayer(team, player.id, 'position', value === 'none' ? '' : value);
+              }}
+            >
+              <SelectTrigger className="h-8 col-span-2">
+                <SelectValue placeholder={player.isSubstitute ? 'Substitute' : 'Select position'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No Position</SelectItem>
+                {Object.entries(FOOTBALL_POSITIONS).map(([line, positions]) => (
+                  <React.Fragment key={line}>
+                    <div className="px-2 py-1 text-xs font-semibold text-muted-foreground bg-muted">{line}</div>
+                    {positions.map(position => (
+                      <SelectItem key={position} value={position}>
+                        {position}
+                      </SelectItem>
+                    ))}
+                  </React.Fragment>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+      })}
     </div>
   );
 
