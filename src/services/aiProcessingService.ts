@@ -1,4 +1,3 @@
-
 // src/services/aiProcessingService.ts
 
 import { supabase } from '@/integrations/supabase/client';
@@ -7,6 +6,7 @@ export interface AIPlayerInfo {
   player_name: string | null;
   jersey_number: number | null;
   is_substitute: boolean;
+  position_guess?: string | null;
 }
 
 export interface FormationImageAIResponse {
