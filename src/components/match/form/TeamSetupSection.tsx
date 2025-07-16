@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 type Formation = '4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '5-3-2' | '3-4-3';
 
 interface Player {
-  id: number; // IMPORTANT: This ID must be unique for each player.
+  id: number;
   name: string;
   number: number | null;
   position: string;
@@ -36,24 +36,11 @@ interface TeamSetupSectionProps {
 const FORMATIONS: Formation[] = ['4-4-2', '4-3-3', '3-5-2', '4-2-3-1', '5-3-2', '3-4-3'];
 const STARTERS_COUNT = 11;
 
-// Football positions organized by lines
 const FOOTBALL_POSITIONS = {
   Defense: ['GK', 'CB', 'LB', 'RB', 'LWB', 'RWB', 'SW'],
   Midfield: ['DM', 'CM', 'AM', 'LM', 'RM', 'CDM', 'CAM'],
   Attack: ['CF', 'ST', 'LW', 'RW', 'LF', 'RF', 'SS']
 };
-
-// ====================================================================================
-// NOTE: The code in this component appears to be correct. The issue you are
-// describing is a classic sign that the initial state for `homeTeamPlayers` and
-// `awayTeamPlayers` in your PARENT component was created incorrectly.
-//
-// Please ensure that when you create the initial player arrays, you are creating
-// a NEW object for each player, not filling an array with references to the
-// same object.
-//
-// See the "Solution" in the explanation for the correct way to initialize your state.
-// ====================================================================================
 
 const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
   homeTeamPlayers,
@@ -67,20 +54,23 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [isProcessingImage, setIsProcessingImage] = useState<boolean>(false);
 
-  // This function is correctly written for immutable updates.
-  // It creates a new array and replaces the single updated player with a new object.
   const updatePlayer = (team: 'home' | 'away', playerId: number, field: keyof Player, value: any) => {
+    console.log('updatePlayer called:', { team, playerId, field, value });
+    
     const players = team === 'home' ? homeTeamPlayers : awayTeamPlayers;
+    console.log('Current players:', players);
     
     const updatedPlayers = players.map(player => {
-      // It finds the player by their unique ID
+      console.log('Processing player:', player.id, 'target:', playerId);
       if (player.id === playerId) {
-        // It returns a *new* object for this player, leaving others untouched.
-        return { ...player, [field]: value };
+        const updatedPlayer = { ...player, [field]: value };
+        console.log('Updated player:', updatedPlayer);
+        return updatedPlayer;
       }
       return player;
     });
     
+    console.log('Final updated players:', updatedPlayers);
     onPlayersChange(team, updatedPlayers);
   };
 
@@ -159,7 +149,6 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
     };
   };
 
-  // This function correctly renders the inputs for each player.
   const renderPlayerInputs = (players: Player[], team: 'home' | 'away') => (
     <div className="space-y-2">
       <div className="grid grid-cols-5 gap-2 items-center text-sm font-medium px-2 text-muted-foreground">
@@ -167,10 +156,9 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
         <div className="col-span-2">Name</div>
         <div className="col-span-2">Position</div>
       </div>
-      {/* The .map() function iterates over the list of players */}
       {players.map((player) => {
+        console.log(`Rendering player ${player.id} with position:`, player.position);
         return (
-          // The key is unique and stable, which is correct.
           <div key={`${team}-${player.id}`} className="grid grid-cols-5 gap-2 items-center text-sm">
             <Input
               type="number"
@@ -188,10 +176,10 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
               className="h-8 col-span-2"
             />
             <Select
-              // The value is correctly bound to the individual player's position.
+              key={`${team}-${player.id}-${player.position}`}
               value={player.position || 'none'}
-              // The onValueChange correctly calls updatePlayer with the specific player's ID.
               onValueChange={(value) => {
+                console.log(`Position change for player ${player.id}:`, value);
                 updatePlayer(team, player.id, 'position', value === 'none' ? '' : value);
               }}
             >
@@ -220,7 +208,6 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* AI Image Processing Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -265,7 +252,6 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* HOME TEAM CARD */}
         <Card>
           <CardHeader>
             <CardTitle>Home Team</CardTitle>
@@ -328,7 +314,6 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
           </CardContent>
         </Card>
 
-        {/* AWAY TEAM CARD */}
         <Card>
           <CardHeader>
             <CardTitle>Away Team</CardTitle>
