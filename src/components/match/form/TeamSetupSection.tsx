@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -176,11 +177,11 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
               className="h-8 col-span-2"
             />
             <Select
-              key={`${team}-${player.id}-${player.position}`}
               value={player.position || 'none'}
               onValueChange={(value) => {
                 console.log(`Position change for player ${player.id}:`, value);
-                updatePlayer(team, player.id, 'position', value === 'none' ? '' : value);
+                const newPosition = value === 'none' ? '' : value;
+                updatePlayer(team, player.id, 'position', newPosition);
               }}
             >
               <SelectTrigger className="h-8 col-span-2">
