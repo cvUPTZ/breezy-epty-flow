@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,6 +40,21 @@ const FOOTBALL_POSITIONS = {
   Defense: ['GK', 'CB', 'LB', 'RB', 'LWB', 'RWB', 'SW'],
   Midfield: ['DM', 'CM', 'AM', 'LM', 'RM', 'CDM', 'CAM'],
   Attack: ['CF', 'ST', 'LW', 'RW', 'LF', 'RF', 'SS']
+};
+
+// Position assignment based on formation and order
+const getPositionByFormationAndOrder = (formation: Formation, playerIndex: number): string => {
+  const positionMaps: Record<Formation, string[]> = {
+    '4-4-2': ['GK', 'RB', 'CB', 'CB', 'LB', 'RM', 'CM', 'CM', 'LM', 'ST', 'ST'],
+    '4-3-3': ['GK', 'RB', 'CB', 'CB', 'LB', 'CM', 'CM', 'CM', 'RW', 'ST', 'LW'],
+    '3-5-2': ['GK', 'CB', 'CB', 'CB', 'RWB', 'CM', 'CM', 'CM', 'LWB', 'ST', 'ST'],
+    '4-2-3-1': ['GK', 'RB', 'CB', 'CB', 'LB', 'CDM', 'CDM', 'CAM', 'CAM', 'CAM', 'ST'],
+    '5-3-2': ['GK', 'RB', 'CB', 'CB', 'CB', 'LB', 'CM', 'CM', 'CM', 'ST', 'ST'],
+    '3-4-3': ['GK', 'CB', 'CB', 'CB', 'RM', 'CM', 'CM', 'LM', 'RW', 'ST', 'LW']
+  };
+  
+  const positions = positionMaps[formation] || positionMaps['4-4-2'];
+  return positions[playerIndex] || (playerIndex === 0 ? 'GK' : 'SUB');
 };
 
 const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
@@ -109,21 +123,26 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
         }
 
         const currentPlayers = team === 'home' ? homeTeamPlayers : awayTeamPlayers;
+        const formation = team === 'home' ? formData.homeTeamFormation : formData.awayTeamFormation;
         const aiStarters = aiResponse.players.filter(p => !p.is_substitute);
         const aiSubs = aiResponse.players.filter(p => p.is_substitute);
         
         const newPlayers = [...currentPlayers];
+        
+        // Process starters with position guessing based on formation and order
         aiStarters.forEach((aiPlayer, index) => {
           if (index < STARTERS_COUNT) {
+            const guessedPosition = getPositionByFormationAndOrder(formation, index);
             newPlayers[index] = {
               ...newPlayers[index],
               name: aiPlayer.player_name || newPlayers[index].name,
               number: aiPlayer.jersey_number !== null ? aiPlayer.jersey_number : newPlayers[index].number,
-              position: aiPlayer.position_guess || newPlayers[index].position,
+              position: guessedPosition, // Use formation-based position guessing
             };
           }
         });
         
+        // Process substitutes
         aiSubs.forEach((aiPlayer, index) => {
           const playerIndex = STARTERS_COUNT + index;
           if (playerIndex < newPlayers.length) {
@@ -131,13 +150,13 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
               ...newPlayers[playerIndex],
               name: aiPlayer.player_name || newPlayers[playerIndex].name,
               number: aiPlayer.jersey_number !== null ? aiPlayer.jersey_number : newPlayers[playerIndex].number,
-              position: aiPlayer.position_guess || newPlayers[playerIndex].position,
+              position: 'SUB', // Substitutes get 'SUB' position
             };
           }
         });
 
         onPlayersChange(team, newPlayers);
-        toast({ title: "Processing Successful", description: `The ${team === 'home' ? 'Home' : 'Away'} Team player list has been populated.` });
+        toast({ title: "Processing Successful", description: `The ${team === 'home' ? 'Home' : 'Away'} Team player list has been populated with position assignments based on ${formation} formation.` });
       } catch (error: any) {
         console.error("Error processing image:", error);
         toast({ title: "Processing Failed", description: error.message || "An unknown error occurred.", variant: "destructive" });
@@ -191,16 +210,20 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No Position</SelectItem>
-                {Object.entries(FOOTBALL_POSITIONS).map(([line, positions]) => (
-                  <React.Fragment key={line}>
-                    <div className="px-2 py-1 text-xs font-semibold text-muted-foreground bg-muted">{line}</div>
-                    {positions.map(position => (
-                      <SelectItem key={position} value={position}>
-                        {position}
-                      </SelectItem>
-                    ))}
-                  </React.Fragment>
-                ))}
+                {player.isSubstitute ? (
+                  <SelectItem value="SUB">Substitute</SelectItem>
+                ) : (
+                  Object.entries(FOOTBALL_POSITIONS).map(([line, positions]) => (
+                    <React.Fragment key={line}>
+                      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground bg-muted">{line}</div>
+                      {positions.map(position => (
+                        <SelectItem key={position} value={position}>
+                          {position}
+                        </SelectItem>
+                      ))}
+                    </React.Fragment>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -251,6 +274,10 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
               </Button>
             </div>
           )}
+          <div className="text-sm text-muted-foreground">
+            <p>Positions will be automatically assigned based on team formation and player order.</p>
+            <p>You can modify any position after AI processing.</p>
+          </div>
         </CardContent>
       </Card>
 
