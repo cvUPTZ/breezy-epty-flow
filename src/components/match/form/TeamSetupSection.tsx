@@ -119,6 +119,7 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
               ...newPlayers[index],
               name: aiPlayer.player_name || newPlayers[index].name,
               number: aiPlayer.jersey_number !== null ? aiPlayer.jersey_number : newPlayers[index].number,
+              position: aiPlayer.position_guess || newPlayers[index].position,
             };
           }
         });
@@ -130,6 +131,7 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
               ...newPlayers[playerIndex],
               name: aiPlayer.player_name || newPlayers[playerIndex].name,
               number: aiPlayer.jersey_number !== null ? aiPlayer.jersey_number : newPlayers[playerIndex].number,
+              position: aiPlayer.position_guess || newPlayers[playerIndex].position,
             };
           }
         });
