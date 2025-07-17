@@ -98,7 +98,12 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
       const lineAssignments: PlayerAssignment[] = [];
       const assignmentsByLine: Record<string, any[]> = {};
 
+      console.log('Tracker assignments found:', trackerAssignments);
+      console.log('Match data:', match);
+
       trackerAssignments?.forEach(assignment => {
+        console.log('Processing assignment:', assignment);
+        
         if (!assignment.player_id) {
           // This is an "all events" assignment
           lineAssignments.push({
@@ -110,22 +115,29 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
         } else {
           // Get player info and determine line based on position
           const teamPlayers = assignment.player_team_id === 'home' 
-            ? (Array.isArray(match.home_team_players) ? match.home_team_players : [])
-            : (Array.isArray(match.away_team_players) ? match.away_team_players : []);
+            ? (Array.isArray(match.home_team_players) ? match.home_team_players : 
+               (typeof match.home_team_players === 'string' ? JSON.parse(match.home_team_players) : []))
+            : (Array.isArray(match.away_team_players) ? match.away_team_players : 
+               (typeof match.away_team_players === 'string' ? JSON.parse(match.away_team_players) : []));
+          
+          console.log('Team players:', teamPlayers);
+          console.log('Looking for player_id:', assignment.player_id);
           
           // Safely find and validate player
           const foundPlayer = teamPlayers?.find((p: any) => {
-            return isValidPlayer(p) && p.id === assignment.player_id;
+            return isValidPlayer(p) && (p.id === assignment.player_id || String(p.id) === String(assignment.player_id));
           });
+          
+          console.log('Found player:', foundPlayer);
           
           if (foundPlayer && isValidPlayer(foundPlayer)) {
             const player = foundPlayer as Player;
             const position = player.position?.toLowerCase() || '';
             let line: 'defense' | 'midfield' | 'attack' = 'midfield';
             
-            if (position.includes('def') || position.includes('back') || position.includes('gk')) {
+            if (position.includes('def') || position.includes('back') || position.includes('gk') || position === 'goalkeeper') {
               line = 'defense';
-            } else if (position.includes('for') || position.includes('att') || position.includes('wing')) {
+            } else if (position.includes('for') || position.includes('att') || position.includes('wing') || position.includes('striker')) {
               line = 'attack';
             }
 
@@ -134,6 +146,14 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
               assignmentsByLine[key] = [];
             }
             assignmentsByLine[key].push(player);
+          } else {
+            // If we can't find the specific player, create an "all events" assignment for this team
+            lineAssignments.push({
+              line: 'all_events',
+              team: assignment.player_team_id as 'home' | 'away',
+              players: [],
+              tracker_id: assignment.tracker_user_id || ''
+            });
           }
         }
       });
