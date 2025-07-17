@@ -8,7 +8,7 @@ import { VoiceCollaborationProvider, useVoiceCollaborationContext } from '@/cont
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import DedicatedTrackerUI from '@/components/match/DedicatedTrackerUI';
+import LineBasedTrackerUI from '@/components/match/LineBasedTrackerUI';
 import GamepadConfig from '@/components/gamepad/GamepadConfig';
 import { ProcessedDetectionResult } from '@/services/roboflowDetectionService';
 import { useUnifiedTrackerConnection } from '@/hooks/useUnifiedTrackerConnection';
@@ -40,9 +40,8 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const [isRecording, setIsRecording] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [detectionResults, setDetectionResults] = useState<ProcessedDetectionResult[]>([]);
-  const [assignments, setAssignments] = useState<any[]>([]);
-  const [assignedEventTypes, setAssignedEventTypes] = useState<string[]>([]);
-  const [assignedPlayer, setAssignedPlayer] = useState<any>(null);
+  const [lineAssignments, setLineAssignments] = useState<any[]>([]);
+  const [assignmentNotification, setAssignmentNotification] = useState<string>('');
   
   // State to track the last triggered event from the gamepad
   const [lastGamepadTriggeredEvent, setLastGamepadTriggeredEvent] = useState<string | null>(null);
@@ -175,34 +174,110 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     if (!user?.id || !matchId) return;
 
     try {
-      const { data, error } = await supabase
-        .from('match_tracker_assignments')
-        .select('*')
-        .eq('match_id', matchId)
-        .eq('tracker_user_id', user.id);
+      // Fetch match data and assignments
+      const [matchResponse, assignmentsResponse] = await Promise.all([
+        supabase.from('matches').select('*').eq('id', matchId).single(),
+        supabase.from('match_tracker_assignments').select('*').eq('match_id', matchId).eq('tracker_user_id', user.id)
+      ]);
 
-      if (error) throw error;
+      if (matchResponse.error) throw matchResponse.error;
+      if (assignmentsResponse.error) throw assignmentsResponse.error;
 
-      setAssignments(data || []);
-      
-      // Extract event types
-      const eventTypes = Array.from(new Set(data?.flatMap(assignment => assignment.assigned_event_types || []) || []));
-      setAssignedEventTypes(eventTypes);
+      const matchData = matchResponse.data;
+      const assignments = assignmentsResponse.data || [];
 
-      // For now, get the first assigned player (you can modify this logic as needed)
-      if (data && data.length > 0) {
-        const firstAssignment = data[0];
-        // You'll need to fetch player details based on player_id and team
-        // For now, creating a simple player object
-        setAssignedPlayer({
-          id: firstAssignment.player_id,
-          name: `Player ${firstAssignment.player_id}`,
-          teamId: firstAssignment.player_team_id,
-          teamName: firstAssignment.player_team_id === 'home' ? 'Home Team' : 'Away Team'
-        });
+      if (assignments.length === 0) {
+        setLineAssignments([]);
+        return;
       }
+
+      // Process assignments into line-based format
+      const processedAssignments = assignments.map((assignment: any) => {
+        const isHomeTeam = assignment.player_team_id === 'home';
+        const teamPlayers = isHomeTeam ? matchData.home_team_players : matchData.away_team_players;
+        const teamName = isHomeTeam ? matchData.home_team_name : matchData.away_team_name;
+
+        // Parse team players if they're stored as JSON string
+        let players = [];
+        try {
+          players = typeof teamPlayers === 'string' ? JSON.parse(teamPlayers) : (teamPlayers || []);
+        } catch (e) {
+          players = Array.isArray(teamPlayers) ? teamPlayers : [];
+        }
+
+        // Determine line based on assignment type
+        let line = 'all_events';
+        let assignedPlayers = [];
+
+        if (assignment.assigned_player_id) {
+          // Single player assignment
+          const player = players.find((p: any) => p.id === assignment.assigned_player_id || p.id === assignment.assigned_player_id.toString());
+          if (player) {
+            assignedPlayers = [player];
+            // Determine line based on player position
+            const position = player.position?.toLowerCase();
+            if (position?.includes('def') || position?.includes('cb') || position?.includes('lb') || position?.includes('rb')) {
+              line = 'defense';
+            } else if (position?.includes('mid') || position?.includes('cm') || position?.includes('dm') || position?.includes('am')) {
+              line = 'midfield';
+            } else if (position?.includes('forward') || position?.includes('striker') || position?.includes('wing')) {
+              line = 'attack';
+            }
+          }
+        } else {
+          // Line-based assignment - get players by position
+          if (assignment.assigned_event_types?.length > 0) {
+            // Filter players by line
+            assignedPlayers = players.filter((player: any) => {
+              const position = player.position?.toLowerCase();
+              if (assignment.assigned_event_types.includes('defense') || assignment.assigned_event_types.includes('tackle') || assignment.assigned_event_types.includes('clearance')) {
+                line = 'defense';
+                return position?.includes('def') || position?.includes('cb') || position?.includes('lb') || position?.includes('rb');
+              } else if (assignment.assigned_event_types.includes('midfield') || assignment.assigned_event_types.includes('pass')) {
+                line = 'midfield';
+                return position?.includes('mid') || position?.includes('cm') || position?.includes('dm') || position?.includes('am');
+              } else if (assignment.assigned_event_types.includes('attack') || assignment.assigned_event_types.includes('shot') || assignment.assigned_event_types.includes('goal')) {
+                line = 'attack';
+                return position?.includes('forward') || position?.includes('striker') || position?.includes('wing');
+              }
+              return false;
+            });
+          }
+        }
+
+        return {
+          line,
+          team: assignment.player_team_id,
+          players: assignedPlayers,
+          eventTypes: assignment.assigned_event_types || ['pass', 'shot', 'tackle', 'dribble'],
+          teamName
+        };
+      });
+
+      setLineAssignments(processedAssignments);
+
+      // Create notification message
+      const allEventTypes = Array.from(new Set(processedAssignments.flatMap((a: any) => a.eventTypes)));
+      const totalPlayers = processedAssignments.reduce((sum: number, a: any) => sum + a.players.length, 0);
+      
+      const notification = `You've been assigned to track video: ${matchData.home_team_name} vs ${matchData.away_team_name}. Events: ${allEventTypes.join(', ')}. Event Types: ${allEventTypes.join(', ')}. Players: ${totalPlayers} assigned${processedAssignments.length > 0 ? ` (${processedAssignments.map((a: any) => a.line === 'all_events' ? 'all events' : `line of ${a.line}`).join(', ')})` : ''}`;
+      
+      setAssignmentNotification(notification);
+
+      // Show toast notification
+      toast({
+        title: "Assignment Received",
+        description: notification,
+        duration: 8000,
+      });
+
     } catch (error) {
       console.error('Error fetching assignments:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch tracker assignments",
+        variant: "destructive",
+      });
     }
   };
 
@@ -360,10 +435,10 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   }, []);
 
   const renderEventTracker = () => {
-    if (!showPianoOverlay || !assignedPlayer || assignedEventTypes.length === 0) return null;
+    if (!showPianoOverlay || lineAssignments.length === 0) return null;
 
     const overlay = (
-      <div className="absolute top-4 right-4 w-80 bg-black/20 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden"
+      <div className="absolute top-4 right-4 w-96 bg-black/20 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-[80vh] overflow-y-auto"
            style={{ zIndex: isFullscreen ? 2147483647 : 50 }}>
         <div className="p-3 border-b border-white/10 bg-black/30 flex justify-between items-center">
           <h3 className="font-medium text-white text-sm">Event Tracker</h3>
@@ -375,12 +450,11 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
           </button>
         </div>
         <div className="p-3">
-          <DedicatedTrackerUI
-            assignedPlayerForMatch={assignedPlayer}
-            recordEvent={(eventType, playerId, teamId) => {
+          <LineBasedTrackerUI
+            assignments={lineAssignments}
+            recordEvent={(eventType: any, playerId?: any, teamId?: any) => {
               handleRecordEvent(eventType);
             }}
-            assignedEventTypes={assignedEventTypes}
             matchId={matchId}
           />
         </div>
