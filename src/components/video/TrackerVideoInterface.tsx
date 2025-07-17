@@ -8,7 +8,7 @@ import { VoiceCollaborationProvider, useVoiceCollaborationContext } from '@/cont
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import SimplePianoOverlay from './SimplePianoOverlay';
+import DedicatedTrackerUI from '@/components/match/DedicatedTrackerUI';
 import GamepadConfig from '@/components/gamepad/GamepadConfig';
 import { ProcessedDetectionResult } from '@/services/roboflowDetectionService';
 import { useUnifiedTrackerConnection } from '@/hooks/useUnifiedTrackerConnection';
@@ -40,6 +40,9 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const [isRecording, setIsRecording] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [detectionResults, setDetectionResults] = useState<ProcessedDetectionResult[]>([]);
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [assignedEventTypes, setAssignedEventTypes] = useState<string[]>([]);
+  const [assignedPlayer, setAssignedPlayer] = useState<any>(null);
   
   // State to track the last triggered event from the gamepad
   const [lastGamepadTriggeredEvent, setLastGamepadTriggeredEvent] = useState<string | null>(null);
@@ -160,6 +163,48 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   useEffect(() => {
     setCurrentVideoId(initialVideoId);
   }, [initialVideoId]);
+
+  // Fetch tracker assignments
+  useEffect(() => {
+    if (user?.id && matchId) {
+      fetchTrackerAssignments();
+    }
+  }, [user?.id, matchId]);
+
+  const fetchTrackerAssignments = async () => {
+    if (!user?.id || !matchId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('match_tracker_assignments')
+        .select('*')
+        .eq('match_id', matchId)
+        .eq('tracker_user_id', user.id);
+
+      if (error) throw error;
+
+      setAssignments(data || []);
+      
+      // Extract event types
+      const eventTypes = Array.from(new Set(data?.flatMap(assignment => assignment.assigned_event_types || []) || []));
+      setAssignedEventTypes(eventTypes);
+
+      // For now, get the first assigned player (you can modify this logic as needed)
+      if (data && data.length > 0) {
+        const firstAssignment = data[0];
+        // You'll need to fetch player details based on player_id and team
+        // For now, creating a simple player object
+        setAssignedPlayer({
+          id: firstAssignment.player_id,
+          name: `Player ${firstAssignment.player_id}`,
+          teamId: firstAssignment.player_team_id,
+          teamName: firstAssignment.player_team_id === 'home' ? 'Home Team' : 'Away Team'
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
+    }
+  };
 
   // Monitor fullscreen changes
   useEffect(() => {
@@ -315,16 +360,31 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   }, []);
 
   const renderEventTracker = () => {
-    if (!showPianoOverlay) return null;
+    if (!showPianoOverlay || !assignedPlayer || assignedEventTypes.length === 0) return null;
 
     const overlay = (
-      <SimplePianoOverlay
-        onRecordEvent={handleRecordEvent}
-        onClose={togglePianoOverlay}
-        isRecording={isRecording}
-        gamepadConnected={gamepadConnected}
-        lastTriggeredEvent={lastGamepadTriggeredEvent} 
-      />
+      <div className="absolute top-4 right-4 w-80 bg-black/20 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden"
+           style={{ zIndex: isFullscreen ? 2147483647 : 50 }}>
+        <div className="p-3 border-b border-white/10 bg-black/30 flex justify-between items-center">
+          <h3 className="font-medium text-white text-sm">Event Tracker</h3>
+          <button
+            onClick={togglePianoOverlay}
+            className="text-white/70 hover:text-white text-lg font-bold w-6 h-6 flex items-center justify-center rounded hover:bg-white/10"
+          >
+            ×
+          </button>
+        </div>
+        <div className="p-3">
+          <DedicatedTrackerUI
+            assignedPlayerForMatch={assignedPlayer}
+            recordEvent={(eventType, playerId, teamId) => {
+              handleRecordEvent(eventType);
+            }}
+            assignedEventTypes={assignedEventTypes}
+            matchId={matchId}
+          />
+        </div>
+      </div>
     );
 
     // Render in portal when in fullscreen to ensure it appears above the video
