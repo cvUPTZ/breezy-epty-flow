@@ -4,6 +4,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import App from './App.tsx';
 import './index.css';
 
@@ -17,7 +18,9 @@ root.render(
   <StrictMode>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <BrowserRouter>
-        <App />
+        <TooltipProvider>
+          <App />
+        </TooltipProvider>
       </BrowserRouter>
     </ThemeProvider>
   </StrictMode>
