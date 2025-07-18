@@ -70,12 +70,30 @@ const YouthDevelopment: React.FC = () => {
 
   const handleAddProspect = async () => {
     try {
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user?.id) {
+        throw new Error('User not authenticated. Please log in.');
+      }
+      
+      // Get the scout record for this user
+      const { data: scout, error: scoutError } = await supabase
+        .from('scouts')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (scoutError || !scout) {
+        throw new Error('Scout record not found. Please contact an administrator.');
+      }
+
       const { data, error } = await supabase
         .from('youth_prospects')
         .insert({
           ...newProspect,
           potential_rating: parseInt(newProspect.potential_rating),
-          scout_id: (await supabase.auth.getUser()).data.user?.id
+          scout_id: scout.id
         })
         .select()
         .single();
