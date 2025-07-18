@@ -169,14 +169,31 @@ const BusinessPlanManagement: React.FC = () => {
     }
   ]);
 
+  // Simulation toggles
+  const [includeInvestors, setIncludeInvestors] = useState(true);
+  const [activePositions, setActivePositions] = useState({
+    founder: true,
+    technicalManager: true,
+    cofounder: true,
+    investor1: true,
+    investor2: true
+  });
+
+  const togglePosition = (position: keyof typeof activePositions) => {
+    setActivePositions(prev => ({
+      ...prev,
+      [position]: !prev[position]
+    }));
+  };
+
   // Founders and financial data
   const [founders, setFounders] = useState<Founder[]>([
     {
       id: '1',
-      name: 'Ahmed Benali',
+      name: 'HOUDACHE Zakaria',
       role: 'founder',
-      equityPercentage: 45,
-      responsibilities: ['Direction générale', 'Stratégie commerciale', 'Relations FAF'],
+      equityPercentage: 40,
+      responsibilities: ['Vision stratégique', 'Relations investisseurs', 'Développement business', 'Direction générale'],
       monthlyContribution: 0,
       expectedROI: 25,
       vestingPeriod: 48,
@@ -184,10 +201,10 @@ const BusinessPlanManagement: React.FC = () => {
     },
     {
       id: '2',
-      name: 'Yasmine Kaci',
+      name: 'ISLAM',
       role: 'co-founder',
-      equityPercentage: 35,
-      responsibilities: ['Développement technique', 'Gestion équipe', 'Innovation'],
+      equityPercentage: 25,
+      responsibilities: ['Formation des trackers', 'Expertise football', 'Analyse vidéo', 'Développement technique'],
       monthlyContribution: 0,
       expectedROI: 22,
       vestingPeriod: 48,
@@ -195,9 +212,20 @@ const BusinessPlanManagement: React.FC = () => {
     },
     {
       id: '3',
-      name: 'Karim Ouali',
+      name: 'FERROUDJE Cherif',
+      role: 'co-founder',
+      equityPercentage: 20,
+      responsibilities: ['Développement commercial', 'Partenariats', 'Opérations'],
+      monthlyContribution: 0,
+      expectedROI: 20,
+      vestingPeriod: 48,
+      joinDate: '2024-01-01'
+    },
+    {
+      id: '4',
+      name: 'Investisseur Stratégique',
       role: 'investor',
-      equityPercentage: 15,
+      equityPercentage: 10,
       responsibilities: ['Financement', 'Réseau professionnel', 'Conseils stratégiques'],
       monthlyContribution: 250000,
       expectedROI: 30,
@@ -205,13 +233,13 @@ const BusinessPlanManagement: React.FC = () => {
       joinDate: '2024-02-01'
     },
     {
-      id: '4',
-      name: 'Dr. Rachid Medjahdi',
-      role: 'advisor',
+      id: '5',
+      name: 'Business Angel',
+      role: 'investor',
       equityPercentage: 5,
-      responsibilities: ['Expertise football', 'Relations clubs', 'Validation produit'],
-      monthlyContribution: 0,
-      expectedROI: 15,
+      responsibilities: ['Financement', 'Mentoring', 'Validation produit'],
+      monthlyContribution: 100000,
+      expectedROI: 25,
       vestingPeriod: 24,
       joinDate: '2024-03-01'
     }
@@ -1592,6 +1620,79 @@ const BusinessPlanManagement: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold mb-4">Contrôles de Simulation</h4>
+                  <div className="flex flex-wrap gap-4 mb-4">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="includeInvestors"
+                        checked={includeInvestors}
+                        onChange={(e) => setIncludeInvestors(e.target.checked)}
+                        className="rounded"
+                      />
+                      <label htmlFor="includeInvestors" className="text-sm">Inclure les investisseurs</label>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 mb-4">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="founder"
+                        checked={activePositions.founder}
+                        onChange={() => togglePosition('founder')}
+                        className="rounded"
+                      />
+                      <label htmlFor="founder" className="text-xs">Fondateur</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="technicalManager"
+                        checked={activePositions.technicalManager}
+                        onChange={() => togglePosition('technicalManager')}
+                        className="rounded"
+                      />
+                      <label htmlFor="technicalManager" className="text-xs">Manager Tech</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="cofounder"
+                        checked={activePositions.cofounder}
+                        onChange={() => togglePosition('cofounder')}
+                        className="rounded"
+                      />
+                      <label htmlFor="cofounder" className="text-xs">Co-fondateur</label>
+                    </div>
+                    {includeInvestors && (
+                      <>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="investor1"
+                            checked={activePositions.investor1}
+                            onChange={() => togglePosition('investor1')}
+                            className="rounded"
+                          />
+                          <label htmlFor="investor1" className="text-xs">Investisseur 1</label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="investor2"
+                            checked={activePositions.investor2}
+                            onChange={() => togglePosition('investor2')}
+                            className="rounded"
+                          />
+                          <label htmlFor="investor2" className="text-xs">Investisseur 2</label>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
                 <div className="space-y-4">
                   {financialProjections.map((projection, index) => (
                     <div key={projection.year} className="border rounded-lg p-4">
@@ -1629,7 +1730,7 @@ const BusinessPlanManagement: React.FC = () => {
                       {index === 0 && (
                         <div className="mt-3 pt-3 border-t">
                           <p className="text-xs text-muted-foreground">
-                            Distribution basée sur les parts d'équité des fondateurs
+                            Distribution basée sur les parts d'équité actives
                           </p>
                         </div>
                       )}
@@ -1650,12 +1751,26 @@ const BusinessPlanManagement: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {founders.map((founder) => (
+                {founders.filter((founder, index) => {
+                  if (founder.role === 'founder' && index === 0) return activePositions.founder;
+                  if (founder.role === 'co-founder' && index === 1) return activePositions.technicalManager;
+                  if (founder.role === 'co-founder' && index === 2) return activePositions.cofounder;
+                  if (founder.role === 'investor' && index === 3) return includeInvestors && activePositions.investor1;
+                  if (founder.role === 'investor' && index === 4) return includeInvestors && activePositions.investor2;
+                  return true;
+                }).map((founder) => (
                   <div key={founder.id} className="border rounded-lg p-4">
                     <div className="text-center mb-3">
                       <h4 className="font-semibold">{founder.name}</h4>
                       <Badge variant="outline" className="text-xs mt-1">
                         {founder.equityPercentage}% d'équité
+                      </Badge>
+                      <Badge 
+                        variant={founder.role === 'investor' ? 'secondary' : 'default'} 
+                        className="text-xs ml-1"
+                      >
+                        {founder.role === 'founder' ? 'Fondateur' : 
+                         founder.role === 'co-founder' ? 'Co-fondateur' : 'Investisseur'}
                       </Badge>
                     </div>
                     
