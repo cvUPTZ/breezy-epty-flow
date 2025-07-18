@@ -86,7 +86,7 @@ interface TrackerBudgetConfig {
 interface Founder {
   id: string;
   name: string;
-  role: 'founder' | 'co-founder' | 'investor' | 'advisor';
+  role: 'founder' | 'co-founder' | 'technical' | 'investor' | 'advisor';
   equityPercentage: number;
   responsibilities: string[];
   monthlyContribution: number;
@@ -202,7 +202,7 @@ const BusinessPlanManagement: React.FC = () => {
     {
       id: '2',
       name: 'ISLAM',
-      role: 'co-founder',
+      role: 'technical',
       equityPercentage: 25,
       responsibilities: ['Formation des trackers', 'Expertise football', 'Analyse vidéo', 'Développement technique'],
       monthlyContribution: 0,
@@ -1611,6 +1611,227 @@ const BusinessPlanManagement: React.FC = () => {
               </CardContent>
             </Card>
 
+            {/* Detailed Job Descriptions */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Fiches de Poste Détaillées
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {founders.map((founder) => (
+                    <div key={founder.id} className="border rounded-lg p-6">
+                      <div className="mb-4">
+                        <h3 className="text-lg font-semibold text-primary">{founder.name}</h3>
+                        <p className="text-muted-foreground">
+                          {founder.role === 'founder' ? 'Fondateur - Direction Générale' : 
+                           founder.role === 'technical' ? 'Manager Technique et Formateur' : 
+                           'Co-fondateur - Développement et Opérations'}
+                        </p>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                          <h4 className="font-medium mb-3 text-sm uppercase tracking-wide">Responsabilités Principales</h4>
+                          <ul className="space-y-2 text-sm">
+                            {founder.role === 'founder' && ( // HOUDACHE Zakaria - Fondateur
+                              <>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  Direction générale et vision stratégique de l'entreprise
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  Développement commercial et acquisition de nouveaux clients
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  Gestion des partenariats stratégiques avec les clubs
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  Supervision financière et budgétaire
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  Représentation externe et networking
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  Prise de décisions stratégiques majeures
+                                </li>
+                              </>
+                            )}
+                            {founder.role === 'technical' && ( // ISLAM - Manager Technique
+                              <>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  Formation et encadrement des trackers football
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  Développement des protocoles de tracking
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  Analyse vidéo et création de rapports techniques
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  Supervision qualité des données collectées
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  Interface technique avec les équipes clients
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  Amélioration continue des processus
+                                </li>
+                              </>
+                            )}
+                            {founder.role === 'co-founder' && ( // FERROUDJE Cherif - Co-fondateur
+                              <>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  Développement produit et innovation technologique
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  Gestion des opérations quotidiennes
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  Support aux équipes terrain
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  Coordination avec les partenaires techniques
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  Veille concurrentielle et technologique
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  Gestion des ressources humaines
+                                </li>
+                              </>
+                            )}
+                          </ul>
+                        </div>
+                        
+                        <div>
+                          <h4 className="font-medium mb-3 text-sm uppercase tracking-wide">Compétences Requises</h4>
+                          <ul className="space-y-2 text-sm">
+                            {founder.role === 'founder' && (
+                              <>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
+                                  Leadership et management d'équipe
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
+                                  Vision business et stratégique
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
+                                  Négociation commerciale
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
+                                  Gestion financière
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
+                                  Communication et présentation
+                                </li>
+                              </>
+                            )}
+                            {founder.role === 'technical' && (
+                              <>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
+                                  Expertise football et analyse tactique
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
+                                  Analyse vidéo et logiciels spécialisés
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
+                                  Formation et pédagogie
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
+                                  Contrôle qualité et méthodologie
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
+                                  Analyse de données sportives
+                                </li>
+                              </>
+                            )}
+                            {founder.role === 'co-founder' && (
+                              <>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
+                                  Innovation et développement produit
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
+                                  Gestion opérationnelle
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
+                                  Coordination d'équipes
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
+                                  Analyse et optimisation de processus
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
+                                  Gestion de projet et planification
+                                </li>
+                              </>
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-6 pt-4 border-t">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                          <div>
+                            <div className="text-lg font-semibold text-primary">{founder.equityPercentage}%</div>
+                            <div className="text-xs text-muted-foreground">Participation</div>
+                          </div>
+                          <div>
+                            <div className="text-lg font-semibold text-green-600">{formatCurrency(founder.expectedROI * 1000)}</div>
+                            <div className="text-xs text-muted-foreground">Profit/mois estimé</div>
+                          </div>
+                          <div>
+                            <div className="text-lg font-semibold text-blue-600">{formatCurrency(founder.monthlyContribution)}</div>
+                            <div className="text-xs text-muted-foreground">Contribution/mois</div>
+                          </div>
+                          <div>
+                            <div className="text-lg font-semibold text-purple-600">
+                              {founder.role === 'founder' ? '40h' : founder.role === 'technical' ? '35h' : '30h'}/sem
+                            </div>
+                            <div className="text-xs text-muted-foreground">Temps de travail</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="mt-6">
             {/* Financial Simulation */}
             <Card>
               <CardHeader>
