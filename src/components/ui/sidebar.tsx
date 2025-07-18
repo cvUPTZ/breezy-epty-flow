@@ -11,11 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { SimpleTooltip } from "@/components/ui/simple-tooltip"
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -534,7 +530,7 @@ const SidebarMenuButton = forwardRef<
   ComponentProps<"button"> & {
     asChild?: boolean
     isActive?: boolean
-    tooltip?: string | ComponentProps<typeof TooltipContent>
+    tooltip?: string
   } & VariantProps<typeof sidebarMenuButtonVariants>
 >(
   (
@@ -563,26 +559,14 @@ const SidebarMenuButton = forwardRef<
       />
     )
 
-    if (!tooltip) {
+    if (!tooltip || state !== "collapsed" || isMobile) {
       return button
     }
 
-    if (typeof tooltip === "string") {
-      tooltip = {
-        children: tooltip,
-      }
-    }
-
     return (
-      <Tooltip>
-        <TooltipTrigger asChild>{button}</TooltipTrigger>
-        <TooltipContent
-          side="right"
-          align="center"
-          hidden={state !== "collapsed" || isMobile}
-          {...tooltip}
-        />
-      </Tooltip>
+      <SimpleTooltip content={tooltip}>
+        {button}
+      </SimpleTooltip>
     )
   }
 )
