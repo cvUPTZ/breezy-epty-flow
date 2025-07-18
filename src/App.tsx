@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ToastAction } from "@/components/ui/toast";
-import { useNetworkStatus } from './hooks/useNetworkStatus';
+// import { useNetworkStatus } from './hooks/useNetworkStatus';
 import { usePermissionChecker } from './hooks/usePermissionChecker';
 
 // Import all the page components
@@ -55,12 +55,12 @@ const AppContent = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const isOnline = useNetworkStatus();
+  // const isOnline = useNetworkStatus();
   const { hasTrackerAccess, hasPermission } = usePermissionChecker();
 
-  useEffect(() => {
-    console.log(`App component: Network is currently ${isOnline ? 'Online' : 'Offline'}`);
-  }, [isOnline]);
+  // useEffect(() => {
+  //   console.log(`App component: Network is currently ${isOnline ? 'Online' : 'Offline'}`);
+  // }, [isOnline]);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
