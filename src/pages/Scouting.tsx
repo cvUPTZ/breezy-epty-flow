@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Eye, FileText, Users, TrendingUp, Globe, BarChart3 } from 'lucide-react';
 import MatchAnalysisSidebar from '@/components/match/MatchAnalysisSidebar';
-import { useMenuItems } from '@/hooks/useMenuItems';
+// import { useMenuItems } from '@/hooks/useMenuItems';
 import PlayerIdentification from '@/components/scouting/PlayerIdentification';
 import OppositionAnalysis from '@/components/scouting/OppositionAnalysis';
 import YouthDevelopment from '@/components/scouting/YouthDevelopment';
@@ -15,7 +15,8 @@ import PerformanceAnalysis from '@/components/scouting/PerformanceAnalysis';
 import ScoutingDashboard from '@/components/scouting/ScoutingDashboard';
 
 const Scouting: React.FC = () => {
-  const menuItems = useMenuItems();
+  // const menuItems = useMenuItems();
+  const menuItems: any[] = []; // Temporary placeholder
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const scoutingModules = [
