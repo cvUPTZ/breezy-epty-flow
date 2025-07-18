@@ -82,6 +82,7 @@ interface TrackerBudgetConfig {
   transportAllowance: number;
   equipmentCost: number;
   socialCharges: number; // pourcentage
+  desiredSalaryPerMatch: number;
 }
 
 interface Founder {
@@ -200,17 +201,19 @@ const BusinessPlanManagement: React.FC = () => {
       vestingPeriod: 48,
       joinDate: '2024-01-01'
     },
+    // ========== START: UPDATED ISLAM'S ROLE ==========
     {
       id: '2',
       name: 'ISLAM',
       role: 'technical',
       equityPercentage: 25,
-      responsibilities: ['Formation des trackers', 'Expertise football', 'Analyse vidéo', 'Développement technique'],
+      responsibilities: ['Liaison FAF & Clubs', 'Gestion Opérations Football', 'Formation & Qualité des Données', 'Stratégie Produit Terrain'],
       monthlyContribution: 0,
       expectedROI: 22,
       vestingPeriod: 48,
       joinDate: '2024-01-01'
     },
+    // ========== END: UPDATED ISLAM'S ROLE ==========
     {
       id: '3',
       name: 'FERROUDJE Cherif',
@@ -291,7 +294,8 @@ const BusinessPlanManagement: React.FC = () => {
     overtimeRate: 1.5, // Taux horaire supplémentaire (standard algérien)
     transportAllowance: 2500, // Indemnité transport par match (réaliste pour Alger)
     equipmentCost: 800, // Coût équipement par tracker par match (tablette, casque, etc.)
-    socialCharges: 26 // Pourcentage charges sociales algériennes (CNAS + autres)
+    socialCharges: 26, // Pourcentage charges sociales algériennes (CNAS + autres)
+    desiredSalaryPerMatch: 0,
   });
 
   // Real-world match simulation parameters
@@ -299,7 +303,10 @@ const BusinessPlanManagement: React.FC = () => {
     duration: 90, // Durée standard d'un match
     playersToTrack: 22, // 22 joueurs sur le terrain
     matchFrequency: 15, // Nombre de matchs par mois pour un club actif
-    seasonDuration: 9 // Durée de la saison en mois
+    seasonDuration: 9, // Durée de la saison en mois
+    trackersMinimum: 5,
+    trackersOptimal: 7,
+    replacements: 3,
   });
 
   // Calculated fields based on event types and requirements
@@ -307,30 +314,6 @@ const BusinessPlanManagement: React.FC = () => {
     return eventTypes.reduce((sum, et) => sum + et.frequency, 0);
   };
 
-  const getTrackersRequirements = () => {
-    const totalEvents = getTotalEvents();
-    const eventsPerTracker = 250; // Nombre d'événements qu'un tracker peut gérer efficacement
-    
-    // Minimum requis - basé sur le minimum absolu pour fonctionner
-    const minimum = Math.max(2, Math.ceil(totalEvents / (eventsPerTracker * 1.5)));
-    
-    // Optimal - basé sur la charge de travail idéale par tracker
-    const optimal = Math.ceil(totalEvents / eventsPerTracker);
-    
-    // Remplacements - 30% d'optimal pour couvrir les absences/pauses
-    const replacements = Math.ceil(optimal * 0.3);
-    
-    return {
-      minimum,
-      optimal,
-      replacements,
-      totalForAllMatches: {
-        minimum: minimum * matchSimulation.matchFrequency,
-        optimal: optimal * matchSimulation.matchFrequency,
-        replacements: replacements * matchSimulation.matchFrequency
-      }
-    };
-  };
 
   // Enhanced event types with realistic difficulty and time requirements
   const [eventTypes, setEventTypes] = useState<EventTypeConfig[]>([
@@ -404,10 +387,11 @@ const BusinessPlanManagement: React.FC = () => {
   const calculateTrackerCost = () => {
     const matchDurationHours = matchSimulation.duration / 60;
     const complexityScore = calculateComplexityScore();
-    const trackerReqs = getTrackersRequirements();
     
     // Coût de base par tracker
-    const baseCostPerTracker = matchDurationHours * budgetConfig.basePayPerHour;
+    const baseCostPerTracker = budgetConfig.desiredSalaryPerMatch > 0
+      ? budgetConfig.desiredSalaryPerMatch
+      : matchDurationHours * budgetConfig.basePayPerHour;
     
     // Prime de complexité basée sur le score de difficulté
     const complexityBonus = baseCostPerTracker * (complexityScore / 1000) * (budgetConfig.difficultyMultiplier - 1);
@@ -416,14 +400,14 @@ const BusinessPlanManagement: React.FC = () => {
     const hourlyRateWithComplexity = baseCostPerTracker + complexityBonus;
     
     // Coût pour tous les trackers
-    const totalLaborCost = hourlyRateWithComplexity * trackerReqs.optimal;
+    const totalLaborCost = hourlyRateWithComplexity * matchSimulation.trackersOptimal;
     
     // Indemnités et frais
-    const totalTransportCost = trackerReqs.optimal * budgetConfig.transportAllowance;
-    const totalEquipmentCost = trackerReqs.optimal * budgetConfig.equipmentCost;
+    const totalTransportCost = matchSimulation.trackersOptimal * budgetConfig.transportAllowance;
+    const totalEquipmentCost = matchSimulation.trackersOptimal * budgetConfig.equipmentCost;
     
     // Coût de remplacement (si nécessaire)
-    const replacementCost = trackerReqs.replacements * (hourlyRateWithComplexity * 0.3); // 30% du coût pour remplacement
+    const replacementCost = matchSimulation.replacements * (hourlyRateWithComplexity * 0.3); // 30% du coût pour remplacement
     
     // Sous-total avant charges sociales
     const subtotal = totalLaborCost + totalTransportCost + totalEquipmentCost + replacementCost;
@@ -438,7 +422,7 @@ const BusinessPlanManagement: React.FC = () => {
       totalCost: Math.round(totalCost),
       breakdown: {
         laborCost: Math.round(totalLaborCost),
-        complexityBonus: Math.round(complexityBonus * trackerReqs.optimal),
+        complexityBonus: Math.round(complexityBonus * matchSimulation.trackersOptimal),
         transportCost: Math.round(totalTransportCost),
         equipmentCost: Math.round(totalEquipmentCost),
         replacementCost: Math.round(replacementCost),
@@ -464,14 +448,13 @@ const BusinessPlanManagement: React.FC = () => {
     const costs = calculateMonthlyAndSeasonalCosts();
     const complexityScore = calculateComplexityScore();
     const totalEvents = getTotalEvents();
-    const trackerReqs = getTrackersRequirements();
     
     return {
       costPerEvent: Math.round(costs.perMatch / totalEvents),
       costPerMinute: Math.round(costs.perMatch / matchSimulation.duration),
       costPerPlayer: Math.round(costs.perMatch / matchSimulation.playersToTrack),
       complexityEfficiency: Math.round(complexityScore / costs.perMatch * 1000), // Score par 1000 DZD
-      hourlyRatePerTracker: Math.round(costs.perMatch / (trackerReqs.optimal * matchSimulation.duration / 60))
+      hourlyRatePerTracker: Math.round(costs.perMatch / (matchSimulation.trackersOptimal * matchSimulation.duration / 60))
     };
   };
 
@@ -556,6 +539,26 @@ const BusinessPlanManagement: React.FC = () => {
       ...config
     });
   };
+
+  // ========== START: UPDATED HELPER FUNCTION FOR ROLE DISPLAY ==========
+  const getRoleDisplayName = (role: Founder['role']) => {
+    switch (role) {
+      case 'founder':
+        return 'Fondateur';
+      case 'co-founder':
+        return 'Co-fondateur';
+      case 'investor':
+        return 'Investisseur';
+      case 'technical':
+        return 'Resp. Opérations Football';
+      case 'advisor':
+        return 'Conseiller';
+      default:
+        return 'Partenaire';
+    }
+  };
+  // ========== END: UPDATED HELPER FUNCTION FOR ROLE DISPLAY ==========
+
 
   return (
     <div className="space-y-6">
@@ -656,7 +659,7 @@ const BusinessPlanManagement: React.FC = () => {
                   <Calculator className="h-8 w-8 text-orange-600" />
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  {getTrackersRequirements().optimal} trackers optimal
+                  {matchSimulation.trackersOptimal} trackers optimal
                 </p>
               </CardContent>
             </Card>
@@ -718,9 +721,9 @@ const BusinessPlanManagement: React.FC = () => {
             <CardContent>
               <BudgetOptimizationSolver
                 currentConfig={{
-                  trackersMinimum: getTrackersRequirements().minimum,
-                  trackersOptimal: getTrackersRequirements().optimal,
-                  replacements: getTrackersRequirements().replacements,
+                  trackersMinimum: matchSimulation.trackersMinimum,
+                  trackersOptimal: matchSimulation.trackersOptimal,
+                  replacements: matchSimulation.replacements,
                   playersToTrack: matchSimulation.playersToTrack
                 }}
                 onConfigUpdate={handleConfigUpdate}
@@ -776,15 +779,15 @@ const BusinessPlanManagement: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Trackers Minimum</p>
-                    <p className="text-2xl font-bold text-foreground">{getTrackersRequirements().minimum}</p>
+                    <p className="text-2xl font-bold text-foreground">{matchSimulation.trackersMinimum}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Trackers Optimal</p>
-                    <p className="text-2xl font-bold text-foreground">{getTrackersRequirements().optimal}</p>
+                    <p className="text-2xl font-bold text-foreground">{matchSimulation.trackersOptimal}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Remplacements</p>
-                    <p className="text-2xl font-bold text-foreground">{getTrackersRequirements().replacements}</p>
+                    <p className="text-2xl font-bold text-foreground">{matchSimulation.replacements}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Joueurs à Suivre</p>
@@ -838,7 +841,7 @@ const BusinessPlanManagement: React.FC = () => {
                     return (
                       <div className="space-y-3">
                         <div className="flex justify-between items-center p-3 bg-muted rounded">
-                          <span className="font-medium">Salaire de base ({getTrackersRequirements().optimal} trackers)</span>
+                          <span className="font-medium">Salaire de base ({matchSimulation.trackersOptimal} trackers)</span>
                           <span className="font-bold">{formatCurrency(costs.breakdown.laborCost)}</span>
                         </div>
                         
@@ -937,6 +940,18 @@ const BusinessPlanManagement: React.FC = () => {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
+                    <Label htmlFor="desiredSalaryPerMatch">Salaire par match/tracker souhaité (DZD)</Label>
+                    <Input
+                      id="desiredSalaryPerMatch"
+                      type="number"
+                      value={budgetConfig.desiredSalaryPerMatch}
+                      onChange={(e) => setBudgetConfig({
+                        ...budgetConfig,
+                        desiredSalaryPerMatch: Number(e.target.value)
+                      })}
+                    />
+                  </div>
+                  <div>
                     <Label htmlFor="basePayPerHour">Salaire Base/Heure (DZD)</Label>
                     <Input
                       id="basePayPerHour"
@@ -946,6 +961,7 @@ const BusinessPlanManagement: React.FC = () => {
                         ...budgetConfig,
                         basePayPerHour: Number(e.target.value)
                       })}
+                      disabled={budgetConfig.desiredSalaryPerMatch > 0}
                     />
                     <p className="text-xs text-muted-foreground mt-1">SNMG Algérie ≈ 1,250 DZD/h</p>
                   </div>
@@ -1055,10 +1071,15 @@ const BusinessPlanManagement: React.FC = () => {
                   </div>
                   
                   <div>
-                    <Label>Trackers Optimal (Calculé)</Label>
-                    <div className="p-2 bg-muted rounded text-center font-bold">
-                      {getTrackersRequirements().optimal}
-                    </div>
+                    <Label>Trackers Optimal</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.trackersOptimal}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        trackersOptimal: parseInt(e.target.value) || 0
+                      }))}
+                    />
                   </div>
                   
                   <div>
@@ -1088,10 +1109,15 @@ const BusinessPlanManagement: React.FC = () => {
                   </div>
                   
                   <div>
-                    <Label>Remplacements (Calculé)</Label>
-                    <div className="p-2 bg-muted rounded text-center font-bold">
-                      {getTrackersRequirements().replacements}
-                    </div>
+                    <Label>Remplacements</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.replacements}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        replacements: parseInt(e.target.value) || 0
+                      }))}
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -1566,25 +1592,37 @@ const BusinessPlanManagement: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-4">
-                    <Label>Trackers minimum requis (Calculé)</Label>
-                    <div className="p-3 bg-accent/50 rounded border">
-                      <span className="text-2xl font-bold">{getTrackersRequirements().minimum}</span>
-                      <p className="text-sm text-muted-foreground mt-1">Par match</p>
-                    </div>
+                    <Label>Trackers minimum requis</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.trackersMinimum}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        trackersMinimum: parseInt(e.target.value) || 0
+                      }))}
+                    />
                   </div>
                   <div className="space-y-4">
-                    <Label>Trackers optimal (Calculé)</Label>
-                    <div className="p-3 bg-accent/50 rounded border">
-                      <span className="text-2xl font-bold">{getTrackersRequirements().optimal}</span>
-                      <p className="text-sm text-muted-foreground mt-1">Par match</p>
-                    </div>
+                    <Label>Trackers optimal</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.trackersOptimal}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        trackersOptimal: parseInt(e.target.value) || 0
+                      }))}
+                    />
                   </div>
                   <div className="space-y-4">
-                    <Label>Remplacements prévus (Calculé)</Label>
-                    <div className="p-3 bg-accent/50 rounded border">
-                      <span className="text-2xl font-bold">{getTrackersRequirements().replacements}</span>
-                      <p className="text-sm text-muted-foreground mt-1">Par match</p>
-                    </div>
+                    <Label>Remplacements prévus</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.replacements}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        replacements: parseInt(e.target.value) || 0
+                      }))}
+                    />
                   </div>
                   
                   <div className="space-y-4">
@@ -1592,15 +1630,15 @@ const BusinessPlanManagement: React.FC = () => {
                     <div className="grid grid-cols-3 gap-2">
                       <div className="p-2 bg-muted rounded text-center">
                         <p className="text-sm text-muted-foreground">Minimum</p>
-                        <p className="font-bold">{getTrackersRequirements().totalForAllMatches.minimum}</p>
+                        <p className="font-bold">{matchSimulation.trackersMinimum * matchSimulation.matchFrequency}</p>
                       </div>
                       <div className="p-2 bg-muted rounded text-center">
                         <p className="text-sm text-muted-foreground">Optimal</p>
-                        <p className="font-bold">{getTrackersRequirements().totalForAllMatches.optimal}</p>
+                        <p className="font-bold">{matchSimulation.trackersOptimal * matchSimulation.matchFrequency}</p>
                       </div>
                       <div className="p-2 bg-muted rounded text-center">
                         <p className="text-sm text-muted-foreground">Remplacements</p>
-                        <p className="font-bold">{getTrackersRequirements().totalForAllMatches.replacements}</p>
+                        <p className="font-bold">{matchSimulation.replacements * matchSimulation.matchFrequency}</p>
                       </div>
                     </div>
                   </div>
@@ -1649,9 +1687,9 @@ const BusinessPlanManagement: React.FC = () => {
                       <span className="font-medium">Équipe Humaine</span>
                     </div>
                     <div className="space-y-1 text-sm">
-                      <p>Trackers minimum: {getTrackersRequirements().minimum}</p>
-                      <p>Trackers optimal: {getTrackersRequirements().optimal}</p>
-                      <p>Remplacements: {getTrackersRequirements().replacements}</p>
+                      <p>Trackers minimum: {matchSimulation.trackersMinimum}</p>
+                      <p>Trackers optimal: {matchSimulation.trackersOptimal}</p>
+                      <p>Remplacements: {matchSimulation.replacements}</p>
                     </div>
                   </div>
 
@@ -1663,7 +1701,7 @@ const BusinessPlanManagement: React.FC = () => {
                      <div className="space-y-1 text-sm">
                        <p>Durée: {matchSimulation.duration} min</p>
                        <p>Événements: {eventTypes.reduce((sum, et) => sum + et.frequency, 0)}</p>
-                       <p>Événements/tracker: {Math.round(getTotalEvents() / getTrackersRequirements().optimal)}</p>
+                       <p>Événements/tracker: {Math.round(getTotalEvents() / matchSimulation.trackersOptimal)}</p>
                      </div>
                   </div>
 
@@ -1853,7 +1891,7 @@ const BusinessPlanManagement: React.FC = () => {
                         <h4 className="font-semibold text-primary">Par Match</h4>
                         <p className="text-2xl font-bold mt-2">{formatCurrency(costs.perMatch)}</p>
                         <p className="text-sm text-muted-foreground mt-1">
-                          {getTrackersRequirements().optimal} trackers × {matchSimulation.duration} min
+                          {matchSimulation.trackersOptimal} trackers × {matchSimulation.duration} min
                         </p>
                       </div>
                       <div className="text-center p-6 bg-secondary/5 rounded-lg">
@@ -1966,9 +2004,9 @@ const BusinessPlanManagement: React.FC = () => {
                           <div>
                             <h4 className="font-semibold">{founder.name}</h4>
                             <Badge variant="secondary" className="text-xs">
-                              {founder.role === 'founder' ? 'Fondateur' : 
-                               founder.role === 'co-founder' ? 'Co-fondateur' : 
-                               founder.role === 'investor' ? 'Investisseur' : 'Conseiller'}
+                              {/* ========== START: USING THE NEW DISPLAY NAME FUNCTION ========== */}
+                              {getRoleDisplayName(founder.role)}
+                              {/* ========== END: USING THE NEW DISPLAY NAME FUNCTION ========== */}
                             </Badge>
                           </div>
                         </div>
@@ -2028,9 +2066,12 @@ const BusinessPlanManagement: React.FC = () => {
                       <div className="mb-4">
                         <h3 className="text-lg font-semibold text-primary">{founder.name}</h3>
                         <p className="text-muted-foreground">
+                          {/* ========== START: UPDATED JOB TITLE DISPLAY ========== */}
                           {founder.role === 'founder' ? 'Fondateur - Direction Générale' : 
-                           founder.role === 'technical' ? 'Manager Technique et Formateur' : 
-                           'Co-fondateur - Développement et Opérations'}
+                           founder.role === 'technical' ? 'Manager Technique & Responsable des Opérations Football' : 
+                           founder.role === 'co-founder' ? 'Co-fondateur - Développement et Opérations' :
+                           'Partenaire Stratégique'}
+                           {/* ========== END: UPDATED JOB TITLE DISPLAY ========== */}
                         </p>
                       </div>
                       
@@ -2066,34 +2107,36 @@ const BusinessPlanManagement: React.FC = () => {
                                 </li>
                               </>
                             )}
-                            {founder.role === 'technical' && ( // ISLAM - Manager Technique
+                            {/* ========== START: UPDATED ISLAM'S JOB DESCRIPTION ========== */}
+                            {founder.role === 'technical' && ( // ISLAM
                               <>
                                 <li className="flex items-start gap-2">
                                   <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
-                                  Formation et encadrement des trackers football
+                                  Gérer la liaison stratégique avec la FAF et les clubs professionnels.
                                 </li>
                                 <li className="flex items-start gap-2">
                                   <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
-                                  Développement des protocoles de tracking
+                                  Diriger la formation et la supervision des analystes vidéo (trackers).
                                 </li>
                                 <li className="flex items-start gap-2">
                                   <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
-                                  Analyse vidéo et création de rapports techniques
+                                  Développer et superviser les protocoles de tracking et la qualité des données.
                                 </li>
                                 <li className="flex items-start gap-2">
                                   <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
-                                  Supervision qualité des données collectées
+                                  Agir comme interface technique principale avec les staffs des clubs clients.
                                 </li>
                                 <li className="flex items-start gap-2">
                                   <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
-                                  Interface technique avec les équipes clients
+                                  Assurer l'adéquation du produit avec les besoins tactiques du football algérien.
                                 </li>
                                 <li className="flex items-start gap-2">
                                   <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
-                                  Amélioration continue des processus
+                                  Piloter l'amélioration continue des processus opérationnels sur le terrain.
                                 </li>
                               </>
                             )}
+                            {/* ========== END: UPDATED ISLAM'S JOB DESCRIPTION ========== */}
                             {founder.role === 'co-founder' && ( // FERROUDJE Cherif - Co-fondateur
                               <>
                                 <li className="flex items-start gap-2">
@@ -2152,30 +2195,32 @@ const BusinessPlanManagement: React.FC = () => {
                                 </li>
                               </>
                             )}
+                            {/* ========== START: UPDATED ISLAM'S SKILLS ========== */}
                             {founder.role === 'technical' && (
                               <>
                                 <li className="flex items-start gap-2">
                                   <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
-                                  Expertise football et analyse tactique
+                                  Réseautage institutionnel (FAF, clubs)
                                 </li>
                                 <li className="flex items-start gap-2">
                                   <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
-                                  Analyse vidéo et logiciels spécialisés
+                                  Expertise tactique et analyse vidéo professionnelle
                                 </li>
                                 <li className="flex items-start gap-2">
                                   <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
-                                  Formation et pédagogie
+                                  Formation et pédagogie pour analystes
                                 </li>
                                 <li className="flex items-start gap-2">
                                   <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
-                                  Contrôle qualité et méthodologie
+                                  Contrôle qualité et méthodologie de collecte de données
                                 </li>
                                 <li className="flex items-start gap-2">
                                   <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0"></div>
-                                  Analyse de données sportives
+                                  Communication et négociation dans le milieu sportif
                                 </li>
                               </>
                             )}
+                            {/* ========== END: UPDATED ISLAM'S SKILLS ========== */}
                             {founder.role === 'co-founder' && (
                               <>
                                 <li className="flex items-start gap-2">
@@ -2392,8 +2437,7 @@ const BusinessPlanManagement: React.FC = () => {
                         variant={founder.role === 'investor' ? 'secondary' : 'default'} 
                         className="text-xs ml-1"
                       >
-                        {founder.role === 'founder' ? 'Fondateur' : 
-                         founder.role === 'co-founder' ? 'Co-fondateur' : 'Investisseur'}
+                        {getRoleDisplayName(founder.role)}
                       </Badge>
                     </div>
                     
