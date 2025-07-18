@@ -28,7 +28,11 @@ import {
   Activity,
   Settings,
   BarChart3,
-  Zap
+  Zap,
+  Crown,
+  Shield,
+  PieChart,
+  TrendingDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import StartupPitchPresentation from './StartupPitchPresentation';
@@ -77,6 +81,36 @@ interface TrackerBudgetConfig {
   transportAllowance: number;
   equipmentCost: number;
   socialCharges: number; // pourcentage
+}
+
+interface Founder {
+  id: string;
+  name: string;
+  role: 'founder' | 'co-founder' | 'investor' | 'advisor';
+  equityPercentage: number;
+  responsibilities: string[];
+  monthlyContribution: number;
+  expectedROI: number;
+  vestingPeriod: number; // in months
+  joinDate: string;
+}
+
+interface FinancialProjection {
+  year: number;
+  revenue: number;
+  expenses: number;
+  profit: number;
+  founderDistribution: number;
+}
+
+interface InterventionType {
+  id: string;
+  name: string;
+  description: string;
+  requiredCapital: number;
+  expectedReturn: number;
+  riskLevel: 'low' | 'medium' | 'high';
+  timeframe: number; // in months
 }
 
 const BusinessPlanManagement: React.FC = () => {
@@ -133,6 +167,92 @@ const BusinessPlanManagement: React.FC = () => {
       compliance: 'pending',
       deadline: '2024-06-30'
     }
+  ]);
+
+  // Founders and financial data
+  const [founders, setFounders] = useState<Founder[]>([
+    {
+      id: '1',
+      name: 'Ahmed Benali',
+      role: 'founder',
+      equityPercentage: 45,
+      responsibilities: ['Direction générale', 'Stratégie commerciale', 'Relations FAF'],
+      monthlyContribution: 0,
+      expectedROI: 25,
+      vestingPeriod: 48,
+      joinDate: '2024-01-01'
+    },
+    {
+      id: '2',
+      name: 'Yasmine Kaci',
+      role: 'co-founder',
+      equityPercentage: 35,
+      responsibilities: ['Développement technique', 'Gestion équipe', 'Innovation'],
+      monthlyContribution: 0,
+      expectedROI: 22,
+      vestingPeriod: 48,
+      joinDate: '2024-01-01'
+    },
+    {
+      id: '3',
+      name: 'Karim Ouali',
+      role: 'investor',
+      equityPercentage: 15,
+      responsibilities: ['Financement', 'Réseau professionnel', 'Conseils stratégiques'],
+      monthlyContribution: 250000,
+      expectedROI: 30,
+      vestingPeriod: 36,
+      joinDate: '2024-02-01'
+    },
+    {
+      id: '4',
+      name: 'Dr. Rachid Medjahdi',
+      role: 'advisor',
+      equityPercentage: 5,
+      responsibilities: ['Expertise football', 'Relations clubs', 'Validation produit'],
+      monthlyContribution: 0,
+      expectedROI: 15,
+      vestingPeriod: 24,
+      joinDate: '2024-03-01'
+    }
+  ]);
+
+  const [interventions, setInterventions] = useState<InterventionType[]>([
+    {
+      id: '1',
+      name: 'Expansion vers clubs amateurs',
+      description: 'Développer une version simplifiée pour les clubs amateurs algériens',
+      requiredCapital: 2500000,
+      expectedReturn: 35,
+      riskLevel: 'medium',
+      timeframe: 18
+    },
+    {
+      id: '2',
+      name: 'Partenariat international',
+      description: 'Alliance avec une plateforme européenne pour le transfert de technologie',
+      requiredCapital: 5000000,
+      expectedReturn: 45,
+      riskLevel: 'high',
+      timeframe: 24
+    },
+    {
+      id: '3',
+      name: 'Centre de formation',
+      description: 'Ouverture d\'un centre de formation pour analystes sportifs',
+      requiredCapital: 1500000,
+      expectedReturn: 25,
+      riskLevel: 'low',
+      timeframe: 12
+    }
+  ]);
+
+  const [financialProjections] = useState<FinancialProjection[]>([
+    { year: 2024, revenue: 2760000, expenses: 1980000, profit: 780000, founderDistribution: 390000 },
+    { year: 2025, revenue: 4140000, expenses: 2730000, profit: 1410000, founderDistribution: 705000 },
+    { year: 2026, revenue: 6210000, expenses: 3795000, profit: 2415000, founderDistribution: 1207500 },
+    { year: 2027, revenue: 8280000, expenses: 4680000, profit: 3600000, founderDistribution: 1800000 },
+    { year: 2028, revenue: 11040000, expenses: 5940000, profit: 5100000, founderDistribution: 2550000 }
   ]);
 
   // Enhanced configuration for real-world tracker budget parameters
@@ -376,11 +496,12 @@ const BusinessPlanManagement: React.FC = () => {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="pitch">Pitch Startup</TabsTrigger>
           <TabsTrigger value="goals">Objectifs</TabsTrigger>
           <TabsTrigger value="revenue">Revenus</TabsTrigger>
+          <TabsTrigger value="founders">Fondateurs</TabsTrigger>
           <TabsTrigger value="budget">Budget Trackers</TabsTrigger>
           <TabsTrigger value="market">Marché Local</TabsTrigger>
           <TabsTrigger value="compliance">Conformité</TabsTrigger>
@@ -1385,6 +1506,295 @@ const BusinessPlanManagement: React.FC = () => {
                     <li>• Bilan comptable: 31 Mars</li>
                   </ul>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="founders" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Founders Overview */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Crown className="h-5 w-5 text-primary" />
+                  Structure des Fondateurs
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {founders.map((founder) => (
+                    <div key={founder.id} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                            {founder.role === 'founder' ? <Crown className="h-4 w-4 text-primary" /> : 
+                             founder.role === 'co-founder' ? <Shield className="h-4 w-4 text-blue-600" /> : 
+                             founder.role === 'investor' ? <DollarSign className="h-4 w-4 text-green-600" /> : 
+                             <UserCheck className="h-4 w-4 text-purple-600" />}
+                          </div>
+                          <div>
+                            <h4 className="font-semibold">{founder.name}</h4>
+                            <Badge variant="secondary" className="text-xs">
+                              {founder.role === 'founder' ? 'Fondateur' : 
+                               founder.role === 'co-founder' ? 'Co-fondateur' : 
+                               founder.role === 'investor' ? 'Investisseur' : 'Conseiller'}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-primary">{founder.equityPercentage}%</p>
+                          <p className="text-xs text-muted-foreground">Équité</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">ROI attendu</p>
+                          <p className="font-semibold">{founder.expectedROI}%</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Vesting</p>
+                          <p className="font-semibold">{founder.vestingPeriod} mois</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Contribution</p>
+                          <p className="font-semibold">{formatCurrency(founder.monthlyContribution)}/mois</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Depuis</p>
+                          <p className="font-semibold">{new Date(founder.joinDate).toLocaleDateString('fr-FR')}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-3">
+                        <p className="text-sm text-muted-foreground mb-2">Responsabilités:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {founder.responsibilities.map((resp, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {resp}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Financial Simulation */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PieChart className="h-5 w-5 text-primary" />
+                  Simulation Financière (5 ans)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {financialProjections.map((projection, index) => (
+                    <div key={projection.year} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold">Année {projection.year}</h4>
+                        <Badge 
+                          variant={projection.profit > 0 ? "default" : "destructive"}
+                          className="text-xs"
+                        >
+                          {projection.profit > 0 ? "Profitable" : "Déficitaire"}
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Revenus</p>
+                          <p className="font-semibold text-green-600">{formatCurrency(projection.revenue)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Dépenses</p>
+                          <p className="font-semibold text-red-600">{formatCurrency(projection.expenses)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Profit</p>
+                          <p className={`font-semibold ${projection.profit > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCurrency(projection.profit)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Distribution</p>
+                          <p className="font-semibold text-primary">{formatCurrency(projection.founderDistribution)}</p>
+                        </div>
+                      </div>
+                      
+                      {index === 0 && (
+                        <div className="mt-3 pt-3 border-t">
+                          <p className="text-xs text-muted-foreground">
+                            Distribution basée sur les parts d'équité des fondateurs
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Individual Founder Profit Breakdown */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Répartition des Profits par Fondateur
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {founders.map((founder) => (
+                  <div key={founder.id} className="border rounded-lg p-4">
+                    <div className="text-center mb-3">
+                      <h4 className="font-semibold">{founder.name}</h4>
+                      <Badge variant="outline" className="text-xs mt-1">
+                        {founder.equityPercentage}% d'équité
+                      </Badge>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {financialProjections.slice(0, 3).map((projection) => (
+                        <div key={projection.year} className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">{projection.year}:</span>
+                          <span className="font-semibold">
+                            {formatCurrency(projection.founderDistribution * (founder.equityPercentage / 100))}
+                          </span>
+                        </div>
+                      ))}
+                      
+                      <div className="pt-2 border-t">
+                        <div className="flex justify-between text-sm font-semibold">
+                          <span>Total 3 ans:</span>
+                          <span className="text-primary">
+                            {formatCurrency(
+                              financialProjections.slice(0, 3).reduce((sum, p) => 
+                                sum + (p.founderDistribution * (founder.equityPercentage / 100)), 0
+                              )
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Investment Opportunities */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Opportunités d'Intervention
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {interventions.map((intervention) => (
+                  <div key={intervention.id} className="border rounded-lg p-4">
+                    <div className="mb-3">
+                      <h4 className="font-semibold mb-2">{intervention.name}</h4>
+                      <p className="text-sm text-muted-foreground">{intervention.description}</p>
+                    </div>
+                    
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Capital requis:</span>
+                        <span className="font-semibold">{formatCurrency(intervention.requiredCapital)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Retour attendu:</span>
+                        <span className="font-semibold text-green-600">{intervention.expectedReturn}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Délai:</span>
+                        <span className="font-semibold">{intervention.timeframe} mois</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Risque:</span>
+                        <Badge 
+                          variant={intervention.riskLevel === 'low' ? 'default' : 
+                                  intervention.riskLevel === 'medium' ? 'secondary' : 'destructive'}
+                          className="text-xs"
+                        >
+                          {intervention.riskLevel === 'low' ? 'Faible' : 
+                           intervention.riskLevel === 'medium' ? 'Moyen' : 'Élevé'}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 pt-3 border-t">
+                      <div className="text-xs text-muted-foreground">
+                        Profit potentiel: {formatCurrency(intervention.requiredCapital * (intervention.expectedReturn / 100))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Responsibilities Matrix */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-primary" />
+                Matrice des Responsabilités
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-2">Domaine</th>
+                      {founders.map((founder) => (
+                        <th key={founder.id} className="text-center p-2">{founder.name}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      'Direction générale',
+                      'Développement technique', 
+                      'Relations commerciales',
+                      'Financement',
+                      'Ressources humaines',
+                      'Stratégie',
+                      'Innovation',
+                      'Relations institutionnelles'
+                    ].map((domain) => (
+                      <tr key={domain} className="border-b">
+                        <td className="p-2 font-medium">{domain}</td>
+                        {founders.map((founder) => (
+                          <td key={founder.id} className="text-center p-2">
+                            {founder.responsibilities.some(resp => 
+                              resp.toLowerCase().includes(domain.toLowerCase()) ||
+                              domain.toLowerCase().includes(resp.toLowerCase().split(' ')[0]) ||
+                              (domain === 'Relations commerciales' && resp.includes('commercial')) ||
+                              (domain === 'Financement' && resp.includes('Financement')) ||
+                              (domain === 'Relations institutionnelles' && resp.includes('FAF'))
+                            ) ? (
+                              <Badge variant="default" className="text-xs">Responsable</Badge>
+                            ) : founder.responsibilities.length > 2 ? (
+                              <Badge variant="outline" className="text-xs">Support</Badge>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>
