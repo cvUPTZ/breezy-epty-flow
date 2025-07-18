@@ -881,7 +881,7 @@ export type Database = {
           {
             foreignKeyName: "scouts_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "user_roles_view"
             referencedColumns: ["user_id"]
           },
