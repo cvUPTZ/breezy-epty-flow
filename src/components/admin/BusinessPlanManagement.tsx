@@ -67,11 +67,12 @@ interface AlgerianRegulation {
 }
 
 interface EventTypeConfig {
-  id: string;
+  id: number;
   name: string;
+  category: string;
+  frequency: number;
   difficultyScore: number;
   detectionRate: number;
-  timeRequired: number; // en secondes
 }
 
 interface TrackerBudgetConfig {
@@ -307,24 +308,45 @@ const BusinessPlanManagement: React.FC = () => {
 
   // Enhanced event types with realistic difficulty and time requirements
   const [eventTypes, setEventTypes] = useState<EventTypeConfig[]>([
-    { id: '1', name: 'But', difficultyScore: 3, detectionRate: 95, timeRequired: 15 },
-    { id: '2', name: 'Passe courte', difficultyScore: 2, detectionRate: 88, timeRequired: 4 },
-    { id: '3', name: 'Passe longue', difficultyScore: 4, detectionRate: 82, timeRequired: 6 },
-    { id: '4', name: 'Tir cadré', difficultyScore: 4, detectionRate: 92, timeRequired: 10 },
-    { id: '5', name: 'Tir non-cadré', difficultyScore: 3, detectionRate: 85, timeRequired: 8 },
-    { id: '6', name: 'Faute simple', difficultyScore: 5, detectionRate: 78, timeRequired: 12 },
-    { id: '7', name: 'Faute grave', difficultyScore: 7, detectionRate: 90, timeRequired: 18 },
-    { id: '8', name: 'Hors-jeu', difficultyScore: 8, detectionRate: 65, timeRequired: 25 },
-    { id: '9', name: 'Corner', difficultyScore: 3, detectionRate: 95, timeRequired: 6 },
-    { id: '10', name: 'Coup franc', difficultyScore: 4, detectionRate: 90, timeRequired: 8 },
-    { id: '11', name: 'Carton jaune', difficultyScore: 2, detectionRate: 98, timeRequired: 5 },
-    { id: '12', name: 'Carton rouge', difficultyScore: 3, detectionRate: 98, timeRequired: 8 },
-    { id: '13', name: 'Duel aérien', difficultyScore: 7, detectionRate: 72, timeRequired: 18 },
-    { id: '14', name: 'Tackle', difficultyScore: 6, detectionRate: 75, timeRequired: 15 },
-    { id: '15', name: 'Interception', difficultyScore: 5, detectionRate: 80, timeRequired: 10 },
-    { id: '16', name: 'Dribble réussi', difficultyScore: 6, detectionRate: 70, timeRequired: 12 },
-    { id: '17', name: 'Centre', difficultyScore: 4, detectionRate: 85, timeRequired: 8 },
-    { id: '18', name: 'Sortie gardien', difficultyScore: 5, detectionRate: 88, timeRequired: 12 }
+    // Ball Actions
+    { id: 1, name: 'Pass', category: 'Ball Actions', frequency: 450, difficultyScore: 3, detectionRate: 95 },
+    { id: 2, name: 'Shot', category: 'Ball Actions', frequency: 25, difficultyScore: 6, detectionRate: 90 },
+    { id: 3, name: 'Cross', category: 'Ball Actions', frequency: 35, difficultyScore: 4, detectionRate: 92 },
+    { id: 4, name: 'Dribble', category: 'Ball Actions', frequency: 45, difficultyScore: 5, detectionRate: 88 },
+    { id: 5, name: 'Tackle', category: 'Ball Actions', frequency: 28, difficultyScore: 6, detectionRate: 85 },
+    { id: 6, name: 'Interception', category: 'Ball Actions', frequency: 32, difficultyScore: 5, detectionRate: 87 },
+    { id: 7, name: 'Clearance', category: 'Ball Actions', frequency: 24, difficultyScore: 4, detectionRate: 90 },
+    { id: 8, name: 'Save', category: 'Ball Actions', frequency: 8, difficultyScore: 7, detectionRate: 95 },
+    
+    // Set Pieces
+    { id: 9, name: 'Corner Kick', category: 'Set Pieces', frequency: 12, difficultyScore: 4, detectionRate: 95 },
+    { id: 10, name: 'Free Kick', category: 'Set Pieces', frequency: 18, difficultyScore: 5, detectionRate: 93 },
+    { id: 11, name: 'Throw In', category: 'Set Pieces', frequency: 40, difficultyScore: 3, detectionRate: 96 },
+    { id: 12, name: 'Goal Kick', category: 'Set Pieces', frequency: 15, difficultyScore: 2, detectionRate: 98 },
+    { id: 13, name: 'Penalty', category: 'Set Pieces', frequency: 1, difficultyScore: 4, detectionRate: 100 },
+    
+    // Fouls & Cards
+    { id: 14, name: 'Foul', category: 'Fouls & Cards', frequency: 30, difficultyScore: 7, detectionRate: 85 },
+    { id: 15, name: 'Yellow Card', category: 'Fouls & Cards', frequency: 6, difficultyScore: 5, detectionRate: 98 },
+    { id: 16, name: 'Red Card', category: 'Fouls & Cards', frequency: 0.5, difficultyScore: 3, detectionRate: 100 },
+    { id: 17, name: 'Offside', category: 'Fouls & Cards', frequency: 8, difficultyScore: 8, detectionRate: 80 },
+    
+    // Goals & Assists
+    { id: 18, name: 'Goal', category: 'Goals & Assists', frequency: 3, difficultyScore: 2, detectionRate: 100 },
+    { id: 19, name: 'Assist', category: 'Goals & Assists', frequency: 2.5, difficultyScore: 6, detectionRate: 85 },
+    { id: 20, name: 'Own Goal', category: 'Goals & Assists', frequency: 0.3, difficultyScore: 4, detectionRate: 100 },
+    
+    // Possession
+    { id: 21, name: 'Ball Lost', category: 'Possession', frequency: 60, difficultyScore: 5, detectionRate: 82 },
+    { id: 22, name: 'Ball Recovered', category: 'Possession', frequency: 55, difficultyScore: 5, detectionRate: 83 },
+    
+    // Match Events
+    { id: 23, name: 'Substitution', category: 'Match Events', frequency: 6, difficultyScore: 3, detectionRate: 100 },
+    { id: 24, name: 'Sub', category: 'Match Events', frequency: 6, difficultyScore: 3, detectionRate: 100 },
+    
+    // Duels
+    { id: 25, name: 'Aerial Duel', category: 'Duels', frequency: 35, difficultyScore: 7, detectionRate: 78 },
+    { id: 26, name: 'Ground Duel', category: 'Duels', frequency: 45, difficultyScore: 6, detectionRate: 80 }
   ]);
 
   // Advanced calculations for real-world accuracy
@@ -413,9 +435,10 @@ const BusinessPlanManagement: React.FC = () => {
   const calculateEfficiencyMetrics = () => {
     const costs = calculateMonthlyAndSeasonalCosts();
     const complexityScore = calculateComplexityScore();
+    const totalEvents = eventTypes.reduce((sum, et) => sum + et.frequency, 0);
     
     return {
-      costPerEvent: Math.round(costs.perMatch / matchSimulation.totalEvents),
+      costPerEvent: Math.round(costs.perMatch / totalEvents),
       costPerMinute: Math.round(costs.perMatch / matchSimulation.duration),
       costPerPlayer: Math.round(costs.perMatch / matchSimulation.playersToTrack),
       complexityEfficiency: Math.round(complexityScore / costs.perMatch * 1000), // Score par 1000 DZD
@@ -1104,7 +1127,7 @@ const BusinessPlanManagement: React.FC = () => {
                             {event.detectionRate}%
                           </span>
                         </td>
-                        <td className="p-2">{event.timeRequired}s</td>
+                        <td className="p-2">{Math.round(event.frequency / 10)}s</td>
                         <td className="p-2">
                           <span className="text-xs">
                             +{Math.round((event.difficultyScore / 10) * budgetConfig.basePayPerHour * 0.1)} DZD
@@ -1127,10 +1150,10 @@ const BusinessPlanManagement: React.FC = () => {
                     <p className="text-muted-foreground">Détection Moyenne</p>
                     <p className="font-bold">{(eventTypes.reduce((sum, e) => sum + e.detectionRate, 0) / eventTypes.length).toFixed(1)}%</p>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">Temps Moyen</p>
-                    <p className="font-bold">{(eventTypes.reduce((sum, e) => sum + e.timeRequired, 0) / eventTypes.length).toFixed(1)}s</p>
-                  </div>
+                   <div>
+                     <p className="text-muted-foreground">Fréquence Moyenne</p>
+                     <p className="font-bold">{(eventTypes.reduce((sum, e) => sum + e.frequency, 0) / eventTypes.length).toFixed(1)}/match</p>
+                   </div>
                   <div>
                     <p className="text-muted-foreground">Types Événements</p>
                     <p className="font-bold">{eventTypes.length} types</p>
@@ -1500,17 +1523,23 @@ const BusinessPlanManagement: React.FC = () => {
                       }))}
                     />
                   </div>
-                  <div className="space-y-4">
-                    <Label>Nombre total d'événements</Label>
-                    <Input
-                      type="number"
-                      value={matchSimulation.totalEvents}
-                      onChange={(e) => setMatchSimulation(prev => ({
-                        ...prev,
-                        totalEvents: parseInt(e.target.value) || 616
-                      }))}
-                    />
-                  </div>
+                   <div className="space-y-4">
+                     <Label>Nombre total d'événements (calculé)</Label>
+                     <div className="flex items-center gap-2">
+                       <Input
+                         type="number"
+                         value={eventTypes.reduce((sum, et) => sum + et.frequency, 0)}
+                         disabled
+                         className="bg-muted"
+                       />
+                       <Badge variant="outline" className="text-xs">
+                         Auto-calculé
+                       </Badge>
+                     </div>
+                     <p className="text-xs text-muted-foreground">
+                       Basé sur la configuration des types d'événements ci-dessous
+                     </p>
+                   </div>
                   <div className="space-y-4">
                     <Label>Joueurs à tracker</Label>
                     <Input
@@ -1614,11 +1643,11 @@ const BusinessPlanManagement: React.FC = () => {
                       <Activity className="h-4 w-4 text-green-600" />
                       <span className="font-medium">Charge de Travail</span>
                     </div>
-                    <div className="space-y-1 text-sm">
-                      <p>Durée: {matchSimulation.duration} min</p>
-                      <p>Événements: {matchSimulation.totalEvents}</p>
-                      <p>Événements/tracker: {Math.round(matchSimulation.totalEvents / matchSimulation.trackersOptimal)}</p>
-                    </div>
+                     <div className="space-y-1 text-sm">
+                       <p>Durée: {matchSimulation.duration} min</p>
+                       <p>Événements: {eventTypes.reduce((sum, et) => sum + et.frequency, 0)}</p>
+                       <p>Événements/tracker: {Math.round(eventTypes.reduce((sum, et) => sum + et.frequency, 0) / matchSimulation.trackersOptimal)}</p>
+                     </div>
                   </div>
 
                   <div className="p-4 bg-muted rounded-lg">
@@ -1638,11 +1667,11 @@ const BusinessPlanManagement: React.FC = () => {
                       <Calculator className="h-4 w-4 text-purple-600" />
                       <span className="font-medium">Complexité</span>
                     </div>
-                    <div className="space-y-1 text-sm">
-                      <p>Score: {Math.round(calculateComplexityScore() / matchSimulation.totalEvents * 10) / 10}</p>
-                      <p>Difficulté: {calculateComplexityScore() > 2000 ? 'Élevée' : calculateComplexityScore() > 1500 ? 'Moyenne' : 'Faible'}</p>
-                      <p>Précision: {Math.round(eventTypes.reduce((sum, et) => sum + et.detectionRate, 0) / eventTypes.length)}%</p>
-                    </div>
+                     <div className="space-y-1 text-sm">
+                       <p>Score: {Math.round(calculateComplexityScore() / eventTypes.reduce((sum, et) => sum + et.frequency, 0) * 10) / 10}</p>
+                       <p>Difficulté: {calculateComplexityScore() > 2000 ? 'Élevée' : calculateComplexityScore() > 1500 ? 'Moyenne' : 'Faible'}</p>
+                       <p>Précision: {Math.round(eventTypes.reduce((sum, et) => sum + et.detectionRate, 0) / eventTypes.length)}%</p>
+                     </div>
                   </div>
                 </div>
               </CardContent>
@@ -1778,10 +1807,10 @@ const BusinessPlanManagement: React.FC = () => {
                             <span>Taux détection:</span>
                             <span>{eventType.detectionRate}%</span>
                           </div>
-                          <div className="flex justify-between">
-                            <span>Temps requis:</span>
-                            <span>{eventType.timeRequired}s</span>
-                          </div>
+                           <div className="flex justify-between">
+                             <span>Fréquence:</span>
+                             <span>{eventType.frequency}/match</span>
+                           </div>
                         </div>
                       </div>
                     ))}
