@@ -12,7 +12,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ToastAction } from "@/components/ui/toast";
 // import { useNetworkStatus } from './hooks/useNetworkStatus';
-import { usePermissionChecker } from './hooks/usePermissionChecker';
+// import { usePermissionChecker } from './hooks/usePermissionChecker';
 
 // Import all the page components
 import Header from './components/Header';
@@ -56,7 +56,7 @@ const AppContent = () => {
   const navigate = useNavigate();
   const location = useLocation();
   // const isOnline = useNetworkStatus();
-  const { hasTrackerAccess, hasPermission } = usePermissionChecker();
+  // const { hasTrackerAccess, hasPermission } = usePermissionChecker();
 
   // useEffect(() => {
   //   console.log(`App component: Network is currently ${isOnline ? 'Online' : 'Offline'}`);
@@ -83,54 +83,54 @@ const AppContent = () => {
   }, []); 
 
   // Enhanced match live notifications with permission checking
-  useEffect(() => {
-    if (user && (hasTrackerAccess() || hasPermission('canTrackMatches'))) {
-      const channel = supabase
-        .channel('match-live-notifications')
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'matches',
-          },
-          (payload) => {
-            const oldMatch = payload.old as MatchPayload | null;
-            const newMatch = payload.new as MatchPayload;
+  // useEffect(() => {
+  //   if (user) { // && (hasTrackerAccess() || hasPermission('canTrackMatches'))) {
+  //     const channel = supabase
+  //       .channel('match-live-notifications')
+  //       .on(
+  //         'postgres_changes',
+  //         {
+  //           event: 'UPDATE',
+  //           schema: 'public',
+  //           table: 'matches',
+  //         },
+  //         (payload) => {
+  //           const oldMatch = payload.old as MatchPayload | null;
+  //           const newMatch = payload.new as MatchPayload;
 
-            if (newMatch?.status === 'live' && oldMatch?.status !== 'live') {
-              const matchId = newMatch.id;
-              const matchName = newMatch.name || `${newMatch.home_team_name || 'Home'} vs ${newMatch.away_team_name || 'Away'}`;
+  //           if (newMatch?.status === 'live' && oldMatch?.status !== 'live') {
+  //             const matchId = newMatch.id;
+  //             const matchName = newMatch.name || `${newMatch.home_team_name || 'Home'} vs ${newMatch.away_team_name || 'Away'}`;
 
-              // Don't show notification if user is already on the match page
-              if (location.pathname === `/match/${matchId}`) {
-                return;
-              }
+  //             // Don't show notification if user is already on the match page
+  //             if (location.pathname === `/match/${matchId}`) {
+  //               return;
+  //             }
 
-              toast({
-                title: 'Match Live!',
-                description: `Match "${matchName}" has started.`,
-                action: (
-                  <ToastAction altText="Go to Match" onClick={() => navigate(`/match/${matchId}`)}>
-                    Go to Match
-                  </ToastAction>
-                ),
-                duration: 10000,
-              });
-            }
-          }
-        )
-        .subscribe((status, err) => {
-          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            console.error('Match live notification channel error:', status, err);
-          }
-        });
+  //             toast({
+  //               title: 'Match Live!',
+  //               description: `Match "${matchName}" has started.`,
+  //               action: (
+  //                 <ToastAction altText="Go to Match" onClick={() => navigate(`/match/${matchId}`)}>
+  //                   Go to Match
+  //                 </ToastAction>
+  //               ),
+  //               duration: 10000,
+  //             });
+  //           }
+  //         }
+  //       )
+  //       .subscribe((status, err) => {
+  //         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+  //           console.error('Match live notification channel error:', status, err);
+  //         }
+  //       });
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [user, toast, navigate, location, hasTrackerAccess, hasPermission]);
+  //     return () => {
+  //       supabase.removeChannel(channel);
+  //     };
+  //   }
+  // }, [user, toast, navigate, location]); // hasTrackerAccess, hasPermission]);
 
   return (
     <>
