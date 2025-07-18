@@ -433,6 +433,62 @@ export type Database = {
         }
         Relationships: []
       }
+      opposition_analysis: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          formation: string | null
+          id: string
+          key_players: Json | null
+          match_date: string | null
+          opponent_team: string
+          playing_style: string | null
+          set_piece_analysis: Json | null
+          strengths: string[] | null
+          tactical_recommendations: string | null
+          updated_at: string | null
+          weaknesses: string[] | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          formation?: string | null
+          id?: string
+          key_players?: Json | null
+          match_date?: string | null
+          opponent_team: string
+          playing_style?: string | null
+          set_piece_analysis?: Json | null
+          strengths?: string[] | null
+          tactical_recommendations?: string | null
+          updated_at?: string | null
+          weaknesses?: string[] | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          formation?: string | null
+          id?: string
+          key_players?: Json | null
+          match_date?: string | null
+          opponent_team?: string
+          playing_style?: string | null
+          set_piece_analysis?: Json | null
+          strengths?: string[] | null
+          tactical_recommendations?: string | null
+          updated_at?: string | null
+          weaknesses?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opposition_analysis_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_roles_view"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       playlist_items: {
         Row: {
           created_at: string
@@ -658,6 +714,178 @@ export type Database = {
           thesis_id?: string
         }
         Relationships: []
+      }
+      scout_reports: {
+        Row: {
+          created_at: string | null
+          detailed_notes: string | null
+          id: string
+          match_context: string | null
+          performance_rating: number | null
+          player_id: string | null
+          recommendation: string | null
+          report_date: string | null
+          scout_id: string | null
+          strengths: string[] | null
+          updated_at: string | null
+          video_links: string[] | null
+          weaknesses: string[] | null
+        }
+        Insert: {
+          created_at?: string | null
+          detailed_notes?: string | null
+          id?: string
+          match_context?: string | null
+          performance_rating?: number | null
+          player_id?: string | null
+          recommendation?: string | null
+          report_date?: string | null
+          scout_id?: string | null
+          strengths?: string[] | null
+          updated_at?: string | null
+          video_links?: string[] | null
+          weaknesses?: string[] | null
+        }
+        Update: {
+          created_at?: string | null
+          detailed_notes?: string | null
+          id?: string
+          match_context?: string | null
+          performance_rating?: number | null
+          player_id?: string | null
+          recommendation?: string | null
+          report_date?: string | null
+          scout_id?: string | null
+          strengths?: string[] | null
+          updated_at?: string | null
+          video_links?: string[] | null
+          weaknesses?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scout_reports_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "scouted_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scout_reports_scout_id_fkey"
+            columns: ["scout_id"]
+            isOneToOne: false
+            referencedRelation: "scouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scouted_players: {
+        Row: {
+          age: number | null
+          contract_expires: string | null
+          created_at: string | null
+          created_by: string | null
+          current_club: string | null
+          id: string
+          league: string | null
+          market_value: number | null
+          mental_qualities: Json | null
+          name: string
+          nationality: string | null
+          physical_attributes: Json | null
+          position: string | null
+          tactical_awareness: Json | null
+          technical_skills: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          age?: number | null
+          contract_expires?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_club?: string | null
+          id?: string
+          league?: string | null
+          market_value?: number | null
+          mental_qualities?: Json | null
+          name: string
+          nationality?: string | null
+          physical_attributes?: Json | null
+          position?: string | null
+          tactical_awareness?: Json | null
+          technical_skills?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          age?: number | null
+          contract_expires?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_club?: string | null
+          id?: string
+          league?: string | null
+          market_value?: number | null
+          mental_qualities?: Json | null
+          name?: string
+          nationality?: string | null
+          physical_attributes?: Json | null
+          position?: string | null
+          tactical_awareness?: Json | null
+          technical_skills?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scouted_players_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_roles_view"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      scouts: {
+        Row: {
+          contact_info: Json | null
+          created_at: string | null
+          full_name: string
+          id: string
+          is_active: boolean | null
+          region: string | null
+          specialization: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          contact_info?: Json | null
+          created_at?: string | null
+          full_name: string
+          id?: string
+          is_active?: boolean | null
+          region?: string | null
+          specialization?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          contact_info?: Json | null
+          created_at?: string | null
+          full_name?: string
+          id?: string
+          is_active?: boolean | null
+          region?: string | null
+          specialization?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scouts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_roles_view"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       tagged_events: {
         Row: {
@@ -1116,6 +1344,65 @@ export type Database = {
             columns: ["match_id"]
             isOneToOne: false
             referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youth_prospects: {
+        Row: {
+          academy_club: string | null
+          birth_date: string | null
+          character_assessment: string | null
+          created_at: string | null
+          development_stage: string | null
+          id: string
+          name: string
+          physical_development: Json | null
+          position: string | null
+          potential_rating: number | null
+          recommended_pathway: string | null
+          scout_id: string | null
+          technical_progress: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          academy_club?: string | null
+          birth_date?: string | null
+          character_assessment?: string | null
+          created_at?: string | null
+          development_stage?: string | null
+          id?: string
+          name: string
+          physical_development?: Json | null
+          position?: string | null
+          potential_rating?: number | null
+          recommended_pathway?: string | null
+          scout_id?: string | null
+          technical_progress?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          academy_club?: string | null
+          birth_date?: string | null
+          character_assessment?: string | null
+          created_at?: string | null
+          development_stage?: string | null
+          id?: string
+          name?: string
+          physical_development?: Json | null
+          position?: string | null
+          potential_rating?: number | null
+          recommended_pathway?: string | null
+          scout_id?: string | null
+          technical_progress?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youth_prospects_scout_id_fkey"
+            columns: ["scout_id"]
+            isOneToOne: false
+            referencedRelation: "scouts"
             referencedColumns: ["id"]
           },
         ]

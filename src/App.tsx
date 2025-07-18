@@ -38,6 +38,7 @@ import ChromeExtensionBridge from './pages/ChromeExtensionBridge';
 import NotFound from './pages/NotFound';
 import VideoTrackerPage from './pages/VideoTrackerPage';
 import VideoSetupPage from './pages/Admin/VideoSetupPage';
+import Scouting from './pages/Scouting';
 
 const queryClient = new QueryClient();
 
@@ -294,6 +295,15 @@ const AppContent = () => {
           </RequireAuth>
         } />
         
+        {/* Scouting Routes */}
+        <Route path="/scouting" element={
+          <RequireAuth 
+            requiredRoles={['admin', 'manager']}
+          >
+            <Scouting />
+          </RequireAuth>
+        } />
+
         {/* Communication Routes */}
         <Route path="/match/:matchId/voice-chat" element={
           <RequireAuth 
