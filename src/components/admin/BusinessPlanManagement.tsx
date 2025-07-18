@@ -297,14 +297,40 @@ const BusinessPlanManagement: React.FC = () => {
   // Real-world match simulation parameters
   const [matchSimulation, setMatchSimulation] = useState({
     duration: 90, // Durée standard d'un match
-    totalEvents: 616, // Nombre moyen d'événements par match (statistiques réelles)
-    trackersMinimum: 2, // Minimum pour couvrir un match basique
-    trackersOptimal: 3, // Nombre optimal pour qualité maximale
     playersToTrack: 22, // 22 joueurs sur le terrain
-    replacements: 1, // Nombre de remplacements de trackers durant le match
     matchFrequency: 15, // Nombre de matchs par mois pour un club actif
     seasonDuration: 9 // Durée de la saison en mois
   });
+
+  // Calculated fields based on event types and requirements
+  const getTotalEvents = () => {
+    return eventTypes.reduce((sum, et) => sum + et.frequency, 0);
+  };
+
+  const getTrackersRequirements = () => {
+    const totalEvents = getTotalEvents();
+    const eventsPerTracker = 250; // Nombre d'événements qu'un tracker peut gérer efficacement
+    
+    // Minimum requis - basé sur le minimum absolu pour fonctionner
+    const minimum = Math.max(2, Math.ceil(totalEvents / (eventsPerTracker * 1.5)));
+    
+    // Optimal - basé sur la charge de travail idéale par tracker
+    const optimal = Math.ceil(totalEvents / eventsPerTracker);
+    
+    // Remplacements - 30% d'optimal pour couvrir les absences/pauses
+    const replacements = Math.ceil(optimal * 0.3);
+    
+    return {
+      minimum,
+      optimal,
+      replacements,
+      totalForAllMatches: {
+        minimum: minimum * matchSimulation.matchFrequency,
+        optimal: optimal * matchSimulation.matchFrequency,
+        replacements: replacements * matchSimulation.matchFrequency
+      }
+    };
+  };
 
   // Enhanced event types with realistic difficulty and time requirements
   const [eventTypes, setEventTypes] = useState<EventTypeConfig[]>([
@@ -351,6 +377,7 @@ const BusinessPlanManagement: React.FC = () => {
 
   // Advanced calculations for real-world accuracy
   const calculateComplexityScore = () => {
+    const totalEvents = getTotalEvents();
     const eventDistribution = {
       'passes': 0.45, // 45% des événements sont des passes
       'duels': 0.25,  // 25% duels et tackles
@@ -368,7 +395,7 @@ const BusinessPlanManagement: React.FC = () => {
     };
 
     const weightedComplexity = Object.entries(eventDistribution).reduce((sum, [type, weight]) => {
-      return sum + (avgComplexityByType[type as keyof typeof avgComplexityByType] * weight * matchSimulation.totalEvents);
+      return sum + (avgComplexityByType[type as keyof typeof avgComplexityByType] * weight * totalEvents);
     }, 0);
 
     return Math.round(weightedComplexity);
@@ -377,6 +404,7 @@ const BusinessPlanManagement: React.FC = () => {
   const calculateTrackerCost = () => {
     const matchDurationHours = matchSimulation.duration / 60;
     const complexityScore = calculateComplexityScore();
+    const trackerReqs = getTrackersRequirements();
     
     // Coût de base par tracker
     const baseCostPerTracker = matchDurationHours * budgetConfig.basePayPerHour;
@@ -388,14 +416,14 @@ const BusinessPlanManagement: React.FC = () => {
     const hourlyRateWithComplexity = baseCostPerTracker + complexityBonus;
     
     // Coût pour tous les trackers
-    const totalLaborCost = hourlyRateWithComplexity * matchSimulation.trackersOptimal;
+    const totalLaborCost = hourlyRateWithComplexity * trackerReqs.optimal;
     
     // Indemnités et frais
-    const totalTransportCost = matchSimulation.trackersOptimal * budgetConfig.transportAllowance;
-    const totalEquipmentCost = matchSimulation.trackersOptimal * budgetConfig.equipmentCost;
+    const totalTransportCost = trackerReqs.optimal * budgetConfig.transportAllowance;
+    const totalEquipmentCost = trackerReqs.optimal * budgetConfig.equipmentCost;
     
     // Coût de remplacement (si nécessaire)
-    const replacementCost = matchSimulation.replacements * (hourlyRateWithComplexity * 0.3); // 30% du coût pour remplacement
+    const replacementCost = trackerReqs.replacements * (hourlyRateWithComplexity * 0.3); // 30% du coût pour remplacement
     
     // Sous-total avant charges sociales
     const subtotal = totalLaborCost + totalTransportCost + totalEquipmentCost + replacementCost;
@@ -410,7 +438,7 @@ const BusinessPlanManagement: React.FC = () => {
       totalCost: Math.round(totalCost),
       breakdown: {
         laborCost: Math.round(totalLaborCost),
-        complexityBonus: Math.round(complexityBonus * matchSimulation.trackersOptimal),
+        complexityBonus: Math.round(complexityBonus * trackerReqs.optimal),
         transportCost: Math.round(totalTransportCost),
         equipmentCost: Math.round(totalEquipmentCost),
         replacementCost: Math.round(replacementCost),
@@ -435,14 +463,15 @@ const BusinessPlanManagement: React.FC = () => {
   const calculateEfficiencyMetrics = () => {
     const costs = calculateMonthlyAndSeasonalCosts();
     const complexityScore = calculateComplexityScore();
-    const totalEvents = eventTypes.reduce((sum, et) => sum + et.frequency, 0);
+    const totalEvents = getTotalEvents();
+    const trackerReqs = getTrackersRequirements();
     
     return {
       costPerEvent: Math.round(costs.perMatch / totalEvents),
       costPerMinute: Math.round(costs.perMatch / matchSimulation.duration),
       costPerPlayer: Math.round(costs.perMatch / matchSimulation.playersToTrack),
       complexityEfficiency: Math.round(complexityScore / costs.perMatch * 1000), // Score par 1000 DZD
-      hourlyRatePerTracker: Math.round(costs.perMatch / (matchSimulation.trackersOptimal * matchSimulation.duration / 60))
+      hourlyRatePerTracker: Math.round(costs.perMatch / (trackerReqs.optimal * matchSimulation.duration / 60))
     };
   };
 
@@ -627,7 +656,7 @@ const BusinessPlanManagement: React.FC = () => {
                   <Calculator className="h-8 w-8 text-orange-600" />
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  {matchSimulation.trackersOptimal} trackers optimal
+                  {getTrackersRequirements().optimal} trackers optimal
                 </p>
               </CardContent>
             </Card>
@@ -689,9 +718,9 @@ const BusinessPlanManagement: React.FC = () => {
             <CardContent>
               <BudgetOptimizationSolver
                 currentConfig={{
-                  trackersMinimum: matchSimulation.trackersMinimum,
-                  trackersOptimal: matchSimulation.trackersOptimal,
-                  replacements: matchSimulation.replacements,
+                  trackersMinimum: getTrackersRequirements().minimum,
+                  trackersOptimal: getTrackersRequirements().optimal,
+                  replacements: getTrackersRequirements().replacements,
                   playersToTrack: matchSimulation.playersToTrack
                 }}
                 onConfigUpdate={handleConfigUpdate}
@@ -714,12 +743,12 @@ const BusinessPlanManagement: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Total Événements</p>
-                    <p className="text-2xl font-bold text-foreground">{matchSimulation.totalEvents}</p>
+                    <p className="text-2xl font-bold text-foreground">{getTotalEvents()}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Événements/Minute</p>
                     <p className="text-2xl font-bold text-foreground">
-                      {(matchSimulation.totalEvents / matchSimulation.duration).toFixed(1)}
+                      {(getTotalEvents() / matchSimulation.duration).toFixed(1)}
                     </p>
                   </div>
                   <div>
@@ -747,15 +776,15 @@ const BusinessPlanManagement: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Trackers Minimum</p>
-                    <p className="text-2xl font-bold text-foreground">{matchSimulation.trackersMinimum}</p>
+                    <p className="text-2xl font-bold text-foreground">{getTrackersRequirements().minimum}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Trackers Optimal</p>
-                    <p className="text-2xl font-bold text-foreground">{matchSimulation.trackersOptimal}</p>
+                    <p className="text-2xl font-bold text-foreground">{getTrackersRequirements().optimal}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Remplacements</p>
-                    <p className="text-2xl font-bold text-foreground">{matchSimulation.replacements}</p>
+                    <p className="text-2xl font-bold text-foreground">{getTrackersRequirements().replacements}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Joueurs à Suivre</p>
@@ -809,7 +838,7 @@ const BusinessPlanManagement: React.FC = () => {
                     return (
                       <div className="space-y-3">
                         <div className="flex justify-between items-center p-3 bg-muted rounded">
-                          <span className="font-medium">Salaire de base ({matchSimulation.trackersOptimal} trackers)</span>
+                          <span className="font-medium">Salaire de base ({getTrackersRequirements().optimal} trackers)</span>
                           <span className="font-bold">{formatCurrency(costs.breakdown.laborCost)}</span>
                         </div>
                         
@@ -1019,29 +1048,17 @@ const BusinessPlanManagement: React.FC = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="totalEvents">Total Événements</Label>
-                    <Input
-                      id="totalEvents"
-                      type="number"
-                      value={matchSimulation.totalEvents}
-                      onChange={(e) => setMatchSimulation({
-                        ...matchSimulation,
-                        totalEvents: Number(e.target.value)
-                      })}
-                    />
+                    <Label>Total Événements (Calculé)</Label>
+                    <div className="p-2 bg-muted rounded text-center font-bold">
+                      {getTotalEvents()}
+                    </div>
                   </div>
                   
                   <div>
-                    <Label htmlFor="trackersOptimal">Trackers Optimal</Label>
-                    <Input
-                      id="trackersOptimal"
-                      type="number"
-                      value={matchSimulation.trackersOptimal}
-                      onChange={(e) => setMatchSimulation({
-                        ...matchSimulation,
-                        trackersOptimal: Number(e.target.value)
-                      })}
-                    />
+                    <Label>Trackers Optimal (Calculé)</Label>
+                    <div className="p-2 bg-muted rounded text-center font-bold">
+                      {getTrackersRequirements().optimal}
+                    </div>
                   </div>
                   
                   <div>
@@ -1071,16 +1088,10 @@ const BusinessPlanManagement: React.FC = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="replacements">Remplacements</Label>
-                    <Input
-                      id="replacements"
-                      type="number"
-                      value={matchSimulation.replacements}
-                      onChange={(e) => setMatchSimulation({
-                        ...matchSimulation,
-                        replacements: Number(e.target.value)
-                      })}
-                    />
+                    <Label>Remplacements (Calculé)</Label>
+                    <div className="p-2 bg-muted rounded text-center font-bold">
+                      {getTrackersRequirements().replacements}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -1555,37 +1566,43 @@ const BusinessPlanManagement: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-4">
-                    <Label>Trackers minimum requis</Label>
-                    <Input
-                      type="number"
-                      value={matchSimulation.trackersMinimum}
-                      onChange={(e) => setMatchSimulation(prev => ({
-                        ...prev,
-                        trackersMinimum: parseInt(e.target.value) || 2
-                      }))}
-                    />
+                    <Label>Trackers minimum requis (Calculé)</Label>
+                    <div className="p-3 bg-accent/50 rounded border">
+                      <span className="text-2xl font-bold">{getTrackersRequirements().minimum}</span>
+                      <p className="text-sm text-muted-foreground mt-1">Par match</p>
+                    </div>
                   </div>
                   <div className="space-y-4">
-                    <Label>Trackers optimal</Label>
-                    <Input
-                      type="number"
-                      value={matchSimulation.trackersOptimal}
-                      onChange={(e) => setMatchSimulation(prev => ({
-                        ...prev,
-                        trackersOptimal: parseInt(e.target.value) || 3
-                      }))}
-                    />
+                    <Label>Trackers optimal (Calculé)</Label>
+                    <div className="p-3 bg-accent/50 rounded border">
+                      <span className="text-2xl font-bold">{getTrackersRequirements().optimal}</span>
+                      <p className="text-sm text-muted-foreground mt-1">Par match</p>
+                    </div>
                   </div>
                   <div className="space-y-4">
-                    <Label>Remplacements prévus</Label>
-                    <Input
-                      type="number"
-                      value={matchSimulation.replacements}
-                      onChange={(e) => setMatchSimulation(prev => ({
-                        ...prev,
-                        replacements: parseInt(e.target.value) || 1
-                      }))}
-                    />
+                    <Label>Remplacements prévus (Calculé)</Label>
+                    <div className="p-3 bg-accent/50 rounded border">
+                      <span className="text-2xl font-bold">{getTrackersRequirements().replacements}</span>
+                      <p className="text-sm text-muted-foreground mt-1">Par match</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <Label>Trackers requis pour tous les matchs mensuels</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="p-2 bg-muted rounded text-center">
+                        <p className="text-sm text-muted-foreground">Minimum</p>
+                        <p className="font-bold">{getTrackersRequirements().totalForAllMatches.minimum}</p>
+                      </div>
+                      <div className="p-2 bg-muted rounded text-center">
+                        <p className="text-sm text-muted-foreground">Optimal</p>
+                        <p className="font-bold">{getTrackersRequirements().totalForAllMatches.optimal}</p>
+                      </div>
+                      <div className="p-2 bg-muted rounded text-center">
+                        <p className="text-sm text-muted-foreground">Remplacements</p>
+                        <p className="font-bold">{getTrackersRequirements().totalForAllMatches.replacements}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1632,9 +1649,9 @@ const BusinessPlanManagement: React.FC = () => {
                       <span className="font-medium">Équipe Humaine</span>
                     </div>
                     <div className="space-y-1 text-sm">
-                      <p>Trackers minimum: {matchSimulation.trackersMinimum}</p>
-                      <p>Trackers optimal: {matchSimulation.trackersOptimal}</p>
-                      <p>Remplacements: {matchSimulation.replacements}</p>
+                      <p>Trackers minimum: {getTrackersRequirements().minimum}</p>
+                      <p>Trackers optimal: {getTrackersRequirements().optimal}</p>
+                      <p>Remplacements: {getTrackersRequirements().replacements}</p>
                     </div>
                   </div>
 
@@ -1646,7 +1663,7 @@ const BusinessPlanManagement: React.FC = () => {
                      <div className="space-y-1 text-sm">
                        <p>Durée: {matchSimulation.duration} min</p>
                        <p>Événements: {eventTypes.reduce((sum, et) => sum + et.frequency, 0)}</p>
-                       <p>Événements/tracker: {Math.round(eventTypes.reduce((sum, et) => sum + et.frequency, 0) / matchSimulation.trackersOptimal)}</p>
+                       <p>Événements/tracker: {Math.round(getTotalEvents() / getTrackersRequirements().optimal)}</p>
                      </div>
                   </div>
 
@@ -1836,7 +1853,7 @@ const BusinessPlanManagement: React.FC = () => {
                         <h4 className="font-semibold text-primary">Par Match</h4>
                         <p className="text-2xl font-bold mt-2">{formatCurrency(costs.perMatch)}</p>
                         <p className="text-sm text-muted-foreground mt-1">
-                          {matchSimulation.trackersOptimal} trackers × {matchSimulation.duration} min
+                          {getTrackersRequirements().optimal} trackers × {matchSimulation.duration} min
                         </p>
                       </div>
                       <div className="text-center p-6 bg-secondary/5 rounded-lg">
