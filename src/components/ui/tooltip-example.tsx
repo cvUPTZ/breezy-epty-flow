@@ -3,14 +3,12 @@ import React from 'react';
 import { 
   Tooltip, 
   TooltipContent, 
-  TooltipTrigger, 
-  TooltipProvider
+  TooltipTrigger
 } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 
 export const TooltipExample = () => {
   return (
-    <TooltipProvider>
       <div className="flex flex-col gap-4 p-4">
         <h2 className="text-xl font-bold">Tooltip Examples</h2>
         
@@ -59,8 +57,7 @@ export const TooltipExample = () => {
             </Tooltip>
           </div>
         </div>
-      </div>
-    </TooltipProvider>
+    </div>
   );
 };
 

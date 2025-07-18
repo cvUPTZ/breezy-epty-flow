@@ -4,7 +4,7 @@ import { MatchEvent } from '@/types';
 import { ShotEventData } from '@/types/eventData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Target } from 'lucide-react'; // Import Target icon
 
 // Define pitch dimensions (can be props or constants)
