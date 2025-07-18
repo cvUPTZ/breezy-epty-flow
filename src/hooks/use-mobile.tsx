@@ -1,5 +1,5 @@
 
-import React from "react"
+import { useState, useEffect } from "react"
 
 // Define breakpoints for different screen sizes
 export const BREAKPOINTS = {
@@ -15,9 +15,9 @@ export const BREAKPOINTS = {
 export type BreakpointKey = keyof typeof BREAKPOINTS;
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
+  const [isMobile, setIsMobile] = useState<boolean | undefined>(undefined)
 
-  React.useEffect(() => {
+  useEffect(() => {
     // Initial check
     const checkMobile = () => {
       const isTouchDevice = 'ontouchstart' in window || 
@@ -40,9 +40,9 @@ export function useIsMobile() {
 }
 
 export function useBreakpoint(breakpoint: keyof typeof BREAKPOINTS) {
-  const [isBelow, setIsBelow] = React.useState<boolean | undefined>(undefined)
+  const [isBelow, setIsBelow] = useState<boolean | undefined>(undefined)
 
-  React.useEffect(() => {
+  useEffect(() => {
     // Check if we're in the browser environment
     if (typeof window === 'undefined') {
       return setIsBelow(false);
@@ -74,9 +74,9 @@ export function useBreakpoint(breakpoint: keyof typeof BREAKPOINTS) {
 
 // Hook for getting the current breakpoint name
 export function useCurrentBreakpoint() {
-  const [current, setCurrent] = React.useState<keyof typeof BREAKPOINTS>("xs")
+  const [current, setCurrent] = useState<keyof typeof BREAKPOINTS>("xs")
   
-  React.useEffect(() => {
+  useEffect(() => {
     // Check if we're in the browser environment
     if (typeof window === 'undefined') {
       return;
