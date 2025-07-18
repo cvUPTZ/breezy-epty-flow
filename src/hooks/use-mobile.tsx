@@ -1,5 +1,5 @@
 
-import * as React from "react"
+import React from "react"
 
 // Define breakpoints for different screen sizes
 export const BREAKPOINTS = {
