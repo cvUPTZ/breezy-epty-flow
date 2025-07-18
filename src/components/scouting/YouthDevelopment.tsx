@@ -19,10 +19,10 @@ interface YouthProspect {
   position: string | null;
   academy_club: string | null;
   development_stage: string | null;
-  potential_rating: number;
+  potential_rating: number | null;
   character_assessment: string | null;
   recommended_pathway: string | null;
-  created_at: string;
+  created_at: string | null;
 }
 
 const YouthDevelopment: React.FC = () => {
@@ -111,7 +111,7 @@ const YouthDevelopment: React.FC = () => {
 
   const filteredProspects = prospects.filter(prospect => {
     const matchesSearch = prospect.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         prospect.academy_club.toLowerCase().includes(searchTerm.toLowerCase());
+                         (prospect.academy_club || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStage = stageFilter === 'all' || prospect.development_stage === stageFilter;
     return matchesSearch && matchesStage;
   });
@@ -320,8 +320,8 @@ const YouthDevelopment: React.FC = () => {
                   <CardTitle className="text-lg">{prospect.name}</CardTitle>
                   <p className="text-sm text-muted-foreground">{prospect.position}</p>
                 </div>
-                <Badge className={getStageColor(prospect.development_stage)}>
-                  {prospect.development_stage?.replace('-', ' ')}
+                <Badge className={getStageColor(prospect.development_stage || '')}>
+                  {prospect.development_stage?.replace('-', ' ') || 'Unknown'}
                 </Badge>
               </div>
             </CardHeader>
@@ -329,22 +329,22 @@ const YouthDevelopment: React.FC = () => {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span>{calculateAge(prospect.birth_date)} years</span>
+                  <span>{prospect.birth_date ? calculateAge(prospect.birth_date) : 'Unknown'} years</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <GraduationCap className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-xs">{prospect.academy_club}</span>
+                  <span className="text-xs">{prospect.academy_club || 'Unknown'}</span>
                 </div>
               </div>
               
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium">Potential Rating</span>
-                  <span className={`font-bold ${getPotentialColor(prospect.potential_rating)}`}>
-                    {prospect.potential_rating}/10
+                  <span className={`font-bold ${getPotentialColor(prospect.potential_rating || 0)}`}>
+                    {prospect.potential_rating || 0}/10
                   </span>
                 </div>
-                <Progress value={prospect.potential_rating * 10} className="h-2" />
+                <Progress value={(prospect.potential_rating || 0) * 10} className="h-2" />
               </div>
 
               {prospect.character_assessment && (

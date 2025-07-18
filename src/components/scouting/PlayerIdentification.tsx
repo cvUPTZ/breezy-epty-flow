@@ -21,7 +21,7 @@ interface Player {
   league: string | null;
   market_value: number | null;
   contract_expires: string | null;
-  created_at: string;
+  created_at: string | null;
   scout_reports?: any[];
 }
 
@@ -115,7 +115,7 @@ const PlayerIdentification: React.FC = () => {
 
   const filteredPlayers = players.filter(player => {
     const matchesSearch = player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         player.current_club.toLowerCase().includes(searchTerm.toLowerCase());
+                         (player.current_club || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPosition = positionFilter === 'all' || player.position === positionFilter;
     return matchesSearch && matchesPosition;
   });

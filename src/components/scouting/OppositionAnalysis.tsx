@@ -16,12 +16,12 @@ interface Analysis {
   match_date: string | null;
   formation: string | null;
   playing_style: string | null;
-  key_players: any[] | null;
+  key_players: any;
   strengths: string[] | null;
   weaknesses: string[] | null;
   tactical_recommendations: string | null;
   set_piece_analysis: any;
-  created_at: string;
+  created_at: string | null;
 }
 
 const OppositionAnalysis: React.FC = () => {
