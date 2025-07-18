@@ -13,6 +13,7 @@ import YouthDevelopment from '@/components/scouting/YouthDevelopment';
 import MarketIntelligence from '@/components/scouting/MarketIntelligence';
 import PerformanceAnalysis from '@/components/scouting/PerformanceAnalysis';
 import ScoutingDashboard from '@/components/scouting/ScoutingDashboard';
+import PlayerScoutReport from '@/components/scouting/PlayerScoutReport';
 
 const Scouting: React.FC = () => {
   // const menuItems = useMenuItems();
@@ -61,6 +62,13 @@ const Scouting: React.FC = () => {
       description: 'Detailed statistical analysis and video breakdowns',
       icon: Globe,
       color: 'bg-indigo-500'
+    },
+    {
+      id: 'scout-reports',
+      title: 'Scout Reports',
+      description: 'Create and manage detailed scout reports',
+      icon: FileText,
+      color: 'bg-pink-500'
     }
   ];
 
@@ -78,6 +86,8 @@ const Scouting: React.FC = () => {
         return <MarketIntelligence />;
       case 'performance-analysis':
         return <PerformanceAnalysis />;
+      case 'scout-reports':
+        return <PlayerScoutReport />;
       default:
         return <ScoutingDashboard />;
     }
@@ -98,7 +108,7 @@ const Scouting: React.FC = () => {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 gap-2">
+              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-7 gap-2">
                 {scoutingModules.map((module) => {
                   const Icon = module.icon;
                   return (

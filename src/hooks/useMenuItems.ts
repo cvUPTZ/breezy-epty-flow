@@ -1,6 +1,6 @@
 
 import { useMemo } from 'react';
-import { LayoutDashboard, Play, Calendar, BarChart3, TrendingUp, Target } from 'lucide-react';
+import { LayoutDashboard, Play, Calendar, BarChart3, TrendingUp, Target, Eye } from 'lucide-react';
 import { usePermissionChecker } from './usePermissionChecker';
 import { type RolePermissions } from './useUserPermissions';
 
@@ -63,6 +63,16 @@ export const useMenuItems = () => {
         icon: TrendingUp, 
         path: '/analytics',
         permission: 'canViewAnalytics'
+      });
+    }
+    
+    // Add scouting for admins and managers
+    if (isAdmin() || hasPermission('canViewAnalytics')) {
+      items.push({ 
+        value: 'scouting', 
+        label: 'Scouting', 
+        icon: Eye, 
+        path: '/scouting'
       });
     }
     
