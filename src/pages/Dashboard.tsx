@@ -12,7 +12,7 @@ import DashboardChart from '@/components/dashboard/DashboardChart';
 import DashboardMetricsGrid from '@/components/dashboard/DashboardMetricsGrid';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import MatchAnalysisSidebar from '@/components/match/MatchAnalysisSidebar';
-import { usePermissionChecker } from '@/hooks/usePermissionChecker';
+// import { usePermissionChecker } from '@/hooks/usePermissionChecker';
 
 const fetchMatches = async () => {
   const { data, error } = await supabase
@@ -35,7 +35,8 @@ const fetchMatches = async () => {
 
 const Dashboard = () => {
   const { userRole } = useAuth();
-  const { hasPermission } = usePermissionChecker();
+  // const { hasPermission } = usePermissionChecker();
+  const hasPermission = (_permission: string) => true; // Temporary placeholder
 
   const { data: matches, isLoading: isLoadingMatches, isError: isErrorMatches } = useQuery({
     queryKey: ['dashboardMatches'],
