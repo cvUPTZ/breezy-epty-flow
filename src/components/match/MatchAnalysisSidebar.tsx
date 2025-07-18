@@ -1,5 +1,5 @@
 
-import React from 'react';
+import { useMemo, type FC, type ElementType } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import {
   Sidebar,
@@ -22,7 +22,7 @@ import { LogOut, User, Shield, Loader2 } from 'lucide-react';
 interface MenuItem {
   value: string;
   label: string;
-  icon: React.ElementType;
+  icon: ElementType;
   path?: string;
   permission?: keyof RolePermissions;
 }
@@ -34,7 +34,7 @@ interface MatchAnalysisSidebarProps {
   groupLabel?: string;
 }
 
-const MatchAnalysisSidebar: React.FC<MatchAnalysisSidebarProps> = ({ 
+const MatchAnalysisSidebar: FC<MatchAnalysisSidebarProps> = ({ 
   activeView, 
   setActiveView, 
   menuItems, 
@@ -63,7 +63,7 @@ const MatchAnalysisSidebar: React.FC<MatchAnalysisSidebarProps> = ({
     return activeView === item.value;
   };
 
-  const filteredMenuItems = React.useMemo(() => {
+  const filteredMenuItems = useMemo(() => {
     if (isLoading || !permissions) {
       return [];
     }
