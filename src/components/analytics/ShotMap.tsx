@@ -112,7 +112,7 @@ const ShotMap: React.FC<ShotMapProps> = ({
         </div>
       </CardHeader>
       <CardContent>
-        <TooltipProvider>
+        <div style={{ width: '100%', aspectRatio: `${SVG_VIEWBOX_WIDTH} / ${SVG_VIEWBOX_HEIGHT}` }}>
           <div style={{ width: '100%', aspectRatio: `${SVG_VIEWBOX_WIDTH} / ${SVG_VIEWBOX_HEIGHT}` }}>
             <svg
               viewBox={`0 0 ${SVG_VIEWBOX_WIDTH} ${SVG_VIEWBOX_HEIGHT}`}
@@ -196,7 +196,7 @@ const ShotMap: React.FC<ShotMapProps> = ({
               })}
             </svg>
           </div>
-        </TooltipProvider>
+        </div>
       </CardContent>
     </Card>
   );
