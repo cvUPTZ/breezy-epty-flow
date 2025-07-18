@@ -4,7 +4,7 @@ import { MatchEvent } from '@/types';
 import { ShotEventData } from '@/types/eventData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { SimpleTooltip } from "@/components/ui/simple-tooltip";
 import { Target } from 'lucide-react'; // Import Target icon
 
 // Define pitch dimensions (can be props or constants)
@@ -167,31 +167,21 @@ const ShotMap: React.FC<ShotMapProps> = ({
                 const data = shot.event_data as ShotEventData | undefined; // Can be null or not ShotEventData
 
                 return (
-                  <Tooltip key={shot.id}>
-                    <TooltipTrigger asChild>
-                      <circle
-                        cx={shotX}
-                        cy={shotY}
-                        r={getShotRadius(shot)}
-                        fill={getShotColor(shot)}
-                        stroke="#333"
-                        strokeWidth="0.3"
-                        opacity="0.85"
-                        style={{ cursor: 'pointer' }}
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-background border shadow-lg p-3 rounded-md">
-                      <p className="font-semibold">Player: {shot.player?.name || `ID ${shot.player_id || 'N/A'}`}</p>
-                      <p>Team: {shot.team === 'home' ? homeTeamName : awayTeamName}</p>
-                      <hr className="my-1" />
-                      <p>Outcome: {data?.is_goal ? 'Goal!' : data?.on_target ? 'On Target' : 'Off Target/Blocked'}</p>
-                      {data?.xg_value !== undefined && <p>xG: {data.xg_value.toFixed(2)}</p>}
-                      {data?.body_part_used && <p>Body Part: {data.body_part_used}</p>}
-                      {data?.situation && <p>Situation: {data.situation}</p>}
-                      {data?.assist_type && <p>Assist: {data.assist_type}</p>}
-                      {data?.shot_type && <p>Shot Type: {data.shot_type}</p>}
-                    </TooltipContent>
-                  </Tooltip>
+                  <SimpleTooltip
+                    key={shot.id}
+                    content={`Player: ${shot.player?.name || `ID ${shot.player_id || 'N/A'}`} | Team: ${shot.team === 'home' ? homeTeamName : awayTeamName} | Outcome: ${data?.is_goal ? 'Goal!' : data?.on_target ? 'On Target' : 'Off Target/Blocked'}`}
+                  >
+                    <circle
+                      cx={shotX}
+                      cy={shotY}
+                      r={getShotRadius(shot)}
+                      fill={getShotColor(shot)}
+                      stroke="#333"
+                      strokeWidth="0.3"
+                      opacity="0.85"
+                      style={{ cursor: 'pointer' }}
+                    />
+                  </SimpleTooltip>
                 );
               })}
             </svg>

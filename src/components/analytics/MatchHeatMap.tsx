@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MatchEvent } from '@/types';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { SimpleTooltip } from "@/components/ui/simple-tooltip";
 
 interface MatchHeatMapProps {
   events: MatchEvent[];
@@ -80,22 +80,19 @@ const MatchHeatMap: React.FC<MatchHeatMapProps> = ({
                 if (data.home === 0) return null;
                 
                 return (
-                  <Tooltip key={`home-tooltip-${key}`}>
-                    <TooltipTrigger asChild>
-                      <rect
-                        x={x}
-                        y={y}
-                        width="1"
-                        height="1"
-                        fill={getHeatColor(data.home, 'home')}
-                        style={{ cursor: 'pointer' }}
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-background text-foreground border shadow-lg p-2 rounded-md text-xs">
-                      <p>Zone: ({x}, {y})</p>
-                      <p>Events: {data.home}</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  <SimpleTooltip
+                    key={`home-tooltip-${key}`}
+                    content={`Zone: (${x}, ${y}) - Events: ${data.home}`}
+                  >
+                    <rect
+                      x={x}
+                      y={y}
+                      width="1"
+                      height="1"
+                      fill={getHeatColor(data.home, 'home')}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  </SimpleTooltip>
                 );
               })}
             </svg>
@@ -126,22 +123,19 @@ const MatchHeatMap: React.FC<MatchHeatMapProps> = ({
                 if (data.away === 0) return null;
                 
                 return (
-                  <Tooltip key={`away-tooltip-${key}`}>
-                    <TooltipTrigger asChild>
-                      <rect
-                        x={x}
-                        y={y}
-                        width="1"
-                        height="1"
-                        fill={getHeatColor(data.away, 'away')}
-                        style={{ cursor: 'pointer' }}
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-background text-foreground border shadow-lg p-2 rounded-md text-xs">
-                      <p>Zone: ({x}, {y})</p>
-                      <p>Events: {data.away}</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  <SimpleTooltip
+                    key={`away-tooltip-${key}`}
+                    content={`Zone: (${x}, ${y}) - Events: ${data.away}`}
+                  >
+                    <rect
+                      x={x}
+                      y={y}
+                      width="1"
+                      height="1"
+                      fill={getHeatColor(data.away, 'away')}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  </SimpleTooltip>
                 );
               })}
             </svg>
