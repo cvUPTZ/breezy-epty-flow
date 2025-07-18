@@ -524,12 +524,13 @@ const BusinessPlanManagement: React.FC = () => {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="pitch">Pitch Startup</TabsTrigger>
           <TabsTrigger value="goals">Objectifs</TabsTrigger>
           <TabsTrigger value="revenue">Revenus</TabsTrigger>
           <TabsTrigger value="founders">Fondateurs</TabsTrigger>
+          <TabsTrigger value="match-planning">Planification</TabsTrigger>
           <TabsTrigger value="budget">Budget Trackers</TabsTrigger>
           <TabsTrigger value="market">Marché Local</TabsTrigger>
           <TabsTrigger value="compliance">Conformité</TabsTrigger>
@@ -1474,6 +1475,361 @@ const BusinessPlanManagement: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="match-planning" className="space-y-6">
+          <div className="grid gap-6">
+            {/* Match Planning Overview */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Timer className="h-5 w-5" />
+                  Paramètres de Planification des Matchs
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-4">
+                    <Label>Durée du match (minutes)</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.duration}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        duration: parseInt(e.target.value) || 90
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <Label>Nombre total d'événements</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.totalEvents}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        totalEvents: parseInt(e.target.value) || 616
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <Label>Joueurs à tracker</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.playersToTrack}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        playersToTrack: parseInt(e.target.value) || 22
+                      }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-4">
+                    <Label>Trackers minimum requis</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.trackersMinimum}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        trackersMinimum: parseInt(e.target.value) || 2
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <Label>Trackers optimal</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.trackersOptimal}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        trackersOptimal: parseInt(e.target.value) || 3
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <Label>Remplacements prévus</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.replacements}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        replacements: parseInt(e.target.value) || 1
+                      }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <Label>Fréquence des matchs par mois</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.matchFrequency}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        matchFrequency: parseInt(e.target.value) || 15
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <Label>Durée de la saison (mois)</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.seasonDuration}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        seasonDuration: parseInt(e.target.value) || 9
+                      }))}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Resource Requirements */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Exigences en Ressources
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="h-4 w-4 text-primary" />
+                      <span className="font-medium">Équipe Humaine</span>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <p>Trackers minimum: {matchSimulation.trackersMinimum}</p>
+                      <p>Trackers optimal: {matchSimulation.trackersOptimal}</p>
+                      <p>Remplacements: {matchSimulation.replacements}</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Activity className="h-4 w-4 text-green-600" />
+                      <span className="font-medium">Charge de Travail</span>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <p>Durée: {matchSimulation.duration} min</p>
+                      <p>Événements: {matchSimulation.totalEvents}</p>
+                      <p>Événements/tracker: {Math.round(matchSimulation.totalEvents / matchSimulation.trackersOptimal)}</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <BarChart3 className="h-4 w-4 text-blue-600" />
+                      <span className="font-medium">Fréquence</span>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <p>Matchs/mois: {matchSimulation.matchFrequency}</p>
+                      <p>Saison: {matchSimulation.seasonDuration} mois</p>
+                      <p>Total saison: {matchSimulation.matchFrequency * matchSimulation.seasonDuration} matchs</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Calculator className="h-4 w-4 text-purple-600" />
+                      <span className="font-medium">Complexité</span>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <p>Score: {Math.round(calculateComplexityScore() / matchSimulation.totalEvents * 10) / 10}</p>
+                      <p>Difficulté: {calculateComplexityScore() > 2000 ? 'Élevée' : calculateComplexityScore() > 1500 ? 'Moyenne' : 'Faible'}</p>
+                      <p>Précision: {Math.round(eventTypes.reduce((sum, et) => sum + et.detectionRate, 0) / eventTypes.length)}%</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Technology and Equipment */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5" />
+                  Technologie et Équipement
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold">Équipement par Tracker</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span>Tablette/Laptop</span>
+                        <Badge variant="outline">Requis</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Casque audio</span>
+                        <Badge variant="outline">Requis</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Souris</span>
+                        <Badge variant="outline">Recommandé</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Connexion internet</span>
+                        <Badge variant="outline">Critique</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Logiciel tracking</span>
+                        <Badge variant="outline">Licence</Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-semibold">Spécifications Techniques</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>RAM minimum:</span>
+                        <span>8GB</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Processeur:</span>
+                        <span>i5 ou équivalent</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Écran:</span>
+                        <span>15" minimum</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Stockage:</span>
+                        <span>256GB SSD</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Bande passante:</span>
+                        <span>50 Mbps minimum</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Performance Metrics */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Métriques de Performance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  {(() => {
+                    const metrics = calculateEfficiencyMetrics();
+                    return (
+                      <>
+                        <div className="text-center p-4 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">Coût par Événement</p>
+                          <p className="text-lg font-bold">{formatCurrency(metrics.costPerEvent)}</p>
+                        </div>
+                        <div className="text-center p-4 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">Coût par Minute</p>
+                          <p className="text-lg font-bold">{formatCurrency(metrics.costPerMinute)}</p>
+                        </div>
+                        <div className="text-center p-4 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">Coût par Joueur</p>
+                          <p className="text-lg font-bold">{formatCurrency(metrics.costPerPlayer)}</p>
+                        </div>
+                        <div className="text-center p-4 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">Taux Horaire/Tracker</p>
+                          <p className="text-lg font-bold">{formatCurrency(metrics.hourlyRatePerTracker)}</p>
+                        </div>
+                        <div className="text-center p-4 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">Efficacité Complexité</p>
+                          <p className="text-lg font-bold">{metrics.complexityEfficiency}</p>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Event Types Configuration */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5" />
+                  Configuration des Types d'Événements
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+                    {eventTypes.map((eventType) => (
+                      <div key={eventType.id} className="p-3 border rounded-lg space-y-2">
+                        <div className="flex justify-between items-start">
+                          <h5 className="font-medium">{eventType.name}</h5>
+                          <Badge variant={eventType.difficultyScore > 6 ? 'destructive' : eventType.difficultyScore > 4 ? 'default' : 'secondary'}>
+                            Difficulté: {eventType.difficultyScore}
+                          </Badge>
+                        </div>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <span>Taux détection:</span>
+                            <span>{eventType.detectionRate}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Temps requis:</span>
+                            <span>{eventType.timeRequired}s</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Cost Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Résumé des Coûts de Planification
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const costs = calculateMonthlyAndSeasonalCosts();
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="text-center p-6 bg-primary/5 rounded-lg">
+                        <h4 className="font-semibold text-primary">Par Match</h4>
+                        <p className="text-2xl font-bold mt-2">{formatCurrency(costs.perMatch)}</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {matchSimulation.trackersOptimal} trackers × {matchSimulation.duration} min
+                        </p>
+                      </div>
+                      <div className="text-center p-6 bg-secondary/5 rounded-lg">
+                        <h4 className="font-semibold text-secondary-foreground">Par Mois</h4>
+                        <p className="text-2xl font-bold mt-2">{formatCurrency(costs.monthly)}</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {matchSimulation.matchFrequency} matchs/mois
+                        </p>
+                      </div>
+                      <div className="text-center p-6 bg-accent/5 rounded-lg">
+                        <h4 className="font-semibold text-accent-foreground">Par Saison</h4>
+                        <p className="text-2xl font-bold mt-2">{formatCurrency(costs.seasonal)}</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {matchSimulation.seasonDuration} mois de saison
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="compliance" className="space-y-6">
