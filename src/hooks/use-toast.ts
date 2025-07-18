@@ -1,4 +1,6 @@
-import { useState, useEffect, type ReactNode } from "react"
+import * as React from "react"
+const { useState, useEffect } = React
+import type { ReactNode } from "react"
 
 import type {
   ToastActionElement,
