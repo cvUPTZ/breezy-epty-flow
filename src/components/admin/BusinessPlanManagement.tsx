@@ -206,23 +206,23 @@ const BusinessPlanManagement: React.FC = () => {
       id: '2',
       name: 'ISLAM',
       role: 'technical',
-      equityPercentage: 25,
+      equityPercentage: 5,
       responsibilities: ['Liaison FAF & Clubs', 'Gestion Opérations Football', 'Formation & Qualité des Données', 'Stratégie Produit Terrain'],
       monthlyContribution: 0,
-      expectedROI: 22,
-      vestingPeriod: 48,
+      expectedROI: 15,
+      vestingPeriod: 36,
       joinDate: '2024-01-01'
     },
     // ========== END: UPDATED ISLAM'S ROLE ==========
     {
       id: '3',
       name: 'FERROUDJE Cherif',
-      role: 'co-founder',
-      equityPercentage: 20,
+      role: 'commercial',
+      equityPercentage: 5,
       responsibilities: ['Développement commercial', 'Partenariats', 'Opérations'],
       monthlyContribution: 0,
-      expectedROI: 20,
-      vestingPeriod: 48,
+      expectedROI: 15,
+      vestingPeriod: 36,
       joinDate: '2024-01-01'
     },
     {
