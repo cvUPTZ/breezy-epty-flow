@@ -194,7 +194,7 @@ const BusinessPlanManagement: React.FC = () => {
       id: '1',
       name: 'HOUDACHE Zakaria',
       role: 'founder',
-      equityPercentage: 40,
+      equityPercentage: 60,
       responsibilities: ['Vision stratégique', 'Relations investisseurs', 'Développement business', 'Direction générale'],
       monthlyContribution: 0,
       expectedROI: 25,
