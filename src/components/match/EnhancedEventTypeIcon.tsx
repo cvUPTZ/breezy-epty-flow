@@ -1,6 +1,5 @@
 
 import React, { memo, useMemo, useEffect, useRef, useState, CSSProperties } from 'react';
-import * as AllTypes from 'src/types/index';
 import { getEventTypeIcon } from './getEventTypeIcon';
 
 // --- Helper: Intersection Observer Hook ---
@@ -120,7 +119,7 @@ const sizeMap: Record<Exclude<IconSize, number>, number> = {
 
 // --- Component Props ---
 export interface EnhancedEventTypeIconProps {
-  eventType: AllTypes.EventType;
+  eventType: string;
   size?: IconSize;
   variant?: IconVariant;
   className?: string;

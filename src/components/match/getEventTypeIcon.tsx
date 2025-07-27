@@ -31,7 +31,6 @@ import {
   StopCircle,
   type LucideIcon
 } from 'lucide-react';
-import { EventType as GlobalEventType } from 'src/types/index';
 
 // Enhanced interface with more customization options
 export interface IconProps {
