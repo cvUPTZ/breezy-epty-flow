@@ -88,7 +88,7 @@ interface TrackerBudgetConfig {
 interface Founder {
   id: string;
   name: string;
-  role: 'founder' | 'co-founder' | 'technical' | 'investor' | 'advisor';
+  role: 'founder' | 'co-founder' | 'technical' | 'investor' | 'advisor' | 'commercial';
   equityPercentage: number;
   responsibilities: string[];
   monthlyContribution: number;
