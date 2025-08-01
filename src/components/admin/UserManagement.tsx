@@ -56,6 +56,20 @@ const UserManagement: React.FC = () => {
 
   const updateUserRole = async (userId: string, newRole: UserRole) => {
     try {
+      // Get current user role for audit logging
+      const currentUser = users.find(u => u.id === userId);
+      const previousRole = currentUser?.role;
+      
+      // Additional validation for role changes
+      if (newRole === 'admin' && previousRole !== 'admin') {
+        const confirmAdmin = window.confirm(
+          'Are you sure you want to grant admin privileges? This action will be logged for security purposes.'
+        );
+        if (!confirmAdmin) {
+          return;
+        }
+      }
+
       // Update the role in the profiles table
       const { error: profilesError } = await supabase
         .from('profiles')
@@ -110,6 +124,24 @@ const UserManagement: React.FC = () => {
         toast.error('Role updated in profiles but failed to sync with user_roles table');
       } else {
         console.log('Successfully updated role in both profiles and user_roles tables');
+      }
+
+      // Log the security event
+      try {
+        await supabase.rpc('log_security_event', {
+          p_action: 'role_change',
+          p_resource_type: 'user_role',
+          p_resource_id: userId,
+          p_details: {
+            previous_role: previousRole,
+            new_role: newRole,
+            target_user_email: currentUser?.email,
+            target_user_name: currentUser?.full_name
+          }
+        });
+      } catch (auditError) {
+        console.warn('Failed to log security event:', auditError);
+        // Don't fail the operation if audit logging fails
       }
 
       // Update the local state to reflect the change

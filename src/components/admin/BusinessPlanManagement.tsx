@@ -217,7 +217,7 @@ const BusinessPlanManagement: React.FC = () => {
     {
       id: '3',
       name: 'FERROUDJE Cherif',
-      role: 'commercial',
+      role: 'advisor',
       equityPercentage: 5,
       responsibilities: ['Développement commercial', 'Partenariats', 'Opérations'],
       monthlyContribution: 0,
