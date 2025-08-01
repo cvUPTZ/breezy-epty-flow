@@ -210,13 +210,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_tracker_user_id"
-            columns: ["tracker_user_id"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "match_tracker_assignments_match_id_fkey"
             columns: ["match_id"]
             isOneToOne: false
@@ -601,13 +594,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_receiver"
-            columns: ["to_user_id"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "fk_room"
             columns: ["room_id"]
             isOneToOne: false
@@ -634,13 +620,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "user_permissions_view"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_sender"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1036,13 +1015,6 @@ export type Database = {
             referencedRelation: "user_permissions_view"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "user_event_assignments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
         ]
       }
       user_roles: {
@@ -1215,13 +1187,6 @@ export type Database = {
             referencedRelation: "user_permissions_view"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "voice_room_participants_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
         ]
       }
       voice_rooms: {
@@ -1370,13 +1335,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "user_permissions_view"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_tracker_user_id"
-            columns: ["tracker_user_id"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "match_tracker_assignments_match_id_fkey"
