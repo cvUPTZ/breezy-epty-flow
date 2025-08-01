@@ -349,8 +349,8 @@ const AppContent = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <Toaster />
-      <Sonner />
+      {/* <Toaster /> */}
+      {/* <Sonner /> */}
       <AppContent />
     </AuthProvider>
   </QueryClientProvider>
