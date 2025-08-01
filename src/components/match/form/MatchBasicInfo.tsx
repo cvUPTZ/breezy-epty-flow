@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { InputValidator } from '@/utils/inputValidation';
 
 type MatchStatus = 'draft' | 'scheduled' | 'live' | 'completed';
 
@@ -25,6 +26,36 @@ interface MatchBasicInfoProps {
 }
 
 const MatchBasicInfo: React.FC<MatchBasicInfoProps> = ({ formData, onFormDataChange }) => {
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  const handleInputChange = (field: string, value: string) => {
+    // Sanitize input
+    const sanitizedValue = InputValidator.sanitizeString(value);
+    
+    // Validate specific fields
+    let error = '';
+    if (field === 'homeTeamName' || field === 'awayTeamName') {
+      const validation = InputValidator.validateTeamName(sanitizedValue);
+      if (!validation.isValid) {
+        error = validation.error || '';
+      }
+    } else if (field === 'name' && sanitizedValue) {
+      const validation = InputValidator.validateMatchName(sanitizedValue);
+      if (!validation.isValid) {
+        error = validation.error || '';
+      }
+    }
+
+    // Update validation errors
+    setValidationErrors(prev => ({
+      ...prev,
+      [field]: error
+    }));
+
+    // Pass sanitized value to parent
+    onFormDataChange(field, sanitizedValue);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -37,9 +68,12 @@ const MatchBasicInfo: React.FC<MatchBasicInfoProps> = ({ formData, onFormDataCha
             <Input
               id="match-name"
               value={formData.name}
-              onChange={(e) => onFormDataChange('name', e.target.value)}
+              onChange={(e) => handleInputChange('name', e.target.value)}
               placeholder="Will be auto-generated if empty"
             />
+            {validationErrors.name && (
+              <p className="text-sm text-destructive mt-1">{validationErrors.name}</p>
+            )}
           </div>
           <div>
             <Label htmlFor="match-date">Match Date</Label>
@@ -58,20 +92,26 @@ const MatchBasicInfo: React.FC<MatchBasicInfoProps> = ({ formData, onFormDataCha
             <Input
               id="home-team-name"
               value={formData.homeTeamName}
-              onChange={(e) => onFormDataChange('homeTeamName', e.target.value)}
+              onChange={(e) => handleInputChange('homeTeamName', e.target.value)}
               placeholder="Enter home team name"
               required
             />
+            {validationErrors.homeTeamName && (
+              <p className="text-sm text-destructive mt-1">{validationErrors.homeTeamName}</p>
+            )}
           </div>
           <div>
             <Label htmlFor="away-team-name">Away Team Name</Label>
             <Input
               id="away-team-name"
               value={formData.awayTeamName}
-              onChange={(e) => onFormDataChange('awayTeamName', e.target.value)}
+              onChange={(e) => handleInputChange('awayTeamName', e.target.value)}
               placeholder="Enter away team name"
               required
             />
+            {validationErrors.awayTeamName && (
+              <p className="text-sm text-destructive mt-1">{validationErrors.awayTeamName}</p>
+            )}
           </div>
         </div>
 
