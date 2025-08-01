@@ -1,6 +1,6 @@
-import React, { type ComponentProps } from "react"
 import { useTheme } from "next-themes"
 import { Toaster as Sonner, toast } from "sonner"
+import type { ComponentProps } from "react"
 
 type ToasterProps = ComponentProps<typeof Sonner>
 
