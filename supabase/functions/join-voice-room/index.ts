@@ -21,12 +21,7 @@ interface ErrorResponse {
   error: string;
 }
 
-// TODO: Replace with your specific frontend domain(s) for production security.
-const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://preview--match-scribe-analytics.lovable.app',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
+import { getCorsHeaders } from '../_shared/cors.ts'
 
 // Note: Supabase Edge Functions currently do not support transactions directly in the same way as PostgreSQL transactions.
 // Operations will be performed sequentially with checks. For true atomicity, a database function/procedure called from the edge function would be needed.
@@ -160,6 +155,9 @@ async function handleJoinRoom(supabaseClient: SupabaseClient, roomId: string, us
 serve(async (req: Request) => {
   const functionName = 'join-voice-room';
   console.log(`[${functionName}] Function invoked. Method: ${req.method}`);
+
+  const requestOrigin = req.headers.get('Origin');
+  const corsHeaders = getCorsHeaders(requestOrigin);
 
   // Handle OPTIONS request for CORS preflight
   if (req.method === 'OPTIONS') {

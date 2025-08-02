@@ -4,21 +4,20 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 // Using a more reliable LiveKit import
 const LIVEKIT_URL = 'https://esm.sh/livekit-server-sdk@2.0.5'
 
+import { getCorsHeaders } from '../_shared/cors.ts'
+
 interface TokenRequest {
   roomId: string;
   participantIdentity: string;
   participantName: string;
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://preview--match-scribe-analytics.lovable.app',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
-
 serve(async (req: Request) => {
+  const requestOrigin = req.headers.get('Origin')
+  const corsHeaders = getCorsHeaders(requestOrigin)
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {

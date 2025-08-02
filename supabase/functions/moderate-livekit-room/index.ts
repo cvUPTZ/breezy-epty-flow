@@ -7,13 +7,12 @@ interface ModerationRequest {
   mute: boolean;
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
+import { getCorsHeaders } from '../_shared/cors.ts'
 
 serve(async (req: Request) => {
+  const requestOrigin = req.headers.get('Origin')
+  const corsHeaders = getCorsHeaders(requestOrigin)
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
