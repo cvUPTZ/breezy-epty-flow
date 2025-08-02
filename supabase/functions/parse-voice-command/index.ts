@@ -1,6 +1,6 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
-import { corsHeaders } from '../_shared/cors.ts'
+import { getCorsHeaders } from '../_shared/cors.ts'
 
 // Interfaces (should match client-side types)
 interface Player {
@@ -39,6 +39,9 @@ interface ParsedCommand {
 console.log('Initializing parse-voice-command function (v2)');
 
 serve(async (req: Request) => {
+  const requestOrigin = req.headers.get('Origin');
+  const corsHeaders = getCorsHeaders(requestOrigin);
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     console.log('Handling OPTIONS preflight request');

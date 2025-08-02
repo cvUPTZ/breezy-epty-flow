@@ -1,14 +1,13 @@
 // supabase/functions/get-gemini-api-key/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*", // Or specific origins
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-};
+import { getCorsHeaders } from "../_shared/cors.ts";
 
 serve(async (req: Request) => {
   console.log("Function 'get-gemini-api-key' invoked.");
+
+  const requestOrigin = req.headers.get('Origin');
+  const corsHeaders = getCorsHeaders(requestOrigin);
 
   // Handle OPTIONS preflight request
   if (req.method === "OPTIONS") {

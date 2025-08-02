@@ -1,27 +1,12 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-// Helper: Get allowed origin (set for production and fallback)
-const getAllowedOrigin = (req)=>{
-  const origin = req.headers.get('origin');
-  const allowedOrigins = [
-    Deno.env.get('FRONTEND_URL'),
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'https://your-app-domain.com' // Add your actual domain
-  ].filter(Boolean);
-  return allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
-};
-// Helper: Set CORS headers
-const getCorsHeaders = (req)=>({
-    'Access-Control-Allow-Origin': getAllowedOrigin(req) || '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Credentials': 'true',
-    'Content-Type': 'application/json'
-  });
+import { getCorsHeaders } from '../_shared/cors.ts'
+
 serve(async (req)=>{
-  const corsHeaders = getCorsHeaders(req);
+  const requestOrigin = req.headers.get('Origin')
+  const corsHeaders = getCorsHeaders(requestOrigin)
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', {

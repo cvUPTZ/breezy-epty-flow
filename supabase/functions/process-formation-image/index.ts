@@ -4,19 +4,18 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/ge
 
 console.log("process-formation-image function initializing");
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*", // Adjust as needed for security
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { getCorsHeaders } from "../_shared/cors.ts";
 
 const GEMINI_MODEL_NAME = "gemini-pro-vision"; // Or the latest appropriate vision model
 
 serve(async (req: Request) => {
+  const requestOrigin = req.headers.get('Origin');
+  const corsHeaders = getCorsHeaders(requestOrigin);
+
   // Handle preflight OPTIONS request
   if (req.method === "OPTIONS") {
     console.log("Handling OPTIONS request");
-    return new Response("ok", { headers: CORS_HEADERS });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
@@ -26,7 +25,7 @@ serve(async (req: Request) => {
       console.error("Invalid request method:", req.method);
       return new Response(JSON.stringify({ error: "Method not allowed. Use POST." }), {
         status: 405,
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -50,7 +49,7 @@ serve(async (req: Request) => {
       console.error("Error parsing request body:", e.message);
       return new Response(JSON.stringify({ error: `Failed to parse request body: ${e.message}` }), {
         status: 400,
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -60,7 +59,7 @@ serve(async (req: Request) => {
       console.error("GEMINI_API_KEY not found in environment variables.");
       return new Response(JSON.stringify({ error: "API key not configured." }), {
         status: 500,
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     console.log("Retrieved GEMINI_API_KEY.");
@@ -153,7 +152,7 @@ serve(async (req: Request) => {
       // Return the raw text if JSON parsing fails, as it might contain useful error info from Gemini
       return new Response(JSON.stringify({ error: "Failed to parse AI response.", raw_ai_response: responseText }), {
         status: 500,
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -161,14 +160,14 @@ serve(async (req: Request) => {
     // Return the structured player data
     return new Response(JSON.stringify(jsonData), {
       status: 200,
-      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (error) {
     console.error("Unhandled error in Edge Function:", error.message, error.stack);
     return new Response(JSON.stringify({ error: error.message || "An unexpected error occurred." }), {
       status: 500,
-      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
