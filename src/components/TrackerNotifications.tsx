@@ -35,20 +35,23 @@ interface MatchInfo {
   status: string;
 }
 
-interface Notification {
+interface NotificationWithMatch {
   id: string;
   match_id: string | null;
   title: string;
   message: string;
   type: string;
+  notification_data?: NotificationData;
   is_read: boolean;
   created_at: string;
-  notification_data?: NotificationData;
-  matches?: MatchInfo;
+  match_name?: string | null;
+  home_team_name?: string | null;
+  away_team_name?: string | null;
+  match_date?: string | null;
 }
 
 const TrackerNotifications: React.FC = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<NotificationWithMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -142,19 +145,10 @@ const TrackerNotifications: React.FC = () => {
     console.log('Fetching notifications for user:', user.id);
 
     try {
+      // Use the optimized view to fetch notifications with match data in one query
       const { data, error } = await supabase
-        .from('notifications')
-        .select(`
-          id,
-          match_id,
-          title,
-          message,
-          type,
-          is_read,
-          created_at,
-          notification_data,
-          user_id
-        `)
+        .from('notifications_with_matches')
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -163,83 +157,23 @@ const TrackerNotifications: React.FC = () => {
         throw error;
       }
       
-      console.log('Raw notifications data:', data);
+      console.log('Notifications with matches data:', data);
       
-      // Get match information for notifications with match_id
-      const notificationsWithMatches: Notification[] = [];
-      
-      for (const notification of data || []) {
-        console.log('Processing notification:', notification.id, 'type:', notification.type);
-        
-        // Check if notification should play sound
-        const notificationData = notification.notification_data as any;
-        if (notificationData?.with_sound && !notification.is_read) {
-          console.log('Playing notification sound for:', notification.id);
-          playNotificationSound();
-          
-          // Show browser notification if permission granted
-          if ('Notification' in window && Notification.permission === 'granted') {
-            new window.Notification(notification.title || 'Match Alert', {
-              body: notification.message || '',
-              icon: '/favicon.ico',
-              tag: notification.id
-            });
-          }
-        }
+      const notificationsWithMatches: NotificationWithMatch[] = (data || []).map(notification => ({
+        id: notification.id || '',
+        match_id: notification.match_id,
+        title: notification.title || '',
+        message: notification.message || '',
+        type: notification.type || 'general',
+        notification_data: notification.notification_data as NotificationData | undefined,
+        is_read: notification.is_read || false,
+        created_at: notification.created_at || '',
+        match_name: notification.match_name,
+        home_team_name: notification.home_team_name,
+        away_team_name: notification.away_team_name,
+        match_date: notification.match_date
+      }));
 
-        if (notification.match_id) {
-          const { data: matchData, error: matchError } = await supabase
-            .from('matches')
-            .select('name, home_team_name, away_team_name, status')
-            .eq('id', notification.match_id)
-            .single();
-
-          if (!matchError && matchData) {
-            notificationsWithMatches.push({
-              id: notification.id,
-              match_id: notification.match_id,
-              title: notification.title || '',
-              message: notification.message || '',
-              type: notification.type || 'general',
-              is_read: notification.is_read || false,
-              created_at: notification.created_at || new Date().toISOString(),
-              notification_data: notification.notification_data as NotificationData,
-              matches: matchData
-            });
-
-            // Send local notification for urgent assignments
-            if (notification.type === 'urgent_replacement_assignment' && !notification.is_read) {
-              const matchName = matchData.name || `${matchData.home_team_name} vs ${matchData.away_team_name}`;
-              PushNotificationService.sendMatchAssignmentNotification(matchName, ['Urgent Replacement']);
-            }
-          } else {
-            console.warn('Could not fetch match data for notification:', notification.id, matchError);
-            // Still add the notification even without match data
-            notificationsWithMatches.push({
-              id: notification.id,
-              match_id: notification.match_id,
-              title: notification.title || '',
-              message: notification.message || '',
-              type: notification.type || 'general',
-              is_read: notification.is_read || false,
-              created_at: notification.created_at || new Date().toISOString(),
-              notification_data: notification.notification_data as NotificationData,
-            });
-          }
-        } else {
-          notificationsWithMatches.push({
-            id: notification.id,
-            match_id: notification.match_id,
-            title: notification.title || '',
-            message: notification.message || '',
-            type: notification.type || 'general',
-            is_read: notification.is_read || false,
-            created_at: notification.created_at || new Date().toISOString(),
-            notification_data: notification.notification_data as NotificationData,
-          });
-        }
-      }
-      
       console.log('Processed notifications:', notificationsWithMatches.length);
       setNotifications(notificationsWithMatches);
     } catch (error: any) {
@@ -480,14 +414,14 @@ const TrackerNotifications: React.FC = () => {
                     </Badge>
                   </div>
 
-                  {notification.matches && (
-                    <div className="mb-2">
-                      <span className="font-medium text-sm sm:text-base text-muted-foreground">
-                        {notification.matches.name ||
-                         `${notification.matches.home_team_name} vs ${notification.matches.away_team_name}`}
-                      </span>
-                    </div>
-                  )}
+                   {notification.match_name && (
+                     <div className="mb-2">
+                       <span className="font-medium text-sm sm:text-base text-muted-foreground">
+                         {notification.match_name ||
+                          `${notification.home_team_name} vs ${notification.away_team_name}`}
+                       </span>
+                     </div>
+                   )}
 
                   {/* Video assignment specific information */}
                   {notification.type === 'video_assignment' && notification.notification_data && (

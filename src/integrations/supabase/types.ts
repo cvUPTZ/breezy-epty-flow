@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -39,15 +39,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "event_types_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       match_events: {
         Row: {
@@ -92,15 +84,7 @@ export type Database = {
           timestamp?: number | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "match_events_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       match_notifications: {
         Row: {
@@ -163,13 +147,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "matches"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "match_tracker_activity_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -239,13 +216,6 @@ export type Database = {
             referencedRelation: "matches"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "match_tracker_assignments_tracker_user_id_fkey"
-            columns: ["tracker_user_id"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
         ]
       }
       match_video_settings: {
@@ -283,13 +253,6 @@ export type Database = {
           video_url?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "match_video_settings_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
           {
             foreignKeyName: "match_video_settings_match_id_fkey"
             columns: ["match_id"]
@@ -387,15 +350,7 @@ export type Database = {
           timer_status?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "matches_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -479,15 +434,7 @@ export type Database = {
           updated_at?: string | null
           weaknesses?: string[] | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "opposition_analysis_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       playlist_items: {
         Row: {
@@ -558,13 +505,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "playlists_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "playlists_video_job_id_fkey"
             columns: ["video_job_id"]
             isOneToOne: false
@@ -601,15 +541,7 @@ export type Database = {
           role?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       realtime_transient_messages: {
         Row: {
@@ -833,15 +765,7 @@ export type Database = {
           technical_skills?: Json | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "scouted_players_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       scouts: {
         Row: {
@@ -877,15 +801,43 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "scouts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
+      }
+      security_audit_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          resource_id: string | null
+          resource_type: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       tagged_events: {
         Row: {
@@ -972,15 +924,7 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "timeline_events_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       tracker_assignments: {
         Row: {
@@ -1007,22 +951,7 @@ export type Database = {
           tracker_id?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "tracker_assignments_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "tracker_assignments_tracker_id_fkey"
-            columns: ["tracker_id"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       tracker_device_status: {
         Row: {
@@ -1043,15 +972,40 @@ export type Database = {
           last_updated_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "tracker_device_status_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
+      }
+      tracker_line_assignments: {
+        Row: {
+          assigned_event_types: string[]
+          created_at: string
+          id: string
+          line_players: Json
+          match_id: string
+          tracker_type: Database["public"]["Enums"]["tracker_type"]
+          tracker_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_event_types?: string[]
+          created_at?: string
+          id?: string
+          line_players?: Json
+          match_id: string
+          tracker_type: Database["public"]["Enums"]["tracker_type"]
+          tracker_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_event_types?: string[]
+          created_at?: string
+          id?: string
+          line_players?: Json
+          match_id?: string
+          tracker_type?: Database["public"]["Enums"]["tracker_type"]
+          tracker_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_event_assignments: {
         Row: {
@@ -1118,15 +1072,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_roles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       video_jobs: {
         Row: {
@@ -1171,15 +1117,7 @@ export type Database = {
           video_duration?: number | null
           video_title?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "video_jobs_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       video_tracker_assignments: {
         Row: {
@@ -1211,25 +1149,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "video_tracker_assignments_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "video_tracker_assignments_match_video_id_fkey"
             columns: ["match_video_id"]
             isOneToOne: false
             referencedRelation: "match_video_settings"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "video_tracker_assignments_tracker_id_fkey"
-            columns: ["tracker_id"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1452,14 +1376,25 @@ export type Database = {
             referencedRelation: "matches"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "match_tracker_assignments_tracker_user_id_fkey"
-            columns: ["tracker_user_id"]
-            isOneToOne: false
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
         ]
+      }
+      notifications_with_matches: {
+        Row: {
+          away_team_name: string | null
+          created_at: string | null
+          home_team_name: string | null
+          id: string | null
+          is_read: boolean | null
+          match_date: string | null
+          match_id: string | null
+          match_name: string | null
+          message: string | null
+          notification_data: Json | null
+          title: string | null
+          type: string | null
+          user_id: string | null
+        }
+        Relationships: []
       }
       profiles_with_permissions: {
         Row: {
@@ -1495,15 +1430,7 @@ export type Database = {
           user_id?: string | null
           user_role?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       user_permissions_view: {
         Row: {
@@ -1533,15 +1460,7 @@ export type Database = {
           id?: string | null
           role?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "user_roles_view"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       user_roles_view: {
         Row: {
@@ -1557,24 +1476,24 @@ export type Database = {
     Functions: {
       add_user_role: {
         Args: {
-          target_user_id: string
           new_role: Database["public"]["Enums"]["user_role"]
+          target_user_id: string
         }
         Returns: undefined
       }
       assign_tracker_to_player: {
         Args: {
           _match_id: string
-          _tracker_user_id: string
           _player_id: number
           _player_team_id: string
+          _tracker_user_id: string
         }
         Returns: string
       }
       assign_user_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["user_role"]
+          _user_id: string
         }
         Returns: undefined
       }
@@ -1592,42 +1511,46 @@ export type Database = {
       }
       create_ml_job: {
         Args: {
-          p_video_url: string
-          p_user_id: string
-          p_priority?: string
           p_config?: Json
+          p_priority?: string
+          p_user_id: string
+          p_video_url: string
         }
         Returns: string
       }
       find_replacement_tracker: {
-        Args: { p_match_id: string; p_absent_tracker_id: string }
+        Args: { p_absent_tracker_id: string; p_match_id: string }
         Returns: string
       }
       get_all_users_with_metadata: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
-          email: string
-          raw_user_meta_data: Json
           created_at: string
+          email: string
+          id: string
+          raw_user_meta_data: Json
         }[]
+      }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_ml_job: {
         Args: { p_job_id: string }
         Returns: {
-          id: string
-          video_url: string
-          user_id: string
-          status: string
-          priority: string
-          config: Json
-          progress: number
-          error_message: string
-          results: Json
-          created_at: string
-          started_at: string
           completed_at: string
+          config: Json
+          created_at: string
+          error_message: string
           estimated_completion: string
+          id: string
+          priority: string
+          progress: number
+          results: Json
+          started_at: string
+          status: string
+          user_id: string
+          video_url: string
         }[]
       }
       get_room_participant_count: {
@@ -1637,26 +1560,26 @@ export type Database = {
       get_tracker_profiles: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
-          full_name: string
           email: string
+          full_name: string
+          id: string
         }[]
       }
       get_tracker_users: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
-          full_name: string
           email: string
+          full_name: string
+          id: string
         }[]
       }
       get_trackers_with_email: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
-          full_name: string
-          email: string
           created_at: string
+          email: string
+          full_name: string
+          id: string
           updated_at: string
         }[]
       }
@@ -1665,21 +1588,21 @@ export type Database = {
         Returns: Json
       }
       get_user_ml_jobs: {
-        Args: { p_user_id: string; p_limit?: number }
+        Args: { p_limit?: number; p_user_id: string }
         Returns: {
-          id: string
-          video_url: string
-          user_id: string
-          status: string
-          priority: string
-          config: Json
-          progress: number
-          error_message: string
-          results: Json
-          created_at: string
-          started_at: string
           completed_at: string
+          config: Json
+          created_at: string
+          error_message: string
           estimated_completion: string
+          id: string
+          priority: string
+          progress: number
+          results: Json
+          started_at: string
+          status: string
+          user_id: string
+          video_url: string
         }[]
       }
       get_user_permissions: {
@@ -1711,17 +1634,17 @@ export type Database = {
         Returns: boolean
       }
       has_role: {
-        Args: { _user_id: string; _role: string }
+        Args: { _role: string; _user_id: string }
         Returns: boolean
       }
       insert_notification: {
         Args: {
-          p_user_id: string
-          p_match_id: string
-          p_type: string
-          p_title: string
-          p_message: string
           p_data?: Json
+          p_match_id: string
+          p_message: string
+          p_title: string
+          p_type: string
+          p_user_id: string
         }
         Returns: undefined
       }
@@ -1737,14 +1660,23 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      log_security_event: {
+        Args: {
+          p_action: string
+          p_details?: Json
+          p_resource_id?: string
+          p_resource_type?: string
+        }
+        Returns: undefined
+      }
       notify_assigned_trackers: {
         Args: { p_match_id: string; p_tracker_assignments: Json }
         Returns: undefined
       }
       remove_user_role: {
         Args: {
-          target_user_id: string
           old_role: Database["public"]["Enums"]["user_role"]
+          target_user_id: string
         }
         Returns: undefined
       }
@@ -1757,21 +1689,22 @@ export type Database = {
         Returns: undefined
       }
       update_user_metadata: {
-        Args: { user_id: string; metadata_updates: Json }
+        Args: { metadata_updates: Json; user_id: string }
         Returns: undefined
       }
       user_has_role: {
         Args:
-          | { role_name: Database["public"]["Enums"]["user_role"] }
           | {
-              target_user_id: string
               check_role: Database["public"]["Enums"]["user_role"]
+              target_user_id: string
             }
+          | { role_name: Database["public"]["Enums"]["user_role"] }
         Returns: boolean
       }
     }
     Enums: {
       job_status: "pending" | "processing" | "completed" | "failed"
+      tracker_type: "specialized" | "defence" | "midfield" | "attack"
       user_role:
         | "admin"
         | "teacher"
@@ -1907,6 +1840,7 @@ export const Constants = {
   public: {
     Enums: {
       job_status: ["pending", "processing", "completed", "failed"],
+      tracker_type: ["specialized", "defence", "midfield", "attack"],
       user_role: ["admin", "teacher", "user", "tracker", "manager", "special"],
     },
   },
