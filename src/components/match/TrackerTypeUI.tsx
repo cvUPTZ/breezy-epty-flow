@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { EventType } from '@/types';
-import { Shield, Zap, Target, Users } from 'lucide-react';
+import { Shield, Zap, Target, Users, ChevronDown, User, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -29,7 +30,20 @@ const TrackerTypeUI: React.FC<TrackerTypeUIProps> = ({
 }) => {
   const [assignment, setAssignment] = useState<UserAssignment | null>(null);
   const [loading, setLoading] = useState(true);
+  const [expandedPlayers, setExpandedPlayers] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+
+  const togglePlayerExpanded = (playerId: string) => {
+    setExpandedPlayers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(playerId)) {
+        newSet.delete(playerId);
+      } else {
+        newSet.add(playerId);
+      }
+      return newSet;
+    });
+  };
 
   const trackerTypeConfig = {
     specialized: {
@@ -112,21 +126,37 @@ const TrackerTypeUI: React.FC<TrackerTypeUIProps> = ({
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <p className="text-muted-foreground">Loading your tracker assignment...</p>
-        </CardContent>
-      </Card>
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-4 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center space-y-4">
+            <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 flex items-center justify-center">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Loading Assignment</h3>
+              <p className="text-sm text-muted-foreground">Fetching your tracker assignment...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   if (!assignment) {
     return (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <p className="text-muted-foreground">No tracker assignment found for this match</p>
-        </CardContent>
-      </Card>
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-4 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center space-y-4">
+            <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-br from-muted/20 to-muted/10 border border-muted flex items-center justify-center">
+              <Target className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">No Assignment Found</h3>
+              <p className="text-sm text-muted-foreground">No tracker assignment found for this match</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -134,117 +164,165 @@ const TrackerTypeUI: React.FC<TrackerTypeUIProps> = ({
   const Icon = config.icon;
 
   return (
-    <div className="space-y-4">
-      {/* Assignment Info */}
-      <Card className={config.color}>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Icon className="h-5 w-5" />
-            {config.label}
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">{config.description}</p>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm font-medium">Match ID: {matchId}</p>
-            </div>
-            
-            {assignment.tracker_type !== 'specialized' && assignment.line_players.length > 0 && (
-              <div>
-                <p className="text-sm font-medium mb-2">Assigned Players ({assignment.line_players.length}):</p>
-                <div className="flex flex-wrap gap-1">
-                  {assignment.line_players.map((player: any, index: number) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      #{player.jersey_number} {player.player_name}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-4 space-y-6 animate-fade-in">
+      {/* Header Section */}
+      <div className="bg-card border rounded-xl p-6 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+            <Icon className="h-8 w-8 text-primary" />
+          </div>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold tracking-tight">{config.label}</h1>
+            <p className="text-muted-foreground">{config.description}</p>
+          </div>
+          <Badge variant="outline" className="px-3 py-1">
+            Match: {matchId.slice(0, 8)}...
+          </Badge>
+        </div>
 
-            <div>
-              <p className="text-sm font-medium mb-2">Your Event Types ({assignment.assigned_event_types.length}):</p>
-              <div className="flex flex-wrap gap-1">
+        {/* Event Types Overview */}
+        <div className="mt-6 pt-6 border-t">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-foreground">Event Types</h3>
+            <Badge variant="secondary" className="text-xs">
+              {assignment.assigned_event_types.length} types
+            </Badge>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {assignment.assigned_event_types.map((eventType) => (
+              <Badge 
+                key={eventType} 
+                variant="outline" 
+                className="px-3 py-1 bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20 hover:from-primary/10 hover:to-primary/15 transition-all duration-200"
+              >
+                {eventType.charAt(0).toUpperCase() + eventType.slice(1)}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Event Recording Interface */}
+      <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
+        <div className="border-b bg-muted/30 px-6 py-4">
+          <div className="flex items-center gap-2">
+            <Play className="h-5 w-5 text-primary" />
+            <h2 className="font-semibold">Event Recording</h2>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {assignment.tracker_type === 'specialized' ? (
+            // Specialized Tracker Interface
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground mb-6">
+                Record events for any player across the field
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {assignment.assigned_event_types.map((eventType) => (
-                  <Badge key={eventType} variant="secondary" className="text-xs">
-                    {eventType}
-                  </Badge>
+                  <Button
+                    key={eventType}
+                    onClick={() => handleEventRecord(eventType)}
+                    variant="outline"
+                    className="h-12 font-medium bg-gradient-to-br from-background to-muted/20 hover:from-primary/5 hover:to-primary/10 hover:border-primary/30 transition-all duration-200 hover-scale"
+                  >
+                    <span className="capitalize">{eventType}</span>
+                  </Button>
                 ))}
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Event Recording Interface */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Record Events</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {assignment.tracker_type === 'specialized' ? (
-            // Specialized tracker - simple event buttons
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {assignment.assigned_event_types.map((eventType) => (
-                <Button
-                  key={eventType}
-                  onClick={() => handleEventRecord(eventType)}
-                  variant="outline"
-                  size="sm"
-                  className="h-10"
-                >
-                  {eventType.charAt(0).toUpperCase() + eventType.slice(1)}
-                </Button>
-              ))}
-            </div>
           ) : (
-            // Line-based tracker - events organized by player
-            <div className="space-y-3">
-              {assignment.line_players.map((player: any, playerIndex: number) => (
-                <div key={player.id || playerIndex} className="space-y-2">
-                  <div className="text-sm font-medium text-muted-foreground">
-                    #{player.jersey_number} {player.player_name}
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
-                    {assignment.assigned_event_types.map((eventType) => (
-                      <Button
-                        key={`${player.id}-${eventType}`}
-                        onClick={() => handleEventRecord(eventType, player.id)}
-                        variant="outline"
-                        size="sm" 
-                        className="h-8 text-xs"
-                      >
-                        {eventType.charAt(0).toUpperCase() + eventType.slice(1)}
-                      </Button>
-                    ))}
-                  </div>
+            // Line-Based Tracker Interface
+            <div className="space-y-6">
+              <p className="text-sm text-muted-foreground">
+                Record events for your assigned players
+              </p>
+
+              {/* Player Sections */}
+              <div className="space-y-4">
+                {assignment.line_players.map((player: any, playerIndex: number) => {
+                  const playerId = String(player.id || playerIndex);
+                  const isExpanded = expandedPlayers.has(playerId);
+                  
+                  return (
+                    <Collapsible
+                      key={playerId}
+                      open={isExpanded}
+                      onOpenChange={() => togglePlayerExpanded(playerId)}
+                    >
+                      <CollapsibleTrigger asChild>
+                        <div className="w-full p-4 rounded-lg border bg-gradient-to-r from-card to-muted/10 hover:from-muted/20 hover:to-muted/30 cursor-pointer transition-all duration-200 hover-scale">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 flex items-center justify-center">
+                                <User className="h-4 w-4 text-primary" />
+                              </div>
+                              <div>
+                                <div className="font-semibold">#{player.jersey_number} {player.player_name}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {assignment.assigned_event_types.length} event types available
+                                </div>
+                              </div>
+                            </div>
+                            <ChevronDown 
+                              className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
+                                isExpanded ? 'transform rotate-180' : ''
+                              }`} 
+                            />
+                          </div>
+                        </div>
+                      </CollapsibleTrigger>
+                      
+                      <CollapsibleContent className="animate-accordion-down">
+                        <div className="mt-3 p-4 rounded-lg bg-muted/20 border border-dashed">
+                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                            {assignment.assigned_event_types.map((eventType) => (
+                              <Button
+                                key={`${playerId}-${eventType}`}
+                                onClick={() => handleEventRecord(eventType, player.id)}
+                                variant="outline"
+                                size="sm"
+                                className="h-10 font-medium bg-gradient-to-br from-background to-muted/20 hover:from-primary/5 hover:to-primary/10 hover:border-primary/30 transition-all duration-200 hover-scale"
+                              >
+                                <span className="capitalize text-xs">{eventType}</span>
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  );
+                })}
+              </div>
+
+              {/* General Events Section */}
+              <div className="mt-8 pt-6 border-t border-dashed">
+                <div className="mb-4">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    General Events
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Record events not tied to specific players
+                  </p>
                 </div>
-              ))}
-              
-              {/* General events not tied to specific players */}
-              <div className="pt-2 border-t">
-                <div className="text-sm font-medium text-muted-foreground mb-2">
-                  General Events
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                   {assignment.assigned_event_types.map((eventType) => (
                     <Button
                       key={`general-${eventType}`}
                       onClick={() => handleEventRecord(eventType)}
                       variant="outline"
-                      size="sm"
-                      className="h-8 text-xs"
+                      className="h-12 font-medium bg-gradient-to-br from-muted/30 to-muted/10 hover:from-secondary/20 hover:to-secondary/10 hover:border-secondary transition-all duration-200 hover-scale"
                     >
-                      {eventType.charAt(0).toUpperCase() + eventType.slice(1)}
+                      <span className="capitalize">{eventType}</span>
                     </Button>
                   ))}
                 </div>
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
