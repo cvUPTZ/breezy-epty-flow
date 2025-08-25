@@ -76,7 +76,21 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
       return;
     }
 
-    const newId = crypto.randomUUID();
+    // Generate ID with fallback for environments where crypto.randomUUID() might not work
+    let newId: string;
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      try {
+        newId = crypto.randomUUID();
+      } catch (error) {
+        newId = 'assignment_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        addDebugLog(`crypto.randomUUID() failed, using fallback: ${error}`);
+      }
+    } else {
+      // Fallback ID generation for environments without crypto.randomUUID()
+      newId = 'assignment_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      addDebugLog(`crypto.randomUUID() not available, using fallback ID`);
+    }
+    
     const assignmentToAdd: TrackerAssignment = {
       id: newId,
       ...newAssignment,
@@ -84,7 +98,10 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
       tracker_email: trackerUser.email,
     };
     
+    // Verify the ID was set correctly
     addDebugLog(`Created assignment with ID: ${newId}`);
+    addDebugLog(`Assignment object ID field: ${assignmentToAdd.id}`);
+    addDebugLog(`ID type: ${typeof assignmentToAdd.id}`);
     addDebugLog(`Assignment details: ${JSON.stringify({
       id: assignmentToAdd.id,
       tracker: assignmentToAdd.tracker_name,
@@ -94,6 +111,7 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
     
     const newAssignments = [...assignments, assignmentToAdd];
     addDebugLog(`Calling onAssignmentsChange with ${newAssignments.length} assignments`);
+    addDebugLog(`New assignments IDs: [${newAssignments.map(a => a.id).join(', ')}]`);
     onAssignmentsChange(newAssignments);
   };
 
