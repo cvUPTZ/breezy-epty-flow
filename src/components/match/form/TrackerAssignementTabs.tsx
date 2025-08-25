@@ -1,12 +1,11 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, UserPlus, Trash2, ChevronRight, Layers, PersonStanding } from 'lucide-react';
+import { Users, UserPlus, Trash2, ChevronRight, Layers, PersonStanding, Bug } from 'lucide-react';
 import { TrackerAssignment, Player } from '@/types/trackerAssignment';
 import { EVENT_TYPE_CATEGORIES } from '@/constants/eventTypes';
 
@@ -32,6 +31,24 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
   assignments,
   onAssignmentsChange
 }) => {
+  // Debug state to show logs
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const [showDebug, setShowDebug] = useState(false);
+
+  // Debug logging function
+  const addDebugLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    const logMessage = `[${timestamp}] ${message}`;
+    console.log(logMessage);
+    setDebugLogs(prev => [logMessage, ...prev].slice(0, 20)); // Keep last 20 logs
+  };
+
+  // Monitor assignments changes
+  useEffect(() => {
+    addDebugLog(`Assignments updated. Count: ${assignments.length}`);
+    addDebugLog(`Assignment IDs: [${assignments.map(a => a.id).join(', ')}]`);
+  }, [assignments]);
+
   // State for "By Player" tab
   const [playerTabState, setPlayerTabState] = useState({
     selectedTracker: '',
@@ -51,20 +68,72 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
   const allPlayers = [...homeTeamPlayers, ...awayTeamPlayers];
 
   const handleCreateAssignment = (newAssignment: Omit<TrackerAssignment, 'id' | 'tracker_name' | 'tracker_email'>) => {
+    addDebugLog('Creating new assignment...');
+    
     const trackerUser = trackerUsers.find(user => user.id === newAssignment.tracker_user_id);
-    if (!trackerUser) return;
+    if (!trackerUser) {
+      addDebugLog(`ERROR: Tracker user not found for ID: ${newAssignment.tracker_user_id}`);
+      return;
+    }
 
+    const newId = crypto.randomUUID();
     const assignmentToAdd: TrackerAssignment = {
-      id: crypto.randomUUID(),
+      id: newId,
       ...newAssignment,
       tracker_name: trackerUser.full_name || trackerUser.email,
       tracker_email: trackerUser.email,
     };
-    onAssignmentsChange([...assignments, assignmentToAdd]);
+    
+    addDebugLog(`Created assignment with ID: ${newId}`);
+    addDebugLog(`Assignment details: ${JSON.stringify({
+      id: assignmentToAdd.id,
+      tracker: assignmentToAdd.tracker_name,
+      playerCount: assignmentToAdd.player_ids.length,
+      eventCount: assignmentToAdd.assigned_event_types.length
+    })}`);
+    
+    const newAssignments = [...assignments, assignmentToAdd];
+    addDebugLog(`Calling onAssignmentsChange with ${newAssignments.length} assignments`);
+    onAssignmentsChange(newAssignments);
   };
 
   const handleDeleteAssignment = (assignmentId: string) => {
-    onAssignmentsChange(assignments.filter(a => a.id !== assignmentId));
+    addDebugLog(`🗑️ DELETE REQUESTED for assignment ID: ${assignmentId}`);
+    addDebugLog(`Current assignments before delete: ${assignments.length}`);
+    addDebugLog(`Assignment IDs before delete: [${assignments.map(a => a.id).join(', ')}]`);
+    
+    // Check if assignment exists
+    const assignmentToDelete = assignments.find(a => a.id === assignmentId);
+    if (!assignmentToDelete) {
+      addDebugLog(`❌ ERROR: Assignment with ID ${assignmentId} not found!`);
+      return;
+    }
+    
+    addDebugLog(`✅ Found assignment to delete: ${assignmentToDelete.tracker_name}`);
+    
+    // Filter out the assignment
+    const newAssignments = assignments.filter(a => {
+      const shouldKeep = a.id !== assignmentId;
+      addDebugLog(`Assignment ${a.id} (${a.tracker_name}): ${shouldKeep ? '✅ keeping' : '❌ deleting'}`);
+      return shouldKeep;
+    });
+    
+    addDebugLog(`Assignments after filter: ${newAssignments.length}`);
+    addDebugLog(`New assignment IDs: [${newAssignments.map(a => a.id).join(', ')}]`);
+    
+    // Check if the callback is a function
+    if (typeof onAssignmentsChange !== 'function') {
+      addDebugLog(`❌ ERROR: onAssignmentsChange is not a function! Type: ${typeof onAssignmentsChange}`);
+      return;
+    }
+    
+    addDebugLog(`📞 Calling onAssignmentsChange with ${newAssignments.length} assignments`);
+    onAssignmentsChange(newAssignments);
+    
+    // Verify the change after a brief delay
+    setTimeout(() => {
+      addDebugLog(`⏰ Post-delete check: Current assignments count is ${assignments.length}`);
+    }, 100);
   };
 
   const handleCategoryToggle = (categoryKey: string) => {
@@ -95,7 +164,11 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
   };
 
   const createPlayerAssignment = () => {
-    if (!playerTabState.selectedTracker || playerTabState.selectedPlayers.length === 0 || playerTabState.selectedEventTypes.length === 0) return;
+    if (!playerTabState.selectedTracker || playerTabState.selectedPlayers.length === 0 || playerTabState.selectedEventTypes.length === 0) {
+      addDebugLog('Cannot create player assignment: missing required fields');
+      return;
+    }
+    
     handleCreateAssignment({
       tracker_user_id: playerTabState.selectedTracker,
       player_ids: playerTabState.selectedPlayers,
@@ -116,14 +189,16 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
   
   const createLineAssignment = () => {
     const { selectedTracker, selectedTeam, selectedLine, selectedEventTypes } = lineTabState;
-    if (!selectedTracker || !selectedLine || selectedEventTypes.length === 0) return;
+    if (!selectedTracker || !selectedLine || selectedEventTypes.length === 0) {
+      addDebugLog('Cannot create line assignment: missing required fields');
+      return;
+    }
 
     const targetPlayers = selectedTeam === 'home' ? homeTeamPlayers : awayTeamPlayers;
     const linePositions = LINE_DEFINITIONS[selectedLine] || [];
 
     const assignedPlayerIds = targetPlayers
       .filter(player => {
-        // Safely handle player position - check if it exists and matches line positions
         if (!player.position) return false;
         const playerPosition = player.position.toUpperCase().trim();
         return linePositions.includes(playerPosition);
@@ -131,8 +206,7 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
       .map(player => player.id);
     
     if (assignedPlayerIds.length === 0) {
-        console.warn(`No players found for ${selectedLine} in the ${selectedTeam} team. Available positions:`, 
-          targetPlayers.map(p => p.position).filter(Boolean));
+        addDebugLog(`No players found for ${selectedLine} in the ${selectedTeam} team`);
         return;
     }
     
@@ -183,7 +257,7 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
               <Checkbox
                 checked={category.events.every(e => selectedTypes.includes(e.key))}
                 onCheckedChange={(checked) => onCategoryChange(Boolean(checked), category.events.map(e => e.key))}
-                onClick={(e) => e.stopPropagation()} // Prevent collapsing
+                onClick={(e) => e.stopPropagation()}
               />
               <Badge style={{ backgroundColor: category.color }} className="text-white">{category.label}</Badge>
             </div>
@@ -208,8 +282,49 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> Tracker Assignments</CardTitle>
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5" /> 
+            Tracker Assignments
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDebug(!showDebug)}
+            className="text-xs"
+          >
+            <Bug className="h-4 w-4 mr-1" />
+            {showDebug ? 'Hide' : 'Show'} Debug
+          </Button>
+        </CardTitle>
       </CardHeader>
+      
+      {/* Debug Panel */}
+      {showDebug && (
+        <div className="mx-6 mb-4 p-4 bg-gray-900 text-green-400 rounded-lg font-mono text-xs max-h-60 overflow-y-auto">
+          <div className="flex justify-between items-center mb-2">
+            <strong>Debug Console</strong>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDebugLogs([])}
+              className="text-xs text-green-400 hover:text-green-300"
+            >
+              Clear
+            </Button>
+          </div>
+          <div className="space-y-1">
+            {debugLogs.length === 0 ? (
+              <div className="text-gray-500">No logs yet...</div>
+            ) : (
+              debugLogs.map((log, index) => (
+                <div key={index}>{log}</div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+      
       <CardContent className="space-y-6">
         <Tabs defaultValue="by-player" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -333,8 +448,25 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
                   <div>
                     <h4 className="font-medium">{assignment.tracker_name}</h4>
                     <p className="text-sm text-gray-600">{assignment.tracker_email}</p>
+                    {showDebug && (
+                      <p className="text-xs text-gray-500 font-mono">ID: {assignment.id}</p>
+                    )}
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => assignment.id && handleDeleteAssignment(assignment.id)} className="text-red-600 hover:text-red-800"><Trash2 className="h-4 w-4" /></Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      addDebugLog(`🖱️ Delete button clicked for assignment: ${assignment.id}`);
+                      if (assignment.id) {
+                        handleDeleteAssignment(assignment.id);
+                      } else {
+                        addDebugLog(`❌ ERROR: Assignment ID is missing!`);
+                      }
+                    }} 
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
                 <div>
                   <p className="text-sm font-medium mb-2">Assigned Players:</p>
