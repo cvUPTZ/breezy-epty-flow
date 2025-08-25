@@ -1,8 +1,8 @@
 // pages/TrackerManagementPage.tsx
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import TrackerAssignmentTabs from './TrackerAssignmentTabs';
-import LineBasedTrackerUI from './LineBasedTrackerUI';
+import TrackerAssignmentTabs from '@/components/admin/TrackerAssignmentTabs';
+import LineBasedTrackerUI from '@/components/match/LineBasedTrackerUI';
 import { 
   Player, 
   TrackerAssignment, 
