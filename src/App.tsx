@@ -24,6 +24,7 @@ import Index from './pages/Index';
 import MatchAnalysisV2 from './pages/MatchAnalysisV2';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import CreateMatch from './pages/CreateMatch';
+import TrackerManagementPage from './pages/TrackerManagementPage';
 import MatchTimerPage from './pages/MatchTimerPage';
 import VideoAnalysis from './pages/VideoAnalysis';
 import DirectVideoAnalyzer from './pages/DirectVideoAnalyzer';
@@ -187,7 +188,7 @@ const AppContent = () => {
             requiredRoles={['admin']}
             requiredPermissions={['canEditMatches']}
           >
-            <CreateMatch />
+            <TrackerManagementPage />
           </RequireAuth>
         } />
         
@@ -242,7 +243,7 @@ const AppContent = () => {
             requiredRoles={['admin']}
             requiredPermissions={['canCreateMatches']}
           >
-            <CreateMatch />
+            <TrackerManagementPage />
           </RequireAuth>
         } />
         
