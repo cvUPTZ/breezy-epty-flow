@@ -19,8 +19,8 @@ interface Assignment {
   assigned_player_id: number | null;
   assigned_event_types: string[] | null;
   profiles?: {
-    full_name?: string;
-    email?: string;
+    full_name?: string | null;
+    email?: string | null;
   };
 }
 
