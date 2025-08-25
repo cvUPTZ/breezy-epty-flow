@@ -6,17 +6,41 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, UserPlus, Trash2, ChevronRight, Layers, PersonStanding, Bug, Loader2 } from 'lucide-react';
-import { TrackerAssignment, Player } from '@/types/trackerAssignment';
+import { supabase } from '@/integrations/supabase/client';
 import { EVENT_TYPE_CATEGORIES } from '@/constants/eventTypes';
-import { createClient } from '@supabase/supabase-js';
+
+// Updated interfaces to match your actual data structure
+interface Player {
+  id: number;
+  jersey_number: number;
+  player_name: string;
+  team: 'home' | 'away';
+  position?: string;
+}
+
+interface TrackerUser {
+  id: string;
+  email: string;
+  full_name?: string | null;
+  role: 'admin' | 'user' | 'tracker' | 'teacher';
+}
+
+interface Assignment {
+  id: string;
+  tracker_user_id: string;
+  tracker_name: string;
+  tracker_email: string;
+  player_ids: number[];
+  assigned_event_types: string[];
+}
 
 interface TrackerAssignmentTabsProps {
   homeTeamPlayers: Player[];
   awayTeamPlayers: Player[];
-  trackerUsers: any[];
-  assignments: TrackerAssignment[];
-  onAssignmentsChange: (assignments: TrackerAssignment[]) => void;
-  matchId: string; // Add matchId prop for database operations
+  trackerUsers: TrackerUser[];
+  assignments: Assignment[];
+  onAssignmentsChange: (assignments: Assignment[]) => void;
+  matchId?: string; // Made optional for when creating new matches
 }
 
 // Updated and more comprehensive line definitions for football positions
@@ -25,12 +49,6 @@ const LINE_DEFINITIONS: Record<string, string[]> = {
   Midfield: ['DM', 'CM', 'AM', 'LM', 'RM', 'CDM', 'CAM', 'DMC', 'MC', 'AMC', 'ML', 'MR'],
   Attack: ['CF', 'ST', 'LW', 'RW', 'LF', 'RF', 'SS', 'FW'],
 };
-
-// Initialize Supabase client (you'll need to replace with your actual config)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-);
 
 const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
   homeTeamPlayers,
@@ -56,7 +74,7 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
   // Monitor assignments changes
   useEffect(() => {
     addDebugLog(`Assignments updated. Count: ${assignments.length}`);
-    addDebugLog(`Assignment IDs: [${assignments.map(a => a.id).join(', ')}]`);
+    addDebugLog(`Assignment IDs: [${assignments.map(a => a.id || 'UNDEFINED').join(', ')}]`);
   }, [assignments]);
 
   // State for "By Player" tab
@@ -79,6 +97,11 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
 
   // Database function to delete assignment
   const deleteAssignmentFromDB = async (assignmentId: string): Promise<boolean> => {
+    if (!matchId) {
+      addDebugLog('⚠️ No matchId provided, skipping database deletion');
+      return true; // Allow local deletion for new matches
+    }
+
     try {
       addDebugLog(`🗄️ Deleting assignment ${assignmentId} from database...`);
       
@@ -102,19 +125,22 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
   };
 
   // Database function to create assignment
-  const createAssignmentInDB = async (assignment: TrackerAssignment): Promise<boolean> => {
+  const createAssignmentInDB = async (assignment: Assignment): Promise<boolean> => {
+    if (!matchId) {
+      addDebugLog('⚠️ No matchId provided, skipping database creation');
+      return true; // Allow local creation for new matches
+    }
+
     try {
       addDebugLog(`🗄️ Creating assignment in database...`);
       
-      // Create separate records for each player and event type combination
+      // Create separate records for each player
       const dbRecords = [];
       
       for (const playerId of assignment.player_ids) {
-        const player = allPlayers.find(p => p.id === playerId);
         const playerTeamId = homeTeamPlayers.some(p => p.id === playerId) ? 'home' : 'away';
         
         dbRecords.push({
-          id: assignment.id, // Use the same ID for all related records
           match_id: matchId,
           tracker_user_id: assignment.tracker_user_id,
           assigned_player_id: playerId,
@@ -154,7 +180,7 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
     return 'assignment_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   };
 
-  const handleCreateAssignment = async (newAssignment: Omit<TrackerAssignment, 'id' | 'tracker_name' | 'tracker_email'>) => {
+  const handleCreateAssignment = async (newAssignment: Omit<Assignment, 'id' | 'tracker_name' | 'tracker_email'>) => {
     addDebugLog('Creating new assignment...');
     
     const trackerUser = trackerUsers.find(user => user.id === newAssignment.tracker_user_id);
@@ -181,37 +207,47 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
 
     const newId = generateId();
     
-    const assignmentToAdd: TrackerAssignment = {
+    const assignmentToAdd: Assignment = {
       id: newId,
       ...newAssignment,
-      player_ids: validPlayerIds, // Use only valid IDs
+      player_ids: validPlayerIds,
       tracker_name: trackerUser.full_name || trackerUser.email,
       tracker_email: trackerUser.email,
     };
     
-    // Try to create in database first
+    addDebugLog(`Generated assignment ID: ${newId}`);
+    addDebugLog(`Assignment object: ${JSON.stringify({
+      id: assignmentToAdd.id,
+      tracker: assignmentToAdd.tracker_name,
+      playerCount: assignmentToAdd.player_ids.length
+    })}`);
+    
+    // Try to create in database first (only if matchId exists)
     const dbSuccess = await createAssignmentInDB(assignmentToAdd);
     
     if (dbSuccess) {
-      // Update local state only after successful database operation
+      // Update local state
       const newAssignments = [...assignments, assignmentToAdd];
       addDebugLog(`Calling onAssignmentsChange with ${newAssignments.length} assignments`);
       onAssignmentsChange(newAssignments);
     } else {
       addDebugLog('❌ Failed to create assignment in database, not updating local state');
-      // You might want to show a user-friendly error message here
       alert('Failed to create assignment. Please try again.');
     }
   };
 
   const handleDeleteAssignment = async (assignmentId: string) => {
     addDebugLog(`🗑️ DELETE REQUESTED for assignment ID: ${assignmentId}`);
-    addDebugLog(`Current assignments before delete: ${assignments.length}`);
+    
+    if (!assignmentId) {
+      addDebugLog(`❌ ERROR: Assignment ID is undefined or empty!`);
+      return;
+    }
     
     // Check if assignment exists
     const assignmentToDelete = assignments.find(a => a.id === assignmentId);
     if (!assignmentToDelete) {
-      addDebugLog(`❌ ERROR: Assignment with ID ${assignmentId} not found!`);
+      addDebugLog(`❌ ERROR: Assignment with ID ${assignmentId} not found in local state!`);
       return;
     }
     
@@ -221,11 +257,11 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
     setDeletingAssignments(prev => new Set([...prev, assignmentId]));
     
     try {
-      // Delete from database first
+      // Delete from database first (only if matchId exists)
       const dbSuccess = await deleteAssignmentFromDB(assignmentId);
       
       if (dbSuccess) {
-        // Update local state only after successful database deletion
+        // Update local state
         const newAssignments = assignments.filter(a => a.id !== assignmentId);
         
         addDebugLog(`Assignments after filter: ${newAssignments.length}`);
@@ -237,7 +273,6 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
         addDebugLog(`✅ Assignment ${assignmentId} successfully deleted`);
       } else {
         addDebugLog('❌ Failed to delete from database, not updating local state');
-        // You might want to show a user-friendly error message here
         alert('Failed to delete assignment. Please try again.');
       }
     } catch (error) {
@@ -560,30 +595,30 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
             <p className="text-gray-500 text-center py-4">No assignments created yet</p>
           ) : (
             assignments.map((assignment) => (
-              <div key={assignment.id} className="border rounded-lg p-4 space-y-3">
+              <div key={assignment.id || 'no-id'} className="border rounded-lg p-4 space-y-3">
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="font-medium">{assignment.tracker_name}</h4>
                     <p className="text-sm text-gray-600">{assignment.tracker_email}</p>
                     {showDebug && (
-                      <p className="text-xs text-gray-500 font-mono">ID: {assignment.id}</p>
+                      <p className="text-xs text-gray-500 font-mono">ID: {assignment.id || 'UNDEFINED'}</p>
                     )}
                   </div>
                   <Button 
                     variant="outline" 
                     size="sm" 
                     onClick={() => {
-                      addDebugLog(`🖱️ Delete button clicked for assignment: ${assignment.id}`);
+                      addDebugLog(`🖱️ Delete button clicked for assignment: ${assignment.id || 'UNDEFINED'}`);
                       if (assignment.id) {
                         handleDeleteAssignment(assignment.id);
                       } else {
                         addDebugLog(`❌ ERROR: Assignment ID is missing!`);
                       }
                     }} 
-                    disabled={deletingAssignments.has(assignment.id)}
+                    disabled={deletingAssignments.has(assignment.id || '')}
                     className="text-red-600 hover:text-red-800 disabled:opacity-50"
                   >
-                    {deletingAssignments.has(assignment.id) ? (
+                    {deletingAssignments.has(assignment.id || '') ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Trash2 className="h-4 w-4" />
