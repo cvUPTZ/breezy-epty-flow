@@ -25,6 +25,7 @@ import MatchAnalysisV2 from './pages/MatchAnalysisV2';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import CreateMatch from './pages/CreateMatch';
 import TrackerManagementPage from './pages/TrackerManagementPage';
+import TrackerManagementPageWrapper from './pages/TrackerManagementPageWrapper';
 import MatchTimerPage from './pages/MatchTimerPage';
 import VideoAnalysis from './pages/VideoAnalysis';
 import DirectVideoAnalyzer from './pages/DirectVideoAnalyzer';
@@ -183,15 +184,6 @@ const AppContent = () => {
           </RequireAuth>
         } />
         
-        <Route path="/match/:matchId/edit" element={
-          <RequireAuth 
-            requiredRoles={['admin']}
-            requiredPermissions={['canEditMatches']}
-          >
-            <TrackerManagementPage />
-          </RequireAuth>
-        } />
-        
         <Route path="/match/:matchId/timer" element={
           <RequireAuth 
             requiredRoles={['admin']}
@@ -243,7 +235,15 @@ const AppContent = () => {
             requiredRoles={['admin']}
             requiredPermissions={['canCreateMatches']}
           >
-            <TrackerManagementPage />
+            <CreateMatch />
+          </RequireAuth>
+        } />
+        <Route path="/match/:matchId/edit" element={
+          <RequireAuth
+            requiredRoles={['admin']}
+            requiredPermissions={['canEditMatches']}
+          >
+            <TrackerManagementPageWrapper />
           </RequireAuth>
         } />
         
