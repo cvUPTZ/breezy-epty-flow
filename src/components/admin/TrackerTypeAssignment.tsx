@@ -82,7 +82,7 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
         .from('tracker_line_assignments')
         .select(`
           *,
-          tracker_profile:profiles(
+          tracker_profile:profiles!tracker_user_id(
             full_name,
             email
           )
@@ -94,8 +94,8 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
       const processedAssignments = (data || []).map(assignment => ({
         ...assignment,
         line_players: Array.isArray(assignment.line_players) ? assignment.line_players : [],
-        tracker_name: (assignment as any).tracker_profile?.[0]?.full_name,
-        tracker_email: (assignment as any).tracker_profile?.[0]?.email
+        tracker_name: (assignment as any).tracker_profile?.full_name,
+        tracker_email: (assignment as any).tracker_profile?.email
       }));
 
       setAssignments(processedAssignments);
