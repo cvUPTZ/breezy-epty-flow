@@ -1,7 +1,7 @@
 // src/pages/TrackerManagementPageWrapper.tsx
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { useMatchData } from '@/hooks/useMatchData';
+import useMatchData from '@/hooks/useMatchData';
 import TrackerManagementPage from '@/pages/TrackerManagementPage';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertTriangle, Loader } from 'lucide-react';
