@@ -59,13 +59,26 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
   // State for "By Line" tab
   const [lineTabState, setLineTabState] = useState({
     selectedTracker: '',
-    selectedTeam: 'home',
+    selectedTeam: 'home' as 'home' | 'away',
     selectedLine: 'Defense',
     selectedEventTypes: [] as string[],
   });
 
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const allPlayers = [...homeTeamPlayers, ...awayTeamPlayers];
+
+  // Generate unique ID with fallback
+  const generateId = (): string => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      try {
+        return crypto.randomUUID();
+      } catch (error) {
+        addDebugLog(`crypto.randomUUID() failed, using fallback: ${error}`);
+      }
+    }
+    // Fallback ID generation
+    return 'assignment_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  };
 
   const handleCreateAssignment = (newAssignment: Omit<TrackerAssignment, 'id' | 'tracker_name' | 'tracker_email'>) => {
     addDebugLog('Creating new assignment...');
@@ -76,24 +89,28 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
       return;
     }
 
-    // Generate ID with fallback for environments where crypto.randomUUID() might not work
-    let newId: string;
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-      try {
-        newId = crypto.randomUUID();
-      } catch (error) {
-        newId = 'assignment_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        addDebugLog(`crypto.randomUUID() failed, using fallback: ${error}`);
-      }
-    } else {
-      // Fallback ID generation for environments without crypto.randomUUID()
-      newId = 'assignment_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      addDebugLog(`crypto.randomUUID() not available, using fallback ID`);
+    // Validate that all player IDs exist
+    const validPlayerIds = newAssignment.player_ids.filter(id => 
+      allPlayers.some(player => player.id === id)
+    );
+    
+    if (validPlayerIds.length !== newAssignment.player_ids.length) {
+      addDebugLog(`WARNING: Some player IDs not found. Expected: ${newAssignment.player_ids.length}, Found: ${validPlayerIds.length}`);
+      const missingIds = newAssignment.player_ids.filter(id => !validPlayerIds.includes(id));
+      addDebugLog(`Missing player IDs: ${missingIds.join(', ')}`);
     }
+
+    if (validPlayerIds.length === 0) {
+      addDebugLog('ERROR: No valid players found for assignment');
+      return;
+    }
+
+    const newId = generateId();
     
     const assignmentToAdd: TrackerAssignment = {
       id: newId,
       ...newAssignment,
+      player_ids: validPlayerIds, // Use only valid IDs
       tracker_name: trackerUser.full_name || trackerUser.email,
       tracker_email: trackerUser.email,
     };
@@ -394,7 +411,7 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">2. Select Team</label>
-                  <Select value={lineTabState.selectedTeam} onValueChange={v => setLineTabState(p => ({...p, selectedTeam: v}))}>
+                  <Select value={lineTabState.selectedTeam} onValueChange={v => setLineTabState(p => ({...p, selectedTeam: v as 'home' | 'away'}))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="home">Home Team</SelectItem>
@@ -408,7 +425,7 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {Object.keys(LINE_DEFINITIONS).map(line => {
-                        const playersCount = getLinePlayersCount(lineTabState.selectedTeam as 'home' | 'away', line);
+                        const playersCount = getLinePlayersCount(lineTabState.selectedTeam, line);
                         return (
                           <SelectItem key={line} value={line}>
                             {line} ({playersCount} players)
@@ -496,7 +513,11 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
                           #{player.jersey_number} {player.player_name} ({player.team}) 
                           {player.position && ` - ${player.position}`}
                         </Badge>
-                      ) : null;
+                      ) : (
+                        <Badge key={playerId} variant="destructive" className="text-xs">
+                          Player ID {playerId} not found
+                        </Badge>
+                      );
                     })}
                   </div>
                 </div>

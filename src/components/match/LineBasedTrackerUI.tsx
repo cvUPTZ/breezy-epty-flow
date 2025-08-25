@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { EventType } from '@/types';
 import { Shield, Zap, Target, Globe } from 'lucide-react';
 
-interface Player {
-  id: string | number;
+interface LineBasedPlayer {
+  id: number; // Updated to use consistent number type
   name: string;
   jersey_number?: number;
   position?: string;
@@ -15,14 +15,14 @@ interface Player {
 interface LineAssignment {
   line: 'defense' | 'midfield' | 'attack' | 'all_events';
   team: 'home' | 'away' | 'both';
-  players: Player[];
+  players: LineBasedPlayer[];
   eventTypes: string[];
   teamName: string;
 }
 
 interface LineBasedTrackerUIProps {
   assignments: LineAssignment[];
-  recordEvent: (eventType: EventType, playerId?: string | number, teamId?: 'home' | 'away') => void;
+  recordEvent: (eventType: EventType, playerId?: number, teamId?: 'home' | 'away') => void; // Updated playerId type
   matchId: string;
 }
 
@@ -51,7 +51,7 @@ const LineBasedTrackerUI: React.FC<LineBasedTrackerUIProps> = ({
     }
   };
 
-  const handleEventRecord = (eventType: string, playerId?: string | number, teamId?: 'home' | 'away') => {
+  const handleEventRecord = (eventType: string, playerId?: number, teamId?: 'home' | 'away') => {
     recordEvent(eventType as EventType, playerId, teamId);
   };
 
@@ -109,6 +109,7 @@ const LineBasedTrackerUI: React.FC<LineBasedTrackerUIProps> = ({
                   {assignment.players.map((player) => (
                     <Badge key={player.id} variant="secondary" className="text-xs">
                       #{player.jersey_number || '?'} {player.name}
+                      {player.position && ` (${player.position})`}
                     </Badge>
                   ))}
                 </div>
@@ -141,6 +142,7 @@ const LineBasedTrackerUI: React.FC<LineBasedTrackerUIProps> = ({
                     <div key={player.id} className="space-y-1">
                       <div className="text-xs font-medium text-muted-foreground">
                         Player {playerIndex + 1}: #{player.jersey_number || '?'} {player.name}
+                        {player.position && ` (${player.position})`}
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
                         {assignment.eventTypes.map((eventType) => (
