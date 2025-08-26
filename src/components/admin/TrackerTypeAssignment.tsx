@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, Zap, Target, Users, Trash2, Plus } from 'lucide-react';
+import { Shield, Zap, Target, Users, Trash2, Plus, PersonStanding, ChevronRight } from 'lucide-react';
 import { EVENT_TYPE_CATEGORIES } from '@/constants/eventTypes';
 
 interface TrackerTypeAssignmentProps {
@@ -38,14 +39,19 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
   const [selectedTrackerType, setSelectedTrackerType] = useState<TrackerType>('specialized');
   const [selectedTracker, setSelectedTracker] = useState<string>('');
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+
+  // New state for player selection
+  const [selectedTeam, setSelectedTeam] = useState<'home' | 'away' | 'both'>('both');
+  const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
 
   const trackerTypeConfig = {
     specialized: {
       icon: Users,
       label: 'Specialized Tracker',
       color: 'bg-purple-100 border-purple-300 text-purple-800',
-      description: 'Tracks specific events across all players'
+      description: 'Tracks specific events across selected players'
     },
     defence: {
       icon: Shield,
@@ -70,6 +76,11 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
   useEffect(() => {
     fetchData();
   }, [matchId]);
+
+  // Reset selected players when tracker type or team changes
+  useEffect(() => {
+    setSelectedPlayers([]);
+  }, [selectedTrackerType, selectedTeam]);
 
   const fetchData = async () => {
     await Promise.all([fetchAssignments(), fetchTrackerUsers()]);
@@ -107,7 +118,7 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
           index === self.findIndex((p: any) => p && typeof p === 'object' && p.id === player.id)
         );
 
-        console.log('🔍 Processing assignment:', {
+        console.log('Processing assignment:', {
           id: assignment.id,
           tracker_type: assignment.tracker_type,
           playersCount: uniquePlayers.length,
@@ -122,7 +133,7 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
         };
       });
 
-      console.log('📊 Total assignments fetched:', processedAssignments.length);
+      console.log('Total assignments fetched:', processedAssignments.length);
       setAssignments(processedAssignments);
     } catch (error: any) {
       console.error('Error fetching assignments:', error);
@@ -154,10 +165,23 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
   };
 
   const getLinePlayers = (trackerType: TrackerType) => {
-    if (trackerType === 'specialized') return [];
+    if (trackerType === 'specialized') {
+      // For specialized tracker, return selected players
+      const allPlayers = [...homeTeamPlayers, ...awayTeamPlayers];
+      return allPlayers.filter(player => selectedPlayers.includes(player.id));
+    }
 
-    const allPlayers = [...homeTeamPlayers, ...awayTeamPlayers];
-    return allPlayers.filter(player => {
+    // Get players based on team selection
+    let playersToFilter = [];
+    if (selectedTeam === 'home') {
+      playersToFilter = homeTeamPlayers;
+    } else if (selectedTeam === 'away') {
+      playersToFilter = awayTeamPlayers;
+    } else {
+      playersToFilter = [...homeTeamPlayers, ...awayTeamPlayers];
+    }
+
+    return playersToFilter.filter(player => {
       const position = player.position?.toLowerCase() || '';
       switch (trackerType) {
         case 'defence':
@@ -180,6 +204,22 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
     );
   };
 
+  const handleCategoryToggle = (categoryKey: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      newSet.has(categoryKey) ? newSet.delete(categoryKey) : newSet.add(categoryKey);
+      return newSet;
+    });
+  };
+
+  const handlePlayerToggle = (playerId: number) => {
+    setSelectedPlayers(prev =>
+      prev.includes(playerId)
+        ? prev.filter(id => id !== playerId)
+        : [...prev, playerId]
+    );
+  };
+
   const handleCreateAssignment = async () => {
     if (!selectedTracker || selectedEventTypes.length === 0) {
       toast({
@@ -190,8 +230,26 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
       return;
     }
 
+    if (selectedTrackerType === 'specialized' && selectedPlayers.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please select at least one player for specialized tracking",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const linePlayers = getLinePlayers(selectedTrackerType);
+      
+      if (linePlayers.length === 0 && selectedTrackerType !== 'specialized') {
+        toast({
+          title: "Validation Error",
+          description: `No players found for ${selectedTrackerType} in the selected team(s)`,
+          variant: "destructive"
+        });
+        return;
+      }
       
       // First, delete any existing assignments for this tracker and match
       await supabase
@@ -230,6 +288,8 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
       // Reset form
       setSelectedTracker('');
       setSelectedEventTypes([]);
+      setSelectedPlayers([]);
+      setExpandedCategories(new Set());
     } catch (error: any) {
       console.error('Error creating assignment:', error);
       toast({
@@ -241,10 +301,10 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
   };
 
   const handleDeleteAssignment = async (assignmentId: string) => {
-    console.log('🖱️ Delete button clicked for assignment:', assignmentId);
+    console.log('Delete button clicked for assignment:', assignmentId);
     
     if (!assignmentId) {
-      console.error('❌ Assignment ID is undefined');
+      console.error('Assignment ID is undefined');
       toast({
         title: "Error",
         description: "Invalid assignment ID",
@@ -298,6 +358,82 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
       });
     }
   };
+
+  const renderPlayerGrid = (players: any[], team: 'home' | 'away') => (
+    <div>
+      <h4 className="font-medium text-sm text-gray-700 mb-2 capitalize">{team} Team</h4>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+        {players.map(player => (
+          <div
+            key={player.id}
+            className={`p-2 border rounded cursor-pointer transition-colors ${
+              selectedPlayers.includes(player.id) 
+                ? 'border-blue-500 bg-blue-50' 
+                : 'border-gray-300 hover:border-gray-400'
+            }`}
+            onClick={() => handlePlayerToggle(player.id)}
+          >
+            <div className="text-xs font-medium">#{player.jersey_number}</div>
+            <div className="text-xs text-gray-600 truncate">{player.player_name}</div>
+            {player.position && (
+              <div className="text-xs text-blue-600 font-semibold">{player.position}</div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderEventTypeCategories = () => (
+    <div className="space-y-3">
+      {EVENT_TYPE_CATEGORIES.map(category => (
+        <div key={category.key} className="border rounded-lg">
+          <div 
+            className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50" 
+            onClick={() => handleCategoryToggle(category.key)}
+          >
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={category.events.every(e => selectedEventTypes.includes(e.key))}
+                onCheckedChange={(checked) => {
+                  const eventKeys = category.events.map(e => e.key);
+                  if (checked) {
+                    setSelectedEventTypes(prev => [...new Set([...prev, ...eventKeys])]);
+                  } else {
+                    setSelectedEventTypes(prev => prev.filter(k => !eventKeys.includes(k)));
+                  }
+                }}
+                onClick={(e) => e.stopPropagation()}
+              />
+              <Badge style={{ backgroundColor: category.color }} className="text-white">
+                {category.label}
+              </Badge>
+            </div>
+            <ChevronRight className={`h-4 w-4 transition-transform ${
+              expandedCategories.has(category.key) ? 'rotate-90' : ''
+            }`} />
+          </div>
+          {expandedCategories.has(category.key) && (
+            <div className="px-3 pb-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {category.events.map(event => (
+                <div
+                  key={event.key}
+                  className={`p-2 border rounded cursor-pointer text-center text-xs transition-colors ${
+                    selectedEventTypes.includes(event.key)
+                      ? 'border-green-500 bg-green-50 text-green-700'
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                  onClick={() => handleEventTypeToggle(event.key)}
+                >
+                  {event.label}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 
   if (loading) {
     return <div className="p-4 text-center">Loading tracker assignments...</div>;
@@ -360,39 +496,63 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
             </Select>
           </div>
 
+          {/* Team Selection for non-specialized trackers */}
+          {selectedTrackerType !== 'specialized' && (
+            <div>
+              <label className="block text-sm font-medium mb-2">Select Team</label>
+              <Select value={selectedTeam} onValueChange={(value) => setSelectedTeam(value as 'home' | 'away' | 'both')}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="both">Both Teams</SelectItem>
+                  <SelectItem value="home">Home Team Only</SelectItem>
+                  <SelectItem value="away">Away Team Only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Player Selection for specialized tracker */}
+          {selectedTrackerType === 'specialized' && (
+            <div>
+              <label className="block text-sm font-medium mb-2">Select Players</label>
+              <Tabs value={selectedTeam === 'both' ? 'both' : selectedTeam} onValueChange={(value) => setSelectedTeam(value as 'home' | 'away' | 'both')}>
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="both">Both Teams</TabsTrigger>
+                  <TabsTrigger value="home">Home Team</TabsTrigger>
+                  <TabsTrigger value="away">Away Team</TabsTrigger>
+                </TabsList>
+                <TabsContent value="both" className="space-y-4 mt-4">
+                  {renderPlayerGrid(homeTeamPlayers, 'home')}
+                  {renderPlayerGrid(awayTeamPlayers, 'away')}
+                </TabsContent>
+                <TabsContent value="home" className="mt-4">
+                  {renderPlayerGrid(homeTeamPlayers, 'home')}
+                </TabsContent>
+                <TabsContent value="away" className="mt-4">
+                  {renderPlayerGrid(awayTeamPlayers, 'away')}
+                </TabsContent>
+              </Tabs>
+              <p className="text-xs text-gray-500 mt-2">
+                Selected: {selectedPlayers.length} player(s)
+              </p>
+            </div>
+          )}
+
           {/* Event Types Selection */}
           <div>
             <label className="block text-sm font-medium mb-2">Event Types</label>
-            <div className="space-y-3">
-              {EVENT_TYPE_CATEGORIES.map((category) => (
-                <div key={category.key} className="border rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge style={{ backgroundColor: category.color }} className="text-white">
-                      {category.label}
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {category.events.map((event) => (
-                      <div key={event.key} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={event.key}
-                          checked={selectedEventTypes.includes(event.key)}
-                          onCheckedChange={() => handleEventTypeToggle(event.key)}
-                        />
-                        <label htmlFor={event.key} className="text-sm">
-                          {event.label}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+            {renderEventTypeCategories()}
           </div>
 
           <Button
             onClick={handleCreateAssignment}
-            disabled={!selectedTracker || selectedEventTypes.length === 0}
+            disabled={
+              !selectedTracker || 
+              selectedEventTypes.length === 0 || 
+              (selectedTrackerType === 'specialized' && selectedPlayers.length === 0)
+            }
             className="w-full"
           >
             Create Assignment
@@ -430,7 +590,7 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          console.log('🖱️ Delete button clicked for assignment:', assignment.id);
+                          console.log('Delete button clicked for assignment:', assignment.id);
                           handleDeleteAssignment(assignment.id);
                         }}
                         className="text-red-600 hover:text-red-800"
@@ -439,18 +599,17 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
                       </Button>
                     </div>
 
-                    {assignment.tracker_type !== 'specialized' && (
-                      <div className="mb-3">
-                        <p className="text-sm font-medium mb-1">Assigned Players:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {assignment.line_players?.map((player: any, index: number) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              #{player.jersey_number} {player.player_name}
-                            </Badge>
-                          ))}
-                        </div>
+                    <div className="mb-3">
+                      <p className="text-sm font-medium mb-1">Assigned Players:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {assignment.line_players?.map((player: any, index: number) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            #{player.jersey_number} {player.player_name}
+                            {player.position && ` (${player.position})`}
+                          </Badge>
+                        ))}
                       </div>
-                    )}
+                    </div>
 
                     <div>
                       <p className="text-sm font-medium mb-1">Event Types:</p>
