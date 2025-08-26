@@ -391,28 +391,21 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
     }
   };
 
-  const renderPlayerGrid = (players: any[], team: 'home' | 'away') => (
-    <div>
-      <h4 className="font-medium text-sm text-gray-700 mb-2 capitalize">{team} Team</h4>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-        {players.map(player => (
-          <div
-            key={player.id}
-            className={`p-2 border rounded cursor-pointer transition-colors ${
-              selectedPlayers.includes(player.id) 
-                ? 'border-blue-500 bg-blue-50' 
-                : 'border-gray-300 hover:border-gray-400'
-            }`}
-            onClick={() => handlePlayerToggle(player.id)}
-          >
-            <div className="text-xs font-medium">#{player.jersey_number}</div>
-            <div className="text-xs text-gray-600 truncate">{player.player_name}</div>
-            {player.position && (
-              <div className="text-xs text-blue-600 font-semibold">{player.position}</div>
-            )}
-          </div>
-        ))}
-      </div>
+  const renderPlayerGrid = (players: any[], selectedPlayerIds: number[], onToggle: (id: number) => void) => (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+      {players.map(player => (
+        <div
+          key={player.id}
+          className={`p-2 border rounded cursor-pointer transition-colors ${selectedPlayerIds.includes(player.id) ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}
+          onClick={() => onToggle(player.id)}
+        >
+          <div className="text-xs font-medium">#{player.jersey_number}</div>
+          <div className="text-xs text-gray-600 truncate">{player.player_name}</div>
+          {player.position && (
+            <div className="text-xs text-blue-600 font-semibold">{player.position}</div>
+          )}
+        </div>
+      ))}
     </div>
   );
 
@@ -603,14 +596,22 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
                   <TabsTrigger value="away">Away Team</TabsTrigger>
                 </TabsList>
                 <TabsContent value="both" className="space-y-4 mt-4">
-                  {renderPlayerGrid(homeTeamPlayers, 'home')}
-                  {renderPlayerGrid(awayTeamPlayers, 'away')}
+                  <div>
+                    <h4 className="font-medium text-sm text-gray-700 mb-2">Home Team</h4>
+                    {renderPlayerGrid(homeTeamPlayers, selectedPlayers, handlePlayerToggle)}
+                  </div>
+                  <div className="mt-4">
+                    <h4 className="font-medium text-sm text-gray-700 mb-2">Away Team</h4>
+                    {renderPlayerGrid(awayTeamPlayers, selectedPlayers, handlePlayerToggle)}
+                  </div>
                 </TabsContent>
                 <TabsContent value="home" className="mt-4">
-                  {renderPlayerGrid(homeTeamPlayers, 'home')}
+                  <h4 className="font-medium text-sm text-gray-700 mb-2">Home Team</h4>
+                  {renderPlayerGrid(homeTeamPlayers, selectedPlayers, handlePlayerToggle)}
                 </TabsContent>
                 <TabsContent value="away" className="mt-4">
-                  {renderPlayerGrid(awayTeamPlayers, 'away')}
+                  <h4 className="font-medium text-sm text-gray-700 mb-2">Away Team</h4>
+                  {renderPlayerGrid(awayTeamPlayers, selectedPlayers, handlePlayerToggle)}
                 </TabsContent>
               </Tabs>
               <p className="text-xs text-gray-500 mt-2">
