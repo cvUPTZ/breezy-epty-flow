@@ -28,12 +28,7 @@ interface TrackerAssignment {
   tracker_email?: string;
 }
 
-// Updated and more comprehensive line definitions for football positions
-const LINE_DEFINITIONS: Record<string, string[]> = {
-  Defense: ['GK', 'CB', 'LB', 'RB', 'LWB', 'RWB', 'SW', 'DC', 'DR', 'DL'],
-  Midfield: ['DM', 'CM', 'AM', 'LM', 'RM', 'CDM', 'CAM', 'DMC', 'MC', 'AMC', 'ML', 'MR'],
-  Attack: ['CF', 'ST', 'LW', 'RW', 'LF', 'RF', 'SS', 'FW'],
-};
+const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
   matchId,
   homeTeamPlayers,
   awayTeamPlayers
@@ -50,7 +45,6 @@ const LINE_DEFINITIONS: Record<string, string[]> = {
   // New state for player selection
   const [selectedTeam, setSelectedTeam] = useState<'home' | 'away' | 'both'>('both');
   const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
-  const [selectedLine, setSelectedLine] = useState<string>('');
 
   const trackerTypeConfig = {
     specialized: {
@@ -86,7 +80,6 @@ const LINE_DEFINITIONS: Record<string, string[]> = {
   // Reset selected players when tracker type or team changes
   useEffect(() => {
     setSelectedPlayers([]);
-    setSelectedLine('');
   }, [selectedTrackerType, selectedTeam]);
 
   const fetchData = async () => {
@@ -171,17 +164,6 @@ const LINE_DEFINITIONS: Record<string, string[]> = {
     }
   };
 
-  // Helper function to get players count for each line
-  const getLinePlayersCount = (team: 'home' | 'away', line: string) => {
-    const targetPlayers = team === 'home' ? homeTeamPlayers : awayTeamPlayers;
-    const linePositions = LINE_DEFINITIONS[line] || [];
-    return targetPlayers.filter(player => {
-      if (!player.position) return false;
-      const playerPosition = player.position.toUpperCase().trim();
-      return linePositions.includes(playerPosition);
-    }).length;
-  };
-
   const getLinePlayers = (trackerType: TrackerType) => {
     if (trackerType === 'specialized') {
       // For specialized tracker, return selected players
@@ -199,17 +181,6 @@ const LINE_DEFINITIONS: Record<string, string[]> = {
       playersToFilter = [...homeTeamPlayers, ...awayTeamPlayers];
     }
 
-    // If a specific line is selected, use line definitions
-    if (selectedLine && LINE_DEFINITIONS[selectedLine]) {
-      const linePositions = LINE_DEFINITIONS[selectedLine];
-      return playersToFilter.filter(player => {
-        if (!player.position) return false;
-        const playerPosition = player.position.toUpperCase().trim();
-        return linePositions.includes(playerPosition);
-      });
-    }
-
-    // Fallback to position-based filtering (original logic)
     return playersToFilter.filter(player => {
       const position = player.position?.toLowerCase() || '';
       switch (trackerType) {
@@ -318,7 +289,6 @@ const LINE_DEFINITIONS: Record<string, string[]> = {
       setSelectedTracker('');
       setSelectedEventTypes([]);
       setSelectedPlayers([]);
-      setSelectedLine('');
       setExpandedCategories(new Set());
     } catch (error: any) {
       console.error('Error creating assignment:', error);
@@ -526,67 +496,20 @@ const LINE_DEFINITIONS: Record<string, string[]> = {
             </Select>
           </div>
 
-          {/* Team Selection and Line Selection for non-specialized trackers */}
+          {/* Team Selection for non-specialized trackers */}
           {selectedTrackerType !== 'specialized' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">2. Select Team</label>
-                <Select value={selectedTeam} onValueChange={(value) => setSelectedTeam(value as 'home' | 'away' | 'both')}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="both">Both Teams</SelectItem>
-                    <SelectItem value="home">Home Team Only</SelectItem>
-                    <SelectItem value="away">Away Team Only</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">3. Select Line (Optional)</label>
-                <Select value={selectedLine} onValueChange={setSelectedLine}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Auto-detect by tracker type or select specific line" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Auto-detect by tracker type</SelectItem>
-                    {Object.keys(LINE_DEFINITIONS).map(line => {
-                      let playersCount = 0;
-                      if (selectedTeam === 'both') {
-                        playersCount = getLinePlayersCount('home', line) + getLinePlayersCount('away', line);
-                      } else if (selectedTeam === 'home' || selectedTeam === 'away') {
-                        playersCount = getLinePlayersCount(selectedTeam, line);
-                      }
-                      return (
-                        <SelectItem key={line} value={line}>
-                          {line} ({playersCount} players)
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-
-          {/* Show which players will be assigned for line trackers */}
-          {selectedTrackerType !== 'specialized' && (selectedLine || selectedTrackerType !== 'specialized') && (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm font-medium text-blue-900 mb-2">
-                Players that will be assigned:
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {getLinePlayers(selectedTrackerType).map(player => (
-                  <Badge key={player.id} variant="outline" className="text-xs">
-                    #{player.jersey_number} {player.player_name} ({player.position || 'No position'})
-                  </Badge>
-                ))}
-              </div>
-              {getLinePlayers(selectedTrackerType).length === 0 && (
-                <p className="text-sm text-amber-700">
-                  No players found for the selected criteria. Try adjusting your team or line selection.
-                </p>
-              )}
+            <div>
+              <label className="block text-sm font-medium mb-2">Select Team</label>
+              <Select value={selectedTeam} onValueChange={(value) => setSelectedTeam(value as 'home' | 'away' | 'both')}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="both">Both Teams</SelectItem>
+                  <SelectItem value="home">Home Team Only</SelectItem>
+                  <SelectItem value="away">Away Team Only</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
 
