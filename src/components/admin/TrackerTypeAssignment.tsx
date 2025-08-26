@@ -52,7 +52,7 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
   // New state for player selection
   const [selectedTeam, setSelectedTeam] = useState<'home' | 'away' | 'both'>('both');
   const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
-  const [selectedLine, setSelectedLine] = useState<string>('');
+  const [selectedLine, setSelectedLine] = useState<string>('auto');
 
   const trackerTypeConfig = {
     specialized: {
@@ -88,7 +88,7 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
   // Reset selected players when tracker type or team changes
   useEffect(() => {
     setSelectedPlayers([]);
-    setSelectedLine('');
+    setSelectedLine('auto');
   }, [selectedTrackerType, selectedTeam]);
 
   const fetchData = async () => {
@@ -202,7 +202,7 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
     }
 
     // If a specific line is selected, use line definitions
-    if (selectedLine && LINE_DEFINITIONS[selectedLine]) {
+    if (selectedLine && selectedLine !== 'auto' && LINE_DEFINITIONS[selectedLine]) {
       const linePositions = LINE_DEFINITIONS[selectedLine];
       return playersToFilter.filter(player => {
         if (!player.position) return false;
@@ -320,7 +320,7 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
       setSelectedTracker('');
       setSelectedEventTypes([]);
       setSelectedPlayers([]);
-      setSelectedLine('');
+      setSelectedLine('auto');
       setExpandedCategories(new Set());
     } catch (error: any) {
       console.error('Error creating assignment:', error);
@@ -544,7 +544,7 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
                     <SelectValue placeholder="Auto-detect by tracker type or select specific line" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Auto-detect by tracker type</SelectItem>
+                    <SelectItem value="auto">Auto-detect by tracker type</SelectItem>
                     {Object.keys(LINE_DEFINITIONS).map(line => {
                       let playersCount = 0;
                       if (selectedTeam === 'both') {
