@@ -78,6 +78,12 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
 
   const fetchAssignments = async () => {
     try {
+      // Clean up old individual assignments first
+      await supabase
+        .from('match_tracker_assignments')
+        .delete()
+        .eq('match_id', matchId);
+
       const { data, error } = await supabase
         .from('tracker_line_assignments')
         .select(`
@@ -91,13 +97,32 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
 
       if (error) throw error;
 
-      const processedAssignments = (data || []).map(assignment => ({
-        ...assignment,
-        line_players: Array.isArray(assignment.line_players) ? assignment.line_players : [],
-        tracker_name: (assignment as any).tracker_profile?.full_name,
-        tracker_email: (assignment as any).tracker_profile?.email
-      }));
+      const processedAssignments = (data || []).map(assignment => {
+        // Ensure line_players is an array and remove duplicates
+        let linePlayers = Array.isArray(assignment.line_players) ? assignment.line_players : [];
+        
+        // Remove duplicate players based on ID
+        const uniquePlayers = linePlayers.filter((player: any, index, self) => 
+          player && typeof player === 'object' && player.id &&
+          index === self.findIndex((p: any) => p && typeof p === 'object' && p.id === player.id)
+        );
 
+        console.log('🔍 Processing assignment:', {
+          id: assignment.id,
+          tracker_type: assignment.tracker_type,
+          playersCount: uniquePlayers.length,
+          eventTypes: assignment.assigned_event_types
+        });
+
+        return {
+          ...assignment,
+          line_players: uniquePlayers,
+          tracker_name: (assignment as any).tracker_profile?.full_name,
+          tracker_email: (assignment as any).tracker_profile?.email
+        };
+      });
+
+      console.log('📊 Total assignments fetched:', processedAssignments.length);
       setAssignments(processedAssignments);
     } catch (error: any) {
       console.error('Error fetching assignments:', error);
@@ -216,6 +241,18 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
   };
 
   const handleDeleteAssignment = async (assignmentId: string) => {
+    console.log('🖱️ Delete button clicked for assignment:', assignmentId);
+    
+    if (!assignmentId) {
+      console.error('❌ Assignment ID is undefined');
+      toast({
+        title: "Error",
+        description: "Invalid assignment ID",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       // Find the assignment to get tracker_user_id
       const { data: assignment } = await supabase
@@ -226,16 +263,24 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
 
       if (assignment) {
         // Delete from both tables to ensure cleanup
-        await supabase
+        const { error: lineError } = await supabase
           .from('tracker_line_assignments')
           .delete()
           .eq('id', assignmentId);
         
-        await supabase
+        if (lineError) {
+          console.error('Error deleting line assignment:', lineError);
+        }
+        
+        const { error: playerError } = await supabase
           .from('match_tracker_assignments')
           .delete()
           .eq('match_id', matchId)
           .eq('tracker_user_id', assignment.tracker_user_id);
+        
+        if (playerError) {
+          console.error('Error deleting player assignments:', playerError);
+        }
       }
 
       toast({
@@ -384,7 +429,10 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDeleteAssignment(assignment.id)}
+                        onClick={() => {
+                          console.log('🖱️ Delete button clicked for assignment:', assignment.id);
+                          handleDeleteAssignment(assignment.id);
+                        }}
                         className="text-red-600 hover:text-red-800"
                       >
                         <Trash2 className="h-4 w-4" />
