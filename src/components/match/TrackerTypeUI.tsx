@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { EventType } from '@/types';
+import { EVENT_TYPE_CATEGORIES } from '@/constants/eventTypes';
 import { Shield, Zap, Target, Users, ChevronDown, User, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -270,16 +271,29 @@ const TrackerTypeUI: React.FC<TrackerTypeUIProps> = ({
                 Record events for any player across the field
               </p>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {assignment.assigned_event_types.map((eventType) => (
-                  <Button
-                    key={eventType}
-                    onClick={() => handleEventRecord(eventType)}
-                    variant="outline"
-                    className="h-12 font-medium bg-gradient-to-br from-background to-muted/20 hover:from-primary/5 hover:to-primary/10 hover:border-primary/30 transition-all duration-200 hover-scale"
-                  >
-                    <span className="capitalize">{eventType}</span>
-                  </Button>
-                ))}
+                {assignment.assigned_event_types.map((eventType) => {
+                  // Find the category and color for this event type
+                  const eventCategory = EVENT_TYPE_CATEGORIES.find(cat => 
+                    cat.events.some(e => e.key === eventType)
+                  );
+                  const eventColor = eventCategory?.color || '#6B7280';
+                  
+                  return (
+                    <Button
+                      key={eventType}
+                      onClick={() => handleEventRecord(eventType)}
+                      variant="outline"
+                      className="h-12 font-medium transition-all duration-200 hover-scale border-2"
+                      style={{
+                        borderColor: eventColor + '40',
+                        backgroundColor: eventColor + '10',
+                        color: eventColor
+                      }}
+                    >
+                      <span className="capitalize">{eventType}</span>
+                    </Button>
+                  );
+                })}
               </div>
             </div>
           ) : (
@@ -326,18 +340,31 @@ const TrackerTypeUI: React.FC<TrackerTypeUIProps> = ({
                       
                       <CollapsibleContent className="animate-accordion-down">
                         <div className="mt-3 p-4 rounded-lg bg-muted/20 border border-dashed">
-                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                            {assignment.assigned_event_types.map((eventType) => (
-                              <Button
-                                key={`${playerId}-${eventType}`}
-                                onClick={() => handleEventRecord(eventType, player.id)}
-                                variant="outline"
-                                size="sm"
-                                className="h-10 font-medium bg-gradient-to-br from-background to-muted/20 hover:from-primary/5 hover:to-primary/10 hover:border-primary/30 transition-all duration-200 hover-scale"
-                              >
-                                <span className="capitalize text-xs">{eventType}</span>
-                              </Button>
-                            ))}
+                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                             {assignment.assigned_event_types.map((eventType) => {
+                               // Find the category and color for this event type
+                               const eventCategory = EVENT_TYPE_CATEGORIES.find(cat => 
+                                 cat.events.some(e => e.key === eventType)
+                               );
+                               const eventColor = eventCategory?.color || '#6B7280';
+                               
+                               return (
+                                 <Button
+                                   key={`${playerId}-${eventType}`}
+                                   onClick={() => handleEventRecord(eventType, player.id)}
+                                   variant="outline"
+                                   size="sm"
+                                   className="h-10 font-medium transition-all duration-200 hover-scale border-2"
+                                   style={{
+                                     borderColor: eventColor + '40',
+                                     backgroundColor: eventColor + '10',
+                                     color: eventColor
+                                   }}
+                                 >
+                                   <span className="capitalize text-xs">{eventType}</span>
+                                 </Button>
+                               );
+                             })}
                           </div>
                         </div>
                       </CollapsibleContent>
@@ -358,16 +385,29 @@ const TrackerTypeUI: React.FC<TrackerTypeUIProps> = ({
                   </p>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {assignment.assigned_event_types.map((eventType) => (
-                    <Button
-                      key={`general-${eventType}`}
-                      onClick={() => handleEventRecord(eventType)}
-                      variant="outline"
-                      className="h-12 font-medium bg-gradient-to-br from-muted/30 to-muted/10 hover:from-secondary/20 hover:to-secondary/10 hover:border-secondary transition-all duration-200 hover-scale"
-                    >
-                      <span className="capitalize">{eventType}</span>
-                    </Button>
-                  ))}
+                   {assignment.assigned_event_types.map((eventType) => {
+                     // Find the category and color for this event type
+                     const eventCategory = EVENT_TYPE_CATEGORIES.find(cat => 
+                       cat.events.some(e => e.key === eventType)
+                     );
+                     const eventColor = eventCategory?.color || '#6B7280';
+                     
+                     return (
+                       <Button
+                         key={`general-${eventType}`}
+                         onClick={() => handleEventRecord(eventType)}
+                         variant="outline"
+                         className="h-12 font-medium transition-all duration-200 hover-scale border-2"
+                         style={{
+                           borderColor: eventColor + '40',
+                           backgroundColor: eventColor + '10',
+                           color: eventColor
+                         }}
+                       >
+                         <span className="capitalize">{eventType}</span>
+                       </Button>
+                     );
+                   })}
                 </div>
               </div>
             </div>

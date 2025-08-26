@@ -136,11 +136,11 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
       const position = player.position?.toLowerCase() || '';
       switch (trackerType) {
         case 'defence':
-          return position.includes('def') || position.includes('cb') || position.includes('lb') || position.includes('rb');
+          return position.includes('def') || position.includes('cb') || position.includes('lb') || position.includes('rb') || position.includes('gk');
         case 'midfield':
-          return position.includes('mid') || position.includes('cm') || position.includes('dm') || position.includes('am');
+          return position.includes('mid') || position.includes('cm') || position.includes('dm') || position.includes('am') || position.includes('rm') || position.includes('lm');
         case 'attack':
-          return position.includes('att') || position.includes('fw') || position.includes('st') || position.includes('lw') || position.includes('rw');
+          return position.includes('att') || position.includes('fw') || position.includes('st') || position.includes('lw') || position.includes('rw') || position.includes('cf');
         default:
           return false;
       }
