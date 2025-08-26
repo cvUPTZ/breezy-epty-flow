@@ -79,8 +79,8 @@ const TrackerTypeUI: React.FC<TrackerTypeUIProps> = ({
 
   const fetchUserAssignment = async () => {
     try {
-      // First try to get line-based assignments
-      const { data: lineData, error: lineError } = await supabase
+      // First try to get line-based assignments (priority system)
+      const { data: lineData } = await supabase
         .from('tracker_line_assignments')
         .select('*')
         .eq('match_id', matchId)
@@ -88,6 +88,7 @@ const TrackerTypeUI: React.FC<TrackerTypeUIProps> = ({
         .maybeSingle();
 
       if (lineData) {
+        console.log('Found line-based assignment:', lineData);
         setAssignment({
           ...lineData,
           line_players: Array.isArray(lineData.line_players) ? lineData.line_players : []
@@ -95,56 +96,9 @@ const TrackerTypeUI: React.FC<TrackerTypeUIProps> = ({
         return;
       }
 
-      // If no line-based assignment, get individual player assignments
-      const { data: playerAssignments, error: playerError } = await supabase
-        .from('match_tracker_assignments')
-        .select(`
-          *,
-          matches!inner(home_team_players, away_team_players)
-        `)
-        .eq('match_id', matchId)
-        .eq('tracker_user_id', userId);
-
-      if (playerError) throw playerError;
-
-      if (playerAssignments && playerAssignments.length > 0) {
-        // Get match data to find player details
-        const { data: matchData } = await supabase
-          .from('matches')
-          .select('home_team_players, away_team_players')
-          .eq('id', matchId)
-          .single();
-
-        // Convert individual assignments to line_players format
-        const homeTeamPlayers = Array.isArray(matchData?.home_team_players) 
-          ? matchData.home_team_players as any[]
-          : [];
-        const awayTeamPlayers = Array.isArray(matchData?.away_team_players) 
-          ? matchData.away_team_players as any[]
-          : [];
-        const allPlayers = [...homeTeamPlayers, ...awayTeamPlayers];
-
-        const line_players = playerAssignments.map(assignment => {
-          const player = allPlayers.find((p: any) => p.id === assignment.player_id);
-          return {
-            id: assignment.player_id,
-            jersey_number: player?.jersey_number || '?',
-            player_name: player?.player_name || `Player ${assignment.player_id}`,
-            team: assignment.player_team_id
-          };
-        });
-
-        // Use the first assignment as template, but with combined line_players
-        const firstAssignment = playerAssignments[0];
-        setAssignment({
-          id: firstAssignment.id,
-          tracker_type: 'defence' as TrackerType, // Default to defence for individual assignments
-          assigned_event_types: firstAssignment.assigned_event_types || [],
-          line_players
-        });
-      } else {
-        setAssignment(null);
-      }
+      // No assignments found
+      console.log('No assignments found for user');
+      setAssignment(null);
     } catch (error: any) {
       console.error('Error fetching user assignment:', error);
       toast({
@@ -152,6 +106,7 @@ const TrackerTypeUI: React.FC<TrackerTypeUIProps> = ({
         description: "Failed to fetch your assignment",
         variant: "destructive"
       });
+      setAssignment(null);
     } finally {
       setLoading(false);
     }

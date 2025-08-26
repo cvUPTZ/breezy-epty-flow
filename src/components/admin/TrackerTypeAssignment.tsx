@@ -168,6 +168,21 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
     try {
       const linePlayers = getLinePlayers(selectedTrackerType);
       
+      // First, delete any existing assignments for this tracker and match
+      await supabase
+        .from('tracker_line_assignments')
+        .delete()
+        .eq('match_id', matchId)
+        .eq('tracker_user_id', selectedTracker);
+      
+      // Also delete any old individual assignments
+      await supabase
+        .from('match_tracker_assignments')
+        .delete()
+        .eq('match_id', matchId)
+        .eq('tracker_user_id', selectedTracker);
+      
+      // Create new assignment
       const { error } = await supabase
         .from('tracker_line_assignments')
         .insert({
@@ -202,12 +217,26 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
 
   const handleDeleteAssignment = async (assignmentId: string) => {
     try {
-      const { error } = await supabase
+      // Find the assignment to get tracker_user_id
+      const { data: assignment } = await supabase
         .from('tracker_line_assignments')
-        .delete()
-        .eq('id', assignmentId);
+        .select('tracker_user_id')
+        .eq('id', assignmentId)
+        .single();
 
-      if (error) throw error;
+      if (assignment) {
+        // Delete from both tables to ensure cleanup
+        await supabase
+          .from('tracker_line_assignments')
+          .delete()
+          .eq('id', assignmentId);
+        
+        await supabase
+          .from('match_tracker_assignments')
+          .delete()
+          .eq('match_id', matchId)
+          .eq('tracker_user_id', assignment.tracker_user_id);
+      }
 
       toast({
         title: "Success",
