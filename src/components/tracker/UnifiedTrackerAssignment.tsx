@@ -217,12 +217,16 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     );
   };
 
-  const getLinePlayers = (trackerType: TrackerType) => {
+  const getLinePlayers = (trackerType: TrackerType, team?: 'home' | 'away') => {
     if (trackerType === 'specialized') {
       return allPlayers.filter(player => selectedPlayers.includes(player.id));
     }
 
-    return allPlayers.filter(player => {
+    const playersToFilter = team ? 
+      (team === 'home' ? homeTeamPlayers : awayTeamPlayers) : 
+      allPlayers;
+
+    return playersToFilter.filter(player => {
       const position = player.position?.toLowerCase() || '';
       switch (trackerType) {
         case 'defence':
@@ -252,7 +256,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
 
     const playersToAssign = selectedTrackerType === 'specialized' 
       ? selectedPlayers 
-      : getLinePlayers(selectedTrackerType).map(p => p.id);
+      : getLinePlayers(selectedTrackerType, selectedTeam).map(p => p.id);
 
     if (playersToAssign.length === 0) {
       toast({
@@ -581,6 +585,24 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
             </TabsContent>
 
             <TabsContent value="by-line" className="space-y-4">
+              {/* Team Selection */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Select Team</label>
+                <Select value={selectedTeam} onValueChange={(value: 'home' | 'away') => setSelectedTeam(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="home">
+                      Home Team ({homeTeamPlayers.length} players)
+                    </SelectItem>
+                    <SelectItem value="away">
+                      Away Team ({awayTeamPlayers.length} players)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Tracker Type Selection */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Tracker Type</label>
@@ -612,11 +634,11 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
               {selectedTrackerType !== 'specialized' && (
                 <div>
                   <label className="text-sm font-medium mb-2 block">
-                    Players ({getLinePlayers(selectedTrackerType).length} selected)
+                    Players ({getLinePlayers(selectedTrackerType, selectedTeam).length} selected)
                   </label>
                   <div className="p-3 bg-gray-50 rounded-lg max-h-32 overflow-y-auto">
                     <div className="text-xs space-y-1">
-                      {getLinePlayers(selectedTrackerType).map(player => (
+                      {getLinePlayers(selectedTrackerType, selectedTeam).map(player => (
                         <div key={player.id}>
                           #{player.jersey_number} {player.player_name} ({player.position})
                         </div>
