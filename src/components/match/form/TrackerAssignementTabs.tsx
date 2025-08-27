@@ -162,27 +162,38 @@ const TrackerAssignmentTabs: React.FC<TrackerAssignmentTabsProps> = ({
       
       // Send notification to the assigned tracker
       try {
+        console.log('🔔 NOTIFICATION DEBUG: Starting notification process for tracker:', assignment.tracker_user_id);
         addDebugLog(`📧 Sending notification to tracker ${assignment.tracker_user_id}...`);
         
-        const { error: notificationError } = await supabase.rpc('notify_assigned_trackers', {
-          p_match_id: matchId,
-          p_tracker_assignments: [{
-            tracker_user_id: assignment.tracker_user_id,
-            assigned_event_types: assignment.assigned_event_types,
-            player_ids: assignment.player_ids
-          }]
-        });
+        // Insert notification directly into the notifications table
+        const { error: notificationError } = await supabase
+          .from('notifications')
+          .insert({
+            user_id: assignment.tracker_user_id,
+            match_id: matchId,
+            title: 'New Match Assignment',
+            message: `You have been assigned to track a new match. Event types: ${assignment.assigned_event_types.join(', ')}`,
+            type: 'match_assignment',
+            notification_data: {
+              match_id: matchId,
+              assigned_event_types: assignment.assigned_event_types,
+              assigned_player_ids: assignment.player_ids,
+              assignment_type: 'match_tracking'
+            },
+            is_read: false
+          });
 
         if (notificationError) {
+          console.error('🔴 NOTIFICATION ERROR:', notificationError);
           addDebugLog(`⚠️ Notification failed: ${notificationError.message}`);
-          console.error('Failed to send notification:', notificationError);
           // Don't fail the assignment creation if notification fails
         } else {
+          console.log('✅ NOTIFICATION SUCCESS: Notification sent to tracker');
           addDebugLog(`📧 Notification sent successfully to tracker`);
         }
       } catch (notificationError) {
+        console.error('🔴 NOTIFICATION EXCEPTION:', notificationError);
         addDebugLog(`⚠️ Notification error: ${notificationError instanceof Error ? notificationError.message : 'Unknown error'}`);
-        console.error('Error sending notification:', notificationError);
         // Don't fail the assignment creation if notification fails
       }
       
