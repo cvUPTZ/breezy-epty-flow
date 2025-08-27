@@ -9,6 +9,7 @@ export interface PlayerForPianoInput {
   player_name: string;
   jersey_number: number;
   team_context: string;
+  position?: string;
 }
 
 export interface AssignedPlayers {
