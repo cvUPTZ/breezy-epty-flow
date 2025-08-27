@@ -42,7 +42,7 @@ const MatchAnalysisSidebar: FC<MatchAnalysisSidebarProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, signOut, switchUser } = useAuth();
   const { permissions, role, isLoading, hasPermission, isAdmin } = usePermissionChecker();
 
   const handleItemClick = (item: MenuItem) => {
@@ -156,9 +156,7 @@ const MatchAnalysisSidebar: FC<MatchAnalysisSidebarProps> = ({
                     <SidebarMenuButton
                       onClick={() => {
                         const targetEmail = user.email === 'adminzack@efoot.com' ? 'excelzed@gmail.com' : 'adminzack@efoot.com';
-                        signOut().then(() => {
-                          navigate(`/auth?email=${targetEmail}`);
-                        });
+                        switchUser(targetEmail, '123456');
                       }}
                       tooltip="Switch Profile"
                       className="h-10 justify-start group-data-[state=collapsed]:justify-center !bg-transparent text-white hover:!bg-white/10"
