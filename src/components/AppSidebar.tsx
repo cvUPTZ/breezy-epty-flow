@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -14,12 +14,17 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useMenuItems } from '@/hooks/useMenuItems';
-import { Video, Target } from 'lucide-react';
+import { Video, Target, Users, UserCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const menuItems = useMenuItems();
+  const { signIn, user, userRole, signOut } = useAuth();
+  const [switchingAccount, setSwitchingAccount] = useState(false);
   
   const isCollapsed = state === 'collapsed';
   const currentPath = location.pathname;
@@ -38,6 +43,32 @@ export function AppSidebar() {
   const isActive = (path?: string) => {
     if (!path) return false;
     return currentPath === path;
+  };
+
+  const handleAccountSwitch = async () => {
+    if (switchingAccount) return;
+    
+    setSwitchingAccount(true);
+    try {
+      // Determine which account to switch to based on current user
+      const isCurrentlyAdmin = user?.email === 'adminzack@efoot.com';
+      const targetEmail = isCurrentlyAdmin ? 'excelzed@gmail.com' : 'adminzack@efoot.com';
+      const targetPassword = '123456';
+      const targetRole = isCurrentlyAdmin ? 'tracker' : 'admin';
+      
+      // Sign out current user
+      await signOut();
+      
+      // Sign in with target account
+      await signIn(targetEmail, targetPassword);
+      
+      toast.success(`Switched to ${targetRole} account: ${targetEmail}`);
+    } catch (error) {
+      console.error('Account switch error:', error);
+      toast.error('Failed to switch account');
+    } finally {
+      setSwitchingAccount(false);
+    }
   };
 
   return (
@@ -87,6 +118,39 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Account Switcher */}
+        {user && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Account</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <div className="px-2 space-y-2">
+                <div className="text-xs text-muted-foreground">
+                  Current: {user.email} ({userRole})
+                </div>
+                <Button
+                  onClick={handleAccountSwitch}
+                  disabled={switchingAccount}
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start gap-2"
+                >
+                  {user.email === 'adminzack@efoot.com' ? (
+                    <>
+                      <UserCheck className="w-4 h-4" />
+                      {!isCollapsed && "Switch to Tracker"}
+                    </>
+                  ) : (
+                    <>
+                      <Users className="w-4 h-4" />
+                      {!isCollapsed && "Switch to Admin"}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
     </Sidebar>
   );

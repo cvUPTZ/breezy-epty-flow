@@ -13,6 +13,8 @@ import GamepadConfig from '@/components/gamepad/GamepadConfig';
 import { ProcessedDetectionResult } from '@/services/roboflowDetectionService';
 import { useUnifiedTrackerConnection } from '@/hooks/useUnifiedTrackerConnection';
 import { useGamepadTracker } from '@/hooks/useGamepadTracker';
+import { EventType } from '@/types';
+import { EnhancedEventTypeIcon } from '@/components/match/EnhancedEventTypeIcon';
 
 interface TrackerVideoInterfaceProps {
   initialVideoId: string;
@@ -493,25 +495,54 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
               <p className="text-white/70 text-xs mb-3">Tap to record event at current video time</p>
             </div>
             
-            {/* Event buttons grid */}
-            <div className="grid grid-cols-3 gap-2">
-              {['corner', 'freeKick', 'throwIn', 'goalKick', 'penalty'].map((eventType) => (
-                <button
-                  key={eventType}
-                  onClick={() => handleRecordEvent(eventType)}
-                  disabled={isRecording}
-                  className="flex flex-col items-center justify-center p-3 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30 flex items-center justify-center mb-1">
-                    <span className="text-white text-xs font-bold">
-                      {eventType.slice(0, 2).toUpperCase()}
+            {/* Event buttons grid - Primary events */}
+            <div className="text-center mb-4">
+              <h5 className="text-white/80 text-xs font-medium mb-3 uppercase tracking-wider">Primary Actions</h5>
+              <div className="grid grid-cols-2 gap-4 justify-center">
+                {['goal', 'shot', 'pass', 'tackle'].map((eventType) => (
+                  <div key={eventType} className="flex flex-col items-center justify-start gap-2">
+                    <button
+                      onClick={() => handleRecordEvent(eventType)}
+                      disabled={isRecording}
+                      aria-label={`Record ${eventType} event`}
+                      className="flex items-center justify-center rounded-full border bg-gradient-to-br from-white/70 to-slate-100/70 backdrop-blur-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-70 w-[70px] h-[70px] border-blue-200/80 hover:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    >
+                      <EnhancedEventTypeIcon
+                        eventType={eventType as EventType}
+                        size="md"
+                      />
+                    </button>
+                    <span className="text-white/80 text-xs font-medium capitalize text-center leading-tight">
+                      {eventType}
                     </span>
                   </div>
-                  <span className="text-white/90 text-xs font-medium capitalize">
-                    {eventType.replace(/([A-Z])/g, ' $1').trim()}
-                  </span>
-                </button>
-              ))}
+                ))}
+              </div>
+            </div>
+
+            {/* Secondary events */}
+            <div className="text-center">
+              <h5 className="text-white/80 text-xs font-medium mb-3 uppercase tracking-wider">Secondary Actions</h5>
+              <div className="grid grid-cols-3 gap-3 justify-center">
+                {['foul', 'corner', 'freeKick', 'save', 'assist'].map((eventType) => (
+                  <div key={eventType} className="flex flex-col items-center justify-start gap-2">
+                    <button
+                      onClick={() => handleRecordEvent(eventType)}
+                      disabled={isRecording}
+                      aria-label={`Record ${eventType} event`}
+                      className="flex items-center justify-center rounded-full border bg-gradient-to-br from-white/70 to-slate-100/70 backdrop-blur-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-70 w-[55px] h-[55px] border-slate-200/80 hover:border-slate-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    >
+                      <EnhancedEventTypeIcon
+                        eventType={eventType as EventType}
+                        size="sm"
+                      />
+                    </button>
+                    <span className="text-white/80 text-xs font-medium capitalize text-center leading-tight">
+                      {eventType === 'freeKick' ? 'Free Kick' : eventType}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
