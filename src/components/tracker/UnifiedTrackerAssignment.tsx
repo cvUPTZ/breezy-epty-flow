@@ -98,6 +98,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
   const [selectedTrackerType, setSelectedTrackerType] = useState<TrackerType>('specialized');
+  const [selectedTeam, setSelectedTeam] = useState<'home' | 'away'>('home');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   const allPlayers = [...homeTeamPlayers, ...awayTeamPlayers];
@@ -539,19 +540,33 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                 </Select>
               </div>
 
+              {/* Team Selection */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Select Team</label>
+                <Select value={selectedTeam} onValueChange={(value: 'home' | 'away') => {
+                  setSelectedTeam(value);
+                  setSelectedPlayers([]); // Clear selected players when switching teams
+                }}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="home">
+                      Home Team ({homeTeamPlayers.length} players)
+                    </SelectItem>
+                    <SelectItem value="away">
+                      Away Team ({awayTeamPlayers.length} players)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Player Selection */}
               <div>
-                <label className="text-sm font-medium mb-2 block">Select Players</label>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Home Team</h4>
-                    {renderPlayerGrid(homeTeamPlayers)}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Away Team</h4>
-                    {renderPlayerGrid(awayTeamPlayers)}
-                  </div>
-                </div>
+                <label className="text-sm font-medium mb-2 block">
+                  Players ({selectedPlayers.length} selected)
+                </label>
+                {renderPlayerGrid(selectedTeam === 'home' ? homeTeamPlayers : awayTeamPlayers)}
               </div>
 
               {/* Event Types */}
