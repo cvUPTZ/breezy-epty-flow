@@ -98,12 +98,8 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
 
   const fetchAssignments = async () => {
     try {
-      // Clean up old individual assignments first
-      await supabase
-        .from('match_tracker_assignments')
-        .delete()
-        .eq('match_id', matchId);
-
+      console.log('Fetching assignments for match:', matchId);
+      
       const { data, error } = await supabase
         .from('tracker_line_assignments')
         .select(`
@@ -296,7 +292,16 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
         .eq('match_id', matchId)
         .eq('tracker_user_id', selectedTracker);
       
-      // Create new assignment
+      // Create new assignment with detailed logging
+      console.log('Creating assignment:', {
+        match_id: matchId,
+        tracker_type: selectedTrackerType,
+        tracker_user_id: selectedTracker,
+        assigned_event_types: selectedEventTypes,
+        line_players: linePlayers,
+        line_players_count: linePlayers.length
+      });
+
       const { error } = await supabase
         .from('tracker_line_assignments')
         .insert({
@@ -466,6 +471,22 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Match Information */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-lg">Match Assignment</h3>
+              <p className="text-sm text-muted-foreground">Match ID: {matchId}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-medium">Players Available</p>
+              <p className="text-xs text-muted-foreground">Home: {homeTeamPlayers.length} | Away: {awayTeamPlayers.length}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Create New Assignment */}
       <Card>
         <CardHeader>
@@ -565,7 +586,7 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
           )}
 
           {/* Show which players will be assigned for line trackers */}
-          {selectedTrackerType !== 'specialized' && (selectedLine || selectedTrackerType !== 'specialized') && (
+          {selectedTrackerType !== 'specialized' && (
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm font-medium text-blue-900 mb-2">
                 Players that will be assigned:

@@ -79,6 +79,8 @@ const TrackerTypeUI: React.FC<TrackerTypeUIProps> = ({
 
   const fetchUserAssignment = async () => {
     try {
+      console.log('Fetching assignment for match:', matchId, 'user:', userId);
+      
       // First try to get line-based assignments (priority system)
       const { data: lineData } = await supabase
         .from('tracker_line_assignments')
@@ -88,7 +90,10 @@ const TrackerTypeUI: React.FC<TrackerTypeUIProps> = ({
         .maybeSingle();
 
       if (lineData) {
-        console.log('Found line-based assignment:', lineData);
+        console.log('Found line-based assignment:', {
+          ...lineData,
+          line_players_count: Array.isArray(lineData.line_players) ? lineData.line_players.length : 0
+        });
         setAssignment({
           ...lineData,
           line_players: Array.isArray(lineData.line_players) ? lineData.line_players : []
