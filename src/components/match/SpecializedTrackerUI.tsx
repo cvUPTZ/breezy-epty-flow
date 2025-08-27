@@ -14,50 +14,28 @@ interface SpecializedTrackerUIProps {
     teamId: 'home' | 'away';
     teamName: string;
   };
-  assignedEventType: string;
+  assignedEventTypes: string[];
   recordEvent: (eventType: EventType, playerId: number, teamId: 'home' | 'away', coordinates?: { x: number; y: number }) => void;
   matchId: string;
-  eventCount: number;
-  lastEventTime?: number;
 }
 
 const SpecializedTrackerUI: React.FC<SpecializedTrackerUIProps> = ({
   assignedPlayer,
-  assignedEventType,
+  assignedEventTypes,
   recordEvent,
-  matchId,
-  eventCount,
-  lastEventTime
+  matchId
 }) => {
-  const handleEventRecord = () => {
+  const handleEventRecord = (eventType: EventType) => {
     recordEvent(
-      assignedEventType as EventType,
+      eventType,
       assignedPlayer.id,
       assignedPlayer.teamId
     );
   };
 
-  const formatLastEventTime = (timestamp?: number) => {
-    if (!timestamp) return 'No events yet';
-    const minutes = Math.floor((Date.now() - timestamp) / 60000);
-    if (minutes < 1) return 'Just now';
-    return `${minutes}m ago`;
-  };
-
-  const getEventTypeDescription = (eventType: string) => {
-    const descriptions: Record<string, string> = {
-      pass: 'Record when player makes a pass',
-      shot: 'Record when player takes a shot',
-      goal: 'Record when player scores',
-      foul: 'Record when player commits a foul',
-      tackle: 'Record when player makes a tackle',
-      interception: 'Record when player intercepts',
-      cross: 'Record when player makes a cross',
-      header: 'Record when player heads the ball',
-      clearance: 'Record when player clears the ball'
-    };
-    return descriptions[eventType] || `Record ${eventType} events`;
-  };
+  const eventTypeDisplay = (eventType: string) => {
+    return eventType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  }
 
   return (
     <div className="space-y-4">
@@ -74,7 +52,7 @@ const SpecializedTrackerUI: React.FC<SpecializedTrackerUIProps> = ({
             <User className="h-4 w-4 text-gray-600" />
             <div>
               <span className="font-medium">#{assignedPlayer.jerseyNumber} {assignedPlayer.name}</span>
-              <Badge 
+              <Badge
                 variant={assignedPlayer.teamId === 'home' ? 'default' : 'secondary'}
                 className="ml-2"
               >
@@ -83,16 +61,18 @@ const SpecializedTrackerUI: React.FC<SpecializedTrackerUIProps> = ({
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
-            <Target className="h-4 w-4 text-gray-600" />
+          <div className="flex items-start gap-3">
+            <Target className="h-4 w-4 text-gray-600 mt-1" />
             <div>
-              <span className="font-medium capitalize">{assignedEventType}</span>
-              <span className="text-sm text-gray-600 ml-2">events only</span>
+              <span className="font-medium">Assigned Events</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {assignedEventTypes.map(eventType => (
+                  <Badge key={eventType} variant="outline" className="bg-white">
+                    {eventTypeDisplay(eventType)}
+                  </Badge>
+                ))}
+              </div>
             </div>
-          </div>
-          
-          <div className="text-sm text-gray-600 bg-white/50 p-2 rounded">
-            {getEventTypeDescription(assignedEventType)}
           </div>
         </CardContent>
       </Card>
@@ -100,31 +80,20 @@ const SpecializedTrackerUI: React.FC<SpecializedTrackerUIProps> = ({
       {/* Recording Interface */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Record {assignedEventType.charAt(0).toUpperCase() + assignedEventType.slice(1)}</span>
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-gray-500" />
-              <span className="text-sm text-gray-500">
-                {formatLastEventTime(lastEventTime)}
-              </span>
-            </div>
-          </CardTitle>
+          <CardTitle>Record Events</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="text-center">
+        <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {assignedEventTypes.map(eventType => (
             <Button
-              onClick={handleEventRecord}
+              key={eventType}
+              onClick={() => handleEventRecord(eventType as EventType)}
               size="lg"
-              className="w-full h-20 text-xl font-semibold bg-green-600 hover:bg-green-700"
+              className="w-full h-20 text-lg font-semibold"
+              variant="outline"
             >
-              Record {assignedEventType.charAt(0).toUpperCase() + assignedEventType.slice(1)}
+              {eventTypeDisplay(eventType)}
             </Button>
-          </div>
-          
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{eventCount}</div>
-            <div className="text-sm text-gray-600">events recorded</div>
-          </div>
+          ))}
         </CardContent>
       </Card>
 
@@ -133,10 +102,10 @@ const SpecializedTrackerUI: React.FC<SpecializedTrackerUIProps> = ({
         <CardContent className="p-4">
           <h4 className="font-medium mb-2">Tracking Instructions:</h4>
           <ul className="text-sm space-y-1 text-gray-600">
-            <li>• Focus only on player #{assignedPlayer.jerseyNumber}</li>
-            <li>• Record only {assignedEventType} events</li>
-            <li>• Tap the button immediately when the event occurs</li>
-            <li>• Ignore all other events and players</li>
+            <li>• Focus only on player <strong>#{assignedPlayer.jerseyNumber} {assignedPlayer.name}</strong></li>
+            <li>• Record only the events listed above.</li>
+            <li>• Tap the button immediately when the event occurs.</li>
+            <li>• Ignore all other events and players.</li>
           </ul>
         </CardContent>
       </Card>

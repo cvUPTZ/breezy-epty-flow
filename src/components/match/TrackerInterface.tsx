@@ -12,6 +12,8 @@ import useBatteryMonitor from '@/hooks/useBatteryMonitor';
 import { useUnifiedTrackerConnection } from '@/hooks/useUnifiedTrackerConnection';
 import EnhancedPianoInput from './EnhancedPianoInput';
 import { EventType } from '@/types';
+import { useTrackerAssignment, AssignedPlayer } from '@/hooks/useTrackerAssignment';
+import SpecializedTrackerUI from './SpecializedTrackerUI';
 
 interface TrackerInterfaceProps {
   trackerUserId: string;
@@ -23,6 +25,8 @@ interface MatchData {
   name: string | null;
   home_team_name: string;
   away_team_name: string;
+  home_team_players: any[];
+  away_team_players: any[];
   timer_status?: string | null;
   timer_current_value?: number | null;
   timer_last_started_at?: string | null;
@@ -36,6 +40,9 @@ export function TrackerInterface({ trackerUserId, matchId }: TrackerInterfacePro
   const isMobile = useIsMobile();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
+
+  // Fetch tracker assignment
+  const { assignment, loading: assignmentLoading } = useTrackerAssignment(matchId, trackerUserId);
   
   // Initialize battery monitoring for this tracker
   const batteryStatus = useBatteryMonitor(trackerUserId);
@@ -72,7 +79,7 @@ export function TrackerInterface({ trackerUserId, matchId }: TrackerInterfacePro
         console.log('TrackerInterface: Fetching match info for:', matchId);
         const { data: matchData, error: matchError } = await supabase
           .from('matches')
-          .select('*')
+          .select('*, home_team_players, away_team_players')
           .eq('id', matchId)
           .single();
 
@@ -80,7 +87,7 @@ export function TrackerInterface({ trackerUserId, matchId }: TrackerInterfacePro
           throw new Error(`Failed to fetch match data: ${matchError.message}`);
         }
 
-        setMatchData(matchData);
+        setMatchData(matchData as MatchData);
         console.log('TrackerInterface: Match info loaded:', matchData);
 
       } catch (e: any) {
@@ -237,27 +244,66 @@ export function TrackerInterface({ trackerUserId, matchId }: TrackerInterfacePro
     };
   }, [cleanup]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-4 sm:p-8 min-h-[200px]">
-        <div className="text-center">
-          <div className="text-sm sm:text-base">Loading tracker interface...</div>
+  const renderContent = () => {
+    if (loading || assignmentLoading) {
+      return (
+        <div className="flex items-center justify-center p-4 sm:p-8 min-h-[200px]">
+          <div className="text-center">
+            <div className="text-sm sm:text-base">Loading tracker interface...</div>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (error) {
+    if (error) {
+      return (
+        <div className="p-2 sm:p-4">
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-3 sm:p-4">
+              <div className="text-red-600 text-sm sm:text-base">Error: {error}</div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    if (assignment && assignment.assignedPlayer && matchData) {
+        const playerList = assignment.assignedPlayer.teamId === 'home'
+            ? matchData.home_team_players
+            : matchData.away_team_players;
+
+        const playerDetails = playerList.find(p => p.id === assignment.assignedPlayer?.id);
+
+        if (playerDetails) {
+            const fullPlayerDetails = {
+                ...assignment.assignedPlayer,
+                name: playerDetails.player_name,
+                jerseyNumber: playerDetails.jersey_number,
+                teamName: assignment.assignedPlayer.teamId === 'home' ? matchData.home_team_name : matchData.away_team_name,
+            };
+
+            return (
+              <SpecializedTrackerUI
+                assignedPlayer={fullPlayerDetails}
+                assignedEventTypes={assignment.assignedEventTypes}
+                recordEvent={handleRecordEvent}
+                matchId={matchId}
+              />
+            );
+        }
+    }
+
+    // Default interface for general trackers
     return (
-      <div className="p-2 sm:p-4">
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-red-600 text-sm sm:text-base">Error: {error}</div>
-          </CardContent>
-        </Card>
+      <div className="w-full">
+        <p className="text-center text-sm text-gray-600 mb-4">General Tracking Mode</p>
+        <EnhancedPianoInput
+          matchId={matchId}
+          onEventRecord={handleRecordEvent}
+        />
       </div>
     );
-  }
+  };
 
   const matchName = matchData?.name || `${matchData?.home_team_name} vs ${matchData?.away_team_name}`;
 
@@ -316,12 +362,7 @@ export function TrackerInterface({ trackerUserId, matchId }: TrackerInterfacePro
         />
       </div>
       
-      <div className="w-full">
-        <EnhancedPianoInput
-          matchId={matchId}
-          onEventRecord={handleRecordEvent}
-        />
-      </div>
+      {renderContent()}
     </div>
   );
 }
