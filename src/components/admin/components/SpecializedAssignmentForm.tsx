@@ -12,7 +12,7 @@ interface SpecializedAssignmentFormProps {
   awayTeamPlayers: any[];
   assignments: Assignment[];
   loading: boolean;
-  onCreateAssignment: (trackerId: string, playerId: number, teamId: 'home' | 'away', eventType: string) => Promise<boolean>;
+  onCreateAssignment: (trackerId: string, playerId: number, teamId: 'home' | 'away', eventTypes: string[]) => Promise<boolean>;
 }
 
 const SpecializedAssignmentForm: React.FC<SpecializedAssignmentFormProps> = ({
@@ -26,36 +26,41 @@ const SpecializedAssignmentForm: React.FC<SpecializedAssignmentFormProps> = ({
   const [selectedTracker, setSelectedTracker] = useState<string>('');
   const [selectedPlayer, setSelectedPlayer] = useState<string>('');
   const [selectedTeam, setSelectedTeam] = useState<'home' | 'away'>('home');
-  const [selectedEventType, setSelectedEventType] = useState<string>('');
+  const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
 
   const getTeamPlayers = () => {
     return selectedTeam === 'home' ? homeTeamPlayers : awayTeamPlayers;
   };
 
-  const isAssignmentTaken = (playerId: number, teamId: 'home' | 'away', eventType: string) => {
-    return assignments.some(a => 
-      a.player_id === playerId && 
-      a.player_team_id === teamId && 
-      a.assigned_event_types.includes(eventType)
+  const toggleEventType = (eventType: string) => {
+    setSelectedEventTypes(prev =>
+      prev.includes(eventType)
+        ? prev.filter(type => type !== eventType)
+        : [...prev, eventType]
     );
   };
 
+  const getAssignedTrackerForEvent = (playerId: number, teamId: 'home' | 'away', eventType: string): string | null => {
+    const assignment = assignments.find(a =>
+      a.player_id === playerId &&
+      a.player_team_id === teamId &&
+      a.assigned_event_types.includes(eventType)
+    );
+    return assignment ? assignment.tracker_name || 'Assigned' : null;
+  };
+
   const handleCreateAssignment = async () => {
-    if (!selectedTracker || !selectedPlayer || !selectedEventType) {
+    if (!selectedTracker || !selectedPlayer || selectedEventTypes.length === 0) {
       return;
     }
 
     const playerId = parseInt(selectedPlayer);
-    
-    if (isAssignmentTaken(playerId, selectedTeam, selectedEventType)) {
-      return;
-    }
 
-    const success = await onCreateAssignment(selectedTracker, playerId, selectedTeam, selectedEventType);
+    const success = await onCreateAssignment(selectedTracker, playerId, selectedTeam, selectedEventTypes);
     if (success) {
       setSelectedTracker('');
       setSelectedPlayer('');
-      setSelectedEventType('');
+      setSelectedEventTypes([]);
     }
   };
 
@@ -117,33 +122,38 @@ const SpecializedAssignmentForm: React.FC<SpecializedAssignmentFormProps> = ({
             </Select>
           </div>
           
-          <div>
-            <label className="block text-sm font-medium mb-2">Event Type</label>
-            <Select value={selectedEventType} onValueChange={setSelectedEventType}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select event" />
-              </SelectTrigger>
-              <SelectContent>
-                {EVENT_TYPES.map(eventType => (
-                  <SelectItem 
-                    key={eventType} 
-                    value={eventType}
-                    disabled={selectedPlayer ? isAssignmentTaken(parseInt(selectedPlayer), selectedTeam, eventType) : false}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium mb-2">Event Types</label>
+            <div className="grid grid-cols-3 gap-2 border rounded-md p-2 min-h-[100px]">
+              {EVENT_TYPES.map(eventType => {
+                const assignedTracker = selectedPlayer ? getAssignedTrackerForEvent(parseInt(selectedPlayer), selectedTeam, eventType) : null;
+                const isSelected = selectedEventTypes.includes(eventType);
+                const isDisabled = assignedTracker !== null;
+
+                return (
+                  <div
+                    key={eventType}
+                    onClick={() => !isDisabled && toggleEventType(eventType)}
+                    className={`p-2 border rounded text-center text-xs transition-colors ${
+                      isDisabled
+                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                        : isSelected
+                        ? 'bg-blue-100 border-blue-300 cursor-pointer'
+                        : 'hover:bg-gray-100 cursor-pointer'
+                    }`}
                   >
-                    {eventType.charAt(0).toUpperCase() + eventType.slice(1)}
-                    {selectedPlayer && isAssignmentTaken(parseInt(selectedPlayer), selectedTeam, eventType) && 
-                      <span className="ml-2 text-red-500">(Taken)</span>
-                    }
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                    {eventType.replace('_', ' ')}
+                    {assignedTracker && <span className="block text-red-500 truncate">({assignedTracker})</span>}
+                  </div>
+                );
+              })}
+            </div>
           </div>
           
           <div className="flex items-end">
-            <Button 
-              onClick={handleCreateAssignment} 
-              disabled={loading || !selectedTracker || !selectedPlayer || !selectedEventType}
+            <Button
+              onClick={handleCreateAssignment}
+              disabled={loading || !selectedTracker || !selectedPlayer || selectedEventTypes.length === 0}
               className="w-full"
             >
               Assign
