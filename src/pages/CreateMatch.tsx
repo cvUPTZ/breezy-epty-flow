@@ -140,102 +140,115 @@ const CreateMatch: React.FC = () => {
                 </div>
               </div>
 
-              <Tabs defaultValue="match-details" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger 
-                    value="match-details"
-                    className="flex items-center gap-2"
-                  >
-                    <ListTodo className="h-4 w-4" />
-                    Match Details
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="tracker-assignment"
-                    disabled={!matchId}
-                    className="flex items-center gap-2"
-                  >
-                    <Users className="h-4 w-4" />
-                    Tracker Assignment
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="match-details" className="mt-6">
-                  <Card className="bg-white/80 backdrop-blur-sm border-slate-200/80 shadow-xl rounded-2xl">
-                    <CardContent className="p-6 sm:p-8">
-                      <CreateMatchForm matchId={matchId} onMatchSubmit={handleMatchSubmit} />
+              <div className="space-y-8">
+                {/* Match Details Section */}
+                <Card className="bg-white/80 backdrop-blur-sm border-slate-200/80 shadow-xl rounded-2xl">
+                  <CardContent className="p-6 sm:p-8">
+                    <div className="flex items-center gap-3 mb-6">
+                      <ListTodo className="h-6 w-6 text-primary" />
+                      <h2 className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        Match Configuration
+                      </h2>
+                    </div>
+                    <CreateMatchForm matchId={matchId} onMatchSubmit={handleMatchSubmit} />
+                  </CardContent>
+                </Card>
+
+                {/* Match Summary Card (shows after match is saved) */}
+                {matchId && matchData && (
+                  <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200/50 shadow-lg rounded-2xl">
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-3 mb-4">
+                        <Calendar className="h-5 w-5 text-blue-600" />
+                        <h3 className="text-lg font-semibold text-blue-900">Match Overview</h3>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                        <div className="bg-white/60 rounded-lg p-3">
+                          <span className="font-medium text-gray-700">Match:</span>
+                          <p className="text-gray-900 font-semibold">{matchData.name || `${matchData.home_team_name} vs ${matchData.away_team_name}`}</p>
+                        </div>
+                        <div className="bg-white/60 rounded-lg p-3">
+                          <span className="font-medium text-gray-700">Status:</span>
+                          <p className="text-gray-900 font-semibold capitalize">{matchData.status}</p>
+                        </div>
+                        <div className="bg-white/60 rounded-lg p-3">
+                          <span className="font-medium text-gray-700">Teams:</span>
+                          <p className="text-gray-900 font-semibold">{matchData.home_team_name} vs {matchData.away_team_name}</p>
+                        </div>
+                        <div className="bg-white/60 rounded-lg p-3">
+                          <span className="font-medium text-gray-700">Players:</span>
+                          <p className="text-gray-900 font-semibold">Home: {homeTeamPlayers.length}, Away: {awayTeamPlayers.length}</p>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
-                </TabsContent>
-                
-                <TabsContent value="tracker-assignment" className="mt-6">
-                  {matchId ? (
-                    <div className="space-y-6">
-                      {/* Match Details Display */}
-                      {loading ? (
-                        <Card className="bg-white/80 backdrop-blur-sm border-slate-200/80 shadow-xl rounded-2xl">
-                          <CardContent className="text-center py-8 px-6">
-                            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
-                            <p className="text-gray-500 mt-4">Loading match details...</p>
-                          </CardContent>
-                        </Card>
-                      ) : matchData ? (
-                        <Card className="bg-white/80 backdrop-blur-sm border-slate-200/80 shadow-xl rounded-2xl">
-                          <CardContent className="p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                              <Calendar className="h-5 w-5 text-primary" />
-                              <h3 className="text-lg font-semibold">Match Details</h3>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                              <div>
-                                <span className="font-medium text-gray-700">Match:</span>
-                                <p className="text-gray-900">{matchData.name || `${matchData.home_team_name} vs ${matchData.away_team_name}`}</p>
-                              </div>
-                              <div>
-                                <span className="font-medium text-gray-700">Teams:</span>
-                                <p className="text-gray-900">{matchData.home_team_name} vs {matchData.away_team_name}</p>
-                              </div>
-                              <div>
-                                <span className="font-medium text-gray-700">Players:</span>
-                                <p className="text-gray-900">Home: {homeTeamPlayers.length}, Away: {awayTeamPlayers.length}</p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ) : null}
+                )}
 
-                      {/* Enhanced Tracker Assignment with New Options */}
-                      <Card className="bg-white/80 backdrop-blur-sm border-slate-200/80 shadow-xl rounded-2xl">
-                        <CardContent className="p-6 sm:p-8">
-                          <TrackerAssignmentTabs
-                            matchId={matchId || ''}
-                            homeTeamPlayers={homeTeamPlayers}
-                            awayTeamPlayers={awayTeamPlayers}
-                          />
-                        </CardContent>
-                      </Card>
+                {/* Tracker Assignment Section */}
+                {matchId ? (
+                  <Card className="bg-white/80 backdrop-blur-sm border-slate-200/80 shadow-xl rounded-2xl">
+                    <CardContent className="p-6 sm:p-8">
+                      <div className="flex items-center gap-3 mb-6">
+                        <Users className="h-6 w-6 text-primary" />
+                        <h2 className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                          Tracker Management
+                        </h2>
+                      </div>
                       
-                      {/* Original Tracker Assignment (keeping existing functionality) */}
-                      <Card className="bg-white/80 backdrop-blur-sm border-slate-200/80 shadow-xl rounded-2xl">
-                        <CardContent className="p-6 sm:p-8">
-                          <TrackerAssignment
-                            matchId={matchId || ''}
-                            homeTeamPlayers={homeTeamPlayers}
-                            awayTeamPlayers={awayTeamPlayers}
-                          />
-                        </CardContent>
-                      </Card>
-                    </div>
-                  ) : (
-                    <Card className="bg-white/80 backdrop-blur-sm border-slate-200/80 shadow-xl rounded-2xl">
-                      <CardContent className="text-center py-16 px-6 text-gray-500">
-                        <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                        <h3 className="text-lg font-semibold text-gray-700">Assign Trackers</h3>
-                        <p className="mt-1">You must save the match details before you can assign trackers.</p>
-                      </CardContent>
-                    </Card>
-                  )}
-                </TabsContent>
-              </Tabs>
+                      {loading ? (
+                        <div className="text-center py-8">
+                          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+                          <p className="text-gray-500 mt-4">Loading tracker assignments...</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-8">
+                          {/* Enhanced Tracker Assignment System */}
+                          <div>
+                            <TrackerAssignmentTabs
+                              matchId={matchId}
+                              homeTeamPlayers={homeTeamPlayers}
+                              awayTeamPlayers={awayTeamPlayers}
+                            />
+                          </div>
+                          
+                          {/* Divider */}
+                          <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                              <span className="w-full border-t border-gray-200" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                              <span className="bg-white px-2 text-gray-500">Alternative Assignment Method</span>
+                            </div>
+                          </div>
+                          
+                          {/* Legacy Tracker Assignment (for compatibility) */}
+                          <div>
+                            <TrackerAssignment
+                              matchId={matchId}
+                              homeTeamPlayers={homeTeamPlayers}
+                              awayTeamPlayers={awayTeamPlayers}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200/50 shadow-lg rounded-2xl">
+                    <CardContent className="text-center py-12 px-6">
+                      <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Users className="h-8 w-8 text-amber-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-amber-800 mb-2">Ready to Assign Trackers</h3>
+                      <p className="text-amber-700 mb-4">Save the match details above to enable tracker assignment and management.</p>
+                      <div className="flex items-center justify-center gap-2 text-sm text-amber-600">
+                        <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
+                        <span>Waiting for match creation...</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </div>
           </div>
         </SidebarInset>
