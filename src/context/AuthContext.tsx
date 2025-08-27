@@ -13,6 +13,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName?: string) => Promise<void>;
+  switchUser: (email: string, password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -134,6 +135,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUserRole(null);
   };
 
+  const switchUser = async (email: string, password: string) => {
+    await signOut();
+    await signIn(email, password);
+  };
+
   const value = {
     user,
     session,
@@ -142,6 +148,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signOut,
     signIn,
     signUp,
+    switchUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
