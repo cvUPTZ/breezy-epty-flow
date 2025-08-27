@@ -17,7 +17,7 @@ import { useAuth } from '@/context/AuthContext';
 import { usePermissionChecker } from '@/hooks/usePermissionChecker';
 import { RolePermissions } from '@/hooks/useUserPermissions';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, User, Shield, Loader2 } from 'lucide-react';
+import { LogOut, User, Shield, Loader2, SwitchCamera } from 'lucide-react';
 
 interface MenuItem {
   value: string;
@@ -151,6 +151,23 @@ const MatchAnalysisSidebar: FC<MatchAnalysisSidebarProps> = ({
                     <span className="group-data-[state=collapsed]:hidden">Logout</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                {(user?.email === 'adminzack@efoot.com' || user?.email === 'excelzed@gmail.com') && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => {
+                        const targetEmail = user.email === 'adminzack@efoot.com' ? 'excelzed@gmail.com' : 'adminzack@efoot.com';
+                        signOut().then(() => {
+                          navigate(`/auth?email=${targetEmail}`);
+                        });
+                      }}
+                      tooltip="Switch Profile"
+                      className="h-10 justify-start group-data-[state=collapsed]:justify-center !bg-transparent text-white hover:!bg-white/10"
+                    >
+                      <SwitchCamera className="h-5 w-5 shrink-0" />
+                      <span className="group-data-[state=collapsed]:hidden">Switch Profile</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
