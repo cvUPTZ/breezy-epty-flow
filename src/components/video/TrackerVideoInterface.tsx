@@ -221,7 +221,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
               line = 'defense';
             } else if (position?.includes('mid') || position?.includes('cm') || position?.includes('dm') || position?.includes('am')) {
               line = 'midfield';
-            } else if (position?.includes('forward') || position?.includes('striker') || position?.includes('wing')) {
+            } else if (position?.includes('forward') || position?.includes('striker') || position?.includes('wing') || position?.includes('st') || position?.includes('cf') || position?.includes('lw') || position?.includes('rw')) {
               line = 'attack';
             }
           }
@@ -265,15 +265,17 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
       const isIndividualAssignments = assignments.every((a: any) => a.assigned_player_id || a.player_id);
       
       let playersDescription = '';
-      if (isIndividualAssignments) {
+      if (isIndividualAssignments && totalPlayers > 0) {
         // For individual player assignments, list the actual players
         const allPlayers = processedAssignments.flatMap((a: any) => a.players);
-        const playerNames = allPlayers.map((p: any) => `#${p.number || p.jersey_number} ${p.name || p.player_name}`);
+        const playerNames = allPlayers.map((p: any) => `#${p.number || p.jersey_number || 'N/A'} ${p.name || p.player_name || 'Unknown'}`);
         playersDescription = `Players assigned: ${playerNames.join(', ')}`;
-      } else {
+      } else if (totalPlayers > 0) {
         // For line-based assignments, show lines
         const uniqueLines = [...new Set(processedAssignments.map((a: any) => a.line))];
-        playersDescription = `${totalPlayers} assigned (${uniqueLines.map(line => line === 'all_events' ? 'all events' : `${line} line`).join(', ')})`;
+        playersDescription = `${totalPlayers} players assigned (${uniqueLines.map(line => line === 'all_events' ? 'all events' : `${line} line`).join(', ')})`;
+      } else {
+        playersDescription = 'No specific players assigned - tracking all events';
       }
       
       const notification = `You've been assigned to track video: ${matchData.home_team_name} vs ${matchData.away_team_name}. Events: ${allEventTypes.join(', ')}. ${playersDescription}`;
@@ -451,7 +453,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   }, []);
 
   const renderEventTracker = () => {
-    if (!showPianoOverlay || lineAssignments.length === 0) return null;
+    if (!showPianoOverlay) return null;
 
     const overlay = (
       <div className="absolute top-4 right-4 w-96 bg-black/20 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-[80vh] overflow-y-auto"
@@ -465,14 +467,53 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
             ×
           </button>
         </div>
-        <div className="p-3">
-          <LineBasedTrackerUI
-            assignments={lineAssignments}
-            recordEvent={(eventType: any, playerId?: any, teamId?: any) => {
-              handleRecordEvent(eventType);
-            }}
-            matchId={matchId}
-          />
+        <div className="p-4 space-y-4">
+          {/* Show assigned players info */}
+          {lineAssignments.length > 0 && (
+            <div className="space-y-2">
+              {lineAssignments.map((assignment, index) => (
+                <div key={index} className="text-white/90 text-sm p-2 bg-white/10 rounded-lg">
+                  <div className="font-medium text-white mb-1">
+                    {assignment.teamName} - {assignment.line === 'all_events' ? 'All Events' : `${assignment.line} line`}
+                  </div>
+                  {assignment.players.length > 0 && (
+                    <div className="text-white/70 text-xs">
+                      Players: {assignment.players.map((p: any) => `#${p.number || p.jersey_number || 'N/A'} ${p.name || p.player_name || 'Unknown'}`).join(', ')}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Piano Input Overlay */}
+          <div className="space-y-4">
+            <div className="text-center">
+              <h4 className="text-white/90 font-medium mb-2">Record Events</h4>
+              <p className="text-white/70 text-xs mb-3">Tap to record event at current video time</p>
+            </div>
+            
+            {/* Event buttons grid */}
+            <div className="grid grid-cols-3 gap-2">
+              {['corner', 'freeKick', 'throwIn', 'goalKick', 'penalty'].map((eventType) => (
+                <button
+                  key={eventType}
+                  onClick={() => handleRecordEvent(eventType)}
+                  disabled={isRecording}
+                  className="flex flex-col items-center justify-center p-3 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30 flex items-center justify-center mb-1">
+                    <span className="text-white text-xs font-bold">
+                      {eventType.slice(0, 2).toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="text-white/90 text-xs font-medium capitalize">
+                    {eventType.replace(/([A-Z])/g, ' $1').trim()}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );

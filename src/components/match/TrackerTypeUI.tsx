@@ -366,12 +366,12 @@ const TrackerTypeUI: React.FC<TrackerTypeUIProps> = ({
                               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 flex items-center justify-center">
                                 <User className="h-4 w-4 text-primary" />
                               </div>
-                              <div>
-                                <div className="font-semibold">#{player.jersey_number} {player.player_name}</div>
-                                <div className="text-xs text-muted-foreground">
-                                  {assignment.assigned_event_types.length} event types available
-                                </div>
+                            <div>
+                              <div className="font-semibold">#{player.jersey_number || 'N/A'} {player.player_name || 'Unknown Player'}</div>
+                              <div className="text-xs text-muted-foreground capitalize">
+                                {player.position || 'Unknown Position'} • {assignment.assigned_event_types.length} event types available
                               </div>
+                            </div>
                             </div>
                             <ChevronDown 
                               className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
