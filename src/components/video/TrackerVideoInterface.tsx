@@ -44,6 +44,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const [detectionResults, setDetectionResults] = useState<ProcessedDetectionResult[]>([]);
   const [lineAssignments, setLineAssignments] = useState<any[]>([]);
   const [assignmentNotification, setAssignmentNotification] = useState<string>('');
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   
   // State to track the last triggered event from the gamepad
   const [lastGamepadTriggeredEvent, setLastGamepadTriggeredEvent] = useState<string | null>(null);
@@ -77,6 +78,10 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
       toast({ title: "Auth Error", description: "User not authenticated.", variant: "destructive" });
       return;
     }
+    if (!selectedPlayerId) {
+      toast({ title: "Selection Error", description: "Please select a player before recording an event.", variant: "destructive" });
+      return;
+    }
 
     setIsRecording(true);
     // Signal that an event is being recorded (for UI feedback)
@@ -98,13 +103,13 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
       const eventToInsert = {
         match_id: matchId,
         event_type: eventType,
-        player_id: null,
-        team: null,
+        player_id: parseInt(selectedPlayerId, 10),
+        team: null, // Team can be inferred from player_id on the backend or in analytics
         coordinates: null,
         details: {
           video_timestamp: videoTimestamp,
           recorded_by_video_tracker: true,
-          recorded_via_gamepad: true, // We know this came from gamepad since this hook is used
+          recorded_via_gamepad: true,
         },
         created_by: user.id,
       };
@@ -121,7 +126,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
 
       toast({ 
         title: "Event Recorded", 
-        description: `${eventType} recorded at ${videoTimestamp.toFixed(2)}s (video time) via gamepad.` 
+        description: `${eventType} for player #${selectedPlayerId} recorded at ${videoTimestamp.toFixed(2)}s.`
       });
 
       // Broadcast success status
@@ -147,7 +152,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
         // console.log('TrackerVideoInterface: cleared lastGamepadTriggeredEvent');
       }, 1000); 
     }
-  }, [user, isConnected, broadcastStatus, toast]); // Dependencies for useCallback
+  }, [user, isConnected, broadcastStatus, toast, matchId, selectedPlayerId]); // Dependencies for useCallback
 
   // Initialize gamepad tracker with memoized callback
   const { isConnected: gamepadConnected } = useGamepadTracker({
@@ -457,6 +462,8 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   const renderEventTracker = () => {
     if (!showPianoOverlay) return null;
 
+    const allPlayers = lineAssignments.flatMap(a => a.players);
+
     const overlay = (
       <div className="absolute top-4 right-4 w-96 bg-black/20 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-[80vh] overflow-y-auto"
            style={{ zIndex: isFullscreen ? 2147483647 : 50 }}>
@@ -470,21 +477,27 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
           </button>
         </div>
         <div className="p-4 space-y-4">
-          {/* Show assigned players info */}
-          {lineAssignments.length > 0 && (
+          {/* Player Selection */}
+          {allPlayers.length > 0 && (
             <div className="space-y-2">
-              {lineAssignments.map((assignment, index) => (
-                <div key={index} className="text-white/90 text-sm p-2 bg-white/10 rounded-lg">
-                  <div className="font-medium text-white mb-1">
-                    {assignment.teamName} - {assignment.line === 'all_events' ? 'All Events' : `${assignment.line} line`}
-                  </div>
-                  {assignment.players.length > 0 && (
-                    <div className="text-white/70 text-xs">
-                      Players: {assignment.players.map((p: any) => `#${p.number || p.jersey_number || 'N/A'} ${p.name || p.player_name || 'Unknown'}`).join(', ')}
-                    </div>
-                  )}
+                <h4 className="text-white/90 font-medium mb-2">Select Player</h4>
+                <div className="grid grid-cols-2 gap-2">
+                    {allPlayers.map((player: any) => (
+                        <label key={player.id} className={`flex items-center p-2 rounded-lg cursor-pointer ${selectedPlayerId === player.id.toString() ? 'bg-blue-500/30' : 'bg-white/10'}`}>
+                            <input
+                                type="radio"
+                                name="player-selection"
+                                value={player.id}
+                                checked={selectedPlayerId === player.id.toString()}
+                                onChange={(e) => setSelectedPlayerId(e.target.value)}
+                                className="sr-only"
+                            />
+                            <span className="text-white/90 text-sm">
+                                #{player.number || player.jersey_number || 'N/A'} {player.name || player.player_name || 'Unknown'}
+                            </span>
+                        </label>
+                    ))}
                 </div>
-              ))}
             </div>
           )}
 
