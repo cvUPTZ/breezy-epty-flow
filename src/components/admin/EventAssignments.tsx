@@ -53,39 +53,28 @@ const EventAssignments: React.FC<EventAssignmentsProps> = ({ matchId }) => {
           id,
           tracker_user_id,
           assigned_event_types,
-          created_at
+          created_at,
+          profiles (
+            full_name,
+            email
+          )
         `)
-        .eq('match_id', matchId);
+        .eq('match_id', matchId)
+        .is('assigned_player_id', null);
 
       if (error) {
         console.error('Error fetching assignments:', error);
         toast.error('Failed to load assignments');
         return;
       }
-
-      // Get tracker details separately
-      const trackerIds = data?.map(assignment => assignment.tracker_user_id) || [];
       
-      if (trackerIds.length > 0) {
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, full_name, email')
-          .in('id', trackerIds);
+      const assignmentsWithTrackers = data?.map(assignment => ({
+        ...assignment,
+        tracker_name: (assignment.profiles as any)?.full_name || 'Unknown',
+        tracker_email: (assignment.profiles as any)?.email || 'Unknown'
+      })) || [];
 
-        if (profilesError) {
-          console.error('Error fetching tracker profiles:', profilesError);
-        }
-
-        const assignmentsWithTrackers = data?.map(assignment => ({
-          ...assignment,
-          tracker_name: profiles?.find(p => p.id === assignment.tracker_user_id)?.full_name || 'Unknown',
-          tracker_email: profiles?.find(p => p.id === assignment.tracker_user_id)?.email || 'Unknown'
-        })) || [];
-
-        setAssignments(assignmentsWithTrackers);
-      } else {
-        setAssignments(data || []);
-      }
+      setAssignments(assignmentsWithTrackers);
     } catch (error) {
       console.error('Error in fetchAssignments:', error);
       toast.error('Failed to load assignments');
@@ -124,8 +113,7 @@ const EventAssignments: React.FC<EventAssignmentsProps> = ({ matchId }) => {
         .insert({
           match_id: matchId,
           tracker_user_id: selectedTracker,
-          assigned_event_types: selectedEventTypes,
-          player_team_id: 'home' // Default value, can be made configurable
+          assigned_event_types: selectedEventTypes
         });
 
       if (error) {

@@ -41,7 +41,7 @@ export const useSpecializedAssignments = (matchId: string) => {
         .select(`
           id,
           tracker_user_id,
-          player_id,
+          assigned_player_id,
           player_team_id,
           assigned_event_types,
           profiles!tracker_user_id (
@@ -50,16 +50,16 @@ export const useSpecializedAssignments = (matchId: string) => {
           )
         `)
         .eq('match_id', matchId)
-        .not('player_id', 'is', null);
+        .not('assigned_player_id', 'is', null);
 
       if (error) throw error;
 
       const transformedAssignments: Assignment[] = (data || [])
-        .filter(item => item.id && item.tracker_user_id && item.player_id)
+        .filter(item => item.id && item.tracker_user_id && item.assigned_player_id)
         .map(item => ({
           id: item.id!,
           tracker_user_id: item.tracker_user_id!,
-          player_id: item.player_id!,
+          player_id: parseInt(item.assigned_player_id!, 10),
           player_team_id: (item.player_team_id as 'home' | 'away') || 'home',
           assigned_event_types: item.assigned_event_types || [],
           tracker_name: (item.profiles as any)?.full_name || undefined,
@@ -77,18 +77,40 @@ export const useSpecializedAssignments = (matchId: string) => {
     trackerId: string,
     playerId: number,
     teamId: 'home' | 'away',
-    eventType: string
+    eventTypes: string[]
   ) => {
     setLoading(true);
     try {
+      // First, remove any existing assignments for this player and these event types
+      const { data: existingAssignments, error: fetchError } = await supabase
+        .from('match_tracker_assignments')
+        .select('id, assigned_event_types')
+        .eq('assigned_player_id', playerId.toString())
+        .eq('player_team_id', teamId);
+
+      if (fetchError) throw fetchError;
+
+      const assignmentsToDelete = existingAssignments
+        .filter(a => a.assigned_event_types?.some(et => eventTypes.includes(et)))
+        .map(a => a.id);
+
+      if (assignmentsToDelete.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('match_tracker_assignments')
+          .delete()
+          .in('id', assignmentsToDelete);
+        if (deleteError) throw deleteError;
+      }
+
+      // Now, insert the new assignment
       const { error } = await supabase
         .from('match_tracker_assignments')
         .insert([{
           match_id: matchId,
           tracker_user_id: trackerId,
-          player_id: playerId,
+          assigned_player_id: playerId.toString(),
           player_team_id: teamId,
-          assigned_event_types: [eventType]
+          assigned_event_types: eventTypes
         }]);
 
       if (error) throw error;
