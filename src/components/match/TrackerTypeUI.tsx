@@ -101,6 +101,90 @@ const TrackerTypeUI: React.FC<TrackerTypeUIProps> = ({
         return;
       }
 
+      // If no line assignments, check for individual player assignments
+      const { data: individualAssignments } = await supabase
+        .from('match_tracker_assignments')
+        .select('*')
+        .eq('match_id', matchId)
+        .eq('tracker_user_id', userId);
+
+      if (individualAssignments && individualAssignments.length > 0) {
+        console.log('Found individual player assignments:', individualAssignments);
+        
+        // Get match data to find the actual players
+        const { data: matchData } = await supabase
+          .from('matches')
+          .select('home_team_players, away_team_players')
+          .eq('id', matchId)
+          .single();
+
+        if (matchData) {
+          const allPlayers = [
+            ...((matchData.home_team_players as any[]) || []).map((p: any) => ({ ...p, team: 'home' })),
+            ...((matchData.away_team_players as any[]) || []).map((p: any) => ({ ...p, team: 'away' }))
+          ];
+
+          // Map the assigned players with their details
+          const assignedPlayers = individualAssignments.map(assignment => {
+            // Try to find player by matching assignment player_id with array index or jersey number
+            let player = allPlayers.find(p => p.id === assignment.player_id);
+            
+            // If not found by ID, try to find by index (player_id might be array index)
+            if (!player) {
+              const teamPlayers = assignment.player_team_id === 'home' 
+                ? (matchData.home_team_players as any[]) || []
+                : (matchData.away_team_players as any[]) || [];
+              
+              // Check if player_id corresponds to array index
+              if (assignment.player_id !== null && assignment.player_id >= 0 && assignment.player_id < teamPlayers.length) {
+                player = teamPlayers[assignment.player_id];
+                if (player) {
+                  player = { ...player, team: assignment.player_team_id };
+                }
+              }
+            }
+
+            return {
+              ...assignment,
+              player_details: player || {
+                id: assignment.player_id,
+                jersey_number: assignment.player_id,
+                player_name: `Player ${assignment.player_id}`,
+                position: 'Unknown',
+                team: assignment.player_team_id
+              }
+            };
+          });
+
+          // Determine tracker type based on player positions
+          const positions = assignedPlayers.map(ap => ap.player_details.position?.toLowerCase() || '');
+          let trackerType: TrackerType = 'specialized';
+          
+          if (positions.some(pos => ['st', 'cf', 'lw', 'rw', 'cam'].includes(pos))) {
+            trackerType = 'attack';
+          } else if (positions.some(pos => ['cm', 'cdm', 'lm', 'rm'].includes(pos))) {
+            trackerType = 'midfield';
+          } else if (positions.some(pos => ['cb', 'lb', 'rb', 'cdm'].includes(pos))) {
+            trackerType = 'defence';
+          }
+
+          const firstAssignment = individualAssignments[0];
+          setAssignment({
+            id: firstAssignment.id,
+            tracker_type: trackerType,
+            assigned_event_types: firstAssignment.assigned_event_types || [],
+            line_players: assignedPlayers.map(ap => ({
+              id: ap.player_details.id,
+              jersey_number: ap.player_details.jersey_number,
+              player_name: ap.player_details.player_name,
+              position: ap.player_details.position,
+              team: ap.player_details.team
+            }))
+          });
+          return;
+        }
+      }
+
       // No assignments found
       console.log('No assignments found for user');
       setAssignment(null);
@@ -108,7 +192,7 @@ const TrackerTypeUI: React.FC<TrackerTypeUIProps> = ({
       console.error('Error fetching user assignment:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch your assignment",
+        description: "Failed to fetch your assignment", 
         variant: "destructive"
       });
       setAssignment(null);
