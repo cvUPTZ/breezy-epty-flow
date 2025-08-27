@@ -1,6 +1,5 @@
 
-import * as React from 'react';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -41,6 +40,14 @@ import VideoSetupPage from './pages/Admin/VideoSetupPage';
 import Scouting from './pages/Scouting';
 
 const queryClient = new QueryClient();
+
+// Debug React availability
+console.log('Debug - React availability check:', {
+  React: typeof React,
+  useEffect: typeof React?.useEffect,
+  useState: typeof React?.useState,
+  createContext: typeof React?.createContext
+});
 
 interface MatchPayload {
   id: string;
