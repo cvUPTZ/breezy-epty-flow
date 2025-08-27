@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,12 +11,59 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/s
 import MatchAnalysisSidebar from '@/components/match/MatchAnalysisSidebar';
 import { useAuth } from '@/context/AuthContext';
 import { ArrowLeft, ListTodo, Users, LayoutDashboard, Play, Calendar, BarChart3, TrendingUp, Target } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const CreateMatch: React.FC = () => {
   const navigate = useNavigate();
   const { matchId } = useParams<{ matchId: string }>();
   const { toast } = useToast();
   const { userRole } = useAuth();
+  
+  // Add state for match data and players
+  const [matchData, setMatchData] = useState<any>(null);
+  const [homeTeamPlayers, setHomeTeamPlayers] = useState<any[]>([]);
+  const [awayTeamPlayers, setAwayTeamPlayers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (matchId) {
+      fetchMatchData();
+    } else {
+      setLoading(false);
+    }
+  }, [matchId]);
+
+  const fetchMatchData = async () => {
+    if (!matchId) return;
+    
+    try {
+      const { data: match, error: matchError } = await supabase
+        .from('matches')
+        .select('*')
+        .eq('id', matchId)
+        .single();
+
+      if (matchError) {
+        console.error('Error fetching match:', matchError);
+        return;
+      }
+
+      setMatchData(match);
+      
+      // Extract players from the match data - ensure they're arrays
+      if (match?.home_team_players && Array.isArray(match.home_team_players)) {
+        setHomeTeamPlayers(match.home_team_players);
+      }
+      
+      if (match?.away_team_players && Array.isArray(match.away_team_players)) {
+        setAwayTeamPlayers(match.away_team_players);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleMatchSubmit = (submittedMatch: any) => {
     if (submittedMatch?.id) {
@@ -25,10 +72,11 @@ const CreateMatch: React.FC = () => {
           title: 'Match Updated',
           description: 'The match details have been saved successfully.',
         });
-        // Stay on page to allow further edits
+        // Refresh match data after form submission
+        fetchMatchData();
       } else {
         // After creation, navigate to the edit page for the new match
-        navigate(`/match/${submittedMatch.id}`);
+        navigate(`/match/${submittedMatch.id}/edit`);
         toast({
           title: 'Match Created',
           description: 'You can now assign trackers to the match.',
@@ -122,13 +170,46 @@ const CreateMatch: React.FC = () => {
                 <TabsContent value="tracker-assignment" className="mt-6">
                   {matchId ? (
                     <div className="space-y-6">
+                      {/* Match Details Display */}
+                      {loading ? (
+                        <Card className="bg-white/80 backdrop-blur-sm border-slate-200/80 shadow-xl rounded-2xl">
+                          <CardContent className="text-center py-8 px-6">
+                            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+                            <p className="text-gray-500 mt-4">Loading match details...</p>
+                          </CardContent>
+                        </Card>
+                      ) : matchData ? (
+                        <Card className="bg-white/80 backdrop-blur-sm border-slate-200/80 shadow-xl rounded-2xl">
+                          <CardContent className="p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <Calendar className="h-5 w-5 text-primary" />
+                              <h3 className="text-lg font-semibold">Match Details</h3>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <span className="font-medium text-gray-700">Match:</span>
+                                <p className="text-gray-900">{matchData.name || `${matchData.home_team_name} vs ${matchData.away_team_name}`}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">Teams:</span>
+                                <p className="text-gray-900">{matchData.home_team_name} vs {matchData.away_team_name}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">Players:</span>
+                                <p className="text-gray-900">Home: {homeTeamPlayers.length}, Away: {awayTeamPlayers.length}</p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ) : null}
+
                       {/* Enhanced Tracker Assignment with New Options */}
                       <Card className="bg-white/80 backdrop-blur-sm border-slate-200/80 shadow-xl rounded-2xl">
                         <CardContent className="p-6 sm:p-8">
                           <TrackerAssignmentTabs
-                            matchId={matchId}
-                            homeTeamPlayers={[]}
-                            awayTeamPlayers={[]}
+                            matchId={matchId || ''}
+                            homeTeamPlayers={homeTeamPlayers}
+                            awayTeamPlayers={awayTeamPlayers}
                           />
                         </CardContent>
                       </Card>
@@ -137,9 +218,9 @@ const CreateMatch: React.FC = () => {
                       <Card className="bg-white/80 backdrop-blur-sm border-slate-200/80 shadow-xl rounded-2xl">
                         <CardContent className="p-6 sm:p-8">
                           <TrackerAssignment
-                            matchId={matchId}
-                            homeTeamPlayers={[]}
-                            awayTeamPlayers={[]}
+                            matchId={matchId || ''}
+                            homeTeamPlayers={homeTeamPlayers}
+                            awayTeamPlayers={awayTeamPlayers}
                           />
                         </CardContent>
                       </Card>
