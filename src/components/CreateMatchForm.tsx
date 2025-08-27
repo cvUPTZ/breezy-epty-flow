@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { YouTubeService } from '@/services/youtubeService';
 import MatchBasicInfo from './match/form/MatchBasicInfo';
 import TeamSetupSection from './match/form/TeamSetupSection';
-import TrackerAssignmentTabs from './match/form/TrackerAssignementTabs'; // Fixed import path
+import UnifiedTrackerAssignment from '@/components/tracker/UnifiedTrackerAssignment';
 import VideoSetupSection from './match/form/VideoSetupSection'; // Fixed import path
 import { Button } from './ui/button';
 import { Player as TrackerPlayer } from '@/types/trackerAssignment';
@@ -318,7 +318,7 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
         savedMatch = data;
       }
 
-      console.log('Match saved:', savedMatch);
+      // Match saved successfully
 
       // Step 2: Handle tracker assignments
       if (trackerAssignments.length > 0) {
@@ -353,22 +353,6 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
         const { error: assignmentError } = await supabase.from('match_tracker_assignments').insert(assignmentData);
         if (assignmentError) throw assignmentError;
 
-        // Send notifications
-        for (const assignment of trackerAssignments) {
-          try {
-            await supabase.from('notifications').insert({
-              user_id: assignment.tracker_user_id,
-              match_id: savedMatch.id,
-              title: 'New Match Assignment',
-              message: `You have been assigned to track match: ${savedMatch.name}.`,
-              type: 'match_assignment',
-              notification_data: { match_id: savedMatch.id },
-              is_read: false,
-            });
-          } catch (notificationErr) {
-            console.error('Exception while sending tracker notification:', notificationErr);
-          }
-        }
       }
 
       // Step 3: Handle video setup
@@ -410,13 +394,14 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
         onPlayersChange={handlePlayersChange}
         onFlagChange={handleFlagChange}
       />
-      {/* Use the new TrackerAssignmentTabs component */}
-      <TrackerAssignmentTabs
+      {/* Use the unified TrackerAssignment component */}
+      <UnifiedTrackerAssignment
         homeTeamPlayers={convertToTrackerPlayers(homeTeamPlayers.filter(p => !p.isSubstitute), 'home')}
         awayTeamPlayers={convertToTrackerPlayers(awayTeamPlayers.filter(p => !p.isSubstitute), 'away')}
         trackerUsers={trackers}
-        assignments={trackerAssignments as any} // Cast as any to handle local `id` field
+        assignments={trackerAssignments as any}
         onAssignmentsChange={handleTrackerAssignmentsChange as any}
+        matchId={matchId}
       />
       <VideoSetupSection videoUrl={videoUrl} onVideoUrlChange={handleVideoUrlChange} />
       <div>

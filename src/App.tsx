@@ -41,13 +41,6 @@ import Scouting from './pages/Scouting';
 
 const queryClient = new QueryClient();
 
-// Debug React availability
-console.log('Debug - React availability check:', {
-  React: typeof React,
-  useEffect: typeof React?.useEffect,
-  useState: typeof React?.useState,
-  createContext: typeof React?.createContext
-});
 
 interface MatchPayload {
   id: string;
@@ -63,21 +56,15 @@ const AppContent = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  // const isOnline = useNetworkStatus();
-  // const { hasTrackerAccess, hasPermission } = usePermissionChecker();
-
-  // useEffect(() => {
-  //   console.log(`App component: Network is currently ${isOnline ? 'Online' : 'Offline'}`);
-  // }, [isOnline]);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       const registerServiceWorker = async () => {
         try {
           const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-          console.log('Service Worker: Registered successfully with scope:', registration.scope);
+          // Service Worker registered successfully
         } catch (error) {
-          console.error('Service Worker: Registration failed:', error);
+          // Service Worker registration failed silently
         }
       };
       
@@ -90,55 +77,6 @@ const AppContent = () => {
     }
   }, []); 
 
-  // Enhanced match live notifications with permission checking
-  // useEffect(() => {
-  //   if (user) { // && (hasTrackerAccess() || hasPermission('canTrackMatches'))) {
-  //     const channel = supabase
-  //       .channel('match-live-notifications')
-  //       .on(
-  //         'postgres_changes',
-  //         {
-  //           event: 'UPDATE',
-  //           schema: 'public',
-  //           table: 'matches',
-  //         },
-  //         (payload) => {
-  //           const oldMatch = payload.old as MatchPayload | null;
-  //           const newMatch = payload.new as MatchPayload;
-
-  //           if (newMatch?.status === 'live' && oldMatch?.status !== 'live') {
-  //             const matchId = newMatch.id;
-  //             const matchName = newMatch.name || `${newMatch.home_team_name || 'Home'} vs ${newMatch.away_team_name || 'Away'}`;
-
-  //             // Don't show notification if user is already on the match page
-  //             if (location.pathname === `/match/${matchId}`) {
-  //               return;
-  //             }
-
-  //             toast({
-  //               title: 'Match Live!',
-  //               description: `Match "${matchName}" has started.`,
-  //               action: (
-  //                 <ToastAction altText="Go to Match" onClick={() => navigate(`/match/${matchId}`)}>
-  //                   Go to Match
-  //                 </ToastAction>
-  //               ),
-  //               duration: 10000,
-  //             });
-  //           }
-  //         }
-  //       )
-  //       .subscribe((status, err) => {
-  //         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-  //           console.error('Match live notification channel error:', status, err);
-  //         }
-  //       });
-
-  //     return () => {
-  //       supabase.removeChannel(channel);
-  //     };
-  //   }
-  // }, [user, toast, navigate, location]); // hasTrackerAccess, hasPermission]);
 
   return (
     <>

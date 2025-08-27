@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import MatchHeader from '@/components/match/MatchHeader';
-import TrackerAssignment from '@/components/match/TrackerAssignment';
+import UnifiedTrackerAssignment from '@/components/tracker/UnifiedTrackerAssignment';
 import MainTabContentV2 from '@/components/match/MainTabContentV2';
 import VoiceCollaborationWithTest from '@/components/match/VoiceCollaborationWithTest';
 import MatchPlanningNetwork from '@/components/match/MatchPlanningNetwork';
@@ -489,10 +489,22 @@ const MatchAnalysisV2: React.FC = () => {
                   )}
                     
                   {activeView === 'tracker' && isAdmin && (
-                    <TrackerAssignment
+                    <UnifiedTrackerAssignment
                       matchId={matchId}
-                      homeTeamPlayers={fullMatchRoster?.home || []}
-                      awayTeamPlayers={fullMatchRoster?.away || []}
+                      homeTeamPlayers={fullMatchRoster?.home?.map((player, index) => ({
+                        id: Number(player.id) || index,
+                        jersey_number: player.jersey_number || index + 1,
+                        player_name: player.player_name || `Player ${index + 1}`,
+                        team: 'home' as const,
+                        position: player.position
+                      })) || []}
+                      awayTeamPlayers={fullMatchRoster?.away?.map((player, index) => ({
+                        id: Number(player.id) || index + 100,
+                        jersey_number: player.jersey_number || index + 1,
+                        player_name: player.player_name || `Player ${index + 1}`,
+                        team: 'away' as const,
+                        position: player.position
+                      })) || []}
                     />
                   )}
                 </CardContent>

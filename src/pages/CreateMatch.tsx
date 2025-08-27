@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import CreateMatchForm from '@/components/CreateMatchForm';
-import TrackerAssignment from '@/components/match/TrackerAssignment';
-import TrackerAssignmentTabs from '@/components/admin/TrackerAssignmentTabs';
+import UnifiedTrackerAssignment from '@/components/tracker/UnifiedTrackerAssignment';
 import { useToast } from '@/hooks/use-toast';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import MatchAnalysisSidebar from '@/components/match/MatchAnalysisSidebar';
@@ -44,7 +43,7 @@ const CreateMatch: React.FC = () => {
         .single();
 
       if (matchError) {
-        console.error('Error fetching match:', matchError);
+        // Error fetching match - handled silently
         return;
       }
 
@@ -59,7 +58,7 @@ const CreateMatch: React.FC = () => {
         setAwayTeamPlayers(match.away_team_players);
       }
     } catch (error) {
-      console.error('Error:', error);
+      // Error handled silently
     } finally {
       setLoading(false);
     }
@@ -201,34 +200,26 @@ const CreateMatch: React.FC = () => {
                           <p className="text-gray-500 mt-4">Loading tracker assignments...</p>
                         </div>
                       ) : (
-                        <div className="space-y-8">
-                          {/* Enhanced Tracker Assignment System */}
-                          <div>
-                            <TrackerAssignmentTabs
-                              matchId={matchId}
-                              homeTeamPlayers={homeTeamPlayers}
-                              awayTeamPlayers={awayTeamPlayers}
-                            />
-                          </div>
-                          
-                          {/* Divider */}
-                          <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                              <span className="w-full border-t border-gray-200" />
-                            </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                              <span className="bg-white px-2 text-gray-500">Alternative Assignment Method</span>
-                            </div>
-                          </div>
-                          
-                          {/* Legacy Tracker Assignment (for compatibility) */}
-                          <div>
-                            <TrackerAssignment
-                              matchId={matchId}
-                              homeTeamPlayers={homeTeamPlayers}
-                              awayTeamPlayers={awayTeamPlayers}
-                            />
-                          </div>
+                        <div className="space-y-6">
+                          {/* Unified Tracker Assignment System */}
+                          <UnifiedTrackerAssignment
+                            matchId={matchId}
+                            homeTeamPlayers={homeTeamPlayers.map((player, index) => ({
+                              id: player.id || index,
+                              jersey_number: player.number || index + 1,
+                              player_name: player.name || `Player ${index + 1}`,
+                              team: 'home' as const,
+                              position: player.position
+                            }))}
+                            awayTeamPlayers={awayTeamPlayers.map((player, index) => ({
+                              id: player.id || index + 100,
+                              jersey_number: player.number || index + 1,
+                              player_name: player.name || `Player ${index + 1}`,
+                              team: 'away' as const,
+                              position: player.position
+                            }))}
+                            showTypeAssignment={true}
+                          />
                         </div>
                       )}
                     </CardContent>
