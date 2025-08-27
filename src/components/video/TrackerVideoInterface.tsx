@@ -209,9 +209,10 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
         let line = 'all_events';
         let assignedPlayers = [];
 
-        if (assignment.assigned_player_id) {
-          // Single player assignment
-          const player = players.find((p: any) => p.id === assignment.assigned_player_id || p.id === assignment.assigned_player_id.toString());
+        if (assignment.assigned_player_id || assignment.player_id) {
+          // Single player assignment  
+          const playerId = assignment.assigned_player_id || assignment.player_id;
+          const player = players.find((p: any) => p.id === playerId || p.id === playerId.toString());
           if (player) {
             assignedPlayers = [player];
             // Determine line based on player position
@@ -260,7 +261,22 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
       const allEventTypes = Array.from(new Set(processedAssignments.flatMap((a: any) => a.eventTypes)));
       const totalPlayers = processedAssignments.reduce((sum: number, a: any) => sum + a.players.length, 0);
       
-      const notification = `You've been assigned to track video: ${matchData.home_team_name} vs ${matchData.away_team_name}. Events: ${allEventTypes.join(', ')}. Event Types: ${allEventTypes.join(', ')}. Players: ${totalPlayers} assigned${processedAssignments.length > 0 ? ` (${processedAssignments.map((a: any) => a.line === 'all_events' ? 'all events' : `line of ${a.line}`).join(', ')})` : ''}`;
+      // Determine if these are individual player assignments or line assignments
+      const isIndividualAssignments = assignments.every((a: any) => a.assigned_player_id || a.player_id);
+      
+      let playersDescription = '';
+      if (isIndividualAssignments) {
+        // For individual player assignments, list the actual players
+        const allPlayers = processedAssignments.flatMap((a: any) => a.players);
+        const playerNames = allPlayers.map((p: any) => `#${p.number || p.jersey_number} ${p.name || p.player_name}`);
+        playersDescription = `Players assigned: ${playerNames.join(', ')}`;
+      } else {
+        // For line-based assignments, show lines
+        const uniqueLines = [...new Set(processedAssignments.map((a: any) => a.line))];
+        playersDescription = `${totalPlayers} assigned (${uniqueLines.map(line => line === 'all_events' ? 'all events' : `${line} line`).join(', ')})`;
+      }
+      
+      const notification = `You've been assigned to track video: ${matchData.home_team_name} vs ${matchData.away_team_name}. Events: ${allEventTypes.join(', ')}. ${playersDescription}`;
       
       setAssignmentNotification(notification);
 
