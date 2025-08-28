@@ -77,7 +77,8 @@ export const useSpecializedAssignments = (matchId: string) => {
     trackerId: string,
     playerId: number,
     teamId: 'home' | 'away',
-    eventTypes: string[]
+    eventTypes: string[],
+    videoUrl?: string
   ) => {
     setLoading(true);
     try {
@@ -114,6 +115,34 @@ export const useSpecializedAssignments = (matchId: string) => {
         });
 
       if (error) throw error;
+
+      // Send notification based on video URL presence
+      const notificationType = videoUrl ? 'video_assignment' : 'match_assignment';
+      const notificationTitle = videoUrl ? 'New Video Tracking Assignment' : 'New Match Assignment';
+      const notificationMessage = videoUrl 
+        ? `You have been assigned to track video analysis. Events: ${eventTypes.join(', ')}`
+        : `You have been assigned to track match events. Events: ${eventTypes.join(', ')}`;
+
+      const { error: notificationError } = await supabase.from('notifications').insert({
+        user_id: trackerId,
+        match_id: matchId,
+        type: notificationType,
+        title: notificationTitle,
+        message: notificationMessage,
+        notification_data: {
+          match_id: matchId,
+          player_id: playerId,
+          player_team_id: teamId,
+          assigned_event_types: eventTypes,
+          assignment_type: videoUrl ? 'video_tracking' : 'match_tracking',
+          video_url: videoUrl || null
+        }
+      });
+
+      if (notificationError) {
+        console.error('Error sending notification:', notificationError);
+        // Don't throw error for notifications, just log it
+      }
 
       toast.success('Specialized assignment created successfully');
       await fetchAssignments();

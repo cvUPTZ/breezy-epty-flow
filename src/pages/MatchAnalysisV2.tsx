@@ -503,7 +503,8 @@ const MatchAnalysisV2: React.FC = () => {
                     
                   {activeView === 'tracker' && isAdmin && (
                     <UnifiedTrackerAssignment
-                      matchId={matchId}
+                      matchId={matchId!}
+                      videoUrl={videoUrl}
                       homeTeamPlayers={fullMatchRoster?.home?.map((player, index) => ({
                         id: Number(player.id) || index,
                         jersey_number: player.jersey_number || index + 1,

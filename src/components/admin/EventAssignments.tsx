@@ -14,9 +14,15 @@ interface TrackerAssignment {
   id: string;
   tracker_user_id: string;
   assigned_event_types: string[] | null;
+  assigned_player_id?: number;
+  player_team_id?: string;
   created_at: string;
   tracker_name?: string;
   tracker_email?: string;
+  player_info?: {
+    id: number;
+    team: string;
+  } | null;
 }
 
 interface EventAssignmentsProps {
@@ -53,6 +59,8 @@ const EventAssignments: React.FC<EventAssignmentsProps> = ({ matchId }) => {
           id,
           tracker_user_id,
           assigned_event_types,
+          assigned_player_id,
+          player_team_id,
           created_at,
           profiles (
             full_name,
@@ -60,7 +68,7 @@ const EventAssignments: React.FC<EventAssignmentsProps> = ({ matchId }) => {
           )
         `)
         .eq('match_id', matchId)
-        .is('assigned_player_id', null);
+        .not('assigned_player_id', 'is', null);
 
       if (error) {
         console.error('Error fetching assignments:', error);
@@ -68,10 +76,19 @@ const EventAssignments: React.FC<EventAssignmentsProps> = ({ matchId }) => {
         return;
       }
       
-      const assignmentsWithTrackers = data?.map(assignment => ({
-        ...assignment,
+      const assignmentsWithTrackers: TrackerAssignment[] = data?.map(assignment => ({
+        id: assignment.id,
+        tracker_user_id: assignment.tracker_user_id,
+        assigned_event_types: assignment.assigned_event_types,
+        assigned_player_id: assignment.assigned_player_id || undefined,
+        player_team_id: assignment.player_team_id,
+        created_at: assignment.created_at,
         tracker_name: (assignment.profiles as any)?.full_name || 'Unknown',
-        tracker_email: (assignment.profiles as any)?.email || 'Unknown'
+        tracker_email: (assignment.profiles as any)?.email || 'Unknown',
+        player_info: assignment.assigned_player_id ? {
+          id: assignment.assigned_player_id,
+          team: assignment.player_team_id
+        } : null
       })) || [];
 
       setAssignments(assignmentsWithTrackers);
@@ -210,6 +227,11 @@ const EventAssignments: React.FC<EventAssignmentsProps> = ({ matchId }) => {
                       <div>
                         <h4 className="font-medium">{assignment.tracker_name}</h4>
                         <p className="text-sm text-gray-600">{assignment.tracker_email}</p>
+                        {assignment.player_info && (
+                          <p className="text-sm text-blue-600">
+                            Player #{assignment.player_info.id} ({assignment.player_info.team} team)
+                          </p>
+                        )}
                       </div>
                       <Button
                         variant="destructive"

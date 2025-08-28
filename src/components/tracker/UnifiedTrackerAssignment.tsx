@@ -36,6 +36,7 @@ interface Assignment {
 
 interface UnifiedTrackerAssignmentProps {
   matchId?: string;
+  videoUrl?: string;
   homeTeamPlayers: Player[];
   awayTeamPlayers: Player[];
   trackerUsers?: TrackerUser[];
@@ -81,6 +82,7 @@ const trackerTypeConfig = {
 
 const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   matchId,
+  videoUrl,
   homeTeamPlayers = [],
   awayTeamPlayers = [],
   trackerUsers = [],
@@ -295,7 +297,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
 
       // Send notification
       if (matchId) {
-        await sendNotificationToTracker(selectedTracker, matchId);
+        await sendNotificationToTracker(selectedTracker, matchId, videoUrl);
       }
 
       // Reset form
@@ -340,15 +342,25 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     if (error) throw error;
   };
 
-  const sendNotificationToTracker = async (trackerId: string, matchId: string) => {
+  const sendNotificationToTracker = async (trackerId: string, matchId: string, videoUrl?: string) => {
     try {
+      const notificationType = videoUrl ? 'video_assignment' : 'match_assignment';
+      const notificationTitle = videoUrl ? 'New Video Tracking Assignment' : 'New Match Assignment';
+      const notificationMessage = videoUrl 
+        ? `You have been assigned to track video analysis.`
+        : `You have been assigned to track a new match.`;
+
       await supabase.from('notifications').insert({
         user_id: trackerId,
         match_id: matchId,
-        title: 'New Match Assignment',
-        message: `You have been assigned to track a new match.`,
-        type: 'match_assignment',
-        notification_data: { match_id: matchId },
+        title: notificationTitle,
+        message: notificationMessage,
+        type: notificationType,
+        notification_data: { 
+          match_id: matchId,
+          assignment_type: videoUrl ? 'video_tracking' : 'match_tracking',
+          video_url: videoUrl || null
+        },
         is_read: false,
       });
     } catch (error) {
