@@ -33,6 +33,12 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
   const pendingBroadcastRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Ref to hold the latest isConnected state to stabilize callbacks
+  const isConnectedRef = useRef(isConnected);
+  useEffect(() => {
+    isConnectedRef.current = isConnected;
+  }, [isConnected]);
+
   // Initialize unified channel with enhanced retry logic
   useEffect(() => {
     if (!matchId) {
@@ -263,12 +269,12 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
 
   // Immediate broadcast function (no throttling for critical updates)
   const broadcastStatusImmediate = useCallback(async (statusData: TrackerStatusData) => {
-    if (!userId || !matchId || !channelRef.current || !isConnected) {
+    if (!userId || !matchId || !channelRef.current || !isConnectedRef.current) {
       console.log('UnifiedTrackerConnection: Cannot broadcast immediately - missing requirements', { 
         userId, 
         matchId, 
         hasChannel: !!channelRef.current,
-        isConnected 
+        isConnected: isConnectedRef.current
       });
       return;
     }
@@ -331,16 +337,16 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
     } catch (error) {
       console.error('UnifiedTrackerConnection: Failed to broadcast status immediately:', error);
     }
-  }, [matchId, userId, isConnected]);
+  }, [matchId, userId]);
 
   // Throttled broadcast function for regular updates
   const broadcastStatus = useCallback(async (statusData: TrackerStatusData) => {
-    if (!userId || !matchId || !channelRef.current || !isConnected) {
+    if (!userId || !matchId || !channelRef.current || !isConnectedRef.current) {
       console.log('UnifiedTrackerConnection: Cannot broadcast - missing requirements', { 
         userId, 
         matchId, 
         hasChannel: !!channelRef.current,
-        isConnected 
+        isConnected: isConnectedRef.current
       });
       return;
     }
@@ -369,7 +375,7 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
     pendingBroadcastRef.current = setTimeout(async () => {
       return broadcastStatusImmediate(statusData);
     }, 1000);
-  }, [matchId, userId, isConnected, broadcastStatusImmediate]);
+  }, [matchId, userId, broadcastStatusImmediate]);
 
   const cleanup = useCallback(() => {
     console.log('UnifiedTrackerConnection: Manual cleanup called');
@@ -392,7 +398,7 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
       reconnectTimeoutRef.current = null;
     }
     
-    if (isCurrentUser && userId && channelRef.current && isConnected) {
+    if (isCurrentUser && userId && channelRef.current && isConnectedRef.current) {
       try {
         channelRef.current.send({
           type: 'broadcast',
@@ -415,7 +421,7 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
       channelRef.current = null;
     }
     setIsConnected(false);
-  }, [userId, isCurrentUser, isConnected]);
+  }, [userId, isCurrentUser]);
 
   return {
     isConnected,

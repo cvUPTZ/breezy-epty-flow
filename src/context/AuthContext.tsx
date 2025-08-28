@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +28,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
 
+  const fetchUserRole = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user role:', error);
+        // Default to 'user' role if profile doesn't exist yet
+        setUserRole('user');
+      } else {
+        setUserRole(data?.role || 'user');
+      }
+    } catch (error) {
+      console.error('Error in fetchUserRole:', error);
+      setUserRole('user');
+    }
+  }, []);
+
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -54,30 +75,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchUserRole]);
 
-  const fetchUserRole = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching user role:', error);
-        // Default to 'user' role if profile doesn't exist yet
-        setUserRole('user');
-      } else {
-        setUserRole(data?.role || 'user');
-      }
-    } catch (error) {
-      console.error('Error in fetchUserRole:', error);
-      setUserRole('user');
-    }
-  };
-
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     try {
       setLoading(true);
       const { error } = await supabase.auth.signInWithPassword({
@@ -97,9 +97,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const signUp = async (email: string, password: string, fullName?: string) => {
+  const signUp = useCallback(async (email: string, password: string, fullName?: string) => {
     try {
       setLoading(true);
       const { data, error } = await supabase.auth.signUp({
@@ -128,19 +128,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setUserRole(null);
-  };
+  }, []);
 
-  const switchUser = async (email: string, password: string) => {
+  const switchUser = useCallback(async (email: string, password: string) => {
     await signOut();
     await signIn(email, password);
-  };
+  }, [signIn, signOut]);
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     session,
     loading,
@@ -149,7 +149,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signIn,
     signUp,
     switchUser,
-  };
+  }), [user, session, loading, userRole, signOut, signIn, signUp, switchUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
