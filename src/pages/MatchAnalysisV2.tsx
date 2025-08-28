@@ -18,9 +18,10 @@ import { EventType as AppEventType } from '@/types';
 import { MatchSpecificEventData, ShotEventData, PassEventData, TackleEventData, FoulCommittedEventData, CardEventData, SubstitutionEventData, GenericEventData } from '@/types/eventData';
 import { PlayerForPianoInput, AssignedPlayers } from '@/components/match/types';
 import { useIsMobile, useBreakpoint } from '@/hooks/use-mobile';
-import { Activity, Piano, Users, Settings, Mic, Zap, LayoutDashboard } from 'lucide-react';
+import { Activity, Piano, Users, Settings, Mic, Zap, LayoutDashboard, Video } from 'lucide-react';
 import { VoiceCollaborationProvider } from '@/context/VoiceCollaborationContext';
 import VoiceCollaborationOverlay from "@/components/match/VoiceCollaborationOverlay";
+import VideoSetupSection from '@/components/match/form/VideoSetupSection';
 
 // Type for TrackerVoiceInput players
 interface VoiceInputPlayer {
@@ -65,6 +66,12 @@ const viewDetails = {
     icon: Settings,
     color: 'from-amber-500 to-amber-600',
   },
+  video: {
+    title: 'Video Setup',
+    subtitle: 'Configure YouTube video assignments',
+    icon: Video,
+    color: 'from-red-500 to-red-600',
+  },
 };
 
 const MatchAnalysisV2: React.FC = () => {
@@ -77,6 +84,7 @@ const MatchAnalysisV2: React.FC = () => {
   const [assignedEventTypes, setAssignedEventTypes] = useState<LocalEventType[] | null>(null);
   const [assignedPlayers, setAssignedPlayers] = useState<AssignedPlayers | null>(null);
   const [fullMatchRoster, setFullMatchRoster] = useState<AssignedPlayers | null>(null);
+  const [videoUrl, setVideoUrl] = useState('');
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const isSmall = useBreakpoint('sm');
@@ -394,6 +402,11 @@ const MatchAnalysisV2: React.FC = () => {
         value: 'tracker',
         label: 'Assignment',
         icon: Settings,
+      },
+      {
+        value: 'video',
+        label: 'Video Setup',
+        icon: Video,
       }
     ] : [])
   ];
@@ -505,6 +518,13 @@ const MatchAnalysisV2: React.FC = () => {
                         team: 'away' as const,
                         position: player.position
                       })) || []}
+                    />
+                  )}
+
+                  {activeView === 'video' && isAdmin && (
+                    <VideoSetupSection
+                      videoUrl={videoUrl}
+                      onVideoUrlChange={setVideoUrl}
                     />
                   )}
                 </CardContent>
