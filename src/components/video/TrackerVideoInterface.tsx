@@ -48,6 +48,9 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   
   // State to track the last triggered event from the gamepad
   const [lastGamepadTriggeredEvent, setLastGamepadTriggeredEvent] = useState<string | null>(null);
+  
+  // Video control channel reference to prevent creating new channels
+  const videoControlChannelRef = useRef<any>(null);
 
   // Initialize unified tracker connection for status reporting
   const { isConnected, broadcastStatus } = useUnifiedTrackerConnection(matchId, user?.id);
@@ -306,15 +309,16 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     }
   };
 
-  // Monitor fullscreen changes
+  // Video control channel cleanup
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+    return () => {
+      if (videoControlChannelRef.current) {
+        console.log('Unsubscribed from video-control-' + matchId);
+        supabase.removeChannel(videoControlChannelRef.current);
+        videoControlChannelRef.current = null;
+      }
     };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
+  }, [matchId]);
 
   // Enhanced connection and status reporting
   useEffect(() => {
@@ -387,11 +391,15 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   }, [isConnected, broadcastStatus]);
 
   const sendAdminPlayerEvent = useCallback((event: Omit<PlayerControlEvent, 'timestamp'>) => {
-    const channel = supabase.channel(`video-control-${matchId}`);
-    if (isAdminView && channel && playerRef.current) {
+    // Create or reuse video control channel
+    if (!videoControlChannelRef.current) {
+      videoControlChannelRef.current = supabase.channel(`video-control-${matchId}`);
+    }
+    
+    if (isAdminView && videoControlChannelRef.current && playerRef.current) {
       const fullEvent: PlayerControlEvent = { ...event, timestamp: Date.now() };
       // console.log('Admin sending player control event from TrackerVideoInterface:', fullEvent);
-      channel.send({
+      videoControlChannelRef.current.send({
         type: 'broadcast',
         event: 'player-control',
         payload: fullEvent,

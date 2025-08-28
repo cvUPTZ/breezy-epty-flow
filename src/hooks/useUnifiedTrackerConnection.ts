@@ -62,8 +62,8 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
           setIsConnected(false);
         }
 
-        // Create single unified channel with unique name including user info
-        const channelName = `unified_match_${matchId}_${userId || 'observer'}_${Date.now()}`;
+        // Create single unified channel with stable name
+        const channelName = `unified_match_${matchId}_${userId || 'observer'}`;
         console.log('UnifiedTrackerConnection: Creating unified channel:', channelName);
         
         channelRef.current = supabase.channel(channelName, {
@@ -220,7 +220,7 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
         setIsConnected(false);
       }
     };
-  }, [matchId, userId, isCurrentUser]);
+  }, [matchId, userId]);
 
   // Fetch initial tracker assignments
   useEffect(() => {
