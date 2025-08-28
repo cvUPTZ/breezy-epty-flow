@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -24,6 +23,7 @@ export interface TrackerInfo {
 export const useUnifiedTrackerConnection = (matchId: string, userId?: string) => {
   const [isConnected, setIsConnected] = useState(false);
   const [trackers, setTrackers] = useState<TrackerInfo[]>([]);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const channelRef = useRef<any>(null);
   const connectionAttempts = useRef(0);
   const maxRetries = 5;
@@ -32,12 +32,54 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
   const lastBroadcastTimeRef = useRef<number>(0);
   const pendingBroadcastRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isUnmountedRef = useRef(false);
 
   // Ref to hold the latest isConnected state to stabilize callbacks
   const isConnectedRef = useRef(isConnected);
   useEffect(() => {
     isConnectedRef.current = isConnected;
   }, [isConnected]);
+
+  // Connection health check
+  const checkConnection = useCallback(() => {
+    if (!channelRef.current || isUnmountedRef.current) return;
+    
+    try {
+      // Try to get channel state - if this fails, we know connection is broken
+      const state = channelRef.current.state;
+      if (state !== 'joined') {
+        console.log('UnifiedTrackerConnection: Connection health check failed, state:', state);
+        if (isConnectedRef.current) {
+          setIsConnected(false);
+          setConnectionError('Connection lost');
+        }
+      }
+    } catch (error) {
+      console.error('UnifiedTrackerConnection: Health check error:', error);
+      if (isConnectedRef.current) {
+        setIsConnected(false);
+        setConnectionError('Health check failed');
+      }
+    }
+  }, []);
+
+  // Start heartbeat to monitor connection
+  const startHeartbeat = useCallback(() => {
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+    }
+    
+    heartbeatIntervalRef.current = setInterval(checkConnection, 30000); // Check every 30 seconds
+  }, [checkConnection]);
+
+  // Stop heartbeat
+  const stopHeartbeat = useCallback(() => {
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+  }, []);
 
   // Initialize unified channel with enhanced retry logic
   useEffect(() => {
@@ -47,6 +89,7 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
     }
 
     let mounted = true;
+    isUnmountedRef.current = false;
     cleanupExecutedRef.current = false;
 
     const initializeChannel = async () => {
@@ -63,19 +106,45 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
         // Clean up existing channel
         if (channelRef.current) {
           console.log('UnifiedTrackerConnection: Cleaning up existing channel');
-          await supabase.removeChannel(channelRef.current);
+          stopHeartbeat();
+          try {
+            await supabase.removeChannel(channelRef.current);
+          } catch (error) {
+            console.log('UnifiedTrackerConnection: Error removing existing channel:', error);
+          }
           channelRef.current = null;
           setIsConnected(false);
         }
 
+        // Wait for any pending cleanup
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Check if Supabase is properly initialized
+        if (!supabase || !supabase.channel) {
+          throw new Error('Supabase client not properly initialized');
+        }
+
         // Create single unified channel with stable name
-        const channelName = `unified_match_${matchId}_${userId || 'observer'}`;
+        const channelName = `unified_match_${matchId}_${userId || 'observer'}_${Date.now()}`;
         console.log('UnifiedTrackerConnection: Creating unified channel:', channelName);
         
         channelRef.current = supabase.channel(channelName, {
           config: {
-            broadcast: { self: false },
-            presence: { key: userId || `observer_${Date.now()}` }
+            broadcast: { 
+              self: false,
+              ack: true // Enable acknowledgments
+            },
+            presence: { 
+              key: userId || `observer_${Date.now()}` 
+            }
+          }
+        });
+
+        // Handle connection events
+        channelRef.current.on('system', {}, (payload: any) => {
+          console.log('UnifiedTrackerConnection: System event:', payload);
+          if (payload.extension === 'presence') {
+            console.log('UnifiedTrackerConnection: Presence event:', payload.payload);
           }
         });
 
@@ -123,56 +192,81 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
         });
 
         // Subscribe to channel with enhanced error handling
-        channelRef.current.subscribe(async (status: string, err?: Error) => {
-          if (!mounted) return;
-          
-          console.log('UnifiedTrackerConnection: Subscription status:', status, 'error:', err);
-          
-          if (status === 'SUBSCRIBED') {
-            setIsConnected(true);
-            connectionAttempts.current = 0; // Reset attempts on success
-            console.log('UnifiedTrackerConnection: Successfully connected to unified channel');
+        const subscribePromise = new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Subscription timeout'));
+          }, 10000); // 10 second timeout
+
+          channelRef.current.subscribe(async (status: string, err?: Error) => {
+            if (!mounted) return;
             
-            // Send immediate presence signal if current user
-            if (isCurrentUser && userId) {
-              setTimeout(() => {
-                if (mounted && channelRef.current) {
-                  broadcastStatusImmediate({
-                    status: 'active',
-                    timestamp: Date.now(),
-                    action: 'connection_established'
-                  });
-                }
-              }, 1000);
-            }
-          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            setIsConnected(false);
-            console.error('UnifiedTrackerConnection: Channel error:', status, err);
+            console.log('UnifiedTrackerConnection: Subscription status:', status, 'error:', err);
             
-            // Retry connection if attempts remain
-            if (connectionAttempts.current < maxRetries && mounted) {
-              connectionAttempts.current++;
-              const retryDelay = Math.min(2000 * connectionAttempts.current, 10000); // Exponential backoff
-              console.log(`UnifiedTrackerConnection: Retrying connection in ${retryDelay}ms (attempt ${connectionAttempts.current}/${maxRetries})`);
+            if (status === 'SUBSCRIBED') {
+              clearTimeout(timeout);
+              setIsConnected(true);
+              setConnectionError(null);
+              connectionAttempts.current = 0; // Reset attempts on success
+              console.log('UnifiedTrackerConnection: Successfully connected to unified channel');
               
-              reconnectTimeoutRef.current = setTimeout(() => {
-                if (mounted) initializeChannel();
-              }, retryDelay);
+              // Start connection monitoring
+              startHeartbeat();
+              
+              // Send immediate presence signal if current user
+              if (isCurrentUser && userId) {
+                setTimeout(() => {
+                  if (mounted && channelRef.current) {
+                    broadcastStatusImmediate({
+                      status: 'active',
+                      timestamp: Date.now(),
+                      action: 'connection_established'
+                    });
+                  }
+                }, 1000);
+              }
+              
+              resolve(status);
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              clearTimeout(timeout);
+              setIsConnected(false);
+              stopHeartbeat();
+              const errorMessage = `Channel error: ${status} - ${err?.message || 'Unknown error'}`;
+              setConnectionError(errorMessage);
+              console.error('UnifiedTrackerConnection:', errorMessage);
+              
+              // Retry connection if attempts remain
+              if (connectionAttempts.current < maxRetries && mounted) {
+                connectionAttempts.current++;
+                const retryDelay = Math.min(2000 * Math.pow(2, connectionAttempts.current - 1), 30000); // Exponential backoff with max 30s
+                console.log(`UnifiedTrackerConnection: Retrying connection in ${retryDelay}ms (attempt ${connectionAttempts.current}/${maxRetries})`);
+                
+                reconnectTimeoutRef.current = setTimeout(() => {
+                  if (mounted) initializeChannel();
+                }, retryDelay);
+              } else {
+                reject(new Error(errorMessage));
+              }
+            } else if (status === 'CLOSED') {
+              setIsConnected(false);
+              stopHeartbeat();
+              setConnectionError('Connection closed');
+              console.log('UnifiedTrackerConnection: Channel closed');
             }
-          } else if (status === 'CLOSED') {
-            setIsConnected(false);
-            console.log('UnifiedTrackerConnection: Channel closed');
-          }
+          });
         });
+
+        await subscribePromise;
         
       } catch (error) {
         console.error('UnifiedTrackerConnection: Error initializing channel:', error);
         setIsConnected(false);
+        stopHeartbeat();
+        setConnectionError(error instanceof Error ? error.message : 'Initialization failed');
         
         // Retry on error
         if (connectionAttempts.current < maxRetries && mounted) {
           connectionAttempts.current++;
-          const retryDelay = Math.min(2000 * connectionAttempts.current, 10000);
+          const retryDelay = Math.min(2000 * Math.pow(2, connectionAttempts.current - 1), 30000);
           reconnectTimeoutRef.current = setTimeout(() => {
             if (mounted) initializeChannel();
           }, retryDelay);
@@ -184,7 +278,10 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
 
     return () => {
       mounted = false;
+      isUnmountedRef.current = true;
       console.log('UnifiedTrackerConnection: Cleaning up on unmount');
+      
+      stopHeartbeat();
       
       // Clear any pending broadcasts and timeouts
       if (pendingBroadcastRef.current) {
@@ -226,7 +323,7 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
         setIsConnected(false);
       }
     };
-  }, [matchId, userId]);
+  }, [matchId, userId, startHeartbeat, stopHeartbeat]);
 
   // Fetch initial tracker assignments
   useEffect(() => {
@@ -236,10 +333,15 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
       try {
         console.log('UnifiedTrackerConnection: Fetching initial tracker assignments for match:', matchId);
         
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('match_tracker_assignments_view')
           .select('*')
           .eq('match_id', matchId);
+
+        if (error) {
+          console.error('UnifiedTrackerConnection: Error fetching trackers:', error);
+          return;
+        }
 
         if (data) {
           const trackerMap = new Map<string, TrackerInfo>();
@@ -276,7 +378,7 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
         hasChannel: !!channelRef.current,
         isConnected: isConnectedRef.current
       });
-      return;
+      return false;
     }
 
     try {
@@ -331,11 +433,15 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
           
           return updated;
         });
+        
+        return true;
       } else {
         console.error('UnifiedTrackerConnection: Immediate broadcast failed:', result);
+        return false;
       }
     } catch (error) {
       console.error('UnifiedTrackerConnection: Failed to broadcast status immediately:', error);
+      return false;
     }
   }, [matchId, userId]);
 
@@ -377,6 +483,22 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
     }, 1000);
   }, [matchId, userId, broadcastStatusImmediate]);
 
+  // Force reconnect function
+  const forceReconnect = useCallback(() => {
+    console.log('UnifiedTrackerConnection: Force reconnect requested');
+    connectionAttempts.current = 0; // Reset attempt counter
+    setConnectionError(null);
+    
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+    
+    // Trigger re-initialization by updating a dependency
+    // This will cause the main useEffect to run again
+    setIsConnected(false);
+  }, []);
+
   const cleanup = useCallback(() => {
     console.log('UnifiedTrackerConnection: Manual cleanup called');
     
@@ -386,6 +508,7 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
     }
     
     cleanupExecutedRef.current = true;
+    stopHeartbeat();
     
     // Clear pending broadcasts and timeouts
     if (pendingBroadcastRef.current) {
@@ -421,12 +544,14 @@ export const useUnifiedTrackerConnection = (matchId: string, userId?: string) =>
       channelRef.current = null;
     }
     setIsConnected(false);
-  }, [userId, isCurrentUser]);
+  }, [userId, isCurrentUser, stopHeartbeat]);
 
   return {
     isConnected,
     trackers,
+    connectionError,
     broadcastStatus,
+    forceReconnect,
     cleanup
   };
 };
