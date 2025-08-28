@@ -68,7 +68,7 @@ export const useTrackerAssignment = (matchId: string, userId?: string) => {
             // We can't get player name/number here.
             // Let's return what we can. The component will need to resolve the rest.
             const partialPlayer = {
-                id: parseInt(assigned_player_id, 10),
+                id: typeof assigned_player_id === 'string' ? parseInt(assigned_player_id, 10) : assigned_player_id,
                 teamId: player_team_id as 'home' | 'away',
                 // These are placeholders
                 name: 'Player',

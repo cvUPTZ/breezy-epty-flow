@@ -113,7 +113,8 @@ const EventAssignments: React.FC<EventAssignmentsProps> = ({ matchId }) => {
         .insert({
           match_id: matchId,
           tracker_user_id: selectedTracker,
-          assigned_event_types: selectedEventTypes
+          assigned_event_types: selectedEventTypes,
+          player_team_id: 'home' // Default team for general event assignments
         });
 
       if (error) {

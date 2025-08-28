@@ -59,7 +59,7 @@ export const useSpecializedAssignments = (matchId: string) => {
         .map(item => ({
           id: item.id!,
           tracker_user_id: item.tracker_user_id!,
-          player_id: parseInt(item.assigned_player_id!, 10),
+          player_id: typeof item.assigned_player_id === 'string' ? parseInt(item.assigned_player_id, 10) : item.assigned_player_id!,
           player_team_id: (item.player_team_id as 'home' | 'away') || 'home',
           assigned_event_types: item.assigned_event_types || [],
           tracker_name: (item.profiles as any)?.full_name || undefined,
@@ -85,7 +85,7 @@ export const useSpecializedAssignments = (matchId: string) => {
       const { data: existingAssignments, error: fetchError } = await supabase
         .from('match_tracker_assignments')
         .select('id, assigned_event_types')
-        .eq('assigned_player_id', playerId.toString())
+        .eq('assigned_player_id', playerId)
         .eq('player_team_id', teamId);
 
       if (fetchError) throw fetchError;
@@ -105,13 +105,13 @@ export const useSpecializedAssignments = (matchId: string) => {
       // Now, insert the new assignment
       const { error } = await supabase
         .from('match_tracker_assignments')
-        .insert([{
+        .insert({
           match_id: matchId,
           tracker_user_id: trackerId,
-          assigned_player_id: playerId.toString(),
+          assigned_player_id: playerId,
           player_team_id: teamId,
           assigned_event_types: eventTypes
-        }]);
+        });
 
       if (error) throw error;
 
