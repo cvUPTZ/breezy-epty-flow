@@ -80,6 +80,7 @@ export const useSpecializedAssignments = (matchId: string) => {
     eventTypes: string[],
     videoUrl?: string
   ) => {
+    console.log('createAssignment called with:', { trackerId, playerId, teamId, eventTypes, videoUrl });
     setLoading(true);
     try {
       // First, remove any existing assignments for this player and these event types
@@ -122,6 +123,8 @@ export const useSpecializedAssignments = (matchId: string) => {
       const notificationMessage = videoUrl 
         ? `You have been assigned to track video analysis. Events: ${eventTypes.join(', ')}`
         : `You have been assigned to track match events. Events: ${eventTypes.join(', ')}`;
+
+      console.log('Sending notification:', { notificationType, notificationTitle, videoUrl: !!videoUrl });
 
       const { error: notificationError } = await supabase.from('notifications').insert({
         user_id: trackerId,

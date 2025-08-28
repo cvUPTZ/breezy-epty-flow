@@ -343,6 +343,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   };
 
   const sendNotificationToTracker = async (trackerId: string, matchId: string, videoUrl?: string) => {
+    console.log('sendNotificationToTracker called with:', { trackerId, matchId, videoUrl: !!videoUrl });
     try {
       const notificationType = videoUrl ? 'video_assignment' : 'match_assignment';
       const notificationTitle = videoUrl ? 'New Video Tracking Assignment' : 'New Match Assignment';
