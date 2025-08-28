@@ -124,6 +124,8 @@ const EventAssignments: React.FC<EventAssignmentsProps> = ({ matchId }) => {
       return;
     }
 
+    console.log('EventAssignments handleAssignTracker called - no video URL access here');
+
     try {
       const { error } = await supabase
         .from('match_tracker_assignments')
@@ -138,6 +140,25 @@ const EventAssignments: React.FC<EventAssignmentsProps> = ({ matchId }) => {
         console.error('Error assigning tracker:', error);
         toast.error('Failed to assign tracker');
         return;
+      }
+
+      // Send match assignment notification (no video URL available in this component)
+      const { error: notificationError } = await supabase.from('notifications').insert({
+        user_id: selectedTracker,
+        match_id: matchId,
+        type: 'match_assignment',
+        title: 'New Match Assignment',
+        message: `You have been assigned to track match events. Events: ${selectedEventTypes.join(', ')}`,
+        notification_data: {
+          match_id: matchId,
+          assigned_event_types: selectedEventTypes,
+          assignment_type: 'match_tracking'
+        }
+      });
+
+      if (notificationError) {
+        console.error('Error sending notification:', notificationError);
+        // Don't throw error for notifications, just log it
       }
 
       toast.success('Tracker assigned successfully');
