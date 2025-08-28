@@ -102,6 +102,8 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   const [selectedTrackerType, setSelectedTrackerType] = useState<TrackerType>('specialized');
   const [selectedTeam, setSelectedTeam] = useState<'home' | 'away'>('home');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [assignmentVideoUrl, setAssignmentVideoUrl] = useState<string>(videoUrl || '');
+  const [isVideoAssignment, setIsVideoAssignment] = useState<boolean>(false);
 
   const allPlayers = [...homeTeamPlayers, ...awayTeamPlayers];
 
@@ -256,6 +258,15 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       return;
     }
 
+    if (isVideoAssignment && !assignmentVideoUrl.trim()) {
+      toast({
+        title: "Validation Error", 
+        description: "Please enter a YouTube video URL for video assignments",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const playersToAssign = selectedTrackerType === 'specialized' 
       ? selectedPlayers 
       : getLinePlayers(selectedTrackerType, selectedTeam).map(p => p.id);
@@ -297,7 +308,8 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
 
       // Send notification
       if (matchId) {
-        await sendNotificationToTracker(selectedTracker, matchId, videoUrl);
+        const finalVideoUrl = isVideoAssignment ? assignmentVideoUrl : undefined;
+        await sendNotificationToTracker(selectedTracker, matchId, finalVideoUrl);
       }
 
       // Reset form
@@ -305,6 +317,8 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       setSelectedEventTypes([]);
       setSelectedPlayers([]);
       setExpandedCategories(new Set());
+      setIsVideoAssignment(false);
+      setAssignmentVideoUrl('');
 
       toast({
         title: "Success",
@@ -540,6 +554,48 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
             </TabsList>
 
             <TabsContent value="by-player" className="space-y-4">
+              {/* Assignment Type Selection */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Assignment Type</label>
+                <div className="flex gap-3">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={!isVideoAssignment}
+                      onChange={() => setIsVideoAssignment(false)}
+                      className="text-blue-600"
+                    />
+                    <span className="text-sm">Match Tracking</span>
+                  </label>
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={isVideoAssignment}
+                      onChange={() => setIsVideoAssignment(true)}
+                      className="text-blue-600"
+                    />
+                    <span className="text-sm">Video Analysis</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Video URL Input - Only show when video assignment is selected */}
+              {isVideoAssignment && (
+                <div className="space-y-2">
+                  <label htmlFor="videoUrl" className="text-sm font-medium text-gray-700">
+                    YouTube Video URL
+                  </label>
+                  <input
+                    id="videoUrl"
+                    type="text"
+                    value={assignmentVideoUrl}
+                    onChange={(e) => setAssignmentVideoUrl(e.target.value)}
+                    placeholder="e.g., https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              )}
+
               {/* Tracker Selection */}
               <div>
                 <label className="text-sm font-medium">Select Tracker</label>
@@ -592,8 +648,12 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                 {renderEventTypeCategories()}
               </div>
 
-              <Button onClick={handleCreateAssignment} className="w-full">
-                Create Assignment
+              <Button 
+                onClick={handleCreateAssignment} 
+                className="w-full"
+                disabled={isVideoAssignment && !assignmentVideoUrl.trim()}
+              >
+                {isVideoAssignment ? 'Create Video Assignment' : 'Create Match Assignment'}
               </Button>
             </TabsContent>
 
