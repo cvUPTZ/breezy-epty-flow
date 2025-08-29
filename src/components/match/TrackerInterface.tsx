@@ -267,25 +267,43 @@ export function TrackerInterface({ trackerUserId, matchId }: TrackerInterfacePro
       );
     }
 
-    if (assignment && assignment.assignedPlayer && matchData) {
-        const playerList = assignment.assignedPlayer.teamId === 'home'
+    if (assignment && assignment.assignments.length > 0 && matchData) {
+        // Group assignments by player
+        const assignmentsByPlayer = assignment.assignments.reduce((acc, assign) => {
+          const playerId = assign.assignedPlayer.id;
+          if (!acc[playerId]) {
+            acc[playerId] = {
+              player: assign.assignedPlayer,
+              eventTypes: []
+            };
+          }
+          acc[playerId].eventTypes.push(...assign.assignedEventTypes);
+          return acc;
+        }, {} as Record<number, { player: AssignedPlayer; eventTypes: string[] }>);
+
+        // For now, show the first player's assignment (we can enhance this later)
+        const firstAssignment = Object.values(assignmentsByPlayer)[0];
+        const playerList = firstAssignment.player.teamId === 'home'
             ? matchData.home_team_players
             : matchData.away_team_players;
 
-        const playerDetails = playerList.find(p => p.id === assignment.assignedPlayer?.id);
+        const playerDetails = playerList.find(p => p.id === firstAssignment.player.id);
 
         if (playerDetails) {
             const fullPlayerDetails = {
-                ...assignment.assignedPlayer,
+                ...firstAssignment.player,
                 name: playerDetails.player_name,
                 jerseyNumber: playerDetails.jersey_number,
-                teamName: assignment.assignedPlayer.teamId === 'home' ? matchData.home_team_name : matchData.away_team_name,
+                teamName: firstAssignment.player.teamId === 'home' ? matchData.home_team_name : matchData.away_team_name,
             };
+
+            // Remove duplicates from event types
+            const uniqueEventTypes = [...new Set(firstAssignment.eventTypes)];
 
             return (
               <SpecializedTrackerUI
                 assignedPlayer={fullPlayerDetails}
-                assignedEventTypes={assignment.assignedEventTypes}
+                assignedEventTypes={uniqueEventTypes}
                 recordEvent={handleRecordEvent}
                 matchId={matchId}
               />

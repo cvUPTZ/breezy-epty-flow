@@ -10,8 +10,11 @@ export interface AssignedPlayer {
 }
 
 export interface TrackerAssignmentData {
-  assignedPlayer: AssignedPlayer | null;
-  assignedEventTypes: string[];
+  assignments: Array<{
+    assignedPlayer: AssignedPlayer;
+    assignedEventTypes: string[];
+    assignmentId: string;
+  }>;
 }
 
 export const useTrackerAssignment = (matchId: string, userId?: string) => {
@@ -30,24 +33,21 @@ export const useTrackerAssignment = (matchId: string, userId?: string) => {
         const { data, error } = await supabase
           .from('match_tracker_assignments')
           .select(`
+            id,
             assigned_player_id,
             assigned_event_types,
             player_team_id
           `)
           .eq('match_id', matchId)
           .eq('tracker_user_id', userId)
-          .not('assigned_player_id', 'is', null)
-          .single();
+          .not('assigned_player_id', 'is', null);
 
-        if (error || !data) {
-          // It's not an error if no assignment is found, just means it's a general tracker.
+        if (error || !data || data.length === 0) {
           setAssignment(null);
           return;
         }
 
-        // Now fetch player and team details
-        // This part assumes a 'players' table and that team names are on the 'matches' table.
-        // This may need to be adjusted based on the actual schema.
+        // Fetch match data for team names
         const { data: matchData, error: matchError } = await supabase
             .from('matches')
             .select('home_team_name, away_team_name')
@@ -56,31 +56,20 @@ export const useTrackerAssignment = (matchId: string, userId?: string) => {
 
         if (matchError) throw matchError;
 
-        // This is a guess based on component props from earlier exploration.
-        // There is no players table, so we can't fetch player details from the DB.
-        // The player data must be passed in from a parent component that has team roster data.
-        // This hook can't fulfill the whole requirement.
-        // I will adjust the plan. For now, this hook will only fetch the assignment basics.
+        // Process all assignments
+        const assignments = data.map((assignment: any) => ({
+          assignmentId: assignment.id,
+          assignedPlayer: {
+            id: typeof assignment.assigned_player_id === 'string' ? parseInt(assignment.assigned_player_id, 10) : assignment.assigned_player_id,
+            teamId: assignment.player_team_id as 'home' | 'away',
+            name: 'Player',
+            jerseyNumber: 0,
+            teamName: assignment.player_team_id === 'home' ? matchData.home_team_name : matchData.away_team_name,
+          },
+          assignedEventTypes: assignment.assigned_event_types,
+        }));
 
-        const { assigned_player_id, assigned_event_types, player_team_id } = data;
-
-        if (assigned_player_id && assigned_event_types) {
-            // We can't get player name/number here.
-            // Let's return what we can. The component will need to resolve the rest.
-            const partialPlayer = {
-                id: typeof assigned_player_id === 'string' ? parseInt(assigned_player_id, 10) : assigned_player_id,
-                teamId: player_team_id as 'home' | 'away',
-                // These are placeholders
-                name: 'Player',
-                jerseyNumber: 0,
-                teamName: player_team_id === 'home' ? matchData.home_team_name : matchData.away_team_name,
-            };
-
-            setAssignment({
-                assignedPlayer: partialPlayer,
-                assignedEventTypes: assigned_event_types,
-            });
-        }
+        setAssignment({ assignments });
 
       } catch (e) {
         console.error('Error fetching tracker assignment:', e);
