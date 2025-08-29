@@ -245,6 +245,15 @@ export function TrackerInterface({ trackerUserId, matchId }: TrackerInterfacePro
   }, [cleanup]);
 
   const renderContent = () => {
+    console.log('TrackerInterface renderContent - Debug Info:', {
+      loading,
+      assignmentLoading,
+      error,
+      assignment,
+      assignmentCount: assignment?.assignments?.length || 0,
+      matchDataExists: !!matchData
+    });
+
     if (loading || assignmentLoading) {
       return (
         <div className="flex items-center justify-center p-4 sm:p-8 min-h-[200px]">
@@ -268,6 +277,15 @@ export function TrackerInterface({ trackerUserId, matchId }: TrackerInterfacePro
     }
 
     if (assignment && assignment.assignments.length > 0 && matchData) {
+        console.log('TrackerInterface: Processing assignments', {
+          assignmentsCount: assignment.assignments.length,
+          assignments: assignment.assignments,
+          matchData: {
+            homeTeamPlayers: matchData.home_team_players?.length || 0,
+            awayTeamPlayers: matchData.away_team_players?.length || 0
+          }
+        });
+
         // Group assignments by player
         const assignmentsByPlayer = assignment.assignments.reduce((acc, assign) => {
           const playerId = assign.assignedPlayer.id;
@@ -281,13 +299,25 @@ export function TrackerInterface({ trackerUserId, matchId }: TrackerInterfacePro
           return acc;
         }, {} as Record<number, { player: AssignedPlayer; eventTypes: string[] }>);
 
+        console.log('TrackerInterface: Grouped assignments by player:', assignmentsByPlayer);
+
         // For now, show the first player's assignment (we can enhance this later)
         const firstAssignment = Object.values(assignmentsByPlayer)[0];
+        console.log('TrackerInterface: First assignment selected:', firstAssignment);
+
         const playerList = firstAssignment.player.teamId === 'home'
             ? matchData.home_team_players
             : matchData.away_team_players;
 
-        const playerDetails = playerList.find(p => p.id === firstAssignment.player.id);
+        console.log('TrackerInterface: Player list for team:', {
+          teamId: firstAssignment.player.teamId,
+          playerListLength: playerList?.length || 0,
+          lookingForPlayerId: firstAssignment.player.id
+        });
+
+        const playerDetails = playerList?.find(p => p.id === firstAssignment.player.id);
+
+        console.log('TrackerInterface: Player details found:', playerDetails);
 
         if (playerDetails) {
             const fullPlayerDetails = {
@@ -300,6 +330,11 @@ export function TrackerInterface({ trackerUserId, matchId }: TrackerInterfacePro
             // Remove duplicates from event types
             const uniqueEventTypes = [...new Set(firstAssignment.eventTypes)];
 
+            console.log('TrackerInterface: Rendering SpecializedTrackerUI with:', {
+                fullPlayerDetails,
+                uniqueEventTypes
+            });
+
             return (
               <SpecializedTrackerUI
                 assignedPlayer={fullPlayerDetails}
@@ -308,7 +343,15 @@ export function TrackerInterface({ trackerUserId, matchId }: TrackerInterfacePro
                 matchId={matchId}
               />
             );
+        } else {
+            console.log('TrackerInterface: Player details not found in team roster, falling back to general interface');
         }
+    } else {
+        console.log('TrackerInterface: No valid assignments or match data, showing general interface', {
+          hasAssignment: !!assignment,
+          assignmentsLength: assignment?.assignments?.length || 0,
+          hasMatchData: !!matchData
+        });
     }
 
     // Default interface for general trackers

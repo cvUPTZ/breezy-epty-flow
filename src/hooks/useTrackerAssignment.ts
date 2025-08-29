@@ -30,6 +30,11 @@ export const useTrackerAssignment = (matchId: string, userId?: string) => {
     const fetchAssignment = async () => {
       setLoading(true);
       try {
+        console.log('useTrackerAssignment: Fetching tracker assignments for:', {
+          matchId,
+          userId
+        });
+
         const { data, error } = await supabase
           .from('match_tracker_assignments')
           .select(`
@@ -42,7 +47,10 @@ export const useTrackerAssignment = (matchId: string, userId?: string) => {
           .eq('tracker_user_id', userId)
           .not('assigned_player_id', 'is', null);
 
+        console.log('useTrackerAssignment: Query result:', { data, error });
+
         if (error || !data || data.length === 0) {
+          console.log('useTrackerAssignment: No assignments found or error:', { error, dataLength: data?.length });
           setAssignment(null);
           return;
         }
@@ -56,6 +64,8 @@ export const useTrackerAssignment = (matchId: string, userId?: string) => {
 
         if (matchError) throw matchError;
 
+        console.log('useTrackerAssignment: Match data fetched:', matchData);
+
         // Process all assignments
         const assignments = data.map((assignment: any) => ({
           assignmentId: assignment.id,
@@ -68,6 +78,8 @@ export const useTrackerAssignment = (matchId: string, userId?: string) => {
           },
           assignedEventTypes: assignment.assigned_event_types,
         }));
+
+        console.log('useTrackerAssignment: Processed assignments:', assignments);
 
         setAssignment({ assignments });
 
