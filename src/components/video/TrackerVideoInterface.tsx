@@ -14,7 +14,7 @@ import { ProcessedDetectionResult } from '@/services/roboflowDetectionService';
 import { useUnifiedTrackerConnection } from '@/hooks/useUnifiedTrackerConnection';
 import { useGamepadTracker } from '@/hooks/useGamepadTracker';
 import { EventType } from '@/types';
-import { EnhancedEventTypeIcon } from '@/components/match/EnhancedEventTypeIcon';
+import CompactPlayerTracker from './CompactPlayerTracker';
 
 interface TrackerVideoInterfaceProps {
   initialVideoId: string;
@@ -459,10 +459,10 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     const allPlayers = lineAssignments.flatMap(a => a.players);
 
     const overlay = (
-      <div className="absolute top-4 right-4 w-96 bg-black/20 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-[80vh] overflow-y-auto"
+      <div className="absolute top-4 right-4 max-w-[90vw] bg-black/20 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-[80vh] overflow-y-auto"
            style={{ zIndex: isFullscreen ? 2147483647 : 50 }}>
         <div className="p-3 border-b border-white/10 bg-black/30 flex justify-between items-center">
-          <h3 className="font-medium text-white text-sm">Event Tracker</h3>
+          <h3 className="font-medium text-white text-sm">Player Trackers</h3>
           <button
             onClick={togglePianoOverlay}
             className="text-white/70 hover:text-white text-lg font-bold w-6 h-6 flex items-center justify-center rounded hover:bg-white/10"
@@ -470,88 +470,30 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
             ×
           </button>
         </div>
-        <div className="p-4 space-y-4">
-          {/* Player Selection */}
-          {allPlayers.length > 0 && (
-            <div className="space-y-2">
-                <h4 className="text-white/90 font-medium mb-2">Select Player</h4>
-                <div className="grid grid-cols-2 gap-2">
-                    {allPlayers.map((player: any) => (
-                        <label key={player.id} className={`flex items-center p-2 rounded-lg cursor-pointer ${selectedPlayerId === player.id.toString() ? 'bg-blue-500/30' : 'bg-white/10'}`}>
-                            <input
-                                type="radio"
-                                name="player-selection"
-                                value={player.id}
-                                checked={selectedPlayerId === player.id.toString()}
-                                onChange={(e) => setSelectedPlayerId(e.target.value)}
-                                className="sr-only"
-                            />
-                            <span className="text-white/90 text-sm">
-                                #{player.number || player.jersey_number || 'N/A'} {player.name || player.player_name || 'Unknown'}
-                            </span>
-                        </label>
-                    ))}
-                </div>
+        <div className="p-4">
+          {allPlayers.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-4xl">
+              {lineAssignments.map((assignment, assignmentIndex) => 
+                assignment.players.map((player: any, playerIndex: number) => (
+                  <CompactPlayerTracker
+                    key={`${assignmentIndex}-${playerIndex}-${player.id}`}
+                    playerId={player.id.toString()}
+                    playerName={player.name || player.player_name || 'Unknown'}
+                    playerTeam={assignment.team}
+                    assignedEventTypes={assignment.eventTypes}
+                    matchId={matchId}
+                    getCurrentVideoTime={() => playerRef.current?.getCurrentTime() || 0}
+                    jerseyNumber={player.number || player.jersey_number}
+                  />
+                ))
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-white/70 text-sm">No player assignments found.</p>
+              <p className="text-white/60 text-xs mt-2">Contact your admin to assign you to specific players.</p>
             </div>
           )}
-
-          {/* Piano Input Overlay */}
-          <div className="space-y-4">
-            <div className="text-center">
-              <h4 className="text-white/90 font-medium mb-2">Record Events</h4>
-              <p className="text-white/70 text-xs mb-3">Tap to record event at current video time</p>
-            </div>
-            
-            {/* Event buttons grid - Primary events */}
-            <div className="text-center mb-4">
-              <h5 className="text-white/80 text-xs font-medium mb-3 uppercase tracking-wider">Primary Actions</h5>
-              <div className="grid grid-cols-2 gap-4 justify-center">
-                {['goal', 'shot', 'pass', 'tackle'].map((eventType) => (
-                  <div key={eventType} className="flex flex-col items-center justify-start gap-2">
-                    <button
-                      onClick={() => handleRecordEvent(eventType)}
-                      disabled={isRecording}
-                      aria-label={`Record ${eventType} event`}
-                      className="flex items-center justify-center rounded-full border bg-gradient-to-br from-white/70 to-slate-100/70 backdrop-blur-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-70 w-[70px] h-[70px] border-blue-200/80 hover:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                    >
-                      <EnhancedEventTypeIcon
-                        eventType={eventType as EventType}
-                        size="md"
-                      />
-                    </button>
-                    <span className="text-white/80 text-xs font-medium capitalize text-center leading-tight">
-                      {eventType}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Secondary events */}
-            <div className="text-center">
-              <h5 className="text-white/80 text-xs font-medium mb-3 uppercase tracking-wider">Secondary Actions</h5>
-              <div className="grid grid-cols-3 gap-3 justify-center">
-                {['foul', 'corner', 'freeKick', 'save', 'assist'].map((eventType) => (
-                  <div key={eventType} className="flex flex-col items-center justify-start gap-2">
-                    <button
-                      onClick={() => handleRecordEvent(eventType)}
-                      disabled={isRecording}
-                      aria-label={`Record ${eventType} event`}
-                      className="flex items-center justify-center rounded-full border bg-gradient-to-br from-white/70 to-slate-100/70 backdrop-blur-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-70 w-[55px] h-[55px] border-slate-200/80 hover:border-slate-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                    >
-                      <EnhancedEventTypeIcon
-                        eventType={eventType as EventType}
-                        size="sm"
-                      />
-                    </button>
-                    <span className="text-white/80 text-xs font-medium capitalize text-center leading-tight">
-                      {eventType === 'freeKick' ? 'Free Kick' : eventType}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     );
