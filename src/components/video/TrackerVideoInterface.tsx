@@ -292,12 +292,14 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
       
       setAssignmentNotification(notification);
 
-      // Show toast notification
-      toast({
-        title: "Assignment Received",
-        description: notification,
-        duration: 8000,
-      });
+      // Show toast notification once (prevent repeating notifications)
+      if (assignmentNotification !== notification) {
+        toast({
+          title: "Assignment Received",
+          description: notification,
+          duration: 8000,
+        });
+      }
 
     } catch (error) {
       console.error('Error fetching assignments:', error);
@@ -320,7 +322,7 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     };
   }, [matchId]);
 
-  // Enhanced connection and status reporting
+  // Enhanced status reporting (not blocking interface)
   useEffect(() => {
     if (!user?.id || !matchId) return;
 
@@ -328,9 +330,8 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
     let statusInterval: NodeJS.Timeout | null = null;
 
     const startStatusReporting = () => {
-      // Initial status broadcast
+      // Initial status broadcast if connected
       if (mounted && isConnected) {
-        // console.log('TrackerVideoInterface: Broadcasting initial active status');
         broadcastStatus({
           status: 'active',
           timestamp: Date.now(),
@@ -338,35 +339,20 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
         });
       }
 
-      // Set up regular status updates every 10 seconds
+      // Set up regular status updates every 15 seconds
       statusInterval = setInterval(() => {
         if (mounted && isConnected) {
-          // console.log('TrackerVideoInterface: Broadcasting periodic active status');
           broadcastStatus({
             status: 'active',
             timestamp: Date.now(),
             action: 'video_tracker_active'
           });
         }
-      }, 10000);
+      }, 15000);
     };
 
-    // Wait for connection to be established
-    if (isConnected) {
-      startStatusReporting();
-    } else {
-      // Retry connection establishment
-      const connectionTimeout = setTimeout(() => {
-        if (mounted && !isConnected) {
-          // console.log('TrackerVideoInterface: Connection timeout, retrying...');
-          // The connection hook will handle retries
-        }
-      }, 5000);
-
-      return () => {
-        clearTimeout(connectionTimeout);
-      };
-    }
+    // Start status reporting immediately (connection is not required for interface to work)
+    startStatusReporting();
 
     return () => {
       mounted = false;
