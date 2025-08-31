@@ -35,7 +35,7 @@ import ProfileListPage from './pages/Admin/ProfileListPage';
 import NewVoiceChatPage from './pages/NewVoiceChatPage';
 import ChromeExtensionBridge from './pages/ChromeExtensionBridge';
 import NotFound from './pages/NotFound';
-import VideoTrackerPage from './pages/VideoTrackerPage';
+
 import VideoSetupPage from './pages/Admin/VideoSetupPage';
 import Scouting from './pages/Scouting';
 
@@ -231,14 +231,6 @@ const AppContent = () => {
           </AdminOnly>
         } />
 
-        {/* Video Tracker Route - accessible by trackers and admins */}
-        <Route path="/video-tracker" element={
-          <RequireAuth
-            requiredRoles={['admin', 'tracker']}
-          >
-            <VideoTrackerPage />
-          </RequireAuth>
-        } />
         
         {/* Scouting Routes */}
         <Route path="/scouting" element={

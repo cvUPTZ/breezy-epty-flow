@@ -255,15 +255,14 @@ const TrackerNotifications: React.FC = () => {
   const handleViewVideoTracker = (matchId: string | null, notificationId: string, notificationData?: NotificationData) => {
     markAsRead(notificationId);
     
-    // Construct video tracker URL with video information
+    // Construct match URL with video information
     const params = new URLSearchParams();
-    if (matchId) params.append('matchId', matchId);
     if (notificationData?.video_url) params.append('videoUrl', notificationData.video_url);
     if (notificationData?.match_video_id) params.append('matchVideoId', notificationData.match_video_id);
     if (notificationData?.video_id) params.append('videoId', notificationData.video_id);
     
     const queryString = params.toString();
-    const url = queryString ? `/video-tracker?${queryString}` : '/video-tracker';
+    const url = queryString ? `/match/${matchId}?${queryString}` : `/match/${matchId}`;
     
     navigate(url);
   };

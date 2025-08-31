@@ -82,9 +82,9 @@ const Dashboard = () => {
     menuItems.push({ value: 'video-setup', label: 'Video Setup', icon: Settings2, path: '/admin/video-setup' });
   }
 
-  // Video Tracker link for Trackers (and Admins)
+  // Video Tracker link for Trackers (and Admins) - now integrated into match interface
   if (userRole === 'tracker' || userRole === 'admin') { // Or a more specific permission like 'canTrackVideoMatches'
-    menuItems.push({ value: 'video-tracker', label: 'Video Tracker', icon: Video, path: '/video-tracker' });
+    menuItems.push({ value: 'video-tracker', label: 'Video Tracking', icon: Video, path: '/tracker' });
   }
 
   return (

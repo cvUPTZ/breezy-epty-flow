@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
@@ -22,6 +22,8 @@ import { Activity, Piano, Users, Settings, Mic, Zap, LayoutDashboard, Video } fr
 import { VoiceCollaborationProvider } from '@/context/VoiceCollaborationContext';
 import VoiceCollaborationOverlay from "@/components/match/VoiceCollaborationOverlay";
 import VideoSetupSection from '@/components/match/form/VideoSetupSection';
+import TrackerVideoInterface from '@/components/video/TrackerVideoInterface';
+import { YouTubeService } from '@/services/youtubeService';
 
 // Type for TrackerVoiceInput players
 interface VoiceInputPlayer {
@@ -67,8 +69,8 @@ const viewDetails = {
     color: 'from-amber-500 to-amber-600',
   },
   video: {
-    title: 'Video Setup',
-    subtitle: 'Configure YouTube video assignments',
+    title: 'Video Tracking',
+    subtitle: 'Video-based match tracking and analysis',
     icon: Video,
     color: 'from-red-500 to-red-600',
   },
@@ -76,6 +78,7 @@ const viewDetails = {
 
 const MatchAnalysisV2: React.FC = () => {
   const { matchId } = useParams<{ matchId: string }>();
+  const location = useLocation();
   const { userRole, user } = useAuth();
   const [mode, setMode] = useState<'piano' | 'tracking'>('piano');
   const [homeTeam, setHomeTeam] = useState({ name: 'Home Team', formation: '4-4-2' });
@@ -85,6 +88,7 @@ const MatchAnalysisV2: React.FC = () => {
   const [assignedPlayers, setAssignedPlayers] = useState<AssignedPlayers | null>(null);
   const [fullMatchRoster, setFullMatchRoster] = useState<AssignedPlayers | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
+  const [videoId, setVideoId] = useState<string | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const isSmall = useBreakpoint('sm');
@@ -244,6 +248,30 @@ const MatchAnalysisV2: React.FC = () => {
     fetchMatchDetails();
   }, [fetchMatchDetails]);
 
+  // Handle video URL from query parameters
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const videoUrlParam = searchParams.get('videoUrl');
+    const videoIdParam = searchParams.get('videoId');
+    
+    if (videoUrlParam) {
+      const extractedId = YouTubeService.extractVideoId(videoUrlParam);
+      if (extractedId) {
+        setVideoId(extractedId);
+        setVideoUrl(videoUrlParam);
+        // Automatically switch to video view when video URL is provided
+        setActiveView('video');
+      }
+    } else if (videoIdParam) {
+      if (videoIdParam.length === 11) {
+        setVideoId(videoIdParam);
+        setVideoUrl(`https://www.youtube.com/watch?v=${videoIdParam}`);
+        // Automatically switch to video view when video ID is provided
+        setActiveView('video');
+      }
+    }
+  }, [location.search]);
+
   useEffect(() => {
     if (fullMatchRoster) {
       fetchTrackerAssignments();
@@ -402,13 +430,14 @@ const MatchAnalysisV2: React.FC = () => {
         value: 'tracker',
         label: 'Assignment',
         icon: Settings,
-      },
-      {
-        value: 'video',
-        label: 'Video Setup',
-        icon: Video,
       }
-    ] : [])
+    ] : []),
+    // Video view available to all users when video is available
+    ...(videoId || isAdmin ? [{
+      value: 'video',
+      label: videoId ? 'Video Tracking' : 'Video Setup',
+      icon: Video,
+    }] : [])
   ];
 
   const currentViewDetails = viewDetails[activeView as keyof typeof viewDetails];
@@ -522,11 +551,21 @@ const MatchAnalysisV2: React.FC = () => {
                     />
                   )}
 
-                  {activeView === 'video' && isAdmin && (
-                    <VideoSetupSection
-                      videoUrl={videoUrl}
-                      onVideoUrlChange={setVideoUrl}
-                    />
+                  {activeView === 'video' && (
+                    <>
+                      {isAdmin && !videoId && (
+                        <VideoSetupSection
+                          videoUrl={videoUrl}
+                          onVideoUrlChange={setVideoUrl}
+                        />
+                      )}
+                      {videoId && matchId && (
+                        <TrackerVideoInterface
+                          initialVideoId={videoId}
+                          matchId={matchId}
+                        />
+                      )}
+                    </>
                   )}
                 </CardContent>
               </Card>
