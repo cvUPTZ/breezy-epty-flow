@@ -40,15 +40,8 @@ const Settings: React.FC = () => {
     if (!user) return;
 
     try {
-      // Load API keys from Supabase user metadata
-      const { data: userData, error } = await supabase.auth.getUser();
-      
-      if (error) {
-        console.error('Error loading user data:', error);
-        return;
-      }
-
-      const userMetadata = userData.user?.user_metadata || {};
+      // Load API keys from user metadata
+      const userMetadata = user.user_metadata || {};
       
       setApiKeys({
         youtube: userMetadata.youtube_api_key || '',

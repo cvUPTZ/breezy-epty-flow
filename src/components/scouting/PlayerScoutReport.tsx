@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, FileText, Calendar, Star, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 
 interface Player {
   id: string;
@@ -57,6 +58,7 @@ const PlayerScoutReport: React.FC<PlayerScoutReportProps> = ({ playerId }) => {
     report_date: new Date().toISOString().split('T')[0]
   });
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchData();
@@ -110,7 +112,7 @@ const PlayerScoutReport: React.FC<PlayerScoutReportProps> = ({ playerId }) => {
           ...newReport,
           strengths: newReport.strengths.split(',').map(s => s.trim()).filter(Boolean),
           weaknesses: newReport.weaknesses.split(',').map(s => s.trim()).filter(Boolean),
-          scout_id: (await supabase.auth.getUser()).data.user?.id
+          scout_id: user?.id
         })
         .select(`
           *,

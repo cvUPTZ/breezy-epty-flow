@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Search, Shield, Zap, Target, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 
 interface Analysis {
   id: string;
@@ -39,6 +40,7 @@ const OppositionAnalysis: React.FC = () => {
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchAnalyses();
@@ -73,7 +75,7 @@ const OppositionAnalysis: React.FC = () => {
           ...newAnalysis,
           strengths: newAnalysis.strengths.split(',').map(s => s.trim()),
           weaknesses: newAnalysis.weaknesses.split(',').map(s => s.trim()),
-          created_by: (await supabase.auth.getUser()).data.user?.id
+          created_by: user?.id
         })
         .select()
         .single();

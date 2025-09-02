@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Search, Star, TrendingUp, Calendar, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 
 interface Player {
   id: string;
@@ -42,6 +43,7 @@ const PlayerIdentification: React.FC = () => {
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchPlayers();
@@ -79,7 +81,7 @@ const PlayerIdentification: React.FC = () => {
           ...newPlayer,
           age: parseInt(newPlayer.age),
           market_value: parseFloat(newPlayer.market_value),
-          created_by: (await supabase.auth.getUser()).data.user?.id
+          created_by: user?.id
         })
         .select()
         .single();

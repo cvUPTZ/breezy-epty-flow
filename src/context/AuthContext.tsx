@@ -27,8 +27,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [fetchingRole, setFetchingRole] = useState(false);
 
   const fetchUserRole = useCallback(async (userId: string) => {
+    // Prevent multiple concurrent role fetches
+    if (fetchingRole) {
+      console.log('Role fetch already in progress, skipping');
+      return;
+    }
+
+    setFetchingRole(true);
     try {
       // Get current session to ensure we have a valid token
       const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -80,8 +88,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } catch (error) {
       console.error('Error in fetchUserRole:', error);
       setUserRole('user');
+    } finally {
+      setFetchingRole(false);
     }
-  }, []);
+  }, [fetchingRole]);
 
   useEffect(() => {
     // Get initial session

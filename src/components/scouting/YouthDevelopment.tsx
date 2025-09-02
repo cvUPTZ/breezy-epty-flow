@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Search, Star, TrendingUp, Calendar, GraduationCap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 
 interface YouthProspect {
   id: string;
@@ -42,6 +43,7 @@ const YouthDevelopment: React.FC = () => {
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchProspects();
@@ -71,7 +73,7 @@ const YouthDevelopment: React.FC = () => {
   const handleAddProspect = async () => {
     try {
       // Get the current user
-      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
       
       if (!user?.id) {
         throw new Error('User not authenticated. Please log in.');
