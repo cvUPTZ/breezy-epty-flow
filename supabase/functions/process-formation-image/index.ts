@@ -1,6 +1,6 @@
 // Basic structure for the process-formation-image Edge Function
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "https://esm.sh/@google/generative-ai@0.21.0";
 
 console.log("process-formation-image function initializing");
 
