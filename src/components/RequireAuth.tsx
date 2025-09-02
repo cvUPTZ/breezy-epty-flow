@@ -2,23 +2,23 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-// import { usePermissionChecker, type RolePermissions } from '@/hooks/usePermissionChecker';
+import { usePermissionChecker, type RolePermissions } from '@/hooks/usePermissionChecker';
 import { Loader2 } from 'lucide-react';
 
 export const RequireAuth: React.FC<{ 
   children: React.ReactNode;
   requiredRoles?: Array<'admin' | 'tracker' | 'viewer' | 'user' | 'manager' | 'teacher'>;
-  requiredPermissions?: Array<string>; // type RolePermissions>;
+  requiredPermissions?: Array<keyof RolePermissions>;
 }> = ({ 
   children, 
   requiredRoles,
   requiredPermissions
 }) => {
   const { user, loading } = useAuth();
-  // const { role, hasPermission, isLoading: permissionsLoading } = usePermissionChecker();
+  const { role, hasPermission, isLoading: permissionsLoading, error } = usePermissionChecker();
   const location = useLocation();
 
-  const isLoading = loading; // || permissionsLoading;
+  const isLoading = loading || permissionsLoading;
 
   if (isLoading) {
     return (
@@ -34,21 +34,52 @@ export const RequireAuth: React.FC<{
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Temporarily disabled role and permission checks
+  // If there's an error loading permissions, show error message
+  if (error) {
+    console.error('Permission check error:', error);
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-600 mb-2">Error loading permissions</p>
+          <p className="text-sm text-muted-foreground">Please try refreshing the page</p>
+        </div>
+      </div>
+    );
+  }
+
   // If specific roles are required, check user's role
-  // if (requiredRoles && requiredRoles.length > 0) {
-  //   if (!role || !requiredRoles.includes(role as any)) {
-  //     return <Navigate to="/unauthorized" replace />;
-  //   }
-  // }
+  if (requiredRoles && requiredRoles.length > 0) {
+    if (!role || !requiredRoles.includes(role as any)) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <p className="text-red-600 mb-2">Access Denied</p>
+            <p className="text-sm text-muted-foreground">
+              You need one of these roles: {requiredRoles.join(', ')}
+            </p>
+            <p className="text-sm text-muted-foreground">Your role: {role || 'none'}</p>
+          </div>
+        </div>
+      );
+    }
+  }
 
   // If specific permissions are required, check user's permissions
-  // if (requiredPermissions && requiredPermissions.length > 0) {
-  //   const hasAllPermissions = requiredPermissions.every(permission => hasPermission(permission));
-  //   if (!hasAllPermissions) {
-  //     return <Navigate to="/unauthorized" replace />;
-  //   }
-  // }
+  if (requiredPermissions && requiredPermissions.length > 0) {
+    const hasAllPermissions = requiredPermissions.every(permission => hasPermission(permission));
+    if (!hasAllPermissions) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <p className="text-red-600 mb-2">Access Denied</p>
+            <p className="text-sm text-muted-foreground">
+              You don't have the required permissions
+            </p>
+          </div>
+        </div>
+      );
+    }
+  }
 
   // User is authenticated and has required role (if any)
   return <>{children}</>;

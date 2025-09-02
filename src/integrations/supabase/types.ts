@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       assignment_logs: {
         Row: {
+          assigned_event_types: string[] | null
+          assigned_player_id: number | null
           assignee_id: string | null
           assigner_id: string
           assignment_action: string
@@ -25,10 +27,15 @@ export type Database = {
           id: string
           ip_address: unknown | null
           match_id: string | null
+          player_id: number | null
+          player_team_id: string | null
           previous_assignment_details: Json | null
+          tracker_assignment_id: string | null
           user_agent: string | null
         }
         Insert: {
+          assigned_event_types?: string[] | null
+          assigned_player_id?: number | null
           assignee_id?: string | null
           assigner_id: string
           assignment_action: string
@@ -38,10 +45,15 @@ export type Database = {
           id?: string
           ip_address?: unknown | null
           match_id?: string | null
+          player_id?: number | null
+          player_team_id?: string | null
           previous_assignment_details?: Json | null
+          tracker_assignment_id?: string | null
           user_agent?: string | null
         }
         Update: {
+          assigned_event_types?: string[] | null
+          assigned_player_id?: number | null
           assignee_id?: string | null
           assigner_id?: string
           assignment_action?: string
@@ -51,7 +63,10 @@ export type Database = {
           id?: string
           ip_address?: unknown | null
           match_id?: string | null
+          player_id?: number | null
+          player_team_id?: string | null
           previous_assignment_details?: Json | null
+          tracker_assignment_id?: string | null
           user_agent?: string | null
         }
         Relationships: [
@@ -60,6 +75,20 @@ export type Database = {
             columns: ["match_id"]
             isOneToOne: false
             referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_logs_tracker_assignment_id_fkey"
+            columns: ["tracker_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "match_tracker_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_logs_tracker_assignment_id_fkey"
+            columns: ["tracker_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "match_tracker_assignments_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1405,6 +1434,53 @@ export type Database = {
       }
     }
     Views: {
+      assignment_logs_with_details: {
+        Row: {
+          assigned_event_types: string[] | null
+          assigned_player_id: number | null
+          assignee_email: string | null
+          assignee_id: string | null
+          assigner_email: string | null
+          assigner_id: string | null
+          assignment_action: string | null
+          assignment_details: Json | null
+          assignment_type: string | null
+          assignment_type_display: string | null
+          created_at: string | null
+          id: string | null
+          ip_address: unknown | null
+          match_id: string | null
+          player_id: number | null
+          player_team_id: string | null
+          previous_assignment_details: Json | null
+          tracker_assignment_id: string | null
+          tracker_id: string | null
+          user_agent: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_logs_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_logs_tracker_assignment_id_fkey"
+            columns: ["tracker_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "match_tracker_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_logs_tracker_assignment_id_fkey"
+            columns: ["tracker_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "match_tracker_assignments_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_tracker_assignments_view: {
         Row: {
           assigned_event_types: string[] | null
