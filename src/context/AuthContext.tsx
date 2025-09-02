@@ -30,10 +30,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const fetchUserRole = useCallback(async (userId: string) => {
     try {
+      // Get current session to ensure we have a valid token
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      if (!currentSession?.access_token) {
+        console.warn('No valid session found, skipping profile fetch');
+        setUserRole('user');
+        return;
+      }
+
       // Enhanced security: Use edge function for secure profile access
       const { data: functionData, error: functionError } = await supabase.functions.invoke('secure-get-user-profile', {
         headers: {
-          Authorization: `Bearer ${session?.access_token}`
+          Authorization: `Bearer ${currentSession.access_token}`
         }
       });
 
@@ -72,7 +81,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.error('Error in fetchUserRole:', error);
       setUserRole('user');
     }
-  }, [session]);
+  }, []);
 
   useEffect(() => {
     // Get initial session
