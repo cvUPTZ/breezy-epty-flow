@@ -27,39 +27,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [fetchingRole, setFetchingRole] = useState(false);
 
   const fetchUserRole = useCallback(async (userId: string) => {
-    // Prevent multiple concurrent role fetches
-    if (fetchingRole) {
-      console.log('Role fetch already in progress, skipping');
-      return;
-    }
-
-    setFetchingRole(true);
     try {
-      // Get current session to ensure we have a valid token
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      
-      if (!currentSession?.access_token) {
-        console.warn('No valid session found, skipping profile fetch');
-        setUserRole('user');
-        return;
-      }
-
-      // Enhanced security: Use edge function for secure profile access
-      const { data: functionData, error: functionError } = await supabase.functions.invoke('secure-get-user-profile', {
-        headers: {
-          Authorization: `Bearer ${currentSession.access_token}`
-        }
-      });
-
-      if (!functionError && functionData?.profile?.role) {
-        setUserRole(functionData.profile.role);
-        return;
-      }
-
-      // Fallback to direct database query if edge function fails
+      // Direct database query for user profile
       const { data, error } = await supabase
         .from('profiles')
         .select('role')
@@ -68,30 +39,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (error) {
         console.error('Error fetching user role:', error);
-        // Log security event for failed profile access
-        try {
-          await supabase.from('security_audit_log').insert({
-            user_id: userId,
-            action: 'profile_access_failed',
-            resource_type: 'user_profile',
-            resource_id: userId,
-            details: { error: error.message, timestamp: new Date().toISOString() }
-          });
-        } catch (logError) {
-          console.error('Failed to log security event:', logError);
-        }
-        
-        setUserRole('user'); // Default to 'user' role if profile doesn't exist
+        setUserRole('user'); // Default to 'user' role
       } else {
         setUserRole(data?.role || 'user');
       }
     } catch (error) {
       console.error('Error in fetchUserRole:', error);
       setUserRole('user');
-    } finally {
-      setFetchingRole(false);
     }
-  }, [fetchingRole]);
+  }, []);
 
   useEffect(() => {
     // Get initial session
