@@ -26,33 +26,60 @@ export const useAssignmentLogs = (matchId?: string) => {
   const fetchLogs = async () => {
     setLoading(true);
     try {
+      // First get the raw assignment logs
       let query = supabase
         .from('assignment_logs')
-        .select(`
-          *,
-          assigner:assigner_id(id, full_name),
-          assignee:assignee_id(id, full_name),
-          match:match_id(id, name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (matchId) {
         query = query.eq('match_id', matchId);
       }
 
-      const { data, error } = await query;
+      const { data: logsData, error: logsError } = await query;
 
-      if (error) {
-        console.error('Error fetching assignment logs:', error);
+      if (logsError) {
+        console.error('Error fetching assignment logs:', logsError);
         return;
       }
 
-      const processedLogs = data?.map((log: any) => ({
+      if (!logsData || logsData.length === 0) {
+        setLogs([]);
+        return;
+      }
+
+      // Get unique user IDs and match IDs for batch fetching
+      const userIds = new Set<string>();
+      const matchIds = new Set<string>();
+      
+      logsData.forEach((log: any) => {
+        if (log.assigner_id) userIds.add(log.assigner_id);
+        if (log.assignee_id) userIds.add(log.assignee_id);
+        if (log.match_id) matchIds.add(log.match_id);
+      });
+
+      // Fetch user profiles
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', Array.from(userIds));
+
+      // Fetch matches
+      const { data: matches } = await supabase
+        .from('matches')
+        .select('id, name')
+        .in('id', Array.from(matchIds));
+
+      // Create lookup maps
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      const matchMap = new Map(matches?.map(m => [m.id, m]) || []);
+
+      const processedLogs = logsData.map((log: any) => ({
         ...log,
-        assigner_name: log.assigner?.full_name || 'Unknown',
-        assignee_name: log.assignee?.full_name || 'System',
-        match_name: log.match?.name || 'Unknown Match'
-      })) || [];
+        assigner_name: profileMap.get(log.assigner_id)?.full_name || 'Unknown',
+        assignee_name: log.assignee_id ? (profileMap.get(log.assignee_id)?.full_name || 'Unknown User') : 'System',
+        match_name: log.match_id ? (matchMap.get(log.match_id)?.name || 'Unknown Match') : 'No Match'
+      }));
 
       setLogs(processedLogs);
     } catch (error) {
