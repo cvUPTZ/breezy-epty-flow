@@ -20,30 +20,38 @@ serve(async (req: Request) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
+    console.log('Request received with auth header:', authHeader ? 'present' : 'missing');
     
     if (!authHeader) {
       console.log('Missing Authorization header');
       return new Response(
-        JSON.stringify({ error: 'Missing Authorization header' }),
+        JSON.stringify({ error: 'Auth session missing!' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    // Extract JWT token from Bearer header
+    const token = authHeader.replace('Bearer ', '');
+    console.log('Token extracted, length:', token.length);
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
-        global: { headers: { Authorization: authHeader } }
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
       }
     )
 
-    // Verify user is authenticated
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+    // Verify JWT token manually
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token)
     
     if (authError) {
       console.log('Auth error:', authError.message);
       return new Response(
-        JSON.stringify({ error: 'Authentication failed', details: authError.message }),
+        JSON.stringify({ error: 'Auth session missing!' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -51,10 +59,12 @@ serve(async (req: Request) => {
     if (!user) {
       console.log('No user found from token');
       return new Response(
-        JSON.stringify({ error: 'User not found' }),
+        JSON.stringify({ error: 'Auth session missing!' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    console.log('User authenticated successfully:', user.id);
 
     // Get user profile with security checks
     const { data: profile, error: profileError } = await supabaseClient
