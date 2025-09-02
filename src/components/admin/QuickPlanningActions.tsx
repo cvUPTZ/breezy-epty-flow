@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Zap, Users, Bell, CheckCircle, FileText, Settings, UserCheck } from 'lucide-react';
+import { assignmentLoggingService } from '@/services/assignmentLoggingService';
 
 interface QuickPlanningActionsProps {
   matchId: string;
@@ -88,6 +89,20 @@ const QuickPlanningActions: React.FC<QuickPlanningActionsProps> = ({
         .insert(newAssignments);
 
       if (insertError) throw insertError;
+
+      // Log assignments
+      for (let i = 0; i < newAssignments.length; i++) {
+        const assignment = newAssignments[i];
+        await assignmentLoggingService.logTrackerAssignment(
+          matchId,
+          assignment.tracker_user_id,
+          {
+            playerIds: assignment.player_id ? [assignment.player_id] : [],
+            eventTypes: assignment.assigned_event_types || [],
+            assignmentType: 'quick_assignment'
+          }
+        );
+      }
 
       // Send notifications individually
       for (let i = 0; i < newAssignments.length; i++) {

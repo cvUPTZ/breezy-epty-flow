@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Target } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { assignmentLoggingService } from '@/services/assignmentLoggingService';
 
 interface TrackerAssignment {
   id: string;
@@ -127,20 +128,31 @@ const EventAssignments: React.FC<EventAssignmentsProps> = ({ matchId }) => {
     console.log('EventAssignments handleAssignTracker called - no video URL access here');
 
     try {
+      const assignmentData = {
+        match_id: matchId,
+        tracker_user_id: selectedTracker,
+        assigned_event_types: selectedEventTypes,
+        player_team_id: 'home' // Default team for general event assignments
+      };
+
       const { error } = await supabase
         .from('match_tracker_assignments')
-        .insert({
-          match_id: matchId,
-          tracker_user_id: selectedTracker,
-          assigned_event_types: selectedEventTypes,
-          player_team_id: 'home' // Default team for general event assignments
-        });
+        .insert(assignmentData);
 
       if (error) {
         console.error('Error assigning tracker:', error);
         toast.error('Failed to assign tracker');
         return;
       }
+
+      // Log the event assignment
+      await assignmentLoggingService.logEventAssignment(
+        matchId,
+        selectedTracker,
+        {
+          eventTypes: selectedEventTypes
+        }
+      );
 
       // Send match assignment notification (no video URL available in this component)
       const { error: notificationError } = await supabase.from('notifications').insert({

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Users, UserCheck, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { assignmentLoggingService } from '@/services/assignmentLoggingService';
 
 interface PlayerAssignment {
   id: string;
@@ -149,16 +150,28 @@ const PlayerAssignments: React.FC = () => {
     }
 
     try {
+      const assignmentData = {
+        match_id: selectedMatch,
+        tracker_user_id: selectedTracker,
+        player_id: parseInt(selectedPlayer),
+        player_team_id: selectedTeam
+      };
+
       const { error } = await supabase
         .from('match_tracker_assignments')
-        .insert([{
-          match_id: selectedMatch,
-          tracker_user_id: selectedTracker,
-          player_id: parseInt(selectedPlayer),
-          player_team_id: selectedTeam
-        }]);
+        .insert([assignmentData]);
 
       if (error) throw error;
+
+      // Log the assignment
+      await assignmentLoggingService.logPlayerAssignment(
+        selectedMatch,
+        parseInt(selectedPlayer),
+        {
+          teamId: selectedTeam,
+          trackerId: selectedTracker
+        }
+      );
 
       toast.success('Player assignment created successfully');
       setSelectedMatch('');
