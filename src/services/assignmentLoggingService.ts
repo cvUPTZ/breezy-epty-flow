@@ -30,9 +30,9 @@ class AssignmentLoggingService {
       }
 
       const rpcParams = {
-        p_match_id: matchId || '',
+        p_match_id: matchId || '00000000-0000-0000-0000-000000000000',
         p_assigner_id: user.id,
-        p_assignee_id: assigneeId || '',
+        p_assignee_id: assigneeId || '00000000-0000-0000-0000-000000000000',
         p_assignment_type: assignmentType,
         p_assignment_action: assignmentAction,
         p_assignment_details: assignmentDetails || {},
