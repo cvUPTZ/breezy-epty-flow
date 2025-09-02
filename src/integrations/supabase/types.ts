@@ -278,13 +278,6 @@ export type Database = {
             foreignKeyName: "fk_tracker_user_id"
             columns: ["tracker_user_id"]
             isOneToOne: false
-            referencedRelation: "profiles_with_permissions"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "fk_tracker_user_id"
-            columns: ["tracker_user_id"]
-            isOneToOne: false
             referencedRelation: "user_permissions_view"
             referencedColumns: ["id"]
           },
@@ -662,13 +655,6 @@ export type Database = {
             foreignKeyName: "fk_receiver"
             columns: ["to_user_id"]
             isOneToOne: false
-            referencedRelation: "profiles_with_permissions"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "fk_receiver"
-            columns: ["to_user_id"]
-            isOneToOne: false
             referencedRelation: "user_permissions_view"
             referencedColumns: ["id"]
           },
@@ -685,13 +671,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_sender"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_with_permissions"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "fk_sender"
@@ -1096,13 +1075,6 @@ export type Database = {
             foreignKeyName: "tracker_line_assignments_tracker_user_id_fkey"
             columns: ["tracker_user_id"]
             isOneToOne: false
-            referencedRelation: "profiles_with_permissions"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "tracker_line_assignments_tracker_user_id_fkey"
-            columns: ["tracker_user_id"]
-            isOneToOne: false
             referencedRelation: "user_permissions_view"
             referencedColumns: ["id"]
           },
@@ -1134,13 +1106,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_event_assignments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_with_permissions"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "user_event_assignments_user_id_fkey"
@@ -1311,13 +1276,6 @@ export type Database = {
             foreignKeyName: "voice_room_participants_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "profiles_with_permissions"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "voice_room_participants_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "user_permissions_view"
             referencedColumns: ["id"]
           },
@@ -1434,53 +1392,6 @@ export type Database = {
       }
     }
     Views: {
-      assignment_logs_with_details: {
-        Row: {
-          assigned_event_types: string[] | null
-          assigned_player_id: number | null
-          assignee_email: string | null
-          assignee_id: string | null
-          assigner_email: string | null
-          assigner_id: string | null
-          assignment_action: string | null
-          assignment_details: Json | null
-          assignment_type: string | null
-          assignment_type_display: string | null
-          created_at: string | null
-          id: string | null
-          ip_address: unknown | null
-          match_id: string | null
-          player_id: number | null
-          player_team_id: string | null
-          previous_assignment_details: Json | null
-          tracker_assignment_id: string | null
-          tracker_id: string | null
-          user_agent: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "assignment_logs_match_id_fkey"
-            columns: ["match_id"]
-            isOneToOne: false
-            referencedRelation: "matches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "assignment_logs_tracker_assignment_id_fkey"
-            columns: ["tracker_assignment_id"]
-            isOneToOne: false
-            referencedRelation: "match_tracker_assignments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "assignment_logs_tracker_assignment_id_fkey"
-            columns: ["tracker_assignment_id"]
-            isOneToOne: false
-            referencedRelation: "match_tracker_assignments_view"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       match_tracker_assignments_view: {
         Row: {
           assigned_event_types: string[] | null
@@ -1507,13 +1418,6 @@ export type Database = {
             foreignKeyName: "fk_tracker_user_id"
             columns: ["tracker_user_id"]
             isOneToOne: false
-            referencedRelation: "profiles_with_permissions"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "fk_tracker_user_id"
-            columns: ["tracker_user_id"]
-            isOneToOne: false
             referencedRelation: "user_permissions_view"
             referencedColumns: ["id"]
           },
@@ -1525,60 +1429,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      notifications_with_matches: {
-        Row: {
-          away_team_name: string | null
-          created_at: string | null
-          home_team_name: string | null
-          id: string | null
-          is_read: boolean | null
-          match_date: string | null
-          match_id: string | null
-          match_name: string | null
-          message: string | null
-          notification_data: Json | null
-          title: string | null
-          type: string | null
-          user_id: string | null
-        }
-        Relationships: []
-      }
-      profiles_with_permissions: {
-        Row: {
-          created_at: string | null
-          custom_permissions: Json | null
-          effective_permissions: Json | null
-          has_custom_permissions: boolean | null
-          updated_at: string | null
-          user_email: string | null
-          user_full_name: string | null
-          user_id: string | null
-          user_role: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          custom_permissions?: Json | null
-          effective_permissions?: never
-          has_custom_permissions?: never
-          updated_at?: string | null
-          user_email?: string | null
-          user_full_name?: string | null
-          user_id?: string | null
-          user_role?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          custom_permissions?: Json | null
-          effective_permissions?: never
-          has_custom_permissions?: never
-          updated_at?: string | null
-          user_email?: string | null
-          user_full_name?: string | null
-          user_id?: string | null
-          user_role?: string | null
-        }
-        Relationships: []
       }
       user_permissions_view: {
         Row: {
@@ -1615,7 +1465,6 @@ export type Database = {
           email: string | null
           role: Database["public"]["Enums"]["user_role"] | null
           role_assigned_at: string | null
-          user_created_at: string | null
           user_id: string | null
         }
         Relationships: []
