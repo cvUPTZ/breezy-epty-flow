@@ -178,10 +178,10 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
         <div className="col-span-2">Name</div>
         <div className="col-span-2">Position</div>
       </div>
-      {players.map((player) => {
+      {players.map((player, index) => {
         console.log(`Rendering player ${player.id} with position:`, player.position);
         return (
-          <div key={`${team}-${player.id}`} className="grid grid-cols-5 gap-2 items-center text-sm">
+          <div key={`${team}-${player.id}-${index}`} className="grid grid-cols-5 gap-2 items-center text-sm">
             <Input
               type="number"
               value={player.number ?? ''}
@@ -214,14 +214,14 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
                   <SelectItem value="SUB">Substitute</SelectItem>
                 ) : (
                   Object.entries(FOOTBALL_POSITIONS).map(([line, positions]) => (
-                    <React.Fragment key={line}>
+                    <div key={`${line}-group`}>
                       <div className="px-2 py-1 text-xs font-semibold text-muted-foreground bg-muted">{line}</div>
                       {positions.map(position => (
                         <SelectItem key={position} value={position}>
                           {position}
                         </SelectItem>
                       ))}
-                    </React.Fragment>
+                    </div>
                   ))
                 )}
               </SelectContent>
