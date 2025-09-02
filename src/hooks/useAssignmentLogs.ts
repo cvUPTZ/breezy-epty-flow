@@ -64,7 +64,7 @@ export const useAssignmentLogs = (matchId?: string) => {
               ...((match.away_team_players || []) as any[]).map((p: any) => ({...p, team: 'away', teamName: match.away_team_name}))
             ];
             
-            const player = players.find(p => p.id === assignment.assigned_player_id);
+            const player = players.find(p => p.number === assignment.assigned_player_id || p.id === assignment.assigned_player_id);
             if (player) {
               playerName = player.player_name || player.name || 'Unknown Player';
               teamName = player.teamName;
