@@ -267,7 +267,16 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
     }
 
     try {
+      console.log('Starting assignment creation...');
+      console.log('Selected tracker type:', selectedTrackerType);
+      console.log('Selected tracker:', selectedTracker);
+      console.log('Selected event types:', selectedEventTypes);
+      console.log('Selected team:', selectedTeam);
+      console.log('Selected players:', selectedPlayers);
+      console.log('Match ID:', matchId);
+      
       const linePlayers = getLinePlayers(selectedTrackerType);
+      console.log('Line players computed:', linePlayers);
       
       if (linePlayers.length === 0 && selectedTrackerType !== 'specialized') {
         toast({
@@ -302,7 +311,7 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
         line_players_count: linePlayers.length
       });
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('tracker_line_assignments')
         .insert({
           match_id: matchId,
@@ -310,9 +319,16 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
           tracker_user_id: selectedTracker,
           assigned_event_types: selectedEventTypes,
           line_players: linePlayers
-        });
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase insertion error:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        throw error;
+      }
+      
+      console.log('Assignment created successfully:', data);
 
       toast({
         title: "Success",
