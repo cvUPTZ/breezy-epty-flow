@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      assignment_logs: {
+        Row: {
+          assignee_id: string | null
+          assigner_id: string
+          assignment_action: string
+          assignment_details: Json
+          assignment_type: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          match_id: string | null
+          previous_assignment_details: Json | null
+          user_agent: string | null
+        }
+        Insert: {
+          assignee_id?: string | null
+          assigner_id: string
+          assignment_action: string
+          assignment_details?: Json
+          assignment_type: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          match_id?: string | null
+          previous_assignment_details?: Json | null
+          user_agent?: string | null
+        }
+        Update: {
+          assignee_id?: string | null
+          assigner_id?: string
+          assignment_action?: string
+          assignment_details?: Json
+          assignment_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          match_id?: string | null
+          previous_assignment_details?: Json | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_logs_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_types: {
         Row: {
           color: string | null
@@ -1005,7 +1055,29 @@ export type Database = {
           tracker_user_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tracker_line_assignments_tracker_user_id_fkey"
+            columns: ["tracker_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_line_assignments_tracker_user_id_fkey"
+            columns: ["tracker_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "tracker_line_assignments_tracker_user_id_fkey"
+            columns: ["tracker_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_permissions_view"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_event_assignments: {
         Row: {
@@ -1659,6 +1731,18 @@ export type Database = {
       is_user: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      log_assignment: {
+        Args: {
+          p_assignee_id: string
+          p_assigner_id: string
+          p_assignment_action: string
+          p_assignment_details?: Json
+          p_assignment_type: string
+          p_match_id: string
+          p_previous_assignment_details?: Json
+        }
+        Returns: string
       }
       log_security_event: {
         Args: {

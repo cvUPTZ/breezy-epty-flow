@@ -65,6 +65,7 @@ import BusinessPlanManagement from '@/components/admin/BusinessPlanManagement';
 import BudgetTrackerConfig from '@/components/admin/BudgetTrackerConfig';
 import LineBasedTrackerAssignment from '@/components/admin/LineBasedTrackerAssignment';
 import UnifiedTrackerAssignment from '@/components/tracker/UnifiedTrackerAssignment';
+import { AssignmentLogsViewer } from '@/components/admin/AssignmentLogsViewer';
 
 const sidebarItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -79,6 +80,7 @@ const sidebarItems = [
   { id: 'mockdata', label: 'Mock Data', icon: Database },
   { id: 'players', label: 'Players', icon: UserCheck },
   { id: 'access', label: 'Access', icon: Shield },
+  { id: 'assignments', label: 'Assignment Logs', icon: FileText },
   { id: 'audit', label: 'Audit', icon: FileText },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'business', label: 'Business Plan', icon: Building2 },
@@ -452,6 +454,9 @@ const Admin: React.FC = () => {
 
       case 'access':
         return <AccessManagement />;
+
+      case 'assignments':
+        return <AssignmentLogsViewer className="h-full" />;
 
       case 'audit':
         return <AuditLogs />;
