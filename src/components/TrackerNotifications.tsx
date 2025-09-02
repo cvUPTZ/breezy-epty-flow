@@ -145,10 +145,19 @@ const TrackerNotifications: React.FC = () => {
     console.log('Fetching notifications for user:', user.id);
 
     try {
-      // Use the optimized view to fetch notifications with match data in one query
-      const { data, error } = await supabase
-        .from('notifications_with_matches')
-        .select('*')
+      // Fetch notifications directly from notifications table
+      const { data: notifications, error } = await supabase
+        .from('notifications')
+        .select(`
+          id,
+          match_id,
+          title,
+          message,
+          type,
+          notification_data,
+          is_read,
+          created_at
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -157,22 +166,42 @@ const TrackerNotifications: React.FC = () => {
         throw error;
       }
       
-      console.log('Notifications with matches data:', data);
+      console.log('Notifications data:', notifications);
       
-      const notificationsWithMatches: NotificationWithMatch[] = (data || []).map(notification => ({
-        id: notification.id || '',
-        match_id: notification.match_id,
-        title: notification.title || '',
-        message: notification.message || '',
-        type: notification.type || 'general',
-        notification_data: notification.notification_data as NotificationData | undefined,
-        is_read: notification.is_read || false,
-        created_at: notification.created_at || '',
-        match_name: notification.match_name,
-        home_team_name: notification.home_team_name,
-        away_team_name: notification.away_team_name,
-        match_date: notification.match_date
-      }));
+      // Get match details separately for notifications that have match_id
+      const matchIds = notifications
+        ?.filter(n => n.match_id)
+        .map(n => n.match_id)
+        .filter((id): id is string => id !== null) // Type guard to filter out nulls
+        .filter((id, index, self) => self.indexOf(id) === index); // unique match IDs
+
+      let matchesData: Array<{id: string; name: string | null; home_team_name: string; away_team_name: string; match_date: string | null}> = [];
+      if (matchIds && matchIds.length > 0) {
+        const { data: matches } = await supabase
+          .from('matches')
+          .select('id, name, home_team_name, away_team_name, match_date')
+          .in('id', matchIds);
+        matchesData = matches || [];
+      }
+
+      // Combine notifications with match data
+      const notificationsWithMatches: NotificationWithMatch[] = (notifications || []).map(notification => {
+        const matchData = matchesData.find(m => m.id === notification.match_id);
+        return {
+          id: notification.id || '',
+          match_id: notification.match_id,
+          title: notification.title || '',
+          message: notification.message || '',
+          type: notification.type || 'general',
+          notification_data: notification.notification_data as NotificationData | undefined,
+          is_read: notification.is_read || false,
+          created_at: notification.created_at || '',
+          match_name: matchData?.name,
+          home_team_name: matchData?.home_team_name,
+          away_team_name: matchData?.away_team_name,
+          match_date: matchData?.match_date
+        };
+      });
 
       console.log('Processed notifications:', notificationsWithMatches.length);
       setNotifications(notificationsWithMatches);

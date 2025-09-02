@@ -280,12 +280,20 @@ const MatchTimerControl: React.FC<MatchTimerControlProps> = ({
       // Create a simple HTML report that can be converted to PDF
       const reportHTML = generateReportHTML(reportData);
       
+      // Create a blob URL for secure PDF generation
+      const blob = new Blob([reportHTML], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      
       // Open in new window for printing/saving as PDF
-      const reportWindow = window.open('', '_blank');
+      const reportWindow = window.open(url, '_blank');
       if (reportWindow) {
-        reportWindow.document.write(reportHTML);
-        reportWindow.document.close();
-        reportWindow.print();
+        reportWindow.addEventListener('load', () => {
+          reportWindow.print();
+          // Clean up the blob URL after a delay
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+          }, 1000);
+        });
       }
 
       toast({
