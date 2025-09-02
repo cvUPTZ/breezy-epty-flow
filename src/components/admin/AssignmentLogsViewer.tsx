@@ -43,6 +43,24 @@ export const AssignmentLogsViewer: React.FC<AssignmentLogsViewerProps> = ({
     }
   };
 
+  const getAssignmentTypeIcon = (type: string) => {
+    switch (type) {
+      case 'individual': return '👤';
+      case 'line': return '⚽';
+      case 'video': return '🎥';
+      default: return '📋';
+    }
+  };
+
+  const getAssignmentTypeColor = (type: string) => {
+    switch (type) {
+      case 'individual': return 'text-blue-700 border-blue-500/20';
+      case 'line': return 'text-green-700 border-green-500/20';
+      case 'video': return 'text-purple-700 border-purple-500/20';
+      default: return 'text-gray-700 border-gray-500/20';
+    }
+  };
+
   const formatAssignmentDetails = (log: AssignmentLog) => {
     if (!log.tracker_assignment) {
       return <div className="text-xs text-muted-foreground">No assignment details</div>;
@@ -50,6 +68,39 @@ export const AssignmentLogsViewer: React.FC<AssignmentLogsViewerProps> = ({
 
     return (
       <div className="space-y-2">
+        {/* Video Assignment Details */}
+        {log.assignment_type === 'video' && (
+          <>
+            {log.tracker_assignment.video_title && (
+              <div className="text-sm">
+                <span className="font-medium text-primary">Video Title:</span> {log.tracker_assignment.video_title}
+              </div>
+            )}
+            {log.tracker_assignment.video_url && (
+              <div className="text-sm">
+                <span className="font-medium text-primary">Video URL:</span>{' '}
+                <a 
+                  href={log.tracker_assignment.video_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline break-all"
+                >
+                  {log.tracker_assignment.video_url.length > 50 
+                    ? `${log.tracker_assignment.video_url.substring(0, 50)}...` 
+                    : log.tracker_assignment.video_url}
+                </a>
+              </div>
+            )}
+            {log.tracker_assignment.status && (
+              <div className="text-sm">
+                <span className="font-medium text-primary">Status:</span> 
+                <Badge variant="outline" className="ml-1 text-xs">{log.tracker_assignment.status}</Badge>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Individual/Line Assignment Details */}
         {log.tracker_assignment.player_name && (
           <div className="text-sm">
             <span className="font-medium text-primary">Player:</span> {log.tracker_assignment.player_name}
@@ -57,7 +108,7 @@ export const AssignmentLogsViewer: React.FC<AssignmentLogsViewerProps> = ({
         )}
         {log.tracker_assignment.team_name && (
           <div className="text-sm">
-            <span className="font-medium text-primary">Team:</span> {log.tracker_assignment.team_name} ({log.tracker_assignment.player_team_id})
+            <span className="font-medium text-primary">Team:</span> {log.tracker_assignment.team_name} {log.tracker_assignment.player_team_id && `(${log.tracker_assignment.player_team_id})`}
           </div>
         )}
         {log.tracker_assignment.assigned_event_types && log.tracker_assignment.assigned_event_types.length > 0 && (
@@ -164,9 +215,13 @@ export const AssignmentLogsViewer: React.FC<AssignmentLogsViewerProps> = ({
                       <Badge className={getActionColor(log.assignment_action)}>
                         {log.assignment_action}
                       </Badge>
-                      <Badge variant="outline" className="text-purple-700 border-purple-500/20">
-                        <Target className="h-3 w-3 mr-1" />
-                        {log.assignment_type === 'line' ? 'Line Assignment' : 'Individual Assignment'}
+                      <Badge variant="outline" className={getAssignmentTypeColor(log.assignment_type || 'individual')}>
+                        {getAssignmentTypeIcon(log.assignment_type || 'individual')}
+                        <span className="ml-1">
+                          {log.assignment_type === 'line' ? 'Line Assignment' : 
+                           log.assignment_type === 'video' ? 'Video Assignment' : 
+                           'Individual Assignment'}
+                        </span>
                       </Badge>
                     </div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">

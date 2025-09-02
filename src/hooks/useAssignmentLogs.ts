@@ -21,6 +21,10 @@ export interface AssignmentLog {
     team_name?: string;
     tracker_type?: string;
     line_players_count?: number;
+    // Video tracking fields
+    video_url?: string;
+    video_title?: string;
+    status?: string;
   };
 }
 
@@ -153,6 +157,49 @@ export const useAssignmentLogs = (matchId?: string) => {
           };
         });
         allLogs.push(...processedLine);
+      }
+
+      // Fetch from video_tracker_assignments (video tracking assignments)
+      let videoQuery = supabase
+        .from('video_tracker_assignments')
+        .select(`
+          *,
+          profiles:tracker_id(full_name),
+          match_video_settings:match_video_id(id, video_url, video_title, match_id, matches:match_id(id, name, home_team_name, away_team_name))
+        `)
+        .order('created_at', { ascending: false });
+
+      if (matchId) {
+        videoQuery = videoQuery.eq('match_video_settings.match_id', matchId);
+      }
+
+      const { data: videoAssignments, error: videoError } = await videoQuery;
+
+      if (videoError) {
+        console.error('Error fetching video assignments:', videoError);
+      } else if (videoAssignments) {
+        const processedVideo = videoAssignments.map((assignment: any) => {
+          const videoSettings = assignment.match_video_settings;
+          const match = videoSettings?.matches;
+
+          return {
+            id: assignment.id,
+            match_id: videoSettings?.match_id,
+            tracker_user_id: assignment.tracker_id,
+            assignment_action: 'created',
+            created_at: assignment.created_at,
+            tracker_name: assignment.profiles?.full_name || 'Unknown Tracker',
+            match_name: match?.name || videoSettings?.video_title || 'Unknown Match',
+            assignment_type: 'video',
+            tracker_assignment: {
+              assigned_event_types: assignment.assigned_event_types,
+              video_url: videoSettings?.video_url,
+              video_title: videoSettings?.video_title,
+              status: assignment.status
+            }
+          };
+        });
+        allLogs.push(...processedVideo);
       }
 
       // Sort all logs by created_at desc
