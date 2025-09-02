@@ -157,21 +157,25 @@ const PlayerAssignments: React.FC = () => {
         player_team_id: selectedTeam
       };
 
-      const { error } = await supabase
+      const { data: insertedData, error } = await supabase
         .from('match_tracker_assignments')
-        .insert([assignmentData]);
+        .insert([assignmentData])
+        .select('id');
 
       if (error) throw error;
 
-      // Log the assignment
-      await assignmentLoggingService.logPlayerAssignment(
-        selectedMatch,
-        parseInt(selectedPlayer),
-        {
-          teamId: selectedTeam,
-          trackerId: selectedTracker
-        }
-      );
+      // Log the assignment with the actual assignment ID
+      if (insertedData && insertedData[0]) {
+        await assignmentLoggingService.logPlayerAssignment(
+          selectedMatch,
+          parseInt(selectedPlayer),
+          {
+            teamId: selectedTeam,
+            trackerId: selectedTracker,
+            tracker_assignment_id: insertedData[0].id
+          }
+        );
+      }
 
       toast.success('Player assignment created successfully');
       setSelectedMatch('');

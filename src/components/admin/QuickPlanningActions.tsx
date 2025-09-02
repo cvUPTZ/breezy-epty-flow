@@ -84,24 +84,27 @@ const QuickPlanningActions: React.FC<QuickPlanningActionsProps> = ({
         assigned_event_types: ['pass', 'shot', 'cross', 'dribble', 'tackle']
       }));
 
-      const { error: insertError } = await supabase
+      const { data: insertedAssignments, error: insertError } = await supabase
         .from('match_tracker_assignments')
-        .insert(newAssignments);
+        .insert(newAssignments)
+        .select('id, tracker_user_id, player_id, assigned_event_types');
 
       if (insertError) throw insertError;
 
-      // Log assignments
-      for (let i = 0; i < newAssignments.length; i++) {
-        const assignment = newAssignments[i];
-        await assignmentLoggingService.logTrackerAssignment(
-          matchId,
-          assignment.tracker_user_id,
-          {
-            playerIds: assignment.player_id ? [assignment.player_id] : [],
-            eventTypes: assignment.assigned_event_types || [],
-            assignmentType: 'quick_assignment'
-          }
-        );
+      // Log assignments with actual assignment IDs
+      if (insertedAssignments) {
+        for (const assignment of insertedAssignments) {
+          await assignmentLoggingService.logTrackerAssignment(
+            matchId,
+            assignment.tracker_user_id,
+            {
+              playerIds: assignment.player_id ? [assignment.player_id] : [],
+              eventTypes: assignment.assigned_event_types || [],
+              assignmentType: 'quick_assignment',
+              tracker_assignment_id: assignment.id
+            }
+          );
+        }
       }
 
       // Send notifications individually

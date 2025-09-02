@@ -54,11 +54,44 @@ export const AssignmentLogsViewer: React.FC<AssignmentLogsViewerProps> = ({
     }
   };
 
-  const formatAssignmentDetails = (details: any) => {
-    if (!details || typeof details !== 'object') return 'No details';
+  const formatAssignmentDetails = (log: AssignmentLog) => {
+    const details = log.assignment_details;
     
+    if (!details || typeof details !== 'object') return <div className="text-xs text-muted-foreground">No details</div>;
+    
+    // Show enhanced tracker assignment info if available
+    if (log.assignment_type === 'tracker_assignment' && log.tracker_assignment) {
+      return (
+        <div className="space-y-2">
+          {log.tracker_assignment.player_name && (
+            <div className="text-sm">
+              <span className="font-medium text-primary">Player:</span> {log.tracker_assignment.player_name}
+            </div>
+          )}
+          {log.tracker_assignment.team_name && (
+            <div className="text-sm">
+              <span className="font-medium text-primary">Team:</span> {log.tracker_assignment.team_name} ({log.tracker_assignment.player_team_id})
+            </div>
+          )}
+          {log.tracker_assignment.assigned_event_types && log.tracker_assignment.assigned_event_types.length > 0 && (
+            <div className="text-sm">
+              <span className="font-medium text-primary">Event Types:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {log.tracker_assignment.assigned_event_types.map((eventType, idx) => (
+                  <Badge key={idx} variant="outline" className="text-xs">
+                    {eventType}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    // Fallback to standard details display
     const entries = Object.entries(details);
-    if (entries.length === 0) return 'No details';
+    if (entries.length === 0) return <div className="text-xs text-muted-foreground">No details</div>;
     
     return entries.map(([key, value]) => (
       <div key={key} className="text-xs text-muted-foreground">
@@ -193,13 +226,19 @@ export const AssignmentLogsViewer: React.FC<AssignmentLogsViewerProps> = ({
                   
                   <div className="bg-muted/30 rounded p-3">
                     <div className="font-medium text-sm mb-2">Assignment Details:</div>
-                    {formatAssignmentDetails(log.assignment_details)}
+                    {formatAssignmentDetails(log)}
                   </div>
                   
                   {log.previous_assignment_details && (
                     <div className="bg-red-50 border border-red-200 rounded p-3 mt-2">
                       <div className="font-medium text-sm mb-2 text-red-700">Previous Details:</div>
-                      {formatAssignmentDetails(log.previous_assignment_details)}
+                      <div className="text-xs text-muted-foreground">
+                        {Object.entries(log.previous_assignment_details).map(([key, value]) => (
+                          <div key={key}>
+                            <span className="font-medium">{key}:</span> {Array.isArray(value) ? value.join(', ') : String(value)}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

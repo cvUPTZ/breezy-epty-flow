@@ -63,6 +63,7 @@ class AssignmentLoggingService {
       playerIds?: number[];
       eventTypes?: string[];
       assignmentType?: string;
+      tracker_assignment_id?: string; // Add the actual assignment ID
       [key: string]: any;
     },
     action: 'created' | 'updated' | 'deleted' = 'created',
@@ -91,6 +92,8 @@ class AssignmentLoggingService {
       teamId: string;
       position?: string;
       jerseyNumber?: number;
+      trackerId?: string;
+      tracker_assignment_id?: string; // Add the actual assignment ID
       [key: string]: any;
     },
     action: 'created' | 'updated' | 'deleted' = 'created',
@@ -117,6 +120,7 @@ class AssignmentLoggingService {
     assignmentDetails: {
       eventTypes: string[];
       playerIds?: number[];
+      tracker_assignment_id?: string; // Add the actual assignment ID
       [key: string]: any;
     },
     action: 'created' | 'updated' | 'deleted' = 'created',

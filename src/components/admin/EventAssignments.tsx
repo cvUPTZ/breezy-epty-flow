@@ -135,9 +135,10 @@ const EventAssignments: React.FC<EventAssignmentsProps> = ({ matchId }) => {
         player_team_id: 'home' // Default team for general event assignments
       };
 
-      const { error } = await supabase
+      const { data: insertedData, error } = await supabase
         .from('match_tracker_assignments')
-        .insert(assignmentData);
+        .insert(assignmentData)
+        .select('id');
 
       if (error) {
         console.error('Error assigning tracker:', error);
@@ -145,14 +146,17 @@ const EventAssignments: React.FC<EventAssignmentsProps> = ({ matchId }) => {
         return;
       }
 
-      // Log the event assignment
-      await assignmentLoggingService.logEventAssignment(
-        matchId,
-        selectedTracker,
-        {
-          eventTypes: selectedEventTypes
-        }
-      );
+      // Log the event assignment with the actual assignment ID
+      if (insertedData && insertedData[0]) {
+        await assignmentLoggingService.logEventAssignment(
+          matchId,
+          selectedTracker,
+          {
+            eventTypes: selectedEventTypes,
+            tracker_assignment_id: insertedData[0].id
+          }
+        );
+      }
 
       // Send match assignment notification (no video URL available in this component)
       const { error: notificationError } = await supabase.from('notifications').insert({
