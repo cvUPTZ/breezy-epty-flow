@@ -72,6 +72,16 @@ export const AssignmentLogsViewer: React.FC<AssignmentLogsViewerProps> = ({
             </div>
           </div>
         )}
+        {log.assignment_type === 'line' && log.tracker_assignment.tracker_type && (
+          <div className="text-sm">
+            <span className="font-medium text-primary">Tracker Type:</span> {log.tracker_assignment.tracker_type}
+          </div>
+        )}
+        {log.assignment_type === 'line' && log.tracker_assignment.line_players_count && (
+          <div className="text-sm">
+            <span className="font-medium text-primary">Players Count:</span> {log.tracker_assignment.line_players_count}
+          </div>
+        )}
       </div>
     );
   };
@@ -156,7 +166,7 @@ export const AssignmentLogsViewer: React.FC<AssignmentLogsViewerProps> = ({
                       </Badge>
                       <Badge variant="outline" className="text-purple-700 border-purple-500/20">
                         <Target className="h-3 w-3 mr-1" />
-                        Tracker Assignment
+                        {log.assignment_type === 'line' ? 'Line Assignment' : 'Individual Assignment'}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
