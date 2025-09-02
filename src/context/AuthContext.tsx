@@ -30,6 +30,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const fetchUserRole = useCallback(async (userId: string) => {
     try {
+      // Enhanced security: Use edge function for secure profile access
+      const { data: functionData, error: functionError } = await supabase.functions.invoke('secure-get-user-profile', {
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`
+        }
+      });
+
+      if (!functionError && functionData?.profile?.role) {
+        setUserRole(functionData.profile.role);
+        return;
+      }
+
+      // Fallback to direct database query if edge function fails
       const { data, error } = await supabase
         .from('profiles')
         .select('role')
@@ -38,8 +51,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (error) {
         console.error('Error fetching user role:', error);
-        // Default to 'user' role if profile doesn't exist yet
-        setUserRole('user');
+        // Log security event for failed profile access
+        try {
+          await supabase.from('security_audit_log').insert({
+            user_id: userId,
+            action: 'profile_access_failed',
+            resource_type: 'user_profile',
+            resource_id: userId,
+            details: { error: error.message, timestamp: new Date().toISOString() }
+          });
+        } catch (logError) {
+          console.error('Failed to log security event:', logError);
+        }
+        
+        setUserRole('user'); // Default to 'user' role if profile doesn't exist
       } else {
         setUserRole(data?.role || 'user');
       }
@@ -47,7 +72,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.error('Error in fetchUserRole:', error);
       setUserRole('user');
     }
-  }, []);
+  }, [session]);
 
   useEffect(() => {
     // Get initial session
@@ -80,14 +105,49 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signIn = useCallback(async (email: string, password: string) => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        // Log failed sign-in attempt
+        try {
+          await supabase.from('security_audit_log').insert({
+            user_id: null,
+            action: 'sign_in_failed',
+            resource_type: 'auth_session',
+            resource_id: email,
+            details: { 
+              error: error.message, 
+              timestamp: new Date().toISOString(),
+              ip_address: 'client_side'
+            }
+          });
+        } catch (logError) {
+          console.error('Failed to log security event:', logError);
+        }
+        
         toast.error(error.message);
         throw error;
+      }
+
+      // Log successful sign-in
+      if (data.user) {
+        try {
+          await supabase.from('security_audit_log').insert({
+            user_id: data.user.id,
+            action: 'sign_in_success',
+            resource_type: 'auth_session',
+            resource_id: data.user.id,
+            details: { 
+              timestamp: new Date().toISOString(),
+              email: email
+            }
+          });
+        } catch (logError) {
+          console.error('Failed to log security event:', logError);
+        }
       }
 
       toast.success('Signed in successfully');

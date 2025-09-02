@@ -50,6 +50,9 @@ export const RequireAuth: React.FC<{
   // If specific roles are required, check user's role
   if (requiredRoles && requiredRoles.length > 0) {
     if (!role || !requiredRoles.includes(role as any)) {
+      // Log permission denied event
+      console.warn(`Access denied: User role '${role}' not in required roles: ${requiredRoles.join(', ')}`);
+      
       return (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
@@ -68,6 +71,8 @@ export const RequireAuth: React.FC<{
   if (requiredPermissions && requiredPermissions.length > 0) {
     const hasAllPermissions = requiredPermissions.every(permission => hasPermission(permission));
     if (!hasAllPermissions) {
+      console.warn(`Access denied: User missing required permissions: ${requiredPermissions.join(', ')}`);
+      
       return (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
