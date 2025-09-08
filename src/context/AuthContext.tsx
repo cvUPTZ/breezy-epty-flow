@@ -30,6 +30,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const fetchUserRole = useCallback(async (userId: string) => {
     try {
+      // Ensure we have a valid session before making database queries
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.warn('No session found when fetching user role');
+        setUserRole('user');
+        return;
+      }
+
       // Direct database query for user profile
       const { data, error } = await supabase
         .from('profiles')
@@ -39,9 +47,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (error) {
         console.error('Error fetching user role:', error);
-        setUserRole('user'); // Default to 'user' role
+        // Check if it's an auth error vs data error
+        if (error.code === 'PGRST301' || error.message.includes('JWT')) {
+          console.warn('Authentication issue when fetching role, user may need to sign in again');
+          await supabase.auth.signOut();
+          setUserRole(null);
+        } else {
+          setUserRole('user'); // Default to 'user' role for other errors
+        }
       } else {
         setUserRole(data?.role || 'user');
+        console.log('User role fetched:', data?.role || 'user');
       }
     } catch (error) {
       console.error('Error in fetchUserRole:', error);
