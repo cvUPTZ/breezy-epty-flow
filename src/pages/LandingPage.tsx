@@ -34,37 +34,37 @@ const LandingPage: React.FC = () => {
     {
       icon: <Target className="h-8 w-8 text-blue-600" />,
       title: "Enregistrement d'Événements en Direct et Précis",
-      description: "Saisissez chaque action avec notre interface de 'piano' optimisée, suivi de la position du ballon, et collaboration multi-opérateurs en temps réel.",
+      description: "Saisissez méticuleusement chaque événement de match en temps réel (buts, passes décisives, fautes, remplacements) avec notre interface 'piano' spécialisée. Suivez la position du ballon et des joueurs sur un terrain virtuel, et permettez à plusieurs opérateurs de collaborer sur le même match avec une synchronisation parfaite.",
       gradient: "from-blue-500/10 to-indigo-500/10",
     },
     {
       icon: <Video className="h-8 w-8 text-indigo-600" />,
       title: "Analyse Vidéo Intégrée et Synchronisée",
-      description: "Liez les données d'événements aux séquences vidéo pour des revues tactiques approfondies et une compréhension visuelle.",
+      description: "Liez les événements enregistrés aux horodatages vidéo de multiples sources (y compris YouTube) pour une analyse post-match complète. Visualisez les actions dans leur contexte pour des revues tactiques approfondies.",
       gradient: "from-indigo-500/10 to-purple-500/10",
     },
     {
       icon: <Users className="h-8 w-8 text-purple-600" />,
       title: "Gestion Complète des Équipes et Joueurs",
-      description: "Administrez vos effectifs, profils de joueurs, formations tactiques et assignations de rôles avec une flexibilité totale.",
+      description: "Administrez vos effectifs, les profils détaillés des joueurs et les schémas tactiques. Assignez les rôles et les positions avec des outils de gestion de formation avancés pour une préparation de match optimale.",
       gradient: "from-purple-500/10 to-violet-500/10",
     },
     {
       icon: <BarChart3 className="h-8 w-8 text-sky-600" />,
       title: "Analyses et Visualisations Puissantes",
-      description: "Tableaux de bord KPI, cartes de chaleur, graphiques radar, statistiques détaillées et analyse tactique pour une performance optimale.",
+      description: "Accédez à des tableaux de bord interactifs avec des indicateurs de performance clés. Générez des cartes de chaleur, des graphiques radar, des chronologies d'événements et des tables statistiques complètes pour analyser les performances individuelles et collectives.",
       gradient: "from-sky-500/10 to-blue-500/10",
     },
     {
       icon: <Share2 className="h-8 w-8 text-violet-600" />,
       title: "Collaboration d'Équipe Optimisée",
-      description: "Permettez à plusieurs analystes de travailler simultanément avec assignations spécialisées, synchronisation en temps réel et outils de communication.",
+      description: "Facilitez le travail simultané de plusieurs analystes sur un même match. Assignez des types d'événements spécifiques à chaque opérateur et utilisez la communication vocale intégrée pour une coordination parfaite.",
       gradient: "from-violet-500/10 to-indigo-500/10",
     },
     {
       icon: <Shield className="h-8 w-8 text-fuchsia-600" />,
       title: "Administration et Contrôle Avancés",
-      description: "Gérez les utilisateurs avec des rôles précis, suivez l'activité des trackers (absences, batterie), et accédez à des journaux d'audit complets.",
+      description: "Gérez les accès avec des rôles d'utilisateurs définis (Admin, Manager, Tracker). Surveillez l'état des dispositifs des trackers (batterie, connexion), gérez les absences et consultez les journaux d'audit pour une sécurité et un contrôle total.",
       gradient: "from-fuchsia-500/10 to-purple-500/10",
     }
   ];
@@ -94,59 +94,55 @@ const LandingPage: React.FC = () => {
 
   const pricingPlans = [
     {
-      name: "Starter",
-      price: "99€",
+      name: "Basique Algérie",
+      price: "15,000 DZD",
       period: "/mois",
-      description: "Parfait pour les petits clubs et équipes amateur",
+      description: "Idéal pour les clubs amateurs et les académies en développement.",
       icon: <Star className="h-6 w-6 text-blue-600" />,
       features: [
         "Jusqu'à 5 matchs par mois",
-        "2 analystes simultanés",
-        "Statistiques de base et suivi d'événements",
-        "Gestion d'équipe de base",
+        "2 analystes",
+        "Suivi des événements et statistiques de base",
+        "Synchronisation vidéo limitée",
+        "Gestion d'équipe",
         "Support par email",
-        "Stockage 10GB"
       ],
       popular: false,
       cardStyle: "bg-white/60 backdrop-blur-lg border-slate-200/80 hover:border-blue-300 hover:shadow-xl rounded-2xl",
       buttonStyle: "bg-slate-900 hover:bg-slate-800"
     },
     {
-      name: "Professional",
-      price: "299€",
+      name: "Performance Algérie",
+      price: "45,000 DZD",
       period: "/mois",
-      description: "Idéal pour les clubs semi-professionnels et académies",
+      description: "Pour les clubs de Ligue 2, les grands clubs amateurs et les académies.",
       icon: <Crown className="h-6 w-6 text-purple-600" />,
       features: [
-        "Matchs illimités",
-        "10 analystes simultanés",
-        "Statistiques avancées et visualisations (heatmaps, radar)",
-        "Analyse vidéo complète avec synchronisation",
-        "Gestion d'équipe et formations tactiques",
+        "Jusqu'à 15 matchs par mois",
+        "Jusqu'à 8 analystes",
+        "Statistiques avancées (cartes de chaleur, radar)",
+        "Analyse vidéo complète",
+        "Gestion des formations tactiques",
         "Collaboration multi-utilisateurs",
         "Support prioritaire",
-        "Stockage 100GB",
-        "API d'intégration"
       ],
       popular: true,
       cardStyle: "bg-gradient-to-br from-purple-50 to-blue-50 border-purple-300 shadow-2xl scale-105 relative rounded-2xl",
       buttonStyle: "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
     },
     {
-      name: "Enterprise",
+      name: "Élite Algérie",
       price: "Sur devis",
       period: "",
-      description: "Solution complète pour les clubs professionnels et fédérations",
+      description: "Solution complète pour les clubs de Ligue 1 et la Fédération (FAF).",
       icon: <Shield className="h-6 w-8 text-emerald-600" />,
       features: [
-        "Tout du plan Professional",
-        "Analystes illimités et rôles personnalisés",
-        "Fonctionnalités de collaboration avancées (voice, etc.)",
-        "Administration complète (audit, gestion des trackers)",
-        "Infrastructure dédiée et SLA",
-        "Formation personnalisée et support 24/7",
-        "Stockage illimité",
-        "Développement sur mesure"
+        "Tout du plan Performance",
+        "Matchs et analystes illimités",
+        "Collaboration vocale intégrée",
+        "Outils d'administration avancés",
+        "Accès API",
+        "Support et formation personnalisés",
       ],
       popular: false,
       cardStyle: "bg-white/60 backdrop-blur-lg border-slate-200/80 hover:border-emerald-300 hover:shadow-xl rounded-2xl",
@@ -181,19 +177,19 @@ const LandingPage: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-indigo-600/5"></div>
         <div className="container mx-auto text-center max-w-5xl relative">
           <Badge className="mb-6 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border-blue-200 px-6 py-2 text-sm font-medium">
-            Plateforme d'Analyse et Gestion Football Professionnelle
+            Plateforme d'Analyse et Gestion pour le Football Algérien
           </Badge>
           <h1 className="text-5xl md:text-6xl font-bold mb-8 leading-tight">
             <span className="bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-              Révolutionnez Votre Analyse
+              Révolutionnez l'Analyse de Match
             </span>
             <br />
             <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              et Gestion de Match
+              en Algérie
             </span>
           </h1>
           <p className="text-xl text-slate-600 mb-10 leading-relaxed max-w-3xl mx-auto">
-            Une plateforme tout-en-un pour l'enregistrement détaillé, l'analyse vidéo poussée, la collaboration en temps réel et la gestion complète des données de match de football. Transformez vos analyses en avantage concurrentiel.
+            Une plateforme tout-en-un conçue pour les réalités du football algérien. De l'enregistrement détaillé à l'analyse vidéo, transformez vos données en avantage concurrentiel.
           </p>
           <div className="flex gap-6 justify-center flex-wrap">
             <Button 
@@ -256,11 +252,11 @@ const LandingPage: React.FC = () => {
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-6">
               <span className="bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-                Notre Modèle Économique Flexible
+                Des Tarifs Adaptés au Marché Algérien
               </span>
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-              Des solutions adaptées à chaque niveau, du club amateur aux organisations professionnelles.
+              Des solutions conçues pour les clubs, académies et fédérations en Algérie.
             </p>
           </div>
           
@@ -372,16 +368,16 @@ const LandingPage: React.FC = () => {
         <div className="container mx-auto max-w-6xl text-center">
           <h2 className="text-4xl font-bold mb-16">
             <span className="bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-              Une Solution Adaptée à Tous les Acteurs du Football
+              Une Solution Conçue pour le Football Algérien
             </span>
           </h2>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
-              { icon: Users, title: "Entraîneurs & Staff", desc: "Optimisez les stratégies, analysez les performances d'équipe et individuelles, et préparez les matchs efficacement.", color: "blue" },
-              { icon: BarChart3, title: "Analystes Données & Vidéo", desc: "Exploitez des outils pointus pour l'enregistrement, l'analyse vidéo synchronisée, et la génération de rapports.", color: "emerald" },
-              { icon: Building, title: "Clubs & Organisations", desc: "Gérez plusieurs équipes, centralisez les données, coordonnez les analystes et structurez vos opérations d'analyse.", color: "purple" },
-              { icon: School, title: "Éducation & Recherche", desc: "Utilisez notre plateforme comme outil pédagogique pour la science du sport ou pour mener des recherches avancées.", color: "amber" }
+              { icon: Users, title: "Clubs Professionnels (Ligue 1 & 2)", desc: "Gagnez un avantage concurrentiel, améliorez le développement des joueurs et professionnalisez vos opérations d'analyse.", color: "blue" },
+              { icon: School, title: "Clubs Amateurs & Académies", desc: "Accédez à des outils d'analyse de niveau professionnel à un coût abordable pour développer les talents locaux.", color: "emerald" },
+              { icon: Building, title: "Fédérations & DTN (FAF)", desc: "Standardisez la collecte de données, supervisez les talents et supportez les équipes nationales avec des analyses poussées.", color: "purple" },
+              { icon: BarChart3, title: "Analystes & Médias", desc: "Exploitez des données riches et des outils pointus pour générer des rapports approfondis et du contenu de qualité.", color: "amber" }
             ].map((item, index) => (
               <div key={index} className="p-8 bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-slate-200/80">
                 <div className={`w-20 h-20 bg-gradient-to-br from-${item.color}-100 to-${item.color}-50 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg`}>
