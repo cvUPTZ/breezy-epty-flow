@@ -48,7 +48,7 @@ const Dashboard = () => {
 
   // Sidebar menu items are only generated based on permissions, not roles!
   const menuItems = [
-    { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/' }
+    { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' }
   ];
 
   // New Match visible if user has canCreateMatches permission

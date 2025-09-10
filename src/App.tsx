@@ -83,12 +83,12 @@ const AppContent = () => {
       <Header />
       <Routes>
         {/* Public routes */}
-        <Route path="/landing" element={<LandingPage />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/extension-bridge" element={<ChromeExtensionBridge />} />
 
         {/* Protected routes - General Access */}
-        <Route path="/" element={
+        <Route path="/dashboard" element={
           <RequireAuth>
             <Dashboard />
           </RequireAuth>
@@ -268,7 +268,7 @@ const AppContent = () => {
                   Go Back
                 </button>
                 <button 
-                  onClick={() => navigate('/')}
+                  onClick={() => navigate('/dashboard')}
                   className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                 >
                   Dashboard
