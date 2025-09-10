@@ -1,31 +1,50 @@
-import { supabase } from '@/integrations/supabase/client';
-import { Assignment, AssignmentLog, BatchAssignmentOperation, AssignmentMetrics } from '@/lib/assignments/types';
-import { AssignmentValidator } from '@/lib/assignments/validation';
-import { AssignmentEngine } from '@/lib/assignments/core';
+import { supabase } from '../../integrations/supabase/client';
 import { toast } from 'sonner';
+import type { 
+  Assignment, 
+  IndividualAssignment,
+  AssignmentMetrics,
+  AssignmentConflict,
+  TrackerUser
+} from '../../lib/assignments/types';
+import { validateAssignment, detectConflicts } from '../../lib/assignments/validation';
+import { dbToAssignment, assignmentToDb, type DatabaseAssignment } from '../../lib/assignments/databaseAdapters';
 
 export class AssignmentService {
-  /**
-   * Creates a new assignment with validation and conflict detection
-   */
-  static async createAssignment(assignment: Partial<Assignment>): Promise<{ success: boolean; assignment?: Assignment; errors?: string[] }> {
+  // Create individual player assignment
+  async createIndividualAssignment(
+    matchId: string, 
+    trackerId: string, 
+    playerId: number, 
+    teamId: 'home' | 'away', 
+    eventTypes: string[]
+  ): Promise<{ success: boolean; assignment?: Assignment; errors?: string[] }> {
     try {
-      // Validate assignment data
-      const validationErrors = AssignmentValidator.validateAssignment(assignment as Assignment);
-      if (validationErrors.length > 0) {
-        return { success: false, errors: validationErrors };
+      const assignment: IndividualAssignment = {
+        id: crypto.randomUUID(),
+        match_id: matchId,
+        tracker_user_id: trackerId,
+        assignment_type: 'individual',
+        status: 'active',
+        priority: 'medium',
+        assigned_event_types: eventTypes,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        created_by: trackerId,
+        player_id: playerId,
+        player_team_id: teamId,
+        notes: undefined,
+        metadata: {}
+      };
+
+      // Validate assignment
+      const validation = validateAssignment(assignment);
+      if (!validation.isValid) {
+        return { success: false, errors: validation.errors };
       }
 
       // Check for conflicts
-      const existingAssignments = await this.getMatchAssignments(assignment.match_id!);
-      const trackers = await this.getActiveTrackers();
-      
-      const conflicts = AssignmentValidator.detectConflicts(
-        assignment as Assignment,
-        existingAssignments,
-        trackers
-      );
-
+      const conflicts = await this.detectAssignmentConflicts(assignment);
       const criticalConflicts = conflicts.filter(c => c.severity === 'high');
       if (criticalConflicts.length > 0) {
         return { 
@@ -34,150 +53,160 @@ export class AssignmentService {
         };
       }
 
-      // Insert based on assignment type
-      let result;
-      switch (assignment.assignment_type) {
-        case 'individual':
-          result = await this.createIndividualAssignment(assignment);
-          break;
-        case 'line':
-          result = await this.createLineAssignment(assignment);
-          break;
-        case 'video':
-          result = await this.createVideoAssignment(assignment);
-          break;
-        default:
-          return { success: false, errors: ['Unsupported assignment type'] };
-      }
+      // Insert into database using adapter
+      const dbInsert = assignmentToDb(assignment);
+      const { data, error } = await supabase
+        .from('match_tracker_assignments')
+        .insert(dbInsert)
+        .select()
+        .single();
 
-      if (result.error) {
-        throw result.error;
-      }
+      if (error) throw error;
 
-      // Log the assignment creation
-      await this.logAssignmentAction(result.data.id, 'created', assignment);
-
-      // Send notification to tracker
-      await this.sendTrackerNotification(assignment.tracker_user_id!, assignment.match_id!, assignment);
-
-      // Show warnings for medium severity conflicts
-      const warnings = conflicts.filter(c => c.severity === 'medium');
+      // Show warnings for non-critical conflicts
+      const warnings = conflicts.filter(c => c.severity !== 'high');
       if (warnings.length > 0) {
         warnings.forEach(warning => toast.warning(warning.description));
       }
 
-      return { success: true, assignment: result.data };
+      return { success: true, assignment: dbToAssignment(data) };
     } catch (error) {
       console.error('Error creating assignment:', error);
       return { success: false, errors: ['Failed to create assignment'] };
     }
   }
 
-  /**
-   * Updates an existing assignment
-   */
-  static async updateAssignment(assignmentId: string, updates: Partial<Assignment>): Promise<{ success: boolean; assignment?: Assignment; errors?: string[] }> {
+  // Create line-based assignment (simplified for current DB schema)
+  async createLineAssignment(
+    matchId: string,
+    trackerId: string,
+    lineType: 'defense' | 'midfield' | 'attack' | 'fullTeam',
+    teamId: 'home' | 'away',
+    playerIds: number[],
+    eventTypes: string[]
+  ): Promise<{ success: boolean; assignment?: Assignment; errors?: string[] }> {
     try {
-      // Get current assignment
-      const currentAssignment = await this.getAssignmentById(assignmentId);
-      if (!currentAssignment) {
+      // For now, create individual assignments for each player in the line
+      const assignments: IndividualAssignment[] = [];
+      const results = [];
+
+      for (const playerId of playerIds) {
+        const result = await this.createIndividualAssignment(
+          matchId,
+          trackerId,
+          playerId,
+          teamId,
+          eventTypes
+        );
+        results.push(result);
+        if (result.assignment) {
+          assignments.push(result.assignment as IndividualAssignment);
+        }
+      }
+
+      const successful = results.filter(r => r.success);
+      const failed = results.filter(r => !r.success);
+
+      if (failed.length > 0) {
+        return { 
+          success: false, 
+          errors: failed.flatMap(f => f.errors || [])
+        };
+      }
+
+      return { 
+        success: true, 
+        assignment: assignments[0] // Return first assignment as representative
+      };
+    } catch (error) {
+      console.error('Error creating line assignment:', error);
+      return { success: false, errors: ['Failed to create line assignment'] };
+    }
+  }
+
+  // Get assignments for a match
+  async getMatchAssignments(matchId: string): Promise<Assignment[]> {
+    try {
+      const { data, error } = await supabase
+        .from('match_tracker_assignments')
+        .select('*')
+        .eq('match_id', matchId);
+
+      if (error) throw error;
+
+      return data ? data.map(dbToAssignment) : [];
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
+      return [];
+    }
+  }
+
+  // Get single assignment
+  async getAssignment(assignmentId: string): Promise<IndividualAssignment | undefined> {
+    try {
+      const { data, error } = await supabase
+        .from('match_tracker_assignments')
+        .select('*')
+        .eq('id', assignmentId)
+        .single();
+
+      if (error) throw error;
+      return data ? dbToAssignment(data) : undefined;
+    } catch (error) {
+      console.error('Error fetching assignment:', error);
+      return undefined;
+    }
+  }
+
+  // Update assignment
+  async updateAssignment(
+    assignmentId: string, 
+    updates: Partial<IndividualAssignment>
+  ): Promise<{ success: boolean; assignment?: Assignment; errors?: string[] }> {
+    try {
+      // Get existing assignment
+      const existing = await this.getAssignment(assignmentId);
+      if (!existing) {
         return { success: false, errors: ['Assignment not found'] };
       }
 
-      const updatedAssignment = { ...currentAssignment, ...updates };
-      
+      // Apply updates
+      const updated = { ...existing, ...updates, updated_at: new Date().toISOString() };
+
       // Validate updated assignment
-      const validationErrors = AssignmentValidator.validateAssignment(updatedAssignment);
-      if (validationErrors.length > 0) {
-        return { success: false, errors: validationErrors };
+      const validation = validateAssignment(updated);
+      if (!validation.isValid) {
+        return { success: false, errors: validation.errors };
       }
 
-      // Update based on assignment type
-      let result;
-      switch (updatedAssignment.assignment_type) {
-        case 'individual':
-          result = await supabase
-            .from('match_tracker_assignments')
-            .update({
-              tracker_user_id: updatedAssignment.tracker_user_id,
-              assigned_player_id: updatedAssignment.player_id,
-              player_team_id: updatedAssignment.player_team_id,
-              assigned_event_types: updatedAssignment.assigned_event_types,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', assignmentId)
-            .select()
-            .single();
-          break;
-        case 'line':
-          result = await supabase
-            .from('tracker_line_assignments')
-            .update({
-              tracker_user_id: updatedAssignment.tracker_user_id,
-              line_players: updatedAssignment.player_ids,
-              tracker_type: updatedAssignment.line_type,
-              assigned_event_types: updatedAssignment.assigned_event_types,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', assignmentId)
-            .select()
-            .single();
-          break;
-        default:
-          return { success: false, errors: ['Update not supported for this assignment type'] };
-      }
+      // Update in database
+      const dbUpdate = assignmentToDb(updated);
+      const { data, error } = await supabase
+        .from('match_tracker_assignments')
+        .update(dbUpdate)
+        .eq('id', assignmentId)
+        .select()
+        .single();
 
-      if (result.error) {
-        throw result.error;
-      }
-
-      // Log the update
-      await this.logAssignmentAction(assignmentId, 'updated', updatedAssignment, currentAssignment);
-
-      return { success: true, assignment: result.data };
+      if (error) throw error;
+      return { success: true, assignment: dbToAssignment(data) };
     } catch (error) {
       console.error('Error updating assignment:', error);
       return { success: false, errors: ['Failed to update assignment'] };
     }
   }
 
-  /**
-   * Deletes an assignment
-   */
-  static async deleteAssignment(assignmentId: string): Promise<{ success: boolean; errors?: string[] }> {
+  // Delete assignment
+  async deleteAssignment(assignmentId: string): Promise<{ success: boolean; errors?: string[] }> {
     try {
-      // Get assignment details for logging
-      const assignment = await this.getAssignmentById(assignmentId);
-      if (!assignment) {
-        return { success: false, errors: ['Assignment not found'] };
-      }
+      const { error } = await supabase
+        .from('match_tracker_assignments')
+        .delete()
+        .eq('id', assignmentId);
 
-      // Delete from appropriate table
-      let result;
-      switch (assignment.assignment_type) {
-        case 'individual':
-          result = await supabase
-            .from('match_tracker_assignments')
-            .delete()
-            .eq('id', assignmentId);
-          break;
-        case 'line':
-          result = await supabase
-            .from('tracker_line_assignments')
-            .delete()
-            .eq('id', assignmentId);
-          break;
-        default:
-          return { success: false, errors: ['Delete not supported for this assignment type'] };
-      }
-
-      if (result.error) {
-        throw result.error;
-      }
-
-      // Log the deletion
-      await this.logAssignmentAction(assignmentId, 'deleted', assignment);
-
+      if (error) throw error;
+      
+      await this.logAssignmentAction(assignmentId, 'delete', 'system');
       return { success: true };
     } catch (error) {
       console.error('Error deleting assignment:', error);
@@ -185,341 +214,181 @@ export class AssignmentService {
     }
   }
 
-  /**
-   * Gets all assignments for a match
-   */
-  static async getMatchAssignments(matchId: string): Promise<Assignment[]> {
+  // Get assignment metrics
+  async getAssignmentMetrics(matchId: string): Promise<AssignmentMetrics> {
     try {
-      const assignments: Assignment[] = [];
-
-      // Get individual assignments
-      const { data: individualAssignments, error: individualError } = await supabase
-        .from('match_tracker_assignments')
-        .select(`
-          *,
-          profiles!tracker_user_id (
-            full_name,
-            email
-          )
-        `)
-        .eq('match_id', matchId);
-
-      if (individualError) throw individualError;
-
-      // Transform individual assignments
-      if (individualAssignments) {
-        assignments.push(...individualAssignments.map(a => ({
-          id: a.id,
-          match_id: a.match_id,
-          tracker_user_id: a.tracker_user_id,
-          assignment_type: 'individual' as const,
-          status: 'active' as const,
-          priority: 'medium' as const,
-          assigned_event_types: a.assigned_event_types || [],
-          created_at: a.created_at,
-          updated_at: a.updated_at || a.created_at,
-          created_by: a.tracker_user_id, // Fallback
-          player_id: a.assigned_player_id,
-          player_team_id: a.player_team_id,
-          metadata: {
-            tracker_name: (a.profiles as any)?.full_name,
-            tracker_email: (a.profiles as any)?.email
-          }
-        })));
-      }
-
-      // Get line assignments
-      const { data: lineAssignments, error: lineError } = await supabase
-        .from('tracker_line_assignments')
-        .select(`
-          *,
-          profiles!tracker_user_id (
-            full_name,
-            email
-          )
-        `)
-        .eq('match_id', matchId);
-
-      if (lineError) throw lineError;
-
-      // Transform line assignments
-      if (lineAssignments) {
-        assignments.push(...lineAssignments.map(a => ({
-          id: a.id,
-          match_id: a.match_id,
-          tracker_user_id: a.tracker_user_id,
-          assignment_type: 'line' as const,
-          status: 'active' as const,
-          priority: 'medium' as const,
-          assigned_event_types: a.assigned_event_types || [],
-          created_at: a.created_at,
-          updated_at: a.updated_at || a.created_at,
-          created_by: a.tracker_user_id, // Fallback
-          line_type: a.tracker_type,
-          team_id: 'both' as const, // Default
-          player_ids: Array.isArray(a.line_players) ? a.line_players : [],
-          metadata: {
-            tracker_name: (a.profiles as any)?.full_name,
-            tracker_email: (a.profiles as any)?.email
-          }
-        })));
-      }
-
-      return assignments;
-    } catch (error) {
-      console.error('Error fetching match assignments:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Gets assignment metrics for analytics
-   */
-  static async getAssignmentMetrics(matchId?: string): Promise<AssignmentMetrics> {
-    try {
-      let assignments: Assignment[];
+      const assignments = await this.getMatchAssignments(matchId);
       
-      if (matchId) {
-        assignments = await this.getMatchAssignments(matchId);
-      } else {
-        // Get all assignments across all matches
-        assignments = []; // Implementation would fetch all assignments
+      const metrics: AssignmentMetrics = {
+        total_assignments: assignments.length,
+        active_assignments: assignments.filter(a => a.status === 'active').length,
+        completion_rate: 0,
+        average_events_per_assignment: 0,
+        tracker_utilization: 0,
+        assignment_distribution: {
+          individual: 0,
+          line: 0,
+          video: 0,
+          formation: 0,
+          zone: 0
+        }
+      };
+
+      if (assignments.length > 0) {
+        // Calculate assignment distribution
+        assignments.forEach(assignment => {
+          metrics.assignment_distribution[assignment.assignment_type]++;
+        });
+
+        // Calculate average events per assignment
+        const totalEvents = assignments.reduce((sum, a) => sum + a.assigned_event_types.length, 0);
+        metrics.average_events_per_assignment = totalEvents / assignments.length;
+
+        // Calculate completion rate (for now, assume active assignments are "completed")
+        metrics.completion_rate = (metrics.active_assignments / metrics.total_assignments) * 100;
+
+        // Calculate tracker utilization
+        const uniqueTrackers = new Set(assignments.map(a => a.tracker_user_id)).size;
+        metrics.tracker_utilization = uniqueTrackers;
       }
 
-      const trackers = await this.getActiveTrackers();
-      return AssignmentEngine.calculateMetrics(assignments, trackers);
+      return metrics;
     } catch (error) {
-      console.error('Error calculating assignment metrics:', error);
+      console.error('Error calculating metrics:', error);
       return {
         total_assignments: 0,
         active_assignments: 0,
         completion_rate: 0,
         average_events_per_assignment: 0,
         tracker_utilization: 0,
-        assignment_distribution: {}
-      };
-    }
-  }
-
-  /**
-   * Batch assignment operations
-   */
-  static async executeBatchOperation(operation: BatchAssignmentOperation): Promise<{ success: boolean; results: any[]; errors?: string[] }> {
-    try {
-      const results = [];
-      
-      // Validate batch operation
-      const trackers = await this.getActiveTrackers();
-      const existingAssignments = operation.assignments.length > 0 ? 
-        await this.getMatchAssignments(operation.assignments[0].match_id) : [];
-      
-      const validation = AssignmentValidator.validateBatchOperation(
-        operation.assignments,
-        operation.operation,
-        existingAssignments,
-        trackers
-      );
-
-      if (!validation.isValid) {
-        return { success: false, results: [], errors: validation.errors };
-      }
-
-      // Execute operations
-      for (const assignment of operation.assignments) {
-        let result;
-        
-        switch (operation.operation) {
-          case 'create':
-            result = await this.createAssignment(assignment);
-            break;
-          case 'update':
-            result = await this.updateAssignment(assignment.id, assignment);
-            break;
-          case 'delete':
-            result = await this.deleteAssignment(assignment.id);
-            break;
-          default:
-            result = { success: false, errors: ['Unsupported operation'] };
+        assignment_distribution: {
+          individual: 0,
+          line: 0,
+          video: 0,
+          formation: 0,
+          zone: 0
         }
-        
-        results.push(result);
-      }
-
-      const successful = results.filter(r => r.success).length;
-      const failed = results.length - successful;
-
-      if (failed > 0) {
-        toast.warning(`Batch operation completed: ${successful} successful, ${failed} failed`);
-      } else {
-        toast.success(`Batch operation completed successfully: ${successful} assignments processed`);
-      }
-
-      return { success: failed === 0, results };
-    } catch (error) {
-      console.error('Error executing batch operation:', error);
-      return { success: false, results: [], errors: ['Batch operation failed'] };
-    }
-  }
-
-  /**
-   * Private helper methods
-   */
-  private static async createIndividualAssignment(assignment: Partial<Assignment>) {
-    return await supabase
-      .from('match_tracker_assignments')
-      .insert({
-        match_id: assignment.match_id,
-        tracker_user_id: assignment.tracker_user_id,
-        assigned_player_id: assignment.player_id,
-        player_team_id: assignment.player_team_id,
-        assigned_event_types: assignment.assigned_event_types
-      })
-      .select()
-      .single();
-  }
-
-  private static async createLineAssignment(assignment: Partial<Assignment>) {
-    return await supabase
-      .from('tracker_line_assignments')
-      .insert({
-        match_id: assignment.match_id,
-        tracker_user_id: assignment.tracker_user_id,
-        line_players: assignment.player_ids,
-        tracker_type: assignment.line_type,
-        assigned_event_types: assignment.assigned_event_types
-      })
-      .select()
-      .single();
-  }
-
-  private static async createVideoAssignment(assignment: Partial<Assignment>) {
-    // Video assignments would be handled differently
-    // For now, create a specialized tracker assignment
-    return await supabase
-      .from('match_tracker_assignments')
-      .insert({
-        match_id: assignment.match_id,
-        tracker_user_id: assignment.tracker_user_id,
-        assigned_event_types: assignment.assigned_event_types,
-        player_team_id: 'both' // Video assignments cover both teams
-      })
-      .select()
-      .single();
-  }
-
-  private static async getAssignmentById(assignmentId: string): Promise<Assignment | null> {
-    // Try individual assignments first
-    const { data: individual } = await supabase
-      .from('match_tracker_assignments')
-      .select('*')
-      .eq('id', assignmentId)
-      .single();
-
-    if (individual) {
-      return {
-        id: individual.id,
-        match_id: individual.match_id,
-        tracker_user_id: individual.tracker_user_id,
-        assignment_type: 'individual',
-        status: 'active',
-        priority: 'medium',
-        assigned_event_types: individual.assigned_event_types || [],
-        created_at: individual.created_at,
-        updated_at: individual.updated_at || individual.created_at,
-        created_by: individual.tracker_user_id,
-        player_id: individual.assigned_player_id,
-        player_team_id: individual.player_team_id
       };
     }
-
-    // Try line assignments
-    const { data: line } = await supabase
-      .from('tracker_line_assignments')
-      .select('*')
-      .eq('id', assignmentId)
-      .single();
-
-    if (line) {
-      return {
-        id: line.id,
-        match_id: line.match_id,
-        tracker_user_id: line.tracker_user_id,
-        assignment_type: 'line',
-        status: 'active',
-        priority: 'medium',
-        assigned_event_types: line.assigned_event_types || [],
-        created_at: line.created_at,
-        updated_at: line.updated_at || line.created_at,
-        created_by: line.tracker_user_id,
-        line_type: line.tracker_type,
-        team_id: 'both',
-        player_ids: Array.isArray(line.line_players) ? line.line_players : []
-      };
-    }
-
-    return null;
   }
 
-  private static async getActiveTrackers() {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, email, full_name')
-      .eq('role', 'tracker');
-
-    if (error) throw error;
-
-    return (data || []).map(tracker => ({
-      id: tracker.id,
-      email: tracker.email || '',
-      full_name: tracker.full_name || '',
-      is_active: true,
-      specialty: 'generalist' as const
-    }));
-  }
-
-  private static async logAssignmentAction(
-    assignmentId: string,
-    action: 'created' | 'updated' | 'deleted',
-    assignment: Partial<Assignment>,
-    previousAssignment?: Assignment
-  ) {
+  // Detect assignment conflicts
+  async detectAssignmentConflicts(assignment: Assignment): Promise<AssignmentConflict[]> {
     try {
-      await supabase.from('assignment_logs').insert({
-        assignment_type: assignment.assignment_type || 'individual',
-        assignment_action: action,
-        assignment_details: assignment,
-        previous_assignment_details: previousAssignment,
-        match_id: assignment.match_id,
-        assignee_id: assignment.tracker_user_id,
-        tracker_assignment_id: assignmentId
-      });
+      const existingAssignments = await this.getMatchAssignments(assignment.match_id);
+      return detectConflicts(assignment, existingAssignments);
+    } catch (error) {
+      console.error('Error detecting conflicts:', error);
+      return [];
+    }
+  }
+
+  // Log assignment action
+  private async logAssignmentAction(
+    assignmentId: string,
+    action: 'create' | 'update' | 'delete',
+    performedBy: string,
+    changes?: Record<string, { old: any; new: any }>
+  ): Promise<void> {
+    try {
+      await supabase
+        .from('assignment_logs')
+        .insert({
+          tracker_assignment_id: assignmentId,
+          assignment_action: action,
+          assigner_id: performedBy,
+          assignment_details: changes || {},
+          assignment_type: 'individual'
+        });
     } catch (error) {
       console.error('Error logging assignment action:', error);
     }
   }
 
-  private static async sendTrackerNotification(
-    trackerId: string,
-    matchId: string,
-    assignment: Partial<Assignment>
-  ) {
-    try {
-      const notificationTitle = `New ${assignment.assignment_type} Assignment`;
-      const notificationMessage = `You have been assigned to track ${assignment.assigned_event_types?.join(', ')} events`;
+  // Batch create assignments (simplified for current schema)
+  async batchCreateAssignments(assignments: IndividualAssignment[]): Promise<{
+    success: boolean;
+    created: Assignment[];
+    errors: string[];
+  }> {
+    const created: Assignment[] = [];
+    const errors: string[] = [];
 
-      await supabase.from('notifications').insert({
-        user_id: trackerId,
-        match_id: matchId,
-        type: 'match_assignment',
-        title: notificationTitle,
-        message: notificationMessage,
-        notification_data: {
-          assignment_type: assignment.assignment_type,
-          event_types: assignment.assigned_event_types
-        }
-      });
+    try {
+      // Convert to database format
+      const dbInserts = assignments.map(assignmentToDb);
+
+      const { data, error } = await supabase
+        .from('match_tracker_assignments')
+        .insert(dbInserts)
+        .select();
+
+      if (error) {
+        errors.push(`Batch create error: ${error.message}`);
+      } else if (data) {
+        created.push(...data.map(dbToAssignment));
+      }
+
+      return {
+        success: errors.length === 0,
+        created,
+        errors
+      };
     } catch (error) {
-      console.error('Error sending tracker notification:', error);
+      console.error('Error in batch create:', error);
+      return {
+        success: false,
+        created,
+        errors: [`Batch operation failed: ${error}`]
+      };
+    }
+  }
+
+  // Get tracker assignments
+  async getTrackerAssignments(trackerId: string, matchId?: string): Promise<Assignment[]> {
+    try {
+      let query = supabase
+        .from('match_tracker_assignments')
+        .select('*')
+        .eq('tracker_user_id', trackerId);
+
+      if (matchId) {
+        query = query.eq('match_id', matchId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      return data ? data.map(dbToAssignment) : [];
+    } catch (error) {
+      console.error('Error fetching tracker assignments:', error);
+      return [];
+    }
+  }
+
+  // Get available trackers
+  async getAvailableTrackers(): Promise<TrackerUser[]> {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, role')
+        .eq('role', 'tracker');
+
+      if (error) throw error;
+
+      return data?.map(profile => ({
+        id: profile.id,
+        email: profile.email || '',
+        full_name: profile.full_name || '',
+        specialty: 'generalist',
+        is_active: true
+      })) || [];
+    } catch (error) {
+      console.error('Error fetching trackers:', error);
+      return [];
     }
   }
 }
+
+// Export singleton instance
+export const assignmentService = new AssignmentService();

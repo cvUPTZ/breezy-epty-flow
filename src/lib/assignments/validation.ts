@@ -333,3 +333,50 @@ export class AssignmentValidator {
     };
   }
 }
+
+// Export functions for backward compatibility
+export function validateAssignment(assignment: Assignment): { isValid: boolean; errors: string[] } {
+  const errors = AssignmentValidator.validateAssignment(assignment);
+  return { isValid: errors.length === 0, errors };
+}
+
+export function detectConflicts(assignment: Assignment, existingAssignments: Assignment[]): AssignmentConflict[] {
+  // Simple conflict detection implementation
+  const conflicts: AssignmentConflict[] = [];
+  
+  for (const existing of existingAssignments) {
+    if (existing.id === assignment.id) continue;
+    
+    // Check for tracker overload
+    if (existing.tracker_user_id === assignment.tracker_user_id) {
+      conflicts.push({
+        type: 'tracker_overload',
+        severity: 'medium',
+        description: `Tracker ${assignment.tracker_user_id} already has assignments`,
+        conflicting_assignments: [existing.id, assignment.id],
+        suggested_resolution: 'Consider assigning to a different tracker'
+      });
+    }
+    
+    // Check for player overlap in individual assignments
+    if (assignment.assignment_type === 'individual' && existing.assignment_type === 'individual') {
+      const assignmentPlayer = (assignment as any).player_id;
+      const existingPlayer = (existing as any).player_id;
+      
+      if (assignmentPlayer && existingPlayer && assignmentPlayer === existingPlayer) {
+        conflicts.push({
+          type: 'player_overlap',
+          severity: 'high',
+          description: `Player ${assignmentPlayer} is already assigned to another tracker`,
+          conflicting_assignments: [existing.id, assignment.id],
+          suggested_resolution: 'Remove duplicate assignment'
+        });
+      }
+    }
+  }
+  
+  return conflicts;
+}
+
+// Export singleton instances  
+export const assignmentValidator = new AssignmentValidator();

@@ -80,7 +80,7 @@ export const TRACKER_SPECIALTIES: Record<TrackerSpecialty, {
   goalkeeper: {
     label: 'Goalkeeper Specialist',
     description: 'Specialized in goalkeeper actions and play',
-    preferredEvents: EVENT_CATEGORIES.goalkeeper.events,
+    preferredEvents: [...EVENT_CATEGORIES.goalkeeper.events],
     color: 'text-yellow-600',
     icon: '🥅',
     maxConcurrentAssignments: 2
