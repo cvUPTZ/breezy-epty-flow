@@ -23,7 +23,7 @@ const Auth = () => {
 
   // Redirect if already logged in
   if (user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   const handleLogin = async (e: FormEvent) => {
