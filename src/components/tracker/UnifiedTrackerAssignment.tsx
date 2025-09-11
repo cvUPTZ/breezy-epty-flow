@@ -497,11 +497,22 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     </CardHeader>
     <CardContent>
       <div className="space-y-4">
+        // Enhanced Current Assignments section with player display
+{localAssignments.length > 0 && (
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <Users className="h-5 w-5" />
+        Current Assignments
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="space-y-4">
         {localAssignments.map(assignment => {
           // Get player details for this assignment
           const assignedPlayers = assignment.player_ids
             .map(playerId => allPlayers.find(player => player.id === playerId))
-            .filter(Boolean);
+            .filter((player): player is Player => Boolean(player));
 
           return (
             <div key={assignment.id} className="p-4 bg-gray-50 rounded-lg space-y-3">
