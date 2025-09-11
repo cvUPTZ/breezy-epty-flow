@@ -486,48 +486,94 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   return (
     <div className="space-y-6">
       {/* Current Assignments */}
-      {localAssignments.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Current Assignments
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {localAssignments.map(assignment => (
-                <div key={assignment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <span className="font-medium">{assignment.tracker_name}</span>
-                    <div className="text-sm text-gray-600">{assignment.tracker_email}</div>
-                    <div className="flex gap-1 mt-1">
-                      {assignment.assigned_event_types.slice(0, 3).map(eventType => (
-                        <Badge key={eventType} variant="outline" className="text-xs">
-                          {eventType}
-                        </Badge>
-                      ))}
-                      {assignment.assigned_event_types.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{assignment.assigned_event_types.length - 3}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteAssignment(assignment.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+     // Enhanced Current Assignments section with player display
+{localAssignments.length > 0 && (
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <Users className="h-5 w-5" />
+        Current Assignments
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="space-y-4">
+        {localAssignments.map(assignment => {
+          // Get player details for this assignment
+          const assignedPlayers = assignment.player_ids
+            .map(playerId => allPlayers.find(player => player.id === playerId))
+            .filter(Boolean);
 
+          return (
+            <div key={assignment.id} className="p-4 bg-gray-50 rounded-lg space-y-3">
+              {/* Tracker Info */}
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="font-medium text-lg">{assignment.tracker_name}</span>
+                  <div className="text-sm text-gray-600">{assignment.tracker_email}</div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDeleteAssignment(assignment.id)}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Assigned Players */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-2">
+                  Assigned Players ({assignedPlayers.length})
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {assignedPlayers.map(player => (
+                    <div
+                      key={player.id}
+                      className="p-2 bg-white border border-gray-200 rounded text-center"
+                    >
+                      <div className="text-xs font-semibold text-blue-600">
+                        #{player.jersey_number}
+                      </div>
+                      <div className="text-xs text-gray-800 truncate font-medium">
+                        {player.player_name}
+                      </div>
+                      {player.position && (
+                        <div className="text-xs text-gray-500">{player.position}</div>
+                      )}
+                      <div className="text-xs text-gray-400">
+                        {player.team === 'home' ? 'Home' : 'Away'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Event Types */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-2">
+                  Event Types ({assignment.assigned_event_types.length})
+                </label>
+                <div className="flex flex-wrap gap-1">
+                  {assignment.assigned_event_types.slice(0, 6).map(eventType => (
+                    <Badge key={eventType} variant="outline" className="text-xs">
+                      {eventType}
+                    </Badge>
+                  ))}
+                  {assignment.assigned_event_types.length > 6 && (
+                    <Badge variant="outline" className="text-xs bg-gray-100">
+                      +{assignment.assigned_event_types.length - 6} more
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </CardContent>
+  </Card>
+)}
       {/* Create Assignment */}
       <Card>
         <CardHeader>
