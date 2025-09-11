@@ -180,13 +180,19 @@ const Admin: React.FC = () => {
 
   // Mock data for components that need it
   const mockPlayers = [
-    { id: 1, jersey_number: 10, player_name: 'Player 1', team: 'home' as const },
-    { id: 2, jersey_number: 11, player_name: 'Player 2', team: 'home' as const },
+    { id: 1, jersey_number: 10, player_name: 'Lionel Messi', team: 'home' as const, position: 'RW' },
+    { id: 2, jersey_number: 11, player_name: 'Angel Di Maria', team: 'home' as const, position: 'LW' },
+    { id: 3, jersey_number: 9, player_name: 'Julián Álvarez', team: 'home' as const, position: 'ST' },
+    { id: 4, jersey_number: 22, player_name: 'Lautaro Martínez', team: 'home' as const, position: 'ST' },
+    { id: 5, jersey_number: 8, player_name: 'Enzo Fernández', team: 'home' as const, position: 'CM' },
   ];
 
   const mockAwayPlayers = [
-    { id: 3, jersey_number: 9, player_name: 'Player 3', team: 'away' as const },
-    { id: 4, jersey_number: 8, player_name: 'Player 4', team: 'away' as const },
+    { id: 6, jersey_number: 10, player_name: 'Kylian Mbappé', team: 'away' as const, position: 'LW' },
+    { id: 7, jersey_number: 7, player_name: 'Ousmane Dembélé', team: 'away' as const, position: 'RW' },
+    { id: 8, jersey_number: 9, player_name: 'Randal Kolo Muani', team: 'away' as const, position: 'ST' },
+    { id: 9, jersey_number: 6, player_name: 'Warren Zaïre-Emery', team: 'away' as const, position: 'CM' },
+    { id: 10, jersey_number: 8, player_name: 'Fabián Ruiz', team: 'away' as const, position: 'CM' },
   ];
 
   useEffect(() => {
@@ -443,6 +449,11 @@ const Admin: React.FC = () => {
         return (
           <div className="space-y-6">
             <PlayerAssignments />
+            <SpecializedTrackerAssignment 
+              matchId={liveMatches[0]?.id || 'default-match-id'}
+              homeTeamPlayers={mockPlayers}
+              awayTeamPlayers={mockAwayPlayers}
+            />
             <AbsenceSummaryDashboard 
               totalTrackers={systemStats.activeTrackers}
               activeTrackers={systemStats.activeTrackers}
