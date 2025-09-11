@@ -24,7 +24,7 @@ const SpecializedAssignmentForm: React.FC<SpecializedAssignmentFormProps> = ({
   onCreateAssignment
 }) => {
   const [selectedTracker, setSelectedTracker] = useState<string>('');
-  const [selectedPlayer, setSelectedPlayer] = useState<string>('');
+  const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<'home' | 'away'>('home');
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
 
@@ -40,6 +40,14 @@ const SpecializedAssignmentForm: React.FC<SpecializedAssignmentFormProps> = ({
     );
   };
 
+  const togglePlayer = (playerId: number) => {
+    setSelectedPlayers(prev =>
+      prev.includes(playerId)
+        ? prev.filter(id => id !== playerId)
+        : [...prev, playerId]
+    );
+  };
+
   const getAssignedTrackerForEvent = (playerId: number, teamId: 'home' | 'away', eventType: string): string | null => {
     const assignment = assignments.find(a =>
       a.player_id === playerId &&
@@ -50,16 +58,21 @@ const SpecializedAssignmentForm: React.FC<SpecializedAssignmentFormProps> = ({
   };
 
   const handleCreateAssignment = async () => {
-    if (!selectedTracker || !selectedPlayer || selectedEventTypes.length === 0) {
+    if (!selectedTracker || selectedPlayers.length === 0 || selectedEventTypes.length === 0) {
       return;
     }
 
-    const playerId = parseInt(selectedPlayer);
+    // Create assignments for each selected player
+    const promises = selectedPlayers.map(playerId => 
+      onCreateAssignment(selectedTracker, playerId, selectedTeam, selectedEventTypes)
+    );
 
-    const success = await onCreateAssignment(selectedTracker, playerId, selectedTeam, selectedEventTypes);
-    if (success) {
+    const results = await Promise.all(promises);
+    const allSuccessful = results.every(success => success);
+
+    if (allSuccessful) {
       setSelectedTracker('');
-      setSelectedPlayer('');
+      setSelectedPlayers([]);
       setSelectedEventTypes([]);
     }
   };
@@ -76,7 +89,7 @@ const SpecializedAssignmentForm: React.FC<SpecializedAssignmentFormProps> = ({
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           <div>
             <label className="block text-sm font-medium mb-2">Tracker</label>
             <Select value={selectedTracker} onValueChange={setSelectedTracker}>
@@ -106,29 +119,45 @@ const SpecializedAssignmentForm: React.FC<SpecializedAssignmentFormProps> = ({
             </Select>
           </div>
           
-          <div>
-            <label className="block text-sm font-medium mb-2">Player</label>
-            <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select player" />
-              </SelectTrigger>
-              <SelectContent>
-                {getTeamPlayers().map(player => (
-                  <SelectItem key={player.id} value={player.id.toString()}>
-                    #{player.jersey_number} {player.player_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="md:col-span-3">
+            <label className="block text-sm font-medium mb-2">
+              Players ({selectedPlayers.length} selected)
+            </label>
+            <div className="grid grid-cols-2 gap-2 border rounded-md p-2 max-h-60 overflow-y-auto">
+              {getTeamPlayers().map(player => {
+                const isSelected = selectedPlayers.includes(player.id);
+                return (
+                  <div
+                    key={player.id}
+                    onClick={() => togglePlayer(player.id)}
+                    className={`p-3 border rounded cursor-pointer transition-colors ${
+                      isSelected
+                        ? 'bg-blue-100 border-blue-300'
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="text-lg font-bold">#{player.jersey_number}</div>
+                    <div className="text-sm text-gray-600 truncate">
+                      {player.player_name}
+                    </div>
+                    <div className="text-xs text-blue-600 font-medium">
+                      {player.position}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
           
           <div className="md:col-span-2">
             <label className="block text-sm font-medium mb-2">Event Types</label>
             <div className="grid grid-cols-3 gap-2 border rounded-md p-2 min-h-[100px]">
               {EVENT_TYPES.map(eventType => {
-                const assignedTracker = selectedPlayer ? getAssignedTrackerForEvent(parseInt(selectedPlayer), selectedTeam, eventType) : null;
                 const isSelected = selectedEventTypes.includes(eventType);
-                const isDisabled = assignedTracker !== null;
+                const hasConflicts = selectedPlayers.some(playerId => 
+                  getAssignedTrackerForEvent(playerId, selectedTeam, eventType) !== null
+                );
+                const isDisabled = hasConflicts;
 
                 return (
                   <div
@@ -143,7 +172,7 @@ const SpecializedAssignmentForm: React.FC<SpecializedAssignmentFormProps> = ({
                     }`}
                   >
                     {eventType.replace('_', ' ')}
-                    {assignedTracker && <span className="block text-red-500 truncate">({assignedTracker})</span>}
+                    {isDisabled && <span className="block text-red-500 text-xs">Conflict</span>}
                   </div>
                 );
               })}
@@ -153,10 +182,10 @@ const SpecializedAssignmentForm: React.FC<SpecializedAssignmentFormProps> = ({
           <div className="flex items-end">
             <Button
               onClick={handleCreateAssignment}
-              disabled={loading || !selectedTracker || !selectedPlayer || selectedEventTypes.length === 0}
+              disabled={loading || !selectedTracker || selectedPlayers.length === 0 || selectedEventTypes.length === 0}
               className="w-full"
             >
-              Assign
+              Assign ({selectedPlayers.length} players)
             </Button>
           </div>
         </div>
