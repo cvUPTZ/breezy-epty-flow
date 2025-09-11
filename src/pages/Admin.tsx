@@ -166,6 +166,7 @@ const Admin: React.FC = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('overview');
   const [liveMatches, setLiveMatches] = useState<any[]>([]);
+  const [allMatches, setAllMatches] = useState<any[]>([]);
   const [videoUrl, setVideoUrl] = useState('');
   const [mockTrackers] = useState([
     { user_id: '1', email: 'tracker1@example.com', status: 'active' as const, last_activity: Date.now(), battery_level: 85 },
@@ -208,6 +209,7 @@ const Admin: React.FC = () => {
     }
 
     fetchLiveMatches();
+    fetchAllMatches();
     fetchSystemStats();
   }, [user, userRole, navigate]);
 
@@ -223,6 +225,21 @@ const Admin: React.FC = () => {
     } catch (error: any) {
       console.error('Error fetching live matches:', error);
       toast.error('Failed to fetch live matches');
+    }
+  };
+
+  const fetchAllMatches = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('matches')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAllMatches(data || []);
+    } catch (error: any) {
+      console.error('Error fetching matches:', error);
+      toast.error('Failed to fetch matches');
     }
   };
 
@@ -355,7 +372,7 @@ const Admin: React.FC = () => {
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent>
-                <QuickPlanningActions matchId={liveMatches[0]?.id || null} />
+                <QuickPlanningActions matchId={allMatches[0]?.id || null} />
               </CardContent>
             </Card>
           </div>
@@ -374,11 +391,11 @@ const Admin: React.FC = () => {
         return (
           <div className="space-y-6">
             <UnifiedTrackerAssignment 
-              matchId={liveMatches[0]?.id || 'default-match-id'}
+              matchId={allMatches[0]?.id || 'default-match-id'}
               homeTeamPlayers={mockPlayers}
               awayTeamPlayers={mockAwayPlayers}
             />
-            <QuickPlanningActions matchId={liveMatches[0]?.id || null} />
+            <QuickPlanningActions matchId={allMatches[0]?.id || null} />
           </div>
         );
 
@@ -450,9 +467,21 @@ const Admin: React.FC = () => {
           <div className="space-y-6">
             <PlayerAssignments />
             <SpecializedTrackerAssignment 
-              matchId={liveMatches[0]?.id || 'default-match-id'}
-              homeTeamPlayers={mockPlayers}
-              awayTeamPlayers={mockAwayPlayers}
+              matchId={allMatches[0]?.id || 'default-match-id'}
+              homeTeamPlayers={allMatches[0]?.home_team_players?.map((p: any, index: number) => ({
+                id: p.id || index + 1,
+                jersey_number: p.number || p.jersey_number,
+                player_name: p.name || p.player_name,
+                team: 'home' as const,
+                position: p.position
+              })) || mockPlayers}
+              awayTeamPlayers={allMatches[0]?.away_team_players?.map((p: any, index: number) => ({
+                id: p.id || index + 100,
+                jersey_number: p.number || p.jersey_number,
+                player_name: p.name || p.player_name,
+                team: 'away' as const,
+                position: p.position
+              })) || mockAwayPlayers}
             />
             <AbsenceSummaryDashboard 
               totalTrackers={systemStats.activeTrackers}
@@ -516,7 +545,7 @@ const Admin: React.FC = () => {
               <CardContent>
                 <TrackerNotificationSystem 
                   trackers={mockTrackers}
-                  matchId={liveMatches[0]?.id || 'default-match-id'}
+                  matchId={allMatches[0]?.id || 'default-match-id'}
                 />
               </CardContent>
             </Card>
