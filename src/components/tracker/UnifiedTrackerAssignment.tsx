@@ -584,7 +584,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       </div>
     </CardContent>
   </Card>
-)}
+
       {/* Create Assignment */}
       <Card>
         <CardHeader>
