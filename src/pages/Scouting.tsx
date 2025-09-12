@@ -14,6 +14,7 @@ import MarketIntelligence from '@/components/scouting/MarketIntelligence';
 import PerformanceAnalysis from '@/components/scouting/PerformanceAnalysis';
 import ScoutingDashboard from '@/components/scouting/ScoutingDashboard';
 import PlayerScoutReport from '@/components/scouting/PlayerScoutReport';
+import AlgerianClubs from '@/components/scouting/AlgerianClubs';
 
 const Scouting: React.FC = () => {
   // const menuItems = useMenuItems();
@@ -69,6 +70,13 @@ const Scouting: React.FC = () => {
       description: 'Create and manage detailed scout reports',
       icon: FileText,
       color: 'bg-pink-500'
+    },
+    {
+      id: 'algerian-clubs',
+      title: 'Algerian Clubs',
+      description: 'Browse Algerian league clubs and players',
+      icon: Globe,
+      color: 'bg-teal-500'
     }
   ];
 
@@ -88,6 +96,8 @@ const Scouting: React.FC = () => {
         return <PerformanceAnalysis />;
       case 'scout-reports':
         return <PlayerScoutReport />;
+      case 'algerian-clubs':
+        return <AlgerianClubs />;
       default:
         return <ScoutingDashboard />;
     }

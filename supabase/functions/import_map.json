@@ -1,6 +1,7 @@
 {
   "imports": {
     "@google/generative-ai": "https://esm.sh/@google/generative-ai?dts",
-    "https://deno.land/std@0.168.0/http/server.ts": "https://deno.land/std@0.168.0/http/server.ts"
+    "https://deno.land/std@0.168.0/http/server.ts": "https://deno.land/std@0.168.0/http/server.ts",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js?dts"
   }
 }
