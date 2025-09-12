@@ -20,6 +20,12 @@ export class AssignmentService {
     eventTypes: string[]
   ): Promise<{ success: boolean; assignment?: Assignment; errors?: string[] }> {
     try {
+      // Get current user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        return { success: false, errors: ['Authentication required'] };
+      }
+
       const assignment: IndividualAssignment = {
         id: crypto.randomUUID(),
         match_id: matchId,
@@ -30,7 +36,7 @@ export class AssignmentService {
         assigned_event_types: eventTypes,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        created_by: trackerId,
+        created_by: user.id, // Use current authenticated user
         player_id: playerId,
         player_team_id: teamId,
         notes: undefined,
@@ -206,7 +212,11 @@ export class AssignmentService {
 
       if (error) throw error;
       
-      await this.logAssignmentAction(assignmentId, 'delete', 'system');
+      // Get current user for logging
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await this.logAssignmentAction(assignmentId, 'delete', user.id);
+      }
       return { success: true };
     } catch (error) {
       console.error('Error deleting assignment:', error);
@@ -297,11 +307,13 @@ export class AssignmentService {
           tracker_assignment_id: assignmentId,
           assignment_action: action,
           assigner_id: performedBy,
+          assignee_id: performedBy, // Set assignee to same as assigner for now
           assignment_details: changes || {},
           assignment_type: 'individual'
         });
     } catch (error) {
       console.error('Error logging assignment action:', error);
+      // Don't throw error for logging failures
     }
   }
 
