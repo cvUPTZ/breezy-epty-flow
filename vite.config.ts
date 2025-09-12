@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename);
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::", // Listen on all IPv6 and IPv4 addresses. '0.0.0.0' is also common for IPv4.
+    host: "0.0.0.0", // Listen on all IPv6 and IPv4 addresses. '0.0.0.0' is also common for IPv4.
     port: 8080,
     // allowedHosts should be an array of hostnames or the string 'all'.
     // It should not include the protocol (https://).

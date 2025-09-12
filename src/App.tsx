@@ -38,6 +38,7 @@ import NotFound from './pages/NotFound';
 
 import VideoSetupPage from './pages/Admin/VideoSetupPage';
 import Scouting from './pages/Scouting';
+import ClubDetails from './components/scouting/ClubDetails';
 
 const queryClient = new QueryClient();
 
@@ -239,6 +240,13 @@ const AppContent = () => {
           >
             <Scouting />
           </RequireAuth>
+        } />
+        <Route path="/scouting/club/:clubId" element={
+            <RequireAuth
+                requiredRoles={['admin', 'manager']}
+            >
+                <ClubDetails />
+            </RequireAuth>
         } />
 
         {/* Communication Routes */}
