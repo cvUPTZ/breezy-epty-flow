@@ -152,7 +152,7 @@ export const useMatchState = (matchId: string | undefined) => {
           .from('matches')
           .select('home_team_players, away_team_players')
           .eq('id', matchId)
-          .single();
+          .maybeSingle();
 
         if (matchError) {
           throw new Error(`Error fetching match details: ${matchError.message}`);

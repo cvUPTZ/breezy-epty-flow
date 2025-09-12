@@ -123,13 +123,22 @@ const MatchAnalysisV2: React.FC = () => {
         .from('matches')
         .select('home_team_name, away_team_name, home_team_formation, away_team_formation, home_team_players, away_team_players')
         .eq('id', matchId)
-        .single();
+        .maybeSingle();
 
       if (matchError) {
         console.error("Error fetching match details:", matchError);
         toast({
           title: "Error",
           description: "Failed to fetch match details",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!matchData) {
+        toast({
+          title: "Match Not Found",
+          description: "The requested match could not be found",
           variant: "destructive",
         });
         return;

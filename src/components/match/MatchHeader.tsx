@@ -197,7 +197,7 @@ const MatchHeader: React.FC<MatchHeaderProps> = ({
           .from('matches')
           .select('home_team_flag_url, away_team_flag_url')
           .eq('id', matchId)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error('Error fetching flag URLs:', error);
