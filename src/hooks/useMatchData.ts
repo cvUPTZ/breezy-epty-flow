@@ -63,7 +63,7 @@ const useMatchData = (matchId: string | undefined) => {
         .from('matches')
         .select('*')
         .eq('id', matchId)
-        .single();
+        .maybeSingle();
 
       if (matchError) {
         console.error('Error fetching match data:', matchError);
