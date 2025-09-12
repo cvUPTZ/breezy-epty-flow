@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAssignmentLogs, AssignmentLog } from '@/hooks/useAssignmentLogs';
 import { formatDistanceToNow } from 'date-fns';
-import { Search, Filter, Eye, User, Clock, Tag, Target } from 'lucide-react';
+import { Search, Filter, Eye, User, Clock, Tag, Target, Users } from 'lucide-react';
 
 interface AssignmentLogsViewerProps {
   matchId?: string;
@@ -26,7 +26,9 @@ export const AssignmentLogsViewer: React.FC<AssignmentLogsViewerProps> = ({
     const matchesSearch = !searchTerm || 
       log.tracker_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.match_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.tracker_assignment?.player_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.tracker_assignment?.player_names?.some(name => 
+        name.toLowerCase().includes(searchTerm.toLowerCase())
+      ) ||
       log.tracker_assignment?.team_name?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesAction = filterAction === 'all' || log.assignment_action === filterAction;
@@ -100,17 +102,56 @@ export const AssignmentLogsViewer: React.FC<AssignmentLogsViewerProps> = ({
           </>
         )}
 
-        {/* Individual/Line Assignment Details */}
-        {log.tracker_assignment.player_name && (
+        {/* Player Assignment Details */}
+        {log.tracker_assignment.player_names && log.tracker_assignment.player_names.length > 0 && (
           <div className="text-sm">
-            <span className="font-medium text-primary">Player:</span> {log.tracker_assignment.player_name}
+            <span className="font-medium text-primary flex items-center gap-1">
+              {log.tracker_assignment.player_names.length > 1 ? (
+                <>
+                  <Users className="h-3 w-3" />
+                  Players ({log.tracker_assignment.player_names.length}):
+                </>
+              ) : (
+                <>
+                  <User className="h-3 w-3" />
+                  Player:
+                </>
+              )}
+            </span>
+            <div className="mt-1">
+              {log.tracker_assignment.player_names.length <= 3 ? (
+                // Show all names if 3 or fewer
+                <div className="flex flex-wrap gap-1">
+                  {log.tracker_assignment.player_names.map((name, idx) => (
+                    <Badge key={idx} variant="outline" className="text-xs">
+                      {name}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                // Show first 3 and count for more
+                <div className="flex flex-wrap gap-1">
+                  {log.tracker_assignment.player_names.slice(0, 3).map((name, idx) => (
+                    <Badge key={idx} variant="outline" className="text-xs">
+                      {name}
+                    </Badge>
+                  ))}
+                  <Badge variant="secondary" className="text-xs">
+                    +{log.tracker_assignment.player_names.length - 3} more
+                  </Badge>
+                </div>
+              )}
+            </div>
           </div>
         )}
+
         {log.tracker_assignment.team_name && (
           <div className="text-sm">
-            <span className="font-medium text-primary">Team:</span> {log.tracker_assignment.team_name} {log.tracker_assignment.player_team_id && `(${log.tracker_assignment.player_team_id})`}
+            <span className="font-medium text-primary">Team:</span> {log.tracker_assignment.team_name}
+            {log.tracker_assignment.player_team_id && ` (${log.tracker_assignment.player_team_id})`}
           </div>
         )}
+
         {log.tracker_assignment.assigned_event_types && log.tracker_assignment.assigned_event_types.length > 0 && (
           <div className="text-sm">
             <span className="font-medium text-primary">Event Types:</span>
@@ -123,15 +164,37 @@ export const AssignmentLogsViewer: React.FC<AssignmentLogsViewerProps> = ({
             </div>
           </div>
         )}
-        {log.assignment_type === 'line' && log.tracker_assignment.tracker_type && (
-          <div className="text-sm">
-            <span className="font-medium text-primary">Tracker Type:</span> {log.tracker_assignment.tracker_type}
-          </div>
+
+        {/* Line Assignment Specific Details */}
+        {log.assignment_type === 'line' && (
+          <>
+            {log.tracker_assignment.tracker_type && (
+              <div className="text-sm">
+                <span className="font-medium text-primary">Tracker Type:</span> {log.tracker_assignment.tracker_type}
+              </div>
+            )}
+            {log.tracker_assignment.line_players_count && (
+              <div className="text-sm">
+                <span className="font-medium text-primary">Players Count:</span> {log.tracker_assignment.line_players_count}
+              </div>
+            )}
+          </>
         )}
-        {log.assignment_type === 'line' && log.tracker_assignment.line_players_count && (
-          <div className="text-sm">
-            <span className="font-medium text-primary">Players Count:</span> {log.tracker_assignment.line_players_count}
-          </div>
+
+        {/* Array Details for Debugging (only in development) */}
+        {process.env.NODE_ENV === 'development' && (
+          <>
+            {log.tracker_assignment.assigned_player_ids && log.tracker_assignment.assigned_player_ids.length > 0 && (
+              <div className="text-xs text-muted-foreground">
+                <span className="font-medium">Assigned Player IDs:</span> [{log.tracker_assignment.assigned_player_ids.join(', ')}]
+              </div>
+            )}
+            {log.tracker_assignment.player_ids && log.tracker_assignment.player_ids.length > 0 && (
+              <div className="text-xs text-muted-foreground">
+                <span className="font-medium">Player IDs:</span> [{log.tracker_assignment.player_ids.join(', ')}]
+              </div>
+            )}
+          </>
         )}
       </div>
     );

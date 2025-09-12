@@ -13,11 +13,11 @@ export interface AssignmentLog {
   match_name?: string;
   // Enhanced tracker assignment data
   tracker_assignment?: {
-    player_id?: number;
-    assigned_player_id?: number;
+    player_ids?: number[];
+    assigned_player_ids?: number[];
     player_team_id?: string;
     assigned_event_types?: string[];
-    player_name?: string;
+    player_names?: string[];
     team_name?: string;
     tracker_type?: string;
     line_players_count?: number;
@@ -58,11 +58,29 @@ export const useAssignmentLogs = (matchId?: string) => {
       } else if (individualAssignments) {
         const processedIndividual = individualAssignments.map((assignment: any) => {
           const match = assignment.matches;
-          let playerName = 'Unknown Player';
+          let playerNames: string[] = [];
           let teamName = '';
 
-          if (match && assignment.assigned_player_id) {
-            // Get player name from match data
+          if (match && assignment.assigned_player_ids && Array.isArray(assignment.assigned_player_ids)) {
+            // Get player names from match data for all assigned players
+            const players = [
+              ...((match.home_team_players || []) as any[]).map((p: any) => ({...p, team: 'home', teamName: match.home_team_name})),
+              ...((match.away_team_players || []) as any[]).map((p: any) => ({...p, team: 'away', teamName: match.away_team_name}))
+            ];
+            
+            playerNames = assignment.assigned_player_ids.map((playerId: number) => {
+              const player = players.find(p => p.number === playerId || p.id === playerId);
+              if (player) {
+                // Set team name from the first matched player
+                if (!teamName) {
+                  teamName = player.teamName;
+                }
+                return player.player_name || player.name || `Player #${playerId}`;
+              }
+              return `Player #${playerId}`;
+            });
+          } else if (match && assignment.assigned_player_id) {
+            // Backward compatibility for single player assignments
             const players = [
               ...((match.home_team_players || []) as any[]).map((p: any) => ({...p, team: 'home', teamName: match.home_team_name})),
               ...((match.away_team_players || []) as any[]).map((p: any) => ({...p, team: 'away', teamName: match.away_team_name}))
@@ -70,8 +88,10 @@ export const useAssignmentLogs = (matchId?: string) => {
             
             const player = players.find(p => p.number === assignment.assigned_player_id || p.id === assignment.assigned_player_id);
             if (player) {
-              playerName = player.player_name || player.name || 'Unknown Player';
+              playerNames = [player.player_name || player.name || 'Unknown Player'];
               teamName = player.teamName;
+            } else {
+              playerNames = [`Player #${assignment.assigned_player_id}`];
             }
           }
 
@@ -85,11 +105,11 @@ export const useAssignmentLogs = (matchId?: string) => {
             match_name: match?.name || 'Unknown Match',
             assignment_type: 'individual',
             tracker_assignment: {
-              player_id: assignment.player_id,
-              assigned_player_id: assignment.assigned_player_id,
+              player_ids: assignment.player_ids || (assignment.player_id ? [assignment.player_id] : []),
+              assigned_player_ids: assignment.assigned_player_ids || (assignment.assigned_player_id ? [assignment.assigned_player_id] : []),
               player_team_id: assignment.player_team_id,
               assigned_event_types: assignment.assigned_event_types,
-              player_name: playerName,
+              player_names: playerNames,
               team_name: teamName
             }
           };
@@ -149,7 +169,7 @@ export const useAssignmentLogs = (matchId?: string) => {
             assignment_type: 'line',
             tracker_assignment: {
               assigned_event_types: assignment.assigned_event_types,
-              player_name: playerNames.length > 0 ? playerNames.join(', ') : 'No players assigned',
+              player_names: playerNames.length > 0 ? playerNames : ['No players assigned'],
               team_name: teamName,
               tracker_type: assignment.tracker_type,
               line_players_count: assignment.line_players?.length || 0
@@ -195,7 +215,8 @@ export const useAssignmentLogs = (matchId?: string) => {
               assigned_event_types: assignment.assigned_event_types,
               video_url: videoSettings?.video_url,
               video_title: videoSettings?.video_title,
-              status: assignment.status
+              status: assignment.status,
+              player_names: [] // Video assignments don't have specific players
             }
           };
         });
@@ -216,8 +237,6 @@ export const useAssignmentLogs = (matchId?: string) => {
   useEffect(() => {
     fetchLogs();
   }, [matchId]);
-
-  // No longer needed - logs are derived from match_tracker_assignments table
 
   return {
     logs,
