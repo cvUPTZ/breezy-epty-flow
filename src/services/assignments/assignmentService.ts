@@ -65,9 +65,10 @@ export class AssignmentService {
         .from('match_tracker_assignments')
         .insert(dbInsert)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) throw new Error('Failed to create assignment');
 
       // Show warnings for non-critical conflicts
       const warnings = conflicts.filter(c => c.severity !== 'high');
@@ -154,7 +155,7 @@ export class AssignmentService {
         .from('match_tracker_assignments')
         .select('*')
         .eq('id', assignmentId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data ? dbToAssignment(data) : undefined;
@@ -192,9 +193,10 @@ export class AssignmentService {
         .update(dbUpdate)
         .eq('id', assignmentId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) return { success: false, errors: ['Failed to update assignment'] };
       return { success: true, assignment: dbToAssignment(data) };
     } catch (error) {
       console.error('Error updating assignment:', error);
