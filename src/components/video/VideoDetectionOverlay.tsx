@@ -1,14 +1,14 @@
 
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { PlayerBallDetectionPanel } from '../detection/PlayerBallDetectionPanel';
-import { DetectionResult } from '@/services/pythonDetectionService';
+import { GPUDetectionPanel } from '../detection/GPUDetectionPanel';
+import { GPUDetectionResult } from '@/services/gpuDetectionService';
 
 interface VideoDetectionOverlayProps {
   videoId: string;
   isVisible: boolean;
   onClose: () => void;
-  onDetectionResults: (results: DetectionResult[]) => void;
+  onDetectionResults: (results: GPUDetectionResult[]) => void;
   isFullscreen: boolean;
 }
 
@@ -27,7 +27,7 @@ export const VideoDetectionOverlay: React.FC<VideoDetectionOverlayProps> = ({
       style={{ zIndex: isFullscreen ? 2147483647 : 50 }}
     >
       <div className="p-3 border-b border-white/10 bg-black/30 flex justify-between items-center">
-        <h3 className="font-medium text-white text-sm">AI Detection</h3>
+        <h3 className="font-medium text-white text-sm">GPU Detection</h3>
         <button
           onClick={onClose}
           className="text-white/70 hover:text-white text-lg font-bold w-6 h-6 flex items-center justify-center rounded hover:bg-white/10"
@@ -36,8 +36,8 @@ export const VideoDetectionOverlay: React.FC<VideoDetectionOverlayProps> = ({
         </button>
       </div>
       <div className="p-3">
-        <PlayerBallDetectionPanel
-          videoId={videoId}
+        <GPUDetectionPanel
+          videoUrl={`https://www.youtube.com/watch?v=${videoId}`}
           onDetectionResults={onDetectionResults}
         />
       </div>
