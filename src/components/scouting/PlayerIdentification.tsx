@@ -1,17 +1,54 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Star, TrendingUp, Calendar, MapPin, Flag } from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle
+} from '@/components/ui/card';
+import {
+  Button
+} from '@/components/ui/button';
+import {
+  Input
+} from '@/components/ui/input';
+import {
+  Label
+} from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import {
+  Badge
+} from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog';
+import {
+  Plus,
+  Search,
+  Star,
+  TrendingUp,
+  Calendar,
+  Flag
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 
-// Updated Player interface to be more comprehensive, matching the scraper output
+interface ScoutReport {
+  id: string;
+  performance_rating: number;
+  recommendation: string;
+}
+
 interface Player {
   id: string;
   lfp_id?: string;
@@ -26,50 +63,53 @@ interface Player {
   photo_url: string | null;
   birth_place: string | null;
   created_at: string | null;
-  scout_reports?: any[];
+  created_by?: string | null;
+  updated_at?: string | null;
+  scout_reports?: ScoutReport[];
 }
 
 const PlayerIdentification: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
-  // ... (rest of your state variables remain the same)
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [positionFilter, setPositionFilter] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
-  
-  // A richer state for the new player form
+
   const [newPlayer, setNewPlayer] = useState({
     name: '',
     position: '',
     age: '',
     nationality: '',
     current_club: '',
-    league: 'Algerian Ligue 1', // Default league
+    league: 'Algerian Ligue 1',
     market_value: '',
     contract_expires: '',
     photo_url: '',
     birth_place: '',
   });
 
-
   useEffect(() => {
     fetchPlayers();
   }, []);
 
   const fetchPlayers = async () => {
-    // This logic is correct and remains unchanged, it fetches from your DB.
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('scouted_players')
-        .select(`*, scout_reports(id, performance_rating, recommendation)`)
+        .select(`
+          id, lfp_id, name, position, age, nationality, current_club, league,
+          market_value, contract_expires, photo_url, birth_place, created_at,
+          created_by, updated_at,
+          scout_reports(id, performance_rating, recommendation)
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       setPlayers(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching players:', error);
       toast({
         title: "Error",
@@ -92,34 +132,64 @@ const PlayerIdentification: React.FC = () => {
           contract_expires: newPlayer.contract_expires || null,
           created_by: user?.id
         })
-        .select()
+        .select(`
+          id, name, position, age, nationality, current_club, league,
+          market_value, contract_expires, photo_url, birth_place, created_at,
+          scout_reports(id, performance_rating, recommendation)
+        `)
         .single();
 
       if (error) throw error;
 
-      setPlayers([data, ...players]);
-      // Reset form state
+      setPlayers([data as Player, ...players]);
       setNewPlayer({
-          name: '', position: '', age: '', nationality: '', current_club: '', 
-          league: 'Algerian Ligue 1', market_value: '', contract_expires: '', 
-          photo_url: '', birth_place: ''
+        name: '', position: '', age: '', nationality: '', current_club: '',
+        league: 'Algerian Ligue 1', market_value: '', contract_expires: '',
+        photo_url: '', birth_place: ''
       });
       setIsDialogOpen(false);
-      
+
       toast({ title: "Success", description: "Player added successfully" });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding player:', error);
-      toast({ title: "Error", description: `Failed to add player: ${error.message}`, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: `Failed to add player: ${error.message}`,
+        variant: "destructive"
+      });
     }
   };
-  
-  // ... (filteredPlayers, getAverageRating, getRecommendationBadge logic remains the same)
 
-  // --- JSX with Updated Form ---
+  const filteredPlayers = players.filter((player) => {
+    const matchesSearch = player.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesPosition = positionFilter === 'all' || player.position === positionFilter;
+    return matchesSearch && matchesPosition;
+  });
+
+  const getAverageRating = (reports: ScoutReport[]) => {
+    if (!reports || reports.length === 0) return 0;
+    const total = reports.reduce((sum, report) => sum + (report.performance_rating || 0), 0);
+    return (total / reports.length).toFixed(1);
+  };
+
+  const getRecommendationBadge = (reports: ScoutReport[]) => {
+    if (!reports || reports.length === 0) return null;
+
+    const recommendations = reports.map(r => r.recommendation);
+    const counts: Record<string, number> = {};
+    for (const rec of recommendations) {
+      counts[rec] = (counts[rec] || 0) + 1;
+    }
+
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0];
+    if (!top) return null;
+
+    return <Badge variant="outline">{top}</Badge>;
+  };
+
   return (
     <div className="space-y-6">
-      {/* ... (Header and Controls section remains mostly the same) ... */}
-       <div className="flex flex-col sm:flex-row gap-4 justify-between">
+      <div className="flex flex-col sm:flex-row gap-4 justify-between">
         <div className="flex gap-2">
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -143,7 +213,7 @@ const PlayerIdentification: React.FC = () => {
             </SelectContent>
           </Select>
         </div>
-        
+
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -159,11 +229,11 @@ const PlayerIdentification: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">Name</Label>
-                  <Input id="name" value={newPlayer.name} onChange={(e) => setNewPlayer({...newPlayer, name: e.target.value})} />
+                  <Input id="name" value={newPlayer.name} onChange={(e) => setNewPlayer({ ...newPlayer, name: e.target.value })} />
                 </div>
                 <div>
                   <Label htmlFor="position">Position</Label>
-                  <Select onValueChange={(value) => setNewPlayer({...newPlayer, position: value})}>
+                  <Select onValueChange={(value) => setNewPlayer({ ...newPlayer, position: value })}>
                     <SelectTrigger><SelectValue placeholder="Select position" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Goalkeeper">Goalkeeper</SelectItem>
@@ -175,43 +245,43 @@ const PlayerIdentification: React.FC = () => {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                 <div>
+                <div>
                   <Label htmlFor="age">Age</Label>
-                  <Input id="age" type="number" value={newPlayer.age} onChange={(e) => setNewPlayer({...newPlayer, age: e.target.value})} />
+                  <Input id="age" type="number" value={newPlayer.age} onChange={(e) => setNewPlayer({ ...newPlayer, age: e.target.value })} />
                 </div>
                 <div>
                   <Label htmlFor="nationality">Nationality</Label>
-                  <Input id="nationality" value={newPlayer.nationality} onChange={(e) => setNewPlayer({...newPlayer, nationality: e.target.value})} />
+                  <Input id="nationality" value={newPlayer.nationality} onChange={(e) => setNewPlayer({ ...newPlayer, nationality: e.target.value })} />
                 </div>
               </div>
-               <div>
-                  <Label htmlFor="birth_place">Birth Place</Label>
-                  <Input id="birth_place" value={newPlayer.birth_place} onChange={(e) => setNewPlayer({...newPlayer, birth_place: e.target.value})} />
-                </div>
+              <div>
+                <Label htmlFor="birth_place">Birth Place</Label>
+                <Input id="birth_place" value={newPlayer.birth_place} onChange={(e) => setNewPlayer({ ...newPlayer, birth_place: e.target.value })} />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="current_club">Current Club</Label>
-                  <Input id="current_club" value={newPlayer.current_club} onChange={(e) => setNewPlayer({...newPlayer, current_club: e.target.value})} />
+                  <Input id="current_club" value={newPlayer.current_club} onChange={(e) => setNewPlayer({ ...newPlayer, current_club: e.target.value })} />
                 </div>
                 <div>
                   <Label htmlFor="league">League</Label>
-                  <Input id="league" value={newPlayer.league} onChange={(e) => setNewPlayer({...newPlayer, league: e.target.value})} />
+                  <Input id="league" value={newPlayer.league} onChange={(e) => setNewPlayer({ ...newPlayer, league: e.target.value })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="market_value">Market Value (€)</Label>
-                  <Input id="market_value" type="number" placeholder="e.g., 500000" value={newPlayer.market_value} onChange={(e) => setNewPlayer({...newPlayer, market_value: e.target.value})} />
+                  <Input id="market_value" type="number" placeholder="e.g., 500000" value={newPlayer.market_value} onChange={(e) => setNewPlayer({ ...newPlayer, market_value: e.target.value })} />
                 </div>
                 <div>
                   <Label htmlFor="contract_expires">Contract Expires</Label>
-                  <Input id="contract_expires" type="date" value={newPlayer.contract_expires} onChange={(e) => setNewPlayer({...newPlayer, contract_expires: e.target.value})} />
+                  <Input id="contract_expires" type="date" value={newPlayer.contract_expires} onChange={(e) => setNewPlayer({ ...newPlayer, contract_expires: e.target.value })} />
                 </div>
               </div>
-               <div>
-                  <Label htmlFor="photo_url">Photo URL</Label>
-                  <Input id="photo_url" placeholder="https://..." value={newPlayer.photo_url} onChange={(e) => setNewPlayer({...newPlayer, photo_url: e.target.value})} />
-                </div>
+              <div>
+                <Label htmlFor="photo_url">Photo URL</Label>
+                <Input id="photo_url" placeholder="https://..." value={newPlayer.photo_url} onChange={(e) => setNewPlayer({ ...newPlayer, photo_url: e.target.value })} />
+              </div>
               <Button onClick={handleAddPlayer} className="w-full mt-4">
                 Add Player to Database
               </Button>
@@ -220,31 +290,30 @@ const PlayerIdentification: React.FC = () => {
         </Dialog>
       </div>
 
-      {/* Players Grid - now can show more info */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPlayers.map((player) => (
           <Card key={player.id} className="hover:shadow-lg transition-shadow flex flex-col">
             <CardHeader className="pb-4">
               <div className="flex items-start gap-4">
-                 {player.photo_url && (
-                    <img src={player.photo_url} alt={player.name} className="w-16 h-16 rounded-full border-2 object-cover"/>
-                 )}
-                 <div className="flex-1">
-                   <div className="flex justify-between items-center">
-                      <CardTitle className="text-lg">{player.name}</CardTitle>
-                      {getRecommendationBadge(player.scout_reports)}
-                   </div>
-                   <p className="text-sm text-muted-foreground">{player.position}</p>
-                 </div>
+                {player.photo_url && (
+                  <img src={player.photo_url} alt={player.name} className="w-16 h-16 rounded-full border-2 object-cover" />
+                )}
+                <div className="flex-1">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg">{player.name}</CardTitle>
+                    {getRecommendationBadge(player.scout_reports || [])}
+                  </div>
+                  <p className="text-sm text-muted-foreground">{player.position}</p>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-3 text-sm flex-grow">
-                <div className="flex items-center gap-2">
-                  <Flag className="w-4 h-4 text-muted-foreground" />
-                  <span>{player.nationality}, {player.age} years</span>
-                </div>
-                <div className="font-semibold">{player.current_club} <span className="font-normal text-muted-foreground">({player.league})</span></div>
-              
+              <div className="flex items-center gap-2">
+                <Flag className="w-4 h-4 text-muted-foreground" />
+                <span>{player.nationality}, {player.age} years</span>
+              </div>
+              <div className="font-semibold">{player.current_club} <span className="font-normal text-muted-foreground">({player.league})</span></div>
+
               {player.market_value && (
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-green-600" />
@@ -270,7 +339,7 @@ const PlayerIdentification: React.FC = () => {
         ))}
       </div>
 
-       {filteredPlayers.length === 0 && !loading && (
+      {filteredPlayers.length === 0 && !loading && (
         <Card>
           <CardContent className="text-center py-12">
             <p className="text-muted-foreground">No players found matching your criteria.</p>
