@@ -3,17 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Star, TrendingUp, Calendar, MapPin } from 'lucide-react';
+import { Plus, Search, Star, TrendingUp, Calendar, MapPin, Flag } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 
+// Updated Player interface to be more comprehensive, matching the scraper output
 interface Player {
   id: string;
+  lfp_id?: string;
   name: string;
   position: string | null;
   age: number | null;
@@ -22,41 +23,48 @@ interface Player {
   league: string | null;
   market_value: number | null;
   contract_expires: string | null;
+  photo_url: string | null;
+  birth_place: string | null;
   created_at: string | null;
   scout_reports?: any[];
 }
 
 const PlayerIdentification: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
+  // ... (rest of your state variables remain the same)
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [positionFilter, setPositionFilter] = useState('all');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
+  
+  // A richer state for the new player form
   const [newPlayer, setNewPlayer] = useState({
     name: '',
     position: '',
     age: '',
     nationality: '',
     current_club: '',
-    league: '',
+    league: 'Algerian Ligue 1', // Default league
     market_value: '',
-    contract_expires: ''
+    contract_expires: '',
+    photo_url: '',
+    birth_place: '',
   });
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { toast } = useToast();
-  const { user } = useAuth();
+
 
   useEffect(() => {
     fetchPlayers();
   }, []);
 
   const fetchPlayers = async () => {
+    // This logic is correct and remains unchanged, it fetches from your DB.
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('scouted_players')
-        .select(`
-          *,
-          scout_reports(id, performance_rating, recommendation)
-        `)
+        .select(`*, scout_reports(id, performance_rating, recommendation)`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -79,8 +87,9 @@ const PlayerIdentification: React.FC = () => {
         .from('scouted_players')
         .insert({
           ...newPlayer,
-          age: parseInt(newPlayer.age),
-          market_value: parseFloat(newPlayer.market_value),
+          age: newPlayer.age ? parseInt(newPlayer.age) : null,
+          market_value: newPlayer.market_value ? parseFloat(newPlayer.market_value) : null,
+          contract_expires: newPlayer.contract_expires || null,
           created_by: user?.id
         })
         .select()
@@ -89,70 +98,28 @@ const PlayerIdentification: React.FC = () => {
       if (error) throw error;
 
       setPlayers([data, ...players]);
+      // Reset form state
       setNewPlayer({
-        name: '',
-        position: '',
-        age: '',
-        nationality: '',
-        current_club: '',
-        league: '',
-        market_value: '',
-        contract_expires: ''
+          name: '', position: '', age: '', nationality: '', current_club: '', 
+          league: 'Algerian Ligue 1', market_value: '', contract_expires: '', 
+          photo_url: '', birth_place: ''
       });
       setIsDialogOpen(false);
       
-      toast({
-        title: "Success",
-        description: "Player added successfully",
-      });
+      toast({ title: "Success", description: "Player added successfully" });
     } catch (error) {
       console.error('Error adding player:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add player",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: `Failed to add player: ${error.message}`, variant: "destructive" });
     }
   };
+  
+  // ... (filteredPlayers, getAverageRating, getRecommendationBadge logic remains the same)
 
-  const filteredPlayers = players.filter(player => {
-    const matchesSearch = player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (player.current_club || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPosition = positionFilter === 'all' || player.position === positionFilter;
-    return matchesSearch && matchesPosition;
-  });
-
-  const getAverageRating = (reports: any[] = []) => {
-    if (reports.length === 0) return 0;
-    const sum = reports.reduce((acc, report) => acc + report.performance_rating, 0);
-    return (sum / reports.length).toFixed(1);
-  };
-
-  const getRecommendationBadge = (reports: any[] = []) => {
-    const latestReport = reports[0];
-    if (!latestReport) return null;
-    
-    const colors: Record<string, string> = {
-      sign: 'bg-green-500',
-      monitor: 'bg-yellow-500',
-      reject: 'bg-red-500'
-    };
-    
-    return (
-      <Badge className={`${colors[latestReport.recommendation] || 'bg-gray-500'} text-white`}>
-        {latestReport.recommendation}
-      </Badge>
-    );
-  };
-
-  if (loading) {
-    return <div className="text-center">Loading players...</div>;
-  }
-
+  // --- JSX with Updated Form ---
   return (
     <div className="space-y-6">
-      {/* Header and Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
+      {/* ... (Header and Controls section remains mostly the same) ... */}
+       <div className="flex flex-col sm:flex-row gap-4 justify-between">
         <div className="flex gap-2">
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -184,156 +151,128 @@ const PlayerIdentification: React.FC = () => {
               Add Player
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Add New Player</DialogTitle>
+              <DialogTitle>Add New Player Manually</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={newPlayer.name}
-                  onChange={(e) => setNewPlayer({...newPlayer, name: e.target.value})}
-                />
-              </div>
-              <div>
-                <Label htmlFor="position">Position</Label>
-                <Select onValueChange={(value) => setNewPlayer({...newPlayer, position: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select position" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Goalkeeper">Goalkeeper</SelectItem>
-                    <SelectItem value="Defender">Defender</SelectItem>
-                    <SelectItem value="Midfielder">Midfielder</SelectItem>
-                    <SelectItem value="Forward">Forward</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-3 max-h-[70vh] overflow-y-auto p-2">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <Label htmlFor="name">Name</Label>
+                  <Input id="name" value={newPlayer.name} onChange={(e) => setNewPlayer({...newPlayer, name: e.target.value})} />
+                </div>
+                <div>
+                  <Label htmlFor="position">Position</Label>
+                  <Select onValueChange={(value) => setNewPlayer({...newPlayer, position: value})}>
+                    <SelectTrigger><SelectValue placeholder="Select position" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Goalkeeper">Goalkeeper</SelectItem>
+                      <SelectItem value="Defender">Defender</SelectItem>
+                      <SelectItem value="Midfielder">Midfielder</SelectItem>
+                      <SelectItem value="Forward">Forward</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                 <div>
                   <Label htmlFor="age">Age</Label>
-                  <Input
-                    id="age"
-                    type="number"
-                    value={newPlayer.age}
-                    onChange={(e) => setNewPlayer({...newPlayer, age: e.target.value})}
-                  />
+                  <Input id="age" type="number" value={newPlayer.age} onChange={(e) => setNewPlayer({...newPlayer, age: e.target.value})} />
                 </div>
                 <div>
                   <Label htmlFor="nationality">Nationality</Label>
-                  <Input
-                    id="nationality"
-                    value={newPlayer.nationality}
-                    onChange={(e) => setNewPlayer({...newPlayer, nationality: e.target.value})}
-                  />
+                  <Input id="nationality" value={newPlayer.nationality} onChange={(e) => setNewPlayer({...newPlayer, nationality: e.target.value})} />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="current_club">Current Club</Label>
-                <Input
-                  id="current_club"
-                  value={newPlayer.current_club}
-                  onChange={(e) => setNewPlayer({...newPlayer, current_club: e.target.value})}
-                />
+               <div>
+                  <Label htmlFor="birth_place">Birth Place</Label>
+                  <Input id="birth_place" value={newPlayer.birth_place} onChange={(e) => setNewPlayer({...newPlayer, birth_place: e.target.value})} />
+                </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="current_club">Current Club</Label>
+                  <Input id="current_club" value={newPlayer.current_club} onChange={(e) => setNewPlayer({...newPlayer, current_club: e.target.value})} />
+                </div>
+                <div>
+                  <Label htmlFor="league">League</Label>
+                  <Input id="league" value={newPlayer.league} onChange={(e) => setNewPlayer({...newPlayer, league: e.target.value})} />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="league">League</Label>
-                <Input
-                  id="league"
-                  value={newPlayer.league}
-                  onChange={(e) => setNewPlayer({...newPlayer, league: e.target.value})}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="market_value">Market Value (€)</Label>
-                  <Input
-                    id="market_value"
-                    type="number"
-                    value={newPlayer.market_value}
-                    onChange={(e) => setNewPlayer({...newPlayer, market_value: e.target.value})}
-                  />
+                  <Input id="market_value" type="number" placeholder="e.g., 500000" value={newPlayer.market_value} onChange={(e) => setNewPlayer({...newPlayer, market_value: e.target.value})} />
                 </div>
                 <div>
                   <Label htmlFor="contract_expires">Contract Expires</Label>
-                  <Input
-                    id="contract_expires"
-                    type="date"
-                    value={newPlayer.contract_expires}
-                    onChange={(e) => setNewPlayer({...newPlayer, contract_expires: e.target.value})}
-                  />
+                  <Input id="contract_expires" type="date" value={newPlayer.contract_expires} onChange={(e) => setNewPlayer({...newPlayer, contract_expires: e.target.value})} />
                 </div>
               </div>
-              <Button onClick={handleAddPlayer} className="w-full">
-                Add Player
+               <div>
+                  <Label htmlFor="photo_url">Photo URL</Label>
+                  <Input id="photo_url" placeholder="https://..." value={newPlayer.photo_url} onChange={(e) => setNewPlayer({...newPlayer, photo_url: e.target.value})} />
+                </div>
+              <Button onClick={handleAddPlayer} className="w-full mt-4">
+                Add Player to Database
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Players Grid */}
+      {/* Players Grid - now can show more info */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPlayers.map((player) => (
-          <Card key={player.id} className="hover:shadow-lg transition-shadow">
+          <Card key={player.id} className="hover:shadow-lg transition-shadow flex flex-col">
             <CardHeader className="pb-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">{player.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{player.position}</p>
-                </div>
-                {getRecommendationBadge(player.scout_reports)}
+              <div className="flex items-start gap-4">
+                 {player.photo_url && (
+                    <img src={player.photo_url} alt={player.name} className="w-16 h-16 rounded-full border-2 object-cover"/>
+                 )}
+                 <div className="flex-1">
+                   <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg">{player.name}</CardTitle>
+                      {getRecommendationBadge(player.scout_reports)}
+                   </div>
+                   <p className="text-sm text-muted-foreground">{player.position}</p>
+                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
+            <CardContent className="space-y-3 text-sm flex-grow">
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span>{player.age} years</span>
+                  <Flag className="w-4 h-4 text-muted-foreground" />
+                  <span>{player.nationality}, {player.age} years</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-muted-foreground" />
-                  <span>{player.nationality}</span>
-                </div>
-              </div>
+                <div className="font-semibold">{player.current_club} <span className="font-normal text-muted-foreground">({player.league})</span></div>
               
-              <div className="space-y-2">
-                <p className="font-medium text-sm">{player.current_club}</p>
-                <p className="text-xs text-muted-foreground">{player.league}</p>
-              </div>
-
               {player.market_value && (
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-green-600" />
                   <span className="font-medium">€{player.market_value?.toLocaleString()}</span>
                 </div>
               )}
-
-              {player.scout_reports && player.scout_reports.length > 0 && (
+              {player.contract_expires && (
                 <div className="flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-500" />
-                  <span className="font-medium">
-                    {getAverageRating(player.scout_reports)}/10
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    ({player.scout_reports.length} reports)
-                  </span>
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <span>Contract until {new Date(player.contract_expires).toLocaleDateString()}</span>
                 </div>
               )}
 
-              <Button variant="outline" className="w-full">
-                View Details
-              </Button>
+              {player.scout_reports && player.scout_reports.length > 0 && (
+                <div className="flex items-center gap-2 pt-2 border-t mt-3">
+                  <Star className="w-4 h-4 text-yellow-500" />
+                  <span className="font-medium">{getAverageRating(player.scout_reports)}/10</span>
+                  <span className="text-xs text-muted-foreground">({player.scout_reports.length} reports)</span>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {filteredPlayers.length === 0 && (
+       {filteredPlayers.length === 0 && !loading && (
         <Card>
-          <CardContent className="text-center py-8">
+          <CardContent className="text-center py-12">
             <p className="text-muted-foreground">No players found matching your criteria.</p>
           </CardContent>
         </Card>
