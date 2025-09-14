@@ -45,13 +45,12 @@ import { useAuth } from '@/context/AuthContext';
 
 interface ScoutReport {
   id: string;
-  performance_rating: number;
-  recommendation: string;
+  performance_rating: number | null;
+  recommendation: string | null;
 }
 
 interface Player {
   id: string;
-  lfp_id?: string;
   name: string;
   position: string | null;
   age: number | null;
@@ -60,8 +59,6 @@ interface Player {
   league: string | null;
   market_value: number | null;
   contract_expires: string | null;
-  photo_url: string | null;
-  birth_place: string | null;
   created_at: string | null;
   created_by?: string | null;
   updated_at?: string | null;
@@ -86,8 +83,6 @@ const PlayerIdentification: React.FC = () => {
     league: 'Algerian Ligue 1',
     market_value: '',
     contract_expires: '',
-    photo_url: '',
-    birth_place: '',
   });
 
   useEffect(() => {
@@ -100,8 +95,8 @@ const PlayerIdentification: React.FC = () => {
       const { data, error } = await supabase
         .from('scouted_players')
         .select(`
-          id, lfp_id, name, position, age, nationality, current_club, league,
-          market_value, contract_expires, photo_url, birth_place, created_at,
+          id, name, position, age, nationality, current_club, league,
+          market_value, contract_expires, created_at,
           created_by, updated_at,
           scout_reports(id, performance_rating, recommendation)
         `)
@@ -134,7 +129,7 @@ const PlayerIdentification: React.FC = () => {
         })
         .select(`
           id, name, position, age, nationality, current_club, league,
-          market_value, contract_expires, photo_url, birth_place, created_at,
+          market_value, contract_expires, created_at,
           scout_reports(id, performance_rating, recommendation)
         `)
         .single();
@@ -144,8 +139,7 @@ const PlayerIdentification: React.FC = () => {
       setPlayers([data as Player, ...players]);
       setNewPlayer({
         name: '', position: '', age: '', nationality: '', current_club: '',
-        league: 'Algerian Ligue 1', market_value: '', contract_expires: '',
-        photo_url: '', birth_place: ''
+        league: 'Algerian Ligue 1', market_value: '', contract_expires: ''
       });
       setIsDialogOpen(false);
 
@@ -175,7 +169,9 @@ const PlayerIdentification: React.FC = () => {
   const getRecommendationBadge = (reports: ScoutReport[]) => {
     if (!reports || reports.length === 0) return null;
 
-    const recommendations = reports.map(r => r.recommendation);
+    const recommendations = reports.map(r => r.recommendation).filter((rec): rec is string => rec !== null);
+    if (recommendations.length === 0) return null;
+    
     const counts: Record<string, number> = {};
     for (const rec of recommendations) {
       counts[rec] = (counts[rec] || 0) + 1;
@@ -254,10 +250,6 @@ const PlayerIdentification: React.FC = () => {
                   <Input id="nationality" value={newPlayer.nationality} onChange={(e) => setNewPlayer({ ...newPlayer, nationality: e.target.value })} />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="birth_place">Birth Place</Label>
-                <Input id="birth_place" value={newPlayer.birth_place} onChange={(e) => setNewPlayer({ ...newPlayer, birth_place: e.target.value })} />
-              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="current_club">Current Club</Label>
@@ -278,10 +270,6 @@ const PlayerIdentification: React.FC = () => {
                   <Input id="contract_expires" type="date" value={newPlayer.contract_expires} onChange={(e) => setNewPlayer({ ...newPlayer, contract_expires: e.target.value })} />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="photo_url">Photo URL</Label>
-                <Input id="photo_url" placeholder="https://..." value={newPlayer.photo_url} onChange={(e) => setNewPlayer({ ...newPlayer, photo_url: e.target.value })} />
-              </div>
               <Button onClick={handleAddPlayer} className="w-full mt-4">
                 Add Player to Database
               </Button>
@@ -295,9 +283,6 @@ const PlayerIdentification: React.FC = () => {
           <Card key={player.id} className="hover:shadow-lg transition-shadow flex flex-col">
             <CardHeader className="pb-4">
               <div className="flex items-start gap-4">
-                {player.photo_url && (
-                  <img src={player.photo_url} alt={player.name} className="w-16 h-16 rounded-full border-2 object-cover" />
-                )}
                 <div className="flex-1">
                   <div className="flex justify-between items-center">
                     <CardTitle className="text-lg">{player.name}</CardTitle>
