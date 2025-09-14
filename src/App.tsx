@@ -37,6 +37,7 @@ import ChromeExtensionBridge from './pages/ChromeExtensionBridge';
 import NotFound from './pages/NotFound';
 
 import VideoSetupPage from './pages/Admin/VideoSetupPage';
+import GPUNetworkManagerPage from './pages/GPUNetworkManager';
 import Scouting from './pages/Scouting';
 import ClubDetails from './components/scouting/ClubDetails';
 
@@ -229,6 +230,12 @@ const AppContent = () => {
         <Route path="/admin/video-setup" element={
           <AdminOnly>
             <VideoSetupPage />
+          </AdminOnly>
+        } />
+
+        <Route path="/admin/gpu-network" element={
+          <AdminOnly>
+            <GPUNetworkManagerPage />
           </AdminOnly>
         } />
 

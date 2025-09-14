@@ -1,6 +1,6 @@
 
 import { useMemo } from 'react';
-import { LayoutDashboard, Play, Calendar, BarChart3, TrendingUp, Target, Eye } from 'lucide-react';
+import { LayoutDashboard, Play, Calendar, BarChart3, TrendingUp, Target, Eye, Network } from 'lucide-react';
 import { usePermissionChecker } from './usePermissionChecker';
 import { type RolePermissions } from './useUserPermissions';
 
@@ -77,6 +77,13 @@ export const useMenuItems = () => {
     }
     
     if (isAdmin()) {
+      items.push({ 
+        value: 'gpu-network', 
+        label: 'GPU Network', 
+        icon: Network, 
+        path: '/admin/gpu-network'
+      });
+      
       items.push({ 
         value: 'admin', 
         label: 'Admin Panel', 
