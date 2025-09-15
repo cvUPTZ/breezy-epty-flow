@@ -27,6 +27,9 @@ import CreateMatch from './pages/CreateMatch';
 import MatchTimerPage from './pages/MatchTimerPage';
 import VideoAnalysis from './pages/VideoAnalysis';
 import DirectVideoAnalyzer from './pages/DirectVideoAnalyzer';
+import GPUNetworkManagerPage from './pages/GPUNetworkManager';
+import ErrorManagerPage from './pages/ErrorManager';
+import ErrorBoundary from './components/ErrorBoundary';
 import TrackerInterface from './pages/TrackerInterface';
 import Matches from './pages/Matches';
 import Statistics from './pages/Statistics';
@@ -37,7 +40,6 @@ import ChromeExtensionBridge from './pages/ChromeExtensionBridge';
 import NotFound from './pages/NotFound';
 
 import VideoSetupPage from './pages/Admin/VideoSetupPage';
-import GPUNetworkManagerPage from './pages/GPUNetworkManager';
 import Scouting from './pages/Scouting';
 import ClubDetails from './components/scouting/ClubDetails';
 
@@ -81,7 +83,7 @@ const AppContent = () => {
 
 
   return (
-    <>
+    <ErrorBoundary componentName="AppRoot">
       <Header />
       <Routes>
         {/* Public routes */}
@@ -239,6 +241,12 @@ const AppContent = () => {
           </AdminOnly>
         } />
 
+        <Route path="/admin/error-manager" element={
+          <AdminOnly>
+            <ErrorManagerPage />
+          </AdminOnly>
+        } />
+
         
         {/* Scouting Routes */}
         <Route path="/scouting" element={
@@ -295,7 +303,7 @@ const AppContent = () => {
         
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </>
+    </ErrorBoundary>
   );
 };
 

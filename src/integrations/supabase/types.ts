@@ -93,6 +93,87 @@ export type Database = {
           },
         ]
       }
+      error_logs: {
+        Row: {
+          component_name: string | null
+          created_at: string
+          error_category: string
+          error_code: string | null
+          error_message: string
+          error_type: string
+          first_occurrence: string
+          function_name: string | null
+          id: string
+          last_occurrence: string
+          metadata: Json | null
+          occurrences: number | null
+          request_id: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          session_id: string | null
+          severity: string
+          stack_trace: string | null
+          status: string
+          updated_at: string
+          url: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          component_name?: string | null
+          created_at?: string
+          error_category: string
+          error_code?: string | null
+          error_message: string
+          error_type: string
+          first_occurrence?: string
+          function_name?: string | null
+          id?: string
+          last_occurrence?: string
+          metadata?: Json | null
+          occurrences?: number | null
+          request_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          session_id?: string | null
+          severity?: string
+          stack_trace?: string | null
+          status?: string
+          updated_at?: string
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          component_name?: string | null
+          created_at?: string
+          error_category?: string
+          error_code?: string | null
+          error_message?: string
+          error_type?: string
+          first_occurrence?: string
+          function_name?: string | null
+          id?: string
+          last_occurrence?: string
+          metadata?: Json | null
+          occurrences?: number | null
+          request_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          session_id?: string | null
+          severity?: string
+          stack_trace?: string | null
+          status?: string
+          updated_at?: string
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       event_types: {
         Row: {
           color: string | null
@@ -233,10 +314,12 @@ export type Database = {
         Row: {
           assigned_event_types: string[] | null
           assigned_player_id: number | null
+          assigned_player_ids: number[] | null
           created_at: string
           id: string
           match_id: string
           player_id: number | null
+          player_ids: number[] | null
           player_team_id: string
           tracker_id: string | null
           tracker_user_id: string
@@ -245,10 +328,12 @@ export type Database = {
         Insert: {
           assigned_event_types?: string[] | null
           assigned_player_id?: number | null
+          assigned_player_ids?: number[] | null
           created_at?: string
           id?: string
           match_id: string
           player_id?: number | null
+          player_ids?: number[] | null
           player_team_id: string
           tracker_id?: string | null
           tracker_user_id: string
@@ -257,30 +342,18 @@ export type Database = {
         Update: {
           assigned_event_types?: string[] | null
           assigned_player_id?: number | null
+          assigned_player_ids?: number[] | null
           created_at?: string
           id?: string
           match_id?: string
           player_id?: number | null
+          player_ids?: number[] | null
           player_team_id?: string
           tracker_id?: string | null
           tracker_user_id?: string
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "fk_tracker_user_id"
-            columns: ["tracker_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_tracker_user_id"
-            columns: ["tracker_user_id"]
-            isOneToOne: false
-            referencedRelation: "user_permissions_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "match_tracker_assignments_match_id_fkey"
             columns: ["match_id"]
@@ -776,14 +849,18 @@ export type Database = {
           created_by: string | null
           current_club: string | null
           id: string
+          jersey_number: number | null
           league: string | null
+          lfp_id: number | null
           market_value: number | null
           mental_qualities: Json | null
           name: string
           nationality: string | null
+          photo_url: string | null
           physical_attributes: Json | null
           position: string | null
           tactical_awareness: Json | null
+          team_id: number | null
           technical_skills: Json | null
           updated_at: string | null
         }
@@ -794,14 +871,18 @@ export type Database = {
           created_by?: string | null
           current_club?: string | null
           id?: string
+          jersey_number?: number | null
           league?: string | null
+          lfp_id?: number | null
           market_value?: number | null
           mental_qualities?: Json | null
           name: string
           nationality?: string | null
+          photo_url?: string | null
           physical_attributes?: Json | null
           position?: string | null
           tactical_awareness?: Json | null
+          team_id?: number | null
           technical_skills?: Json | null
           updated_at?: string | null
         }
@@ -812,18 +893,30 @@ export type Database = {
           created_by?: string | null
           current_club?: string | null
           id?: string
+          jersey_number?: number | null
           league?: string | null
+          lfp_id?: number | null
           market_value?: number | null
           mental_qualities?: Json | null
           name?: string
           nationality?: string | null
+          photo_url?: string | null
           physical_attributes?: Json | null
           position?: string | null
           tactical_awareness?: Json | null
+          team_id?: number | null
           technical_skills?: Json | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "scouted_players_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scouts: {
         Row: {
@@ -944,6 +1037,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      teams: {
+        Row: {
+          country: string | null
+          id: number
+          logo_url: string | null
+          name: string
+        }
+        Insert: {
+          country?: string | null
+          id?: never
+          logo_url?: string | null
+          name: string
+        }
+        Update: {
+          country?: string | null
+          id?: never
+          logo_url?: string | null
+          name?: string
+        }
+        Relationships: []
       }
       timeline_events: {
         Row: {
@@ -1408,20 +1522,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_tracker_user_id"
-            columns: ["tracker_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_tracker_user_id"
-            columns: ["tracker_user_id"]
-            isOneToOne: false
-            referencedRelation: "user_permissions_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "match_tracker_assignments_match_id_fkey"
             columns: ["match_id"]
             isOneToOne: false
@@ -1666,6 +1766,24 @@ export type Database = {
           p_assignment_type: string
           p_match_id: string
           p_previous_assignment_details?: Json
+        }
+        Returns: string
+      }
+      log_error: {
+        Args: {
+          p_component_name?: string
+          p_error_category: string
+          p_error_code?: string
+          p_error_message?: string
+          p_error_type: string
+          p_function_name?: string
+          p_metadata?: Json
+          p_request_id?: string
+          p_session_id?: string
+          p_severity?: string
+          p_stack_trace?: string
+          p_url?: string
+          p_user_agent?: string
         }
         Returns: string
       }

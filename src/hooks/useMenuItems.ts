@@ -1,6 +1,6 @@
 
 import { useMemo } from 'react';
-import { LayoutDashboard, Play, Calendar, BarChart3, TrendingUp, Target, Eye, Network } from 'lucide-react';
+import { LayoutDashboard, Play, Calendar, BarChart3, TrendingUp, Target, Eye, Network, AlertTriangle } from 'lucide-react';
 import { usePermissionChecker } from './usePermissionChecker';
 import { type RolePermissions } from './useUserPermissions';
 
@@ -82,6 +82,13 @@ export const useMenuItems = () => {
         label: 'GPU Network', 
         icon: Network, 
         path: '/admin/gpu-network'
+      });
+      
+      items.push({ 
+        value: 'error-manager', 
+        label: 'Error Manager', 
+        icon: AlertTriangle, 
+        path: '/admin/error-manager'
       });
       
       items.push({ 
