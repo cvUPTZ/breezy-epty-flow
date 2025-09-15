@@ -31,7 +31,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { usePermissionChecker } from '@/hooks/usePermissionChecker';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { User } from '@supabase/supabase-js';
+import type { User } from '@supabase/auth-helpers-nextjs';
 
 interface ErrorLog {
   id: string;
