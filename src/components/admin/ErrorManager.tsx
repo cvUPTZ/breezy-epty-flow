@@ -21,7 +21,7 @@ import {
   XCircle,
   BarChart3,
   Calendar,
-  User,
+  User as UserIcon,
   Globe,
   Server,
   Smartphone,
@@ -239,7 +239,7 @@ const ErrorManager: React.FC = () => {
       case 'network':
         return <Wifi className="h-4 w-4" />;
       case 'auth':
-        return <User className="h-4 w-4" />;
+        return <UserIcon className="h-4 w-4" />;
       default:
         return <Globe className="h-4 w-4" />;
     }
