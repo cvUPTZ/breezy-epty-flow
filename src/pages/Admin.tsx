@@ -24,7 +24,8 @@ import {
   LogOut,
   Building2,
   Calculator,
-  Video
+  Video,
+  ClipboardList
 } from 'lucide-react';
 
 // Sidebar components
@@ -66,6 +67,7 @@ import BudgetTrackerConfig from '@/components/admin/BudgetTrackerConfig';
 import LineBasedTrackerAssignment from '@/components/admin/LineBasedTrackerAssignment';
 import UnifiedTrackerAssignment from '@/components/tracker/UnifiedTrackerAssignment';
 import { AssignmentLogsViewer } from '@/components/admin/AssignmentLogsViewer';
+import DecisionPage from './Admin/DecisionPage';
 
 const sidebarItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -83,7 +85,7 @@ const sidebarItems = [
   { id: 'assignments', label: 'Assignment Logs', icon: FileText },
   { id: 'audit', label: 'Audit', icon: FileText },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-  { id: 'business', label: 'Business Plan', icon: Building2 },
+  { id: 'decision', label: 'Decision', icon: ClipboardList },
   { id: 'budget', label: 'Budget Tracker', icon: Calculator },
   { id: 'video-analyzer', label: 'Video Analyzer', icon: Video },
 ];
@@ -564,8 +566,8 @@ const Admin: React.FC = () => {
           </div>
         );
 
-      case 'business':
-        return <BusinessPlanManagement />;
+      case 'decision':
+        return <DecisionPage />;
 
       case 'budget':
         return <BudgetTrackerConfig />;
