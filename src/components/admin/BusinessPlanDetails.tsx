@@ -256,7 +256,39 @@ const BusinessPlanDetails: React.FC<BusinessPlanDetailsProps> = ({
             </Card>
         </div>
         <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Sources de Revenus</h3>
+            <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Sources de Revenus</h3>
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="outline">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Nouvelle Source
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader><DialogTitle>Ajouter une Source de Revenus</DialogTitle></DialogHeader>
+                        <div className="space-y-4">
+                            <div>
+                                <Label htmlFor="revenue-name">Nom</Label>
+                                <Input id="revenue-name" value={newRevenue.name} onChange={(e) => setNewRevenue({ ...newRevenue, name: e.target.value })} placeholder="Ex: Licences logiciels" />
+                            </div>
+                            <div>
+                                <Label htmlFor="revenue-segment">Segment de Marché</Label>
+                                <Input id="revenue-segment" value={newRevenue.marketSegment} onChange={(e) => setNewRevenue({ ...newRevenue, marketSegment: e.target.value })} placeholder="Ex: Clubs amateurs" />
+                            </div>
+                            <div className="md:col-span-2">
+                                <Label htmlFor="revenue-description">Description</Label>
+                                <Textarea id="revenue-description" value={newRevenue.description} onChange={(e) => setNewRevenue({ ...newRevenue, description: e.target.value })} placeholder="Description de la source de revenus" />
+                            </div>
+                            <div>
+                                <Label htmlFor="revenue-amount">Revenus Mensuels Estimés (DZD)</Label>
+                                <Input id="revenue-amount" type="number" value={newRevenue.monthlyRevenue} onChange={(e) => setNewRevenue({ ...newRevenue, monthlyRevenue: Number(e.target.value) })} placeholder="0" />
+                            </div>
+                            <Button onClick={handleAddRevenue} className="w-full">Ajouter</Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </div>
             {revenueStreams.map((stream) => (
               <Card key={stream.id}>
                 <CardContent className="p-4">
