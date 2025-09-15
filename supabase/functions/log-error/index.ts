@@ -21,13 +21,6 @@ serve(async (req: Request) => {
 
     const { errorDetails } = await req.json()
 
-    // Get current user
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
-    
-    if (authError) {
-      console.error('Auth error:', authError)
-    }
-
     // Log error using the database function
     const { data, error } = await supabaseClient.rpc('log_error', {
       p_error_type: errorDetails.errorType,
