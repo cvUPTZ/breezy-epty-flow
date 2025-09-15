@@ -119,33 +119,42 @@ const BusinessPlanManagement: React.FC = () => {
   const [goals, setGoals] = useState<BusinessGoal[]>([
     {
       id: '1',
-      title: 'Pénétrer le marché algérien du football',
-      description: 'Établir une présence forte sur le marché du football en Algérie',
-      target: '50 clubs partenaires',
-      deadline: '2024-12-31',
+      title: 'Devenir le leader du SportTech en Algérie',
+      description: 'Atteindre 80% des clubs de Ligue 1 et 60% de Ligue 2.',
+      target: '60+ clubs professionnels',
+      deadline: '2029-12-31',
       status: 'in-progress',
       priority: 'high'
+    },
+    {
+      id: '2',
+      title: 'Expansion Régionale',
+      description: 'Lancer des opérations en Tunisie et au Maroc.',
+      target: '2 marchés',
+      deadline: '2028-12-31',
+      status: 'pending',
+      priority: 'medium'
     }
   ]);
 
   const [revenueStreams, setRevenueStreams] = useState<RevenueStream[]>([
     {
       id: '1',
-      name: 'Abonnements Clubs',
-      description: 'Abonnements mensuels pour les clubs de football',
-      monthlyRevenue: 150000,
+      name: 'Licences SaaS B2B',
+      description: 'Abonnements annuels pour les clubs (Ligue 1 & 2) et académies.',
+      monthlyRevenue: 230000,
       growth: 15,
       status: 'active',
-      marketSegment: 'Clubs professionnels'
+      marketSegment: 'Clubs professionnels & FAF'
     },
     {
       id: '2',
-      name: 'Formation et Consulting',
-      description: 'Services de formation pour entraîneurs et analystes',
-      monthlyRevenue: 80000,
+      name: 'Services à Valeur Ajoutée',
+      description: 'Formation, consulting, et rapports d\'intégrité.',
+      monthlyRevenue: 50000,
       growth: 25,
-      status: 'active',
-      marketSegment: 'Éducation sportive'
+      status: 'planned',
+      marketSegment: 'Premium'
     }
   ]);
 
@@ -280,11 +289,11 @@ const BusinessPlanManagement: React.FC = () => {
   ]);
 
   const [financialProjections] = useState<FinancialProjection[]>([
-    { year: 2024, revenue: 2760000, expenses: 1980000, profit: 780000, founderDistribution: 390000 },
-    { year: 2025, revenue: 4140000, expenses: 2730000, profit: 1410000, founderDistribution: 705000 },
-    { year: 2026, revenue: 6210000, expenses: 3795000, profit: 2415000, founderDistribution: 1207500 },
-    { year: 2027, revenue: 8280000, expenses: 4680000, profit: 3600000, founderDistribution: 1800000 },
-    { year: 2028, revenue: 11040000, expenses: 5940000, profit: 5100000, founderDistribution: 2550000 }
+    { year: 2025, revenue: 2760000, expenses: 1980000, profit: 780000, founderDistribution: 390000 },
+    { year: 2026, revenue: 4140000, expenses: 2730000, profit: 1410000, founderDistribution: 705000 },
+    { year: 2027, revenue: 6210000, expenses: 3800000, profit: 2410000, founderDistribution: 1205000 },
+    { year: 2028, revenue: 8280000, expenses: 4680000, profit: 3600000, founderDistribution: 1800000 },
+    { year: 2029, revenue: 11040000, expenses: 5940000, profit: 5100000, founderDistribution: 2550000 }
   ]);
 
   // Enhanced configuration for real-world tracker budget parameters
@@ -1457,45 +1466,44 @@ const BusinessPlanManagement: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <h4 className="font-semibold mb-2">Taille du Marché</h4>
+                  <h4 className="font-semibold mb-2">Opportunité Stratégique : Réforme Numérique</h4>
                   <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• 140+ clubs professionnels</li>
-                    <li>• 48 wilayas couvertes</li>
-                    <li>• 2M+ joueurs licenciés</li>
-                    <li>• Marché estimé: 2.5B DZD</li>
+                    <li>• **Alignement avec la FAF :** La FAF a lancé une initiative de numérisation majeure pour lutter contre la corruption.</li>
+                    <li>• **Plateforme FAFConnect :** L'introduction de FAFConnect (via FIFA Connect) pour la gestion des licences est une preuve de cette volonté.</li>
+                    <li>• **Partenaire de la Réforme :** Notre solution se positionne comme un outil essentiel pour accompagner cette transition vers la transparence.</li>
+                    <li>• **Demande Institutionnelle :** La demande pour des outils de gouvernance et de conformité est donc créée par le haut de la pyramide.</li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold mb-2">Opportunités</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Digitalisation du sport</li>
-                    <li>• Formation des entraîneurs</li>
-                    <li>• Analyse de performance</li>
-                    <li>• Jeunes talents</li>
+                  <h4 className="font-semibold mb-2">Contexte de la "Double Réalité"</h4>
+                   <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• **Réalité Officielle :** Projets de réforme, professionnalisation, mise en place de standards.</li>
+                    <li>• **Réalité de l'Ombre :** Pratiques non-officielles qui influencent fortement le marché.</li>
+                    <li>• **Implication :** Notre stratégie doit naviguer entre ces deux réalités pour réussir.</li>
                   </ul>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-destructive">
               <CardHeader>
-                <CardTitle>Défis du Marché Local</CardTitle>
+                <CardTitle className="text-destructive">Défis Existentiels du Marché</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <h4 className="font-semibold mb-2">Défis Techniques</h4>
+                  <h4 className="font-semibold mb-2">Corruption et Instabilité</h4>
                   <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Infrastructure internet variable</li>
-                    <li>• Adoption technologique lente</li>
-                    <li>• Formation numérique nécessaire</li>
+                    <li>• **Instabilité Fédérale :** Enquêtes judiciaires et changements fréquents à la tête de la FAF.</li>
+                    <li>• **Manque de Transparence :** Gestion opaque des fonds et des contrats.</li>
+                    <li>• **Risque Partenaire :** La fiabilité des instances officielles comme partenaire est compromise.</li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold mb-2">Défis Économiques</h4>
+                  <h4 className="font-semibold mb-2">Économie de l'Ombre</h4>
                   <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Budgets limités des clubs</li>
-                    <li>• Volatilité du dinar</li>
-                    <li>• Financement difficile</li>
+                    <li>• **Trafic de Matchs :** Des cas avérés de matchs truqués qui dévaluent l'analyse de données.</li>
+                    <li>• **Paiements "Sous la Table" :** Le plafonnement des salaires encourage les finances parallèles.</li>
+                    <li>• **Résistance à la Transparence :** Les acteurs habitués à l'opacité peuvent rejeter les outils numériques.</li>
                   </ul>
                 </div>
               </CardContent>
@@ -1504,33 +1512,61 @@ const BusinessPlanManagement: React.FC = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Stratégie de Pénétration</CardTitle>
+              <CardTitle>Stratégie Go-to-Market (GTM)</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <h4 className="font-semibold">Phase 1: Établissement</h4>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="space-y-2 p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-semibold">Phase 1: Validation (Mois 1-12)</h4>
                   <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Partenariat avec FAF</li>
-                    <li>• Clubs pilotes à Alger</li>
-                    <li>• Formation équipes locales</li>
+                    <li>• **Objectif :** Prouver le Product-Market Fit.</li>
+                    <li>• **Actions :** Partenariat avec 2-3 clubs pilotes (ex: CRB, ESS).</li>
+                    <li>• **KPI :** Taux d'adoption > 90%, satisfaction > 8/10.</li>
                   </ul>
                 </div>
-                <div className="space-y-2">
-                  <h4 className="font-semibold">Phase 2: Expansion</h4>
+                <div className="space-y-2 p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-semibold">Phase 2: Pénétration (Mois 13-24)</h4>
                   <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Extension à Oran, Constantine</li>
-                    <li>• Recrutement commercial</li>
-                    <li>• Adaptation produit local</li>
+                    <li>• **Objectif :** Obtenir l'endorsement officiel de la FAF.</li>
+                    <li>• **Actions :** Expansion systématique en Ligue 1.</li>
+                    <li>• **KPI :** 50% de part de marché en L1.</li>
                   </ul>
                 </div>
-                <div className="space-y-2">
-                  <h4 className="font-semibold">Phase 3: Consolidation</h4>
+                <div className="space-y-2 p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-semibold">Phase 3: Domination (Mois 25-36)</h4>
                   <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Couverture nationale</li>
-                    <li>• Diversification services</li>
-                    <li>• Leadership marché</li>
+                    <li>• **Objectif :** Devenir le standard du marché.</li>
+                    <li>• **Actions :** Expansion agressive en Ligue 2 et académies.</li>
+                    <li>• **KPI :** 80% L1, 60% L2.</li>
                   </ul>
+                </div>
+                 <div className="space-y-2 p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-semibold">Phase 4: Expansion (Ans 4-5)</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• **Objectif :** Devenir un acteur régional.</li>
+                    <li>• **Actions :** Lancement en Tunisie et Maroc.</li>
+                    <li>• **KPI :** 5 clients dans chaque nouveau pays.</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Taille du Marché et Segmentation</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-semibold mb-2">Marché Total Adressable (TAM)</h4>
+                  <p className="text-2xl font-bold text-primary">15-20M DZD / an</p>
+                  <p className="text-sm text-muted-foreground">Croissance annuelle de 15% (CAGR) tirée par les réformes.</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Marché Adressable Disponible (SAM)</h4>
+                  <p className="text-2xl font-bold text-blue-600">8-12M DZD / an</p>
+                  <p className="text-sm text-muted-foreground">Ciblage des clubs pro (L1/L2) et académies FAF.</p>
                 </div>
               </div>
             </CardContent>
@@ -1917,38 +1953,74 @@ const BusinessPlanManagement: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="compliance" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Conformité Réglementaire Algérienne
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {regulations.map((regulation) => (
-                  <div key={regulation.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-foreground">{regulation.name}</h4>
-                      <p className="text-sm text-muted-foreground">{regulation.description}</p>
-                      {regulation.deadline && (
-                        <p className="text-xs text-orange-600 mt-1">
-                          Échéance: {new Date(regulation.deadline).toLocaleDateString('fr-FR')}
-                        </p>
-                      )}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Conformité Réglementaire Algérienne
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {regulations.map((regulation) => (
+                    <div key={regulation.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground">{regulation.name}</h4>
+                        <p className="text-sm text-muted-foreground">{regulation.description}</p>
+                        {regulation.deadline && (
+                          <p className="text-xs text-orange-600 mt-1">
+                            Échéance: {new Date(regulation.deadline).toLocaleDateString('fr-FR')}
+                          </p>
+                        )}
+                      </div>
+                      <Badge variant={
+                        regulation.compliance === 'compliant' ? 'default' :
+                        regulation.compliance === 'pending' ? 'secondary' : 'destructive'
+                      }>
+                        {regulation.compliance === 'compliant' ? 'Conforme' :
+                         regulation.compliance === 'pending' ? 'En cours' : 'Non conforme'}
+                      </Badge>
                     </div>
-                    <Badge variant={
-                      regulation.compliance === 'compliant' ? 'default' :
-                      regulation.compliance === 'pending' ? 'secondary' : 'destructive'
-                    }>
-                      {regulation.compliance === 'compliant' ? 'Conforme' :
-                       regulation.compliance === 'pending' ? 'En cours' : 'Non conforme'}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-primary">
+                  <Shield className="h-5 w-5" />
+                  Stratégie de Conformité des Données
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold mb-2">Loi sur la Protection des Données 18-07</h4>
+                      <p className="text-sm text-muted-foreground">
+                        La loi algérienne impose des restrictions strictes sur le transfert de données personnelles hors du pays. Notre stratégie est de garantir une conformité totale.
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-2">Stratégie de Cloud Hybride</h4>
+                      <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-4">
+                        <li>**Hébergement Local :** Toutes les données personnelles sensibles seront hébergées sur des serveurs situés en Algérie.</li>
+                        <li>**Partenaires Locaux :** Collaboration avec des fournisseurs de cloud locaux agréés (ex: ICOSNET, CenterServ, AYRADE).</li>
+                        <li>**Données Non-Sensibles :** Utilisation possible de clouds internationaux pour les données non-personnelles et les services génériques.</li>
+                      </ul>
+                    </div>
+                     <div>
+                      <h4 className="font-semibold mb-2">Avantages de cette approche</h4>
+                       <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-4">
+                        <li>**Conformité Garantie :** Évite les risques légaux et les amendes.</li>
+                        <li>**Confiance du Marché :** Démontre un engagement envers la souveraineté des données algériennes.</li>
+                        <li>**Faible Latence :** Améliore les performances de l'application pour les utilisateurs locaux.</li>
+                      </ul>
+                    </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           <Card>
             <CardHeader>
