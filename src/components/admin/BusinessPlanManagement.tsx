@@ -37,6 +37,9 @@ import {
 import { toast } from 'sonner';
 import StartupPitchPresentation from './StartupPitchPresentation';
 import BudgetOptimizationSolver from './BudgetOptimizationSolver';
+import MarketAnalysis from './MarketAnalysis';
+import BusinessPlanDetails from './BusinessPlanDetails';
+import BusinessModelCanvasView from './BusinessModelCanvasView';
 
 interface BusinessGoal {
   id: string;
@@ -568,10 +571,6 @@ const BusinessPlanManagement: React.FC = () => {
   };
   // ========== END: UPDATED HELPER FUNCTION FOR ROLE DISPLAY ==========
 
-
-import MarketAnalysis from './MarketAnalysis';
-import BusinessPlanDetails from './BusinessPlanDetails';
-import BusinessModelCanvasView from './BusinessModelCanvasView';
 
   return (
     <div className="space-y-6">

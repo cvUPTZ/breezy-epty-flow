@@ -70,7 +70,7 @@ const MarketAnalysis: React.FC = () => {
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• **Objectif :** Prouver le Product-Market Fit.</li>
                 <li>• **Actions :** Partenariat avec 2-3 clubs pilotes (ex: CRB, ESS).</li>
-                <li>• **KPI :** Taux d'adoption > 90%, satisfaction > 8/10.</li>
+                <li>• **KPI :** Taux d'adoption &gt; 90%, satisfaction &gt; 8/10.</li>
               </ul>
             </div>
             <div className="space-y-2 p-4 bg-muted/50 rounded-lg">

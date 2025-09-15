@@ -305,7 +305,6 @@ const EventTypeSvg: React.FC<EventTypeSvgProps> = ({
       
       case 'freekick':
       case 'free-kick':
-      case 'freekick':
         return (
           <svg className={baseClasses} viewBox={viewBox} onClick={onClick}>
             <defs>
