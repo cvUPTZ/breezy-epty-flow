@@ -42,6 +42,11 @@ import NotFound from './pages/NotFound';
 import VideoSetupPage from './pages/Admin/VideoSetupPage';
 import Scouting from './pages/Scouting';
 import ClubDetails from './components/scouting/ClubDetails';
+import MarketIntelligencePage from './pages/MarketIntelligencePage';
+import BusinessPlanPage from './pages/BusinessPlanPage';
+import StartupPitchPage from './pages/StartupPitchPage';
+import BusinessModelCanvasPage from './pages/BusinessModelCanvas';
+import ServiceOfferPage from './pages/ServiceOffer';
 
 const queryClient = new QueryClient();
 
@@ -262,6 +267,33 @@ const AppContent = () => {
             >
                 <ClubDetails />
             </RequireAuth>
+        } />
+
+        {/* Business Routes */}
+        <Route path="/business/market-intelligence" element={
+          <RequireAuth requiredRoles={['admin', 'manager']}>
+            <MarketIntelligencePage />
+          </RequireAuth>
+        } />
+        <Route path="/business/plan" element={
+          <RequireAuth requiredRoles={['admin', 'manager']}>
+            <BusinessPlanPage />
+          </RequireAuth>
+        } />
+        <Route path="/business/pitch" element={
+          <RequireAuth requiredRoles={['admin', 'manager']}>
+            <StartupPitchPage />
+          </RequireAuth>
+        } />
+        <Route path="/business/canvas" element={
+          <RequireAuth requiredRoles={['admin', 'manager']}>
+            <BusinessModelCanvasPage />
+          </RequireAuth>
+        } />
+        <Route path="/business/service-offer" element={
+          <RequireAuth requiredRoles={['admin', 'manager']}>
+            <ServiceOfferPage />
+          </RequireAuth>
         } />
 
         {/* Communication Routes */}

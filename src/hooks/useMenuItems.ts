@@ -1,6 +1,6 @@
 
 import { useMemo } from 'react';
-import { LayoutDashboard, Play, Calendar, BarChart3, TrendingUp, Target, Eye, Network, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, Play, Calendar, BarChart3, TrendingUp, Target, Eye, Network, AlertTriangle, Briefcase, DollarSign } from 'lucide-react';
 import { usePermissionChecker } from './usePermissionChecker';
 import { type RolePermissions } from './useUserPermissions';
 
@@ -73,6 +73,40 @@ export const useMenuItems = () => {
         label: 'Scouting', 
         icon: Eye, 
         path: '/scouting'
+      });
+    }
+
+    // Add business pages for admins and managers
+    if (isAdmin() || hasPermission('canViewAnalytics')) { // Using same logic as scouting
+      items.push({
+        value: 'business-plan',
+        label: 'Business Plan',
+        icon: Briefcase,
+        path: '/business/plan'
+      });
+      items.push({
+        value: 'market-intelligence',
+        label: 'Market Study',
+        icon: Eye, // Using Eye icon like scouting
+        path: '/business/market-intelligence'
+      });
+      items.push({
+        value: 'pitch-deck',
+        label: 'Presentation',
+        icon: TrendingUp, // Using TrendingUp icon like analytics
+        path: '/business/pitch'
+      });
+      items.push({
+        value: 'business-canvas',
+        label: 'Business Canvas',
+        icon: LayoutDashboard, // Using Dashboard icon
+        path: '/business/canvas'
+      });
+      items.push({
+        value: 'service-offer',
+        label: 'Service Offer',
+        icon: DollarSign,
+        path: '/business/service-offer'
       });
     }
     
