@@ -31,6 +31,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { usePermissionChecker } from '@/hooks/usePermissionChecker';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { User } from '@supabase/supabase-js';
 
 interface ErrorLog {
   id: string;
@@ -69,6 +70,7 @@ const ErrorManager: React.FC = () => {
   const [filterType, setFilterType] = useState<string>('all');
   const [selectedError, setSelectedError] = useState<ErrorLog | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [stats, setStats] = useState({
     total: 0,
     critical: 0,
@@ -94,7 +96,34 @@ const ErrorManager: React.FC = () => {
   }
 
   useEffect(() => {
-    fetchErrors();
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const userRes = await supabase.auth.getUser();
+        setCurrentUser(userRes.data.user);
+
+        const { data, error } = await supabase
+          .from('error_logs')
+          .select('*')
+          .order('last_occurrence', { ascending: false })
+          .limit(100);
+
+        if (error) throw error;
+
+        setErrors(data || []);
+        calculateStats(data || []);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch data",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
 
   const fetchErrors = async () => {
@@ -138,8 +167,8 @@ const ErrorManager: React.FC = () => {
 
   const filteredErrors = errors.filter(error => {
     const matchesSearch = error.error_message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         error.component_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         error.function_name?.toLowerCase().includes(searchTerm.toLowerCase());
+                         (error.component_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+                         (error.function_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
     
     const matchesSeverity = filterSeverity === 'all' || error.severity === filterSeverity;
     const matchesStatus = filterStatus === 'all' || error.status === filterStatus;
@@ -156,7 +185,7 @@ const ErrorManager: React.FC = () => {
       };
 
       if (status === 'resolved') {
-        updates.resolved_by = (await supabase.auth.getUser()).data.user?.id;
+        updates.resolved_by = currentUser?.id;
         updates.resolved_at = new Date().toISOString();
         updates.resolution_notes = notes;
       }
@@ -424,7 +453,7 @@ const ErrorManager: React.FC = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Dialog>
+                    <Dialog onOpenChange={(open) => !open && setSelectedError(null)}>
                       <DialogTrigger asChild>
                         <Button 
                           variant="ghost" 

@@ -70,21 +70,8 @@ export class ErrorManager {
       });
     });
 
-    // Handle React errors (will be enhanced by ErrorBoundary)
-    const originalConsoleError = console.error;
-    console.error = (...args) => {
-      const message = args.join(' ');
-      if (message.includes('React') || message.includes('Warning:')) {
-        this.logError({
-          errorType: 'frontend',
-          errorCategory: 'runtime',
-          errorMessage: message,
-          componentName: 'React',
-          severity: message.includes('Warning:') ? 'warning' : 'error'
-        });
-      }
-      originalConsoleError(...args);
-    };
+    // React errors are now handled by ErrorBoundary components.
+    // The console.error wrapper has been removed to avoid duplicate logging.
   }
 
   private setupNetworkMonitoring(): void {
@@ -122,24 +109,19 @@ export class ErrorManager {
     }
 
     try {
-      const { error } = await supabase.rpc('log_error', {
-        p_error_type: enrichedError.errorType,
-        p_error_category: enrichedError.errorCategory,
-        p_error_code: enrichedError.errorCode,
-        p_error_message: enrichedError.errorMessage,
-        p_stack_trace: enrichedError.stackTrace,
-        p_component_name: enrichedError.componentName,
-        p_function_name: enrichedError.functionName,
-        p_url: enrichedError.url,
-        p_user_agent: navigator.userAgent,
-        p_session_id: this.sessionId,
-        p_metadata: enrichedError.metadata,
-        p_severity: enrichedError.severity || 'error'
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const response = await fetch('/api/log-error', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ errorDetails: enrichedError })
       });
 
-      if (error) {
-        console.error('Failed to log error:', error);
-        this.errorQueue.push(enrichedError);
+      if (!response.ok) {
+        throw new Error(`Failed to log error: ${response.statusText}`);
       }
 
       // Show user notification for critical errors
