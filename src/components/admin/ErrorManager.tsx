@@ -1,31 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+// ErrorManagerComponent.tsx
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { 
-  AlertTriangle, 
-  Bug, 
-  Search, 
-  Filter, 
-  CheckCircle, 
-  Clock, 
+import {
+  AlertTriangle,
+  Bug,
+  Search,
+  CheckCircle,
+  Clock,
   Eye,
   AlertCircle,
   Info,
   XCircle,
-  BarChart3,
-  Calendar,
-  User as UserIcon,
-  Globe,
-  Server,
-  Smartphone,
-  Wifi
+  BarChart3
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePermissionChecker } from '@/hooks/usePermissionChecker';
@@ -61,16 +55,21 @@ interface ErrorLog {
 }
 
 const ErrorManager: React.FC = () => {
-  const { hasPermission } = usePermissionChecker();
+  const { hasPermission, loading: permissionLoading } = usePermissionChecker();
   const [errors, setErrors] = useState<ErrorLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
+
   const [selectedError, setSelectedError] = useState<ErrorLog | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
+
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+
   const [stats, setStats] = useState({
     total: 0,
     critical: 0,
@@ -82,52 +81,10 @@ const ErrorManager: React.FC = () => {
     investigating: 0
   });
 
-  // Permission check
-  if (!hasPermission('canViewAnalytics')) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center text-muted-foreground">
-            You don't have permission to view error management.
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const userRes = await supabase.auth.getUser();
-        setCurrentUser(userRes.data.user);
-
-        const { data, error } = await supabase
-          .from('error_logs')
-          .select('*')
-          .order('last_occurrence', { ascending: false })
-          .limit(100);
-
-        if (error) throw error;
-
-        setErrors(data || []);
-        calculateStats(data || []);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch data",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
-
-  const fetchErrors = async () => {
+  // Fetch errors (shared)
+  const loadErrors = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const { data, error } = await supabase
         .from('error_logs')
@@ -137,10 +94,12 @@ const ErrorManager: React.FC = () => {
 
       if (error) throw error;
 
-      setErrors(data || []);
-      calculateStats(data || []);
-    } catch (error) {
-      console.error('Error fetching error logs:', error);
+      const errList = data || [];
+      setErrors(errList);
+      calculateStats(errList);
+    } catch (err: any) {
+      console.error('Error fetching error logs:', err);
+      setLoadError(err.message || 'Unknown error');
       toast({
         title: "Error",
         description: "Failed to fetch error logs",
@@ -151,8 +110,34 @@ const ErrorManager: React.FC = () => {
     }
   };
 
+  // Initial fetch & current user
+  useEffect(() => {
+    const fetchInit = async () => {
+      setLoading(true);
+      setLoadError(null);
+      try {
+        // get current user
+        const userRes = await supabase.auth.getUser();
+        setCurrentUser(userRes.data.user);
+
+        await loadErrors();
+      } catch (err: any) {
+        console.error('Init fetch error:', err);
+        setLoadError(err.message || 'Unknown error during initial load');
+        toast({
+          title: "Error",
+          description: "Failed to initialize data",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInit();
+  }, []);
+
   const calculateStats = (errorList: ErrorLog[]) => {
-    const stats = {
+    const s = {
       total: errorList.length,
       critical: errorList.filter(e => e.severity === 'critical').length,
       error: errorList.filter(e => e.severity === 'error').length,
@@ -162,22 +147,38 @@ const ErrorManager: React.FC = () => {
       resolved: errorList.filter(e => e.status === 'resolved').length,
       investigating: errorList.filter(e => e.status === 'investigating').length
     };
-    setStats(stats);
+    setStats(s);
   };
 
-  const filteredErrors = errors.filter(error => {
-    const matchesSearch = error.error_message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (error.component_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-                         (error.function_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
-    
-    const matchesSeverity = filterSeverity === 'all' || error.severity === filterSeverity;
-    const matchesStatus = filterStatus === 'all' || error.status === filterStatus;
-    const matchesType = filterType === 'all' || error.error_type === filterType;
+  // Filtered list using useMemo to avoid unnecessary recomputation
+  const filteredErrors = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
 
-    return matchesSearch && matchesSeverity && matchesStatus && matchesType;
-  });
+    return errors.filter(error => {
+      const matchesSearch =
+        (!term) ||
+        error.error_message.toLowerCase().includes(term) ||
+        (error.component_name && error.component_name.toLowerCase().includes(term)) ||
+        (error.function_name && error.function_name.toLowerCase().includes(term));
+
+      const matchesSeverity = filterSeverity === 'all' || error.severity === filterSeverity;
+      const matchesStatus = filterStatus === 'all' || error.status === filterStatus;
+      const matchesType = filterType === 'all' || error.error_type === filterType;
+
+      return matchesSearch && matchesSeverity && matchesStatus && matchesType;
+    });
+  }, [errors, searchTerm, filterSeverity, filterStatus, filterType]);
 
   const updateErrorStatus = async (errorId: string, status: string, notes?: string) => {
+    if (!currentUser) {
+      toast({
+        title: "Error",
+        description: "No current user info.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const updates: any = {
         status,
@@ -185,7 +186,7 @@ const ErrorManager: React.FC = () => {
       };
 
       if (status === 'resolved') {
-        updates.resolved_by = currentUser?.id;
+        updates.resolved_by = currentUser.id;
         updates.resolved_at = new Date().toISOString();
         updates.resolution_notes = notes;
       }
@@ -202,11 +203,11 @@ const ErrorManager: React.FC = () => {
         description: `Error marked as ${status}`
       });
 
-      fetchErrors();
+      await loadErrors();
       setSelectedError(null);
       setResolutionNotes('');
-    } catch (error) {
-      console.error('Error updating status:', error);
+    } catch (err: any) {
+      console.error('Error updating status:', err);
       toast({
         title: "Error",
         description: "Failed to update error status",
@@ -233,15 +234,15 @@ const ErrorManager: React.FC = () => {
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'frontend':
-        return <Smartphone className="h-4 w-4" />;
+        return <></>; // replace with your icon
       case 'backend':
-        return <Server className="h-4 w-4" />;
+        return <></>; 
       case 'network':
-        return <Wifi className="h-4 w-4" />;
+        return <></>; 
       case 'auth':
-        return <UserIcon className="h-4 w-4" />;
+        return <></>; 
       default:
-        return <Globe className="h-4 w-4" />;
+        return <></>;
     }
   };
 
@@ -260,16 +261,42 @@ const ErrorManager: React.FC = () => {
     }
   };
 
-  if (loading) {
+  // Handle loading / permissionLoading / load error
+  if (permissionLoading || loading) {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="text-center">Loading error logs...</div>
+          <div className="text-center">Loading…</div>
         </CardContent>
       </Card>
     );
   }
 
+  if (!hasPermission('canViewAnalytics')) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-muted-foreground">
+            You don't have permission to view error management.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-red-500">
+            {loadError}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // UI render
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -279,7 +306,7 @@ const ErrorManager: React.FC = () => {
             Monitor and manage application errors and bugs
           </p>
         </div>
-        <Button onClick={fetchErrors} disabled={loading}>
+        <Button onClick={loadErrors} disabled={loading}>
           <BarChart3 className="h-4 w-4 mr-2" />
           Refresh
         </Button>
@@ -298,7 +325,6 @@ const ErrorManager: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -310,7 +336,6 @@ const ErrorManager: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -322,7 +347,6 @@ const ErrorManager: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -343,16 +367,14 @@ const ErrorManager: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[200px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search errors..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+            <div className="flex-1 min-w-[200px] relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search errors..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
             <Select value={filterSeverity} onValueChange={setFilterSeverity}>
               <SelectTrigger className="w-[140px]">
@@ -414,7 +436,7 @@ const ErrorManager: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredErrors.map((error) => (
+              {filteredErrors.map(error => (
                 <TableRow key={error.id}>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -443,20 +465,30 @@ const ErrorManager: React.FC = () => {
                     {format(new Date(error.last_occurrence), 'MMM dd, HH:mm')}
                   </TableCell>
                   <TableCell>
-                    <Badge 
+                    <Badge
                       variant={
-                        error.status === 'resolved' ? 'default' :
-                        error.status === 'investigating' ? 'secondary' : 'outline'
+                        error.status === 'resolved'
+                          ? 'default'
+                          : error.status === 'investigating'
+                          ? 'secondary'
+                          : 'outline'
                       }
                     >
                       {error.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Dialog onOpenChange={(open) => !open && setSelectedError(null)}>
+                    <Dialog
+                      onOpenChange={(open) => {
+                        if (!open) {
+                          setSelectedError(null);
+                          setResolutionNotes('');
+                        }
+                      }}
+                    >
                       <DialogTrigger asChild>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           onClick={() => setSelectedError(error)}
                         >
@@ -470,8 +502,8 @@ const ErrorManager: React.FC = () => {
                             Detailed information about this error
                           </DialogDescription>
                         </DialogHeader>
-                        
-                        {selectedError && (
+
+                        {selectedError && selectedError.id === error.id && (
                           <div className="space-y-6">
                             {/* Error Overview */}
                             <div className="grid grid-cols-2 gap-4">
@@ -527,7 +559,7 @@ const ErrorManager: React.FC = () => {
                               </div>
                             )}
 
-                            {/* Resolution */}
+                            {/* Resolution actions if not resolved */}
                             {selectedError.status !== 'resolved' && (
                               <div>
                                 <h4 className="font-semibold mb-2">Resolution</h4>
@@ -584,7 +616,7 @@ const ErrorManager: React.FC = () => {
               ))}
             </TableBody>
           </Table>
-          
+
           {filteredErrors.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               No errors found matching the current filters.
