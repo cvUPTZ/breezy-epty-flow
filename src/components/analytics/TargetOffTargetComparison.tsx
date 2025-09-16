@@ -10,6 +10,14 @@ import {
 } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 
+/**
+ * @interface TargetOffTargetComparisonProps
+ * @description Props for the TargetOffTargetComparison component.
+ * @property {TeamDetailedStats} homeStats - The detailed statistics for the home team.
+ * @property {TeamDetailedStats} awayStats - The detailed statistics for the away team.
+ * @property {string} homeTeamName - The name of the home team.
+ * @property {string} awayTeamName - The name of the away team.
+ */
 interface TargetOffTargetComparisonProps {
   homeStats: TeamDetailedStats;
   awayStats: TeamDetailedStats;
@@ -17,8 +25,13 @@ interface TargetOffTargetComparisonProps {
   awayTeamName: string;
 }
 
-// Removed SimpleComparisonBar placeholder
-
+/**
+ * @component TargetOffTargetComparison
+ * @description A component that renders a grouped bar chart to compare shot outcomes
+ * (on target, off target, etc.) for both foot and header shots between two teams.
+ * @param {TargetOffTargetComparisonProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const TargetOffTargetComparison: React.FC<TargetOffTargetComparisonProps> = ({
   homeStats,
   awayStats,

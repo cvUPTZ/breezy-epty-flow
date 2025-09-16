@@ -10,6 +10,14 @@ import {
 } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 
+/**
+ * @interface PerformanceComparisonGraphsProps
+ * @description Props for the PerformanceComparisonGraphs component.
+ * @property {TeamDetailedStats} homeStats - The detailed statistics for the home team.
+ * @property {TeamDetailedStats} awayStats - The detailed statistics for the away team.
+ * @property {string} homeTeamName - The name of the home team.
+ * @property {string} awayTeamName - The name of the away team.
+ */
 interface PerformanceComparisonGraphsProps {
   homeStats: TeamDetailedStats;
   awayStats: TeamDetailedStats;
@@ -17,8 +25,14 @@ interface PerformanceComparisonGraphsProps {
   awayTeamName: string;
 }
 
-// Removed SimpleComparisonBarGraph
-
+/**
+ * @component PerformanceComparisonGraphs
+ * @description A component that renders a series of grouped bar charts to provide a
+ * side-by-side comparison of specific performance metrics (like shot types and action success)
+ * between two teams.
+ * @param {PerformanceComparisonGraphsProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const PerformanceComparisonGraphs: React.FC<PerformanceComparisonGraphsProps> = ({
   homeStats,
   awayStats,

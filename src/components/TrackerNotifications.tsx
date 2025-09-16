@@ -11,13 +11,16 @@ import { formatDistanceToNow } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { PushNotificationService } from '@/services/pushNotificationService';
 
+/**
+ * @interface NotificationData
+ * @description Represents the flexible data payload within a notification.
+ */
 interface NotificationData {
   assigned_event_types?: string[];
   assigned_player_ids?: number[];
   assignment_type?: string;
   with_sound?: boolean;
   timestamp?: string;
-  // Video-specific data
   video_url?: string;
   video_title?: string;
   video_description?: string;
@@ -28,6 +31,10 @@ interface NotificationData {
   match_name?: string;
 }
 
+/**
+ * @interface MatchInfo
+ * @description Represents basic information about a match, often linked to a notification.
+ */
 interface MatchInfo {
   name: string | null;
   home_team_name: string;
@@ -35,6 +42,10 @@ interface MatchInfo {
   status: string;
 }
 
+/**
+ * @interface NotificationWithMatch
+ * @description A composite type that combines a notification with its related match data.
+ */
 interface NotificationWithMatch {
   id: string;
   match_id: string | null;
@@ -50,6 +61,13 @@ interface NotificationWithMatch {
   match_date?: string | null;
 }
 
+/**
+ * @component TrackerNotifications
+ * @description A comprehensive component for displaying user notifications in real-time.
+ * It fetches notifications, subscribes to live updates from Supabase, handles various
+ * notification types with custom icons and actions, and supports push notifications and sounds.
+ * @returns {React.FC} A React functional component.
+ */
 const TrackerNotifications: React.FC = () => {
   const [notifications, setNotifications] = useState<NotificationWithMatch[]>([]);
   const [loading, setLoading] = useState(true);

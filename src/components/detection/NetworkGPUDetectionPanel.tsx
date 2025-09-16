@@ -30,12 +30,27 @@ import {
   Loader2
 } from 'lucide-react';
 
+/**
+ * @interface NetworkGPUDetectionPanelProps
+ * @description Props for the NetworkGPUDetectionPanel component.
+ * @property {string} videoUrl - The URL of the video to be analyzed.
+ * @property {function(results: any[]): void} [onDetectionResults] - Optional callback for when detection results are available.
+ * @property {function(job: InferenceJob): void} [onJobUpdate] - Optional callback for job status updates.
+ */
 interface NetworkGPUDetectionPanelProps {
   videoUrl: string;
   onDetectionResults?: (results: any[]) => void;
   onJobUpdate?: (job: InferenceJob) => void;
 }
 
+/**
+ * @component NetworkGPUDetectionPanel
+ * @description A control panel for submitting and monitoring detection jobs on a distributed GPU network.
+ * It provides an interface to connect to the network, view its status, configure job parameters,
+ * and track progress in real-time.
+ * @param {NetworkGPUDetectionPanelProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 export const NetworkGPUDetectionPanel: React.FC<NetworkGPUDetectionPanelProps> = ({
   videoUrl,
   onDetectionResults,

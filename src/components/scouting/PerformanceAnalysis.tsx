@@ -6,6 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from 'recharts';
 import { Activity, Video, FileText, TrendingUp, Star, Target } from 'lucide-react';
 
+/**
+ * @component PerformanceAnalysis
+ * @description A dashboard component for visualizing and analyzing player performance data.
+ * It uses mock data to showcase various analytical tools, including statistical charts (line, bar, radar),
+ * key performance indicators (KPIs), video analysis playlists, comparative analysis against benchmarks,
+ * and a summary of scout reports. The interface is organized into tabs for clarity.
+ * @returns {JSX.Element} The rendered PerformanceAnalysis component.
+ */
 const PerformanceAnalysis: React.FC = () => {
   const [selectedPlayer, setSelectedPlayer] = useState('player1');
   const [analysisType, setAnalysisType] = useState('overall');

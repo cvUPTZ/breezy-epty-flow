@@ -4,6 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { EnhancedEventTypeIcon } from '@/components/match/EnhancedEventTypeIcon';
 
+/**
+ * @interface TrackerStatus
+ * @description Defines the structure of the real-time status object for a single tracker.
+ */
 interface TrackerStatus {
   user_id: string;
   email?: string;
@@ -15,6 +19,12 @@ interface TrackerStatus {
   network_quality?: 'excellent' | 'good' | 'poor';
 }
 
+/**
+ * @interface TrackerStatusCardProps
+ * @description Props for the TrackerStatusCard component.
+ * @property {TrackerStatus} tracker - The status object for the tracker to display.
+ * @property {number} index - The index of the card in a list, used for animation delay.
+ */
 interface TrackerStatusCardProps {
   tracker: TrackerStatus;
   index: number;
@@ -32,6 +42,14 @@ const EVENT_COLORS = {
   'default': 'from-gray-500 to-gray-600'
 };
 
+/**
+ * @component TrackerStatusCard
+ * @description A detailed, animated card that displays the real-time status of a single tracker.
+ * It shows connection status, current action, battery level, network quality, and a summary
+ * of events recorded by the tracker.
+ * @param {TrackerStatusCardProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const TrackerStatusCard: React.FC<TrackerStatusCardProps> = ({ tracker, index }) => {
   const getStatusColor = () => {
     if (tracker.status === 'recording') {

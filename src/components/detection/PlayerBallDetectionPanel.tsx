@@ -10,11 +10,25 @@ import { Loader2, Play, Square, Settings, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { pythonDetectionService, DetectionJob, DetectionResult } from '@/services/pythonDetectionService';
 
+/**
+ * @interface PlayerBallDetectionPanelProps
+ * @description Props for the PlayerBallDetectionPanel component.
+ * @property {string} [videoId] - The ID of the video to be analyzed.
+ * @property {function(results: DetectionResult[]): void} [onDetectionResults] - Optional callback for when detection results are available.
+ */
 interface PlayerBallDetectionPanelProps {
   videoId?: string;
   onDetectionResults?: (results: DetectionResult[]) => void;
 }
 
+/**
+ * @component PlayerBallDetectionPanel
+ * @description A control panel for initiating and monitoring a player and ball detection
+ * job on the backend Python service. It provides settings for the detection and
+ * displays the job's progress.
+ * @param {PlayerBallDetectionPanelProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 export const PlayerBallDetectionPanel: React.FC<PlayerBallDetectionPanelProps> = ({
   videoId,
   onDetectionResults,

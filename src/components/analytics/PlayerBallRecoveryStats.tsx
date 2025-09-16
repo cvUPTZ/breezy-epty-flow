@@ -3,11 +3,22 @@ import { PlayerStatSummary, Player } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
+/**
+ * @interface PlayerBallRecoveryStatsProps
+ * @description Props for the PlayerBallRecoveryStats component.
+ * @property {PlayerStatSummary[]} playerStats - An array of statistics for each player.
+ */
 interface PlayerBallRecoveryStatsProps {
   playerStats: PlayerStatSummary[];
-  // allPlayersForMatch: Player[];
 }
 
+/**
+ * @component PlayerBallRecoveryStats
+ * @description A component that displays a ranked table of players based on the number
+ * of times they recovered the ball, highlighting key defensive contributors.
+ * @param {PlayerBallRecoveryStatsProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const PlayerBallRecoveryStats: React.FC<PlayerBallRecoveryStatsProps> = ({
   playerStats,
 }) => {

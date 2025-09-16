@@ -6,14 +6,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 
-// Interface updated to match the data structure from our new scraper function
-// Note: 'players' is removed as it's not needed for this list view.
+/**
+ * @interface Club
+ * @description Represents the data structure for a single Algerian football club.
+ * @property {string} lfp_id - The unique identifier for the club from the LFP website.
+ * @property {string} name - The name of the club.
+ * @property {string} logo_url - The full URL to the club's logo.
+ */
 interface Club {
   lfp_id: string; // The ID from the LFP website
   name: string;
   logo_url: string; // This is now a full URL
 }
 
+/**
+ * @component AlgerianClubs
+ * @description A component that fetches and displays a grid of Algerian football clubs.
+ * It handles loading and error states, and allows navigation to a detailed view for each club.
+ * The data is fetched from a Supabase edge function.
+ * @returns {JSX.Element} The rendered AlgerianClubs component.
+ */
 const AlgerianClubs: React.FC = () => {
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);

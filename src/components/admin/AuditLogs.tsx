@@ -13,6 +13,18 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+/**
+ * @interface AuditLog
+ * @description Represents a single entry in the audit log.
+ * @property {string} id - The unique identifier for the log entry.
+ * @property {string} action - The action performed (e.g., 'CREATE', 'UPDATE', 'DELETE').
+ * @property {string} resource_type - The type of resource affected (e.g., 'match', 'user').
+ * @property {string} resource_id - The ID of the affected resource.
+ * @property {string} user_id - The ID of the user who performed the action.
+ * @property {string} user_email - The email of the user who performed the action.
+ * @property {any} details - A JSON object containing specific details about the action.
+ * @property {string} timestamp - The ISO string timestamp of when the action occurred.
+ */
 interface AuditLog {
   id: string;
   action: string;
@@ -24,6 +36,13 @@ interface AuditLog {
   timestamp: string;
 }
 
+/**
+ * @component AuditLogs
+ * @description A component for displaying and filtering system audit logs.
+ * It provides a detailed view of user actions across different resources,
+ * with powerful filtering capabilities. Note: Currently uses mock data.
+ * @returns {React.FC} A React functional component.
+ */
 const AuditLogs: React.FC = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);

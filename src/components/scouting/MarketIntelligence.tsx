@@ -7,6 +7,14 @@ import { TrendingUp, TrendingDown, DollarSign, Calendar, Users, AlertCircle } fr
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+/**
+ * @interface MarketData
+ * @description Defines the structure for the market intelligence data displayed on the dashboard.
+ * @property {any[]} transferOpportunities - A list of players recommended for transfer.
+ * @property {any[]} contractExpiries - A list of players with expiring contracts.
+ * @property {any[]} marketTrends - Data representing market trends for different positions.
+ * @property {any} budgetAnalysis - An object containing budget information.
+ */
 interface MarketData {
   transferOpportunities: any[];
   contractExpiries: any[];
@@ -14,6 +22,13 @@ interface MarketData {
   budgetAnalysis: any;
 }
 
+/**
+ * @component MarketIntelligence
+ * @description A dashboard component that provides market intelligence for football scouting.
+ * It displays transfer opportunities, players with expiring contracts, market trends, and budget analysis.
+ * It also includes a static market study report. Data is fetched from Supabase and supplemented with mock data.
+ * @returns {JSX.Element} The rendered MarketIntelligence component.
+ */
 const MarketIntelligence: React.FC = () => {
   const [marketData, setMarketData] = useState<MarketData>({
     transferOpportunities: [],

@@ -44,6 +44,14 @@ import {
 } from 'recharts';
 import { Statistics, PlayerStatSummary } from '@/types';
 
+/**
+ * @interface AdvancedAnalyticsDashboardProps
+ * @description Props for the AdvancedAnalyticsDashboard component.
+ * @property {Statistics} statistics - The aggregated statistics for both teams.
+ * @property {PlayerStatSummary[]} playerStats - An array of detailed statistics for individual players.
+ * @property {string} homeTeamName - The name of the home team.
+ * @property {string} awayTeamName - The name of the away team.
+ */
 interface AdvancedAnalyticsDashboardProps {
   statistics: Statistics;
   playerStats: PlayerStatSummary[];
@@ -59,6 +67,14 @@ const CHART_COLORS = [
   "hsl(var(--chart-5))",
 ];
 
+/**
+ * @component AdvancedAnalyticsDashboard
+ * @description A comprehensive dashboard for visualizing advanced match analytics. It includes
+ * KPI cards, performance trend charts, player comparisons, and various other data visualizations
+ * organized into a tabbed interface.
+ * @param {AdvancedAnalyticsDashboardProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
   statistics,
   playerStats,

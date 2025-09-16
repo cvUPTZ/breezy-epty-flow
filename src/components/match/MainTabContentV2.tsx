@@ -9,6 +9,15 @@ import { useUnifiedTrackerConnection } from '@/hooks/useUnifiedTrackerConnection
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 
+/**
+ * @interface MainTabContentV2Props
+ * @description Props for the MainTabContentV2 component.
+ * @property {string} matchId - The ID of the match to display data for.
+ * @property {{ name: string; formation?: string; }} homeTeam - The home team's data.
+ * @property {{ name: string; formation?: string; }} awayTeam - The away team's data.
+ * @property {boolean} [isTracking] - Optional flag indicating if tracking is active.
+ * @property {(eventType: any, player?: any, details?: any) => void} [onEventRecord] - Optional callback for recording events.
+ */
 interface MainTabContentV2Props {
   matchId: string;
   homeTeam: { name: string; formation?: string; };
@@ -17,6 +26,14 @@ interface MainTabContentV2Props {
   onEventRecord?: (eventType: any, player?: any, details?: any) => void;
 }
 
+/**
+ * @component MainTabContentV2
+ * @description An advanced, real-time version of the main tab content for match analysis.
+ * It uses hooks to fetch real-time match events and tracker statuses, displaying live statistics and tracker activity.
+ * Features include advanced stat calculations, animated UI elements, and a responsive design.
+ * @param {MainTabContentV2Props} props The props for the component.
+ * @returns {JSX.Element} The rendered MainTabContentV2 component.
+ */
 const MainTabContentV2: React.FC<MainTabContentV2Props> = ({
   matchId,
   homeTeam,

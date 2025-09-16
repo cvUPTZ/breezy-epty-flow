@@ -4,6 +4,21 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, SkipBack, SkipForward } from 'lucide-react';
 
+/**
+ * @interface ExternalVideoControlsProps
+ * @description Props for the ExternalVideoControls component.
+ * @property {boolean} isPlaying - Whether the video is currently playing.
+ * @property {number} currentTime - The current playback time of the video in seconds.
+ * @property {number} duration - The total duration of the video in seconds.
+ * @property {number} volume - The current volume level (0-1).
+ * @property {boolean} isMuted - Whether the video is currently muted.
+ * @property {boolean} isFullscreen - Whether the video is in fullscreen mode.
+ * @property {() => void} onPlayPause - Callback to toggle play/pause.
+ * @property {(time: number) => void} onSeek - Callback to seek to a specific time.
+ * @property {(volume: number) => void} onVolumeChange - Callback to change the volume.
+ * @property {() => void} onMuteToggle - Callback to toggle mute.
+ * @property {() => void} onFullscreenToggle - Callback to toggle fullscreen.
+ */
 interface ExternalVideoControlsProps {
   isPlaying: boolean;
   currentTime: number;
@@ -18,6 +33,14 @@ interface ExternalVideoControlsProps {
   onFullscreenToggle: () => void;
 }
 
+/**
+ * @component ExternalVideoControls
+ * @description A reusable and decoupled UI component for controlling a video player.
+ * It provides a full set of controls including a timeline slider, play/pause, skip, volume, and fullscreen buttons.
+ * The state and logic are managed by a parent component via props and callbacks.
+ * @param {ExternalVideoControlsProps} props The props for the component.
+ * @returns {JSX.Element} The rendered ExternalVideoControls component.
+ */
 export const ExternalVideoControls: React.FC<ExternalVideoControlsProps> = ({
   isPlaying,
   currentTime,

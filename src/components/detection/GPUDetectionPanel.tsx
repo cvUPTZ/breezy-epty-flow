@@ -18,12 +18,27 @@ import {
 } from '@/services/gpuDetectionService';
 import { Play, Square, Settings, Zap, Thermometer, MemoryStick, Gauge } from 'lucide-react';
 
+/**
+ * @interface GPUDetectionPanelProps
+ * @description Props for the GPUDetectionPanel component.
+ * @property {string} videoUrl - The URL of the video to be analyzed.
+ * @property {function(results: GPUDetectionResult[]): void} [onDetectionResults] - Optional callback for when detection results are available.
+ * @property {function(job: GPUDetectionJob): void} [onJobUpdate] - Optional callback for job status updates.
+ */
 interface GPUDetectionPanelProps {
   videoUrl: string;
   onDetectionResults?: (results: GPUDetectionResult[]) => void;
   onJobUpdate?: (job: GPUDetectionJob) => void;
 }
 
+/**
+ * @component GPUDetectionPanel
+ * @description A control panel for managing video detection tasks on a dedicated, local GPU-enabled PC node.
+ * It handles node connection, displays real-time GPU metrics, and allows for the configuration
+ * and execution of detection jobs.
+ * @param {GPUDetectionPanelProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 export const GPUDetectionPanel: React.FC<GPUDetectionPanelProps> = ({
   videoUrl,
   onDetectionResults,

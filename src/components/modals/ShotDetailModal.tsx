@@ -6,6 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ShotEventData } from '@/types/eventData';
 
+/**
+ * @interface ShotDetailModalProps
+ * @description Props for the ShotDetailModal component.
+ * @property {boolean} isOpen - Whether the modal is currently open.
+ * @property {() => void} onClose - Callback function to close the modal.
+ * @property {(details: ShotEventData) => void} onSubmit - Callback function to submit the shot details.
+ * @property {Partial<ShotEventData>} initialDetails - The initial details to populate the form with.
+ */
 interface ShotDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -13,6 +21,13 @@ interface ShotDetailModalProps {
   initialDetails: Partial<ShotEventData>;
 }
 
+/**
+ * @component ShotDetailModal
+ * @description A modal dialog for capturing a comprehensive set of details about a football shot event.
+ * It allows the user to specify if the shot was on target, if it was a goal, the body part used, shot type, situation, and assist type.
+ * @param {ShotDetailModalProps} props The props for the component.
+ * @returns {JSX.Element} The rendered ShotDetailModal component.
+ */
 const ShotDetailModal: React.FC<ShotDetailModalProps> = ({ isOpen, onClose, onSubmit, initialDetails }) => {
   const [onTarget, setOnTarget] = useState<boolean>(initialDetails.on_target || false);
   const [bodyPartUsed, setBodyPartUsed] = useState<'right_foot' | 'left_foot' | 'head' | 'other' | string>(initialDetails.body_part_used || 'right_foot');

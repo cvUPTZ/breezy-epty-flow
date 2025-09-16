@@ -7,11 +7,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 
-// --- Prop and State Types ---
+/**
+ * @interface Player
+ * @description Defines the structure for a player object used within the voice input component.
+ */
 interface Player { id: number; name: string; jersey_number: number | null; }
+
+/**
+ * @interface AssignedPlayers
+ * @description Defines the structure for the lists of home and away players assigned to the tracker.
+ */
 interface AssignedPlayers { home: Player[]; away: Player[]; }
+
+/**
+ * @interface AssignedEventType
+ * @description Defines the structure for an event type assigned to the tracker.
+ */
 interface AssignedEventType { key: string; label: string; }
 
+/**
+ * @interface TrackerVoiceInputProps
+ * @description Props for the TrackerVoiceInput component.
+ * @property {function} onRecordEvent - Callback to record a new event.
+ * @property {AssignedPlayers} assignedPlayers - The players assigned to this tracker.
+ * @property {AssignedEventType[]} assignedEventTypes - The event types assigned to this tracker.
+ */
 interface TrackerVoiceInputProps {
   onRecordEvent: ( 
     eventTypeKey: string, 
@@ -23,9 +43,22 @@ interface TrackerVoiceInputProps {
   assignedEventTypes: AssignedEventType[];
 }
 
+/**
+ * @typedef Feedback
+ * @description Represents a feedback message to be shown to the user.
+ * @property {'info' | 'success' | 'error'} status - The type of feedback.
+ * @property {string} message - The content of the feedback message.
+ */
 type Feedback = { status: 'info' | 'success' | 'error'; message: string };
 
-// --- The Component ---
+/**
+ * @component TrackerVoiceInput
+ * @description A component that allows users to record match events using voice commands.
+ * It uses a speech recognition hook to transcribe audio and a Supabase function to parse
+ * the command, then calls a callback to record the event.
+ * @param {TrackerVoiceInputProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 export function TrackerVoiceInput({ 
   onRecordEvent, 
   assignedPlayers, 

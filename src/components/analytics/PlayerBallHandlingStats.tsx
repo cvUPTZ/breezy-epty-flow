@@ -1,13 +1,24 @@
 import React from 'react';
-import { PlayerStatSummary, Player } from '@/types'; // Assuming PlayerStatSummary is now correctly defined in @/types
+import { PlayerStatSummary, Player } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
+/**
+ * @interface PlayerBallHandlingStatsProps
+ * @description Props for the PlayerBallHandlingStats component.
+ * @property {PlayerStatSummary[]} playerStats - An array of statistics for each player.
+ */
 interface PlayerBallHandlingStatsProps {
   playerStats: PlayerStatSummary[];
-  // allPlayersForMatch: Player[]; // May not be needed if PlayerStatSummary has playerName and team
 }
 
+/**
+ * @component PlayerBallHandlingStats
+ * @description A component that displays a table of detailed ball handling statistics
+ * for each player, including balls played, lost, received, and recovered.
+ * @param {PlayerBallHandlingStatsProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const PlayerBallHandlingStats: React.FC<PlayerBallHandlingStatsProps> = ({
   playerStats,
 }) => {

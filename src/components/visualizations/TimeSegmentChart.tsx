@@ -19,6 +19,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { TimeSegmentStatistics } from '@/types';
 import { ChartContainer } from '@/components/ui/chart';
 
+/**
+ * @interface TimeSegmentChartProps
+ * @description Props for the TimeSegmentChart component.
+ * @property {TimeSegmentStatistics[]} timeSegments - An array of statistics broken down by time segments.
+ * @property {string} homeTeamName - The name of the home team.
+ * @property {string} awayTeamName - The name of the away team.
+ * @property {string} dataKey - The key to access the specific data within each time segment object.
+ * @property {string} title - The title of the chart.
+ * @property {string} description - A description of what the chart represents.
+ * @property {'bar' | 'line' | 'area' | 'composed'} [chartType='bar'] - The type of chart to render.
+ */
 interface TimeSegmentChartProps {
   timeSegments: TimeSegmentStatistics[];
   homeTeamName: string;
@@ -29,6 +40,13 @@ interface TimeSegmentChartProps {
   chartType?: 'bar' | 'line' | 'area' | 'composed';
 }
 
+/**
+ * @component TimeSegmentChart
+ * @description A flexible component for rendering various types of charts (bar, line, area, composed)
+ * based on time-segmented match data. It uses the `recharts` library to create the visualizations.
+ * @param {TimeSegmentChartProps} props The props for the component.
+ * @returns {JSX.Element} The rendered chart component within a card.
+ */
 const TimeSegmentChart: React.FC<TimeSegmentChartProps> = ({ 
   timeSegments, 
   homeTeamName, 

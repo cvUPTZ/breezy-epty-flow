@@ -6,12 +6,27 @@ import { Progress } from '@/components/ui/progress';
 import { Share2, Users, TrendingUp, Activity } from 'lucide-react';
 import { PlayerStatSummary } from '@/types';
 
+/**
+ * @interface EnhancedPassingNetworkProps
+ * @description Props for the EnhancedPassingNetwork component.
+ * @property {PlayerStatSummary[]} playerStats - An array of detailed statistics for each player.
+ * @property {string} homeTeamName - The name of the home team.
+ * @property {string} awayTeamName - The name of the away team.
+ */
 interface EnhancedPassingNetworkProps {
   playerStats: PlayerStatSummary[];
   homeTeamName: string;
   awayTeamName: string;
 }
 
+/**
+ * @component EnhancedPassingNetwork
+ * @description A component that visualizes a team's passing network. It represents players
+ * as nodes sized by their influence and colored by their passing accuracy, with lines
+ * indicating pass connections between them.
+ * @param {EnhancedPassingNetworkProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const EnhancedPassingNetwork: React.FC<EnhancedPassingNetworkProps> = ({ 
   playerStats, 
   homeTeamName, 

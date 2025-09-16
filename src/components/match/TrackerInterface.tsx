@@ -15,11 +15,30 @@ import { EventType } from '@/types';
 import { useTrackerAssignment, AssignedPlayer } from '@/hooks/useTrackerAssignment';
 import SpecializedTrackerUI from './SpecializedTrackerUI';
 
+/**
+ * @interface TrackerInterfaceProps
+ * @description Props for the TrackerInterface component.
+ * @property {string} trackerUserId - The ID of the user acting as the tracker.
+ * @property {string} matchId - The ID of the match being tracked.
+ */
 interface TrackerInterfaceProps {
   trackerUserId: string;
   matchId: string;
 }
 
+/**
+ * @interface MatchData
+ * @description Defines the structure for the match data used within the TrackerInterface.
+ * @property {string} id - The unique ID of the match.
+ * @property {string | null} name - The name of the match.
+ * @property {string} home_team_name - The name of the home team.
+ * @property {string} away_team_name - The name of the away team.
+ * @property {any[]} home_team_players - An array of players for the home team.
+ * @property {any[]} away_team_players - An array of players for the away team.
+ * @property {string | null} [timer_status] - The current status of the match timer.
+ * @property {number | null} [timer_current_value] - The current value of the timer in seconds.
+ * @property {string | null} [timer_last_started_at] - The ISO timestamp of when the timer was last started.
+ */
 interface MatchData {
   id: string;
   name: string | null;
@@ -32,6 +51,15 @@ interface MatchData {
   timer_last_started_at?: string | null;
 }
 
+/**
+ * @component TrackerInterface
+ * @description The main interface for a human tracker during a match. It dynamically displays the appropriate UI
+ * based on the tracker's specific assignments (e.g., a specialized UI for a single player or a general piano input).
+ * It integrates real-time data fetching, a match timer, voice chat, and robust event recording capabilities,
+ * while also monitoring and broadcasting the tracker's device status (battery, network).
+ * @param {TrackerInterfaceProps} props The props for the component.
+ * @returns {JSX.Element} The rendered TrackerInterface component.
+ */
 export function TrackerInterface({ trackerUserId, matchId }: TrackerInterfaceProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

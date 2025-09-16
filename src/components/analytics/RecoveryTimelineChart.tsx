@@ -10,6 +10,14 @@ import {
 } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 
+/**
+ * @interface RecoveryTimelineChartProps
+ * @description Props for the RecoveryTimelineChart component.
+ * @property {AggregatedStats[]} statsSegments - An array of aggregated statistics for each time segment.
+ * @property {number} intervalMinutes - The duration of each time interval in minutes.
+ * @property {string} homeTeamName - The name of the home team.
+ * @property {string} awayTeamName - The name of the away team.
+ */
 interface RecoveryTimelineChartProps {
   statsSegments: AggregatedStats[];
   intervalMinutes: number;
@@ -17,11 +25,24 @@ interface RecoveryTimelineChartProps {
   awayTeamName: string;
 }
 
+/**
+ * @interface ChartDataPoint
+ * @description Represents a single data point for the bar chart, corresponding to one time segment.
+ * @property {string} name - The label for the time segment (e.g., "0-5 min").
+ * @property {Object.<string, number | string>} [teamKey] - Dynamic keys for team names.
+ */
 interface ChartDataPoint {
   name: string; // e.g., "0-5 min", "5-10 min"
   [teamKey: string]: number | string;
 }
 
+/**
+ * @component RecoveryTimelineChart
+ * @description A component that displays a bar chart visualizing the number of ball recoveries
+ * for each team across different time segments of a match.
+ * @param {RecoveryTimelineChartProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const RecoveryTimelineChart: React.FC<RecoveryTimelineChartProps> = ({
   statsSegments,
   intervalMinutes,

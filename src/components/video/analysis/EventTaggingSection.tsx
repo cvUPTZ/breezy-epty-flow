@@ -7,12 +7,28 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Tag, Trash2 } from 'lucide-react';
 
+/**
+ * @interface EventTaggingSectionProps
+ * @description Props for the EventTaggingSection component.
+ * @property {number} currentTime - The current playback time of the video.
+ * @property {string} videoUrl - The URL of the video being tagged.
+ * @property {(event: VideoEvent) => void} [onEventAdd] - Optional callback to be fired when a new event is added.
+ */
 export interface EventTaggingSectionProps {
   currentTime: number;
   videoUrl: string;
   onEventAdd?: (event: VideoEvent) => void;
 }
 
+/**
+ * @interface VideoEvent
+ * @description Represents a single tagged event in the video.
+ * @property {string} id - The unique identifier for the event.
+ * @property {number} time - The time in seconds at which the event occurs.
+ * @property {string} type - The type of the event (e.g., "Goal", "Foul").
+ * @property {string} description - A description of the event.
+ * @property {string} timestamp - The formatted time string (e.g., "MM:SS").
+ */
 interface VideoEvent {
   id: string;
   time: number;
@@ -21,6 +37,14 @@ interface VideoEvent {
   timestamp: string;
 }
 
+/**
+ * @component EventTaggingSection
+ * @description A UI component that allows users to manually tag events in a video.
+ * It provides fields for event type and description, captures the current video timestamp,
+ * and displays a list of tagged events.
+ * @param {EventTaggingSectionProps} props The props for the component.
+ * @returns {JSX.Element} The rendered EventTaggingSection component.
+ */
 export const EventTaggingSection: React.FC<EventTaggingSectionProps> = ({
   currentTime,
   videoUrl,

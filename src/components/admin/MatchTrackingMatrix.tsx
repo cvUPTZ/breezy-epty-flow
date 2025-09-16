@@ -9,6 +9,10 @@ import { toast } from 'sonner';
 import { CheckCircle, AlertCircle, Clock, Users, Target, UserCheck } from 'lucide-react';
 import TrackerAbsenceManager from './TrackerAbsenceManager';
 
+/**
+ * @interface Match
+ * @description Represents the basic details of a match for the matrix view.
+ */
 interface Match {
   id: string;
   name: string;
@@ -18,6 +22,10 @@ interface Match {
   match_date: string | null;
 }
 
+/**
+ * @interface TrackerAssignment
+ * @description Represents a tracker's assignment details for a match.
+ */
 interface TrackerAssignment {
   id: string;
   match_id: string;
@@ -29,6 +37,10 @@ interface TrackerAssignment {
   tracker_email?: string;
 }
 
+/**
+ * @interface MatrixData
+ * @description A composite data structure that aggregates all assignment information for a single match.
+ */
 interface MatrixData {
   match: Match;
   generalTrackers: TrackerAssignment[];
@@ -39,6 +51,13 @@ interface MatrixData {
   replacementsDefined: number;
 }
 
+/**
+ * @component MatchTrackingMatrix
+ * @description A dashboard component that displays a high-level matrix of all matches
+ * and the status of their tracker assignment process. It provides a bird's-eye view
+ * of operational readiness for all matches.
+ * @returns {React.FC} A React functional component.
+ */
 const MatchTrackingMatrix: React.FC = () => {
   const [matrixData, setMatrixData] = useState<MatrixData[]>([]);
   const [loading, setLoading] = useState(true);

@@ -3,12 +3,27 @@ import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Statistics, ShotStats, PassStats } from '@/types';
 
+/**
+ * @interface DetailedStatsTableProps
+ * @description Props for the DetailedStatsTable component.
+ * @property {Statistics} statistics - The compiled statistics object for the match.
+ * @property {string} homeTeamName - The name of the home team.
+ * @property {string} awayTeamName - The name of the away team.
+ */
 interface DetailedStatsTableProps {
   statistics: Statistics;
   homeTeamName: string;
   awayTeamName: string;
 }
 
+/**
+ * @interface StatsDataItem
+ * @description Represents a single row of data within the statistics table.
+ * @property {string} label - The name of the statistic (e.g., 'Possession').
+ * @property {string} home - The formatted value of the statistic for the home team.
+ * @property {string} away - The formatted value of the statistic for the away team.
+ * @property {string} [unit] - An optional unit for the statistic (e.g., '%').
+ */
 interface StatsDataItem {
   label: string;
   home: string;
@@ -16,6 +31,13 @@ interface StatsDataItem {
   unit?: string; // Added optional unit property
 }
 
+/**
+ * @component DetailedStatsTable
+ * @description A component that renders a detailed table comparing a wide range of statistics
+ * between the home and away teams for a match.
+ * @param {DetailedStatsTableProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const DetailedStatsTable: React.FC<DetailedStatsTableProps> = ({
   statistics,
   homeTeamName,

@@ -21,7 +21,10 @@ import {
   Activity
 } from 'lucide-react';
 
-// Define interfaces for the props
+/**
+ * @interface BusinessGoal
+ * @description Represents a single strategic goal within the business plan.
+ */
 interface BusinessGoal {
   id: string;
   title: string;
@@ -32,6 +35,10 @@ interface BusinessGoal {
   priority: 'low' | 'medium' | 'high';
 }
 
+/**
+ * @interface RevenueStream
+ * @description Represents a single source of revenue for the business.
+ */
 interface RevenueStream {
   id: string;
   name: string;
@@ -42,18 +49,26 @@ interface RevenueStream {
   marketSegment: string;
 }
 
+/**
+ * @interface Founder
+ * @description Represents a founder, investor, or key partner in the business.
+ */
 interface Founder {
-  id: string;
+  id:string;
   name: string;
   role: 'founder' | 'co-founder' | 'technical' | 'investor' | 'advisor' | 'commercial';
   equityPercentage: number;
   responsibilities: string[];
   monthlyContribution: number;
   expectedROI: number;
-  vestingPeriod: number; // in months
+  vestingPeriod: number;
   joinDate: string;
 }
 
+/**
+ * @interface FinancialProjection
+ * @description Represents a single year's financial projection.
+ */
 interface FinancialProjection {
     year: number;
     revenue: number;
@@ -62,6 +77,10 @@ interface FinancialProjection {
     founderDistribution: number;
 }
 
+/**
+ * @interface InterventionType
+ * @description Represents a type of strategic intervention or investment.
+ */
 interface InterventionType {
     id: string;
     name: string;
@@ -69,11 +88,13 @@ interface InterventionType {
     requiredCapital: number;
     expectedReturn: number;
     riskLevel: 'low' | 'medium' | 'high';
-    timeframe: number; // in months
+    timeframe: number;
 }
 
-
-// Props interface for the component
+/**
+ * @interface BusinessPlanDetailsProps
+ * @description Props for the BusinessPlanDetails component.
+ */
 interface BusinessPlanDetailsProps {
   goals: BusinessGoal[];
   revenueStreams: RevenueStream[];
@@ -86,6 +107,14 @@ interface BusinessPlanDetailsProps {
   onNewRevenue: (revenue: Omit<RevenueStream, 'id' | 'growth' | 'status'>) => void;
 }
 
+/**
+ * @component BusinessPlanDetails
+ * @description A component that displays detailed sections of a business plan,
+ * including strategic goals, revenue streams, and founder information. It includes
+ * interactive dialogs for adding new goals and revenue streams.
+ * @param {BusinessPlanDetailsProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const BusinessPlanDetails: React.FC<BusinessPlanDetailsProps> = ({
   goals,
   revenueStreams,

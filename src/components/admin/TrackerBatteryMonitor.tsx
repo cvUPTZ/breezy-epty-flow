@@ -10,6 +10,10 @@ import { motion } from 'framer-motion';
 import TrackerAbsenceNotifier from './TrackerAbsenceNotifier';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+/**
+ * @interface TrackerStatusDisplay
+ * @description Defines the structure for displaying the status of a single tracker's device.
+ */
 interface TrackerStatusDisplay {
   userId: string;
   identifier: string;
@@ -22,6 +26,12 @@ interface TrackerStatusDisplay {
   dischargingTimeInSeconds?: number | null;
 }
 
+/**
+ * @function formatSecondsToTime
+ * @description A helper function to format a duration in seconds into a human-readable string (e.g., "1h 30m").
+ * @param {number | null | undefined} seconds - The duration in seconds.
+ * @returns {string} The formatted time string.
+ */
 const formatSecondsToTime = (seconds: number | null | undefined): string => {
   if (seconds === null || seconds === undefined || seconds <= 0) return '';
   const h = Math.floor(seconds / 3600);
@@ -33,6 +43,13 @@ const formatSecondsToTime = (seconds: number | null | undefined): string => {
   return parts.join(' ');
 };
 
+/**
+ * @component TrackerBatteryMonitor
+ * @description A dashboard component for monitoring the battery status of all trackers' devices in real-time.
+ * It provides actions to notify users of low battery or mark them as absent.
+ * Note: The battery level and charging status data is currently mocked.
+ * @returns {React.FC} A React functional component.
+ */
 const TrackerBatteryMonitor: React.FC = () => {
   const [trackers, setTrackers] = useState<TrackerStatusDisplay[]>([]);
   const [loading, setLoading] = useState(true);

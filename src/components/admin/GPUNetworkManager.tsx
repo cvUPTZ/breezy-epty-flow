@@ -31,6 +31,10 @@ import {
   Eye
 } from 'lucide-react';
 
+/**
+ * @interface AddNodeFormData
+ * @description Defines the structure for the form data when adding a new GPU node.
+ */
 interface AddNodeFormData {
   name: string;
   endpoint: string;
@@ -40,6 +44,13 @@ interface AddNodeFormData {
   capabilities: string[];
 }
 
+/**
+ * @component GPUNetworkManager
+ * @description A dashboard for managing a distributed network of GPU nodes for ML inference.
+ * It provides tools to connect to the network, view real-time status and performance
+ * of each node, add new nodes, and remove existing ones.
+ * @returns {React.FC} A React functional component.
+ */
 export const GPUNetworkManager: React.FC = () => {
   const [nodes, setNodes] = useState<GPUNode[]>([]);
   const [networkStats, setNetworkStats] = useState<NetworkStats | null>(null);

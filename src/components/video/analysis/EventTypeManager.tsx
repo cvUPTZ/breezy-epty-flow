@@ -6,6 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Edit2, Trash2, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 
+/**
+ * @interface PropertyDefinition
+ * @description Defines a custom property for an event type.
+ * @property {string} id - The unique identifier for the property.
+ * @property {string} name - The name of the property.
+ * @property {'text' | 'number' | 'boolean' | 'select'} dataType - The data type of the property.
+ * @property {string | number | boolean} [defaultValue] - The default value for the property.
+ * @property {string[]} [selectOptions] - An array of options if the data type is 'select'.
+ */
 export interface PropertyDefinition {
   id: string;
   name: string;
@@ -14,6 +23,14 @@ export interface PropertyDefinition {
   selectOptions?: string[];
 }
 
+/**
+ * @interface LocalEventType
+ * @description Represents a custom, user-defined event type.
+ * @property {string} id - The unique identifier for the event type.
+ * @property {string} name - The name of the event type.
+ * @property {string} [color] - A color code associated with the event type for UI display.
+ * @property {PropertyDefinition[]} properties - An array of custom properties for this event type.
+ */
 export interface LocalEventType {
   id: string;
   name: string;
@@ -21,6 +38,15 @@ export interface LocalEventType {
   properties: PropertyDefinition[];
 }
 
+/**
+ * @interface EventTypeManagerProps
+ * @description Props for the EventTypeManager component.
+ * @property {LocalEventType[]} eventTypes - The current list of custom event types.
+ * @property {(eventTypeData: { name: string; color?: string }) => void} onAddEventType - Callback to add a new event type.
+ * @property {(eventTypeId: string) => void} onDeleteEventType - Callback to delete an event type.
+ * @property {(updatedEventType: LocalEventType) => void} onUpdateEventType - Callback to update an existing event type.
+ * @property {() => void} onClose - Callback to close the manager UI.
+ */
 interface EventTypeManagerProps {
   eventTypes: LocalEventType[];
   onAddEventType: (eventTypeData: { name: string; color?: string }) => void;
@@ -29,6 +55,13 @@ interface EventTypeManagerProps {
   onClose: () => void;
 }
 
+/**
+ * @component EventTypeManager
+ * @description A UI component for creating, editing, and deleting custom event types for video analysis.
+ * Users can define event types with a name and a color, and view a list of existing types.
+ * @param {EventTypeManagerProps} props The props for the component.
+ * @returns {JSX.Element} The rendered EventTypeManager component.
+ */
 export const EventTypeManager: React.FC<EventTypeManagerProps> = ({
   eventTypes,
   onAddEventType,

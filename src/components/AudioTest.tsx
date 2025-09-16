@@ -4,6 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, MicOff, TestTube } from 'lucide-react';
 
+/**
+ * @component AudioTest
+ * @description A self-contained component for testing microphone input.
+ * It requests microphone access, visualizes the audio level in real-time,
+ * and provides a log of events for debugging purposes.
+ * @returns {React.FC} A React functional component.
+ */
 const AudioTest: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);

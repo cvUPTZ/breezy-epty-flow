@@ -8,10 +8,23 @@ import { Play, Upload, Download } from 'lucide-react';
 import { pythonDetectionService, DetectionJob, DetectionResult } from '@/services/pythonDetectionService';
 import { toast } from 'sonner';
 
+/**
+ * @interface VideoAnalyzerProps
+ * @description Props for the VideoAnalyzer component.
+ * @property {function(analysis: any): void} [onAnalysisComplete] - Optional callback function triggered when video analysis is successfully completed.
+ */
 interface VideoAnalyzerProps {
   onAnalysisComplete?: (analysis: any) => void;
 }
 
+/**
+ * @component VideoAnalyzer
+ * @description A component that provides a UI for submitting videos for analysis.
+ * It interacts with a backend Python service to start an analysis job, polls for
+ * progress, and displays the results upon completion.
+ * @param {VideoAnalyzerProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const VideoAnalyzer: React.FC<VideoAnalyzerProps> = ({
   onAnalysisComplete
 }) => {

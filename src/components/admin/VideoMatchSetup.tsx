@@ -5,29 +5,54 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { YouTubeService } from '@/services/youtubeService';
 
-// Define actual data types based on expected Supabase table structure
+/**
+ * @interface Match
+ * @description Represents a match that can be selected for video analysis.
+ */
 interface Match {
   id: string;
   name: string;
 }
 
+/**
+ * @interface TrackerUser
+ * @description Represents a user with the 'tracker' role who can be assigned to a task.
+ */
 interface TrackerUser {
   id: string;
   full_name: string | null;
   email: string | null;
 }
 
+/**
+ * @interface EventType
+ * @description Represents a type of event that can be tracked in the analysis.
+ */
 interface EventType {
   id: string;
   name: string;
 }
 
+/**
+ * @interface VideoMatchSetupProps
+ * @description Props for the VideoMatchSetup component.
+ * @property {boolean} [simplifiedView] - If true, renders a simplified version of the form, typically for embedding.
+ * @property {string} videoUrl - The current value of the video URL input.
+ * @property {function(url: string): void} onVideoUrlChange - Callback to handle changes to the video URL.
+ */
 interface VideoMatchSetupProps {
   simplifiedView?: boolean;
   videoUrl: string;
   onVideoUrlChange: (url: string) => void;
 }
 
+/**
+ * @component VideoMatchSetup
+ * @description An administrative form for creating a video analysis task. It allows linking
+ * a YouTube video to a match and assigning trackers to analyze it for specific event types.
+ * @param {VideoMatchSetupProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const VideoMatchSetup: React.FC<VideoMatchSetupProps> = ({
   simplifiedView = false,
   videoUrl,

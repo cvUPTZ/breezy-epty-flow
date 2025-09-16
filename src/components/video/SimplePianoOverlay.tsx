@@ -8,6 +8,15 @@ import EventTypeSvg from '@/components/match/EventTypeSvg';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
+/**
+ * @interface SimplePianoOverlayProps
+ * @description Props for the SimplePianoOverlay component.
+ * @property {(eventType: string) => Promise<void>} onRecordEvent - Callback function to record an event.
+ * @property {() => void} onClose - Callback function to close the overlay.
+ * @property {boolean} isRecording - Flag indicating if an event is currently being recorded.
+ * @property {boolean} gamepadConnected - Flag indicating if a gamepad is connected.
+ * @property {string | null} lastTriggeredEvent - The key of the last event that was triggered.
+ */
 interface SimplePianoOverlayProps {
   onRecordEvent: (eventType: string) => Promise<void>;
   onClose: () => void;
@@ -16,6 +25,14 @@ interface SimplePianoOverlayProps {
   lastTriggeredEvent: string | null;
 }
 
+/**
+ * @interface PlayerAssignment
+ * @description Represents a line-based assignment for a tracker.
+ * @property {'defense' | 'midfield' | 'attack' | 'all_events'} line - The line the tracker is assigned to.
+ * @property {'home' | 'away'} team - The team the tracker is assigned to.
+ * @property {any[]} players - An array of players in the assigned line.
+ * @property {string} tracker_id - The ID of the tracker.
+ */
 interface PlayerAssignment {
   line: 'defense' | 'midfield' | 'attack' | 'all_events';
   team: 'home' | 'away';
@@ -23,6 +40,15 @@ interface PlayerAssignment {
   tracker_id: string;
 }
 
+/**
+ * @interface Player
+ * @description Represents a player within a line assignment.
+ * @property {number} id - The unique ID of the player.
+ * @property {string} [name] - The name of the player.
+ * @property {string} [player_name] - An alternative field for the player's name.
+ * @property {string} [position] - The player's position.
+ * @property {number} [jersey_number] - The player's jersey number.
+ */
 interface Player {
   id: number;
   name?: string;
@@ -31,7 +57,13 @@ interface Player {
   jersey_number?: number;
 }
 
-// Type guard to check if a Json object is a valid Player
+/**
+ * @function isValidPlayer
+ * @description A type guard to check if a given object conforms to the Player interface.
+ * This is useful for validating player data fetched from the database, which may have an `any` type.
+ * @param {any} obj - The object to check.
+ * @returns {obj is Player} True if the object is a valid Player, false otherwise.
+ */
 const isValidPlayer = (obj: any): obj is Player => {
   return obj && 
          typeof obj === 'object' && 
@@ -40,6 +72,14 @@ const isValidPlayer = (obj: any): obj is Player => {
          (typeof obj.name === 'string' || typeof obj.player_name === 'string' || obj.name === undefined || obj.player_name === undefined);
 };
 
+/**
+ * @component SimplePianoOverlay
+ * @description A full-screen overlay that provides a "piano-style" interface for recording match events.
+ * It is designed to be context-aware, fetching the user's specific line-based assignments (e.g., defense, midfield)
+ * and displaying the relevant UI for that assignment.
+ * @param {SimplePianoOverlayProps} props The props for the component.
+ * @returns {JSX.Element} The rendered SimplePianoOverlay component.
+ */
 const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
   onRecordEvent,
   onClose,

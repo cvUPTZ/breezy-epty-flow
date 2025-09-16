@@ -8,6 +8,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+/**
+ * @interface AvailableTracker
+ * @description Represents a tracker who is available for assignment.
+ */
 interface AvailableTracker {
   id: string;
   email: string;
@@ -16,6 +20,14 @@ interface AvailableTracker {
   batteryLevel?: number;
 }
 
+/**
+ * @interface ReplacementTrackerFinderProps
+ * @description Props for the ReplacementTrackerFinder component.
+ * @property {string} absentTrackerId - The ID of the tracker who is absent and needs replacement.
+ * @property {AvailableTracker[]} availableTrackers - A list of trackers available for assignment.
+ * @property {function(absentId: string, replacementId: string): void} onAssignReplacement - Callback to assign the selected replacement.
+ * @property {boolean} isLoading - Flag indicating if an assignment action is in progress.
+ */
 interface ReplacementTrackerFinderProps {
   absentTrackerId: string;
   availableTrackers: AvailableTracker[];
@@ -23,6 +35,14 @@ interface ReplacementTrackerFinderProps {
   isLoading: boolean;
 }
 
+/**
+ * @component ReplacementTrackerFinder
+ * @description A UI component for finding and assigning a replacement for an absent tracker.
+ * It fetches available trackers, scores them based on readiness criteria, and allows an
+ * admin to select and assign the best candidate.
+ * @param {ReplacementTrackerFinderProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const ReplacementTrackerFinder: React.FC<ReplacementTrackerFinderProps> = ({
   absentTrackerId,
   onAssignReplacement,

@@ -7,7 +7,14 @@ import { Separator } from '@/components/ui/separator';
 import { Trash2, Save, Square, Circle, Minus, ArrowRight, Type, Pencil, Palette, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Updated Annotation Interfaces
+/**
+ * @interface BaseAnnotation
+ * @description The base interface for all annotation types.
+ * @property {string} id - The unique identifier for the annotation.
+ * @property {'freehand' | 'rectangle' | 'circle' | 'line' | 'arrow' | 'text'} type - The type of annotation.
+ * @property {string} color - The color of the annotation.
+ * @property {number} [strokeWidth] - The width of the stroke for lines and outlines.
+ */
 interface BaseAnnotation {
   id: string;
   type: 'freehand' | 'rectangle' | 'circle' | 'line' | 'arrow' | 'text';
@@ -15,11 +22,32 @@ interface BaseAnnotation {
   strokeWidth?: number;
 }
 
+/**
+ * @interface FreehandAnnotation
+ * @description Represents a freehand drawing annotation.
+ * @extends BaseAnnotation
+ * @property {'freehand'} type - The type of annotation.
+ * @property {Array<{ x: number; y: number }>} paths - An array of points that make up the freehand path.
+ */
 interface FreehandAnnotation extends BaseAnnotation {
   type: 'freehand';
   paths: Array<{ x: number; y: number }>;
 }
 
+/**
+ * @interface ShapeAnnotation
+ * @description Represents a geometric shape annotation (rectangle, circle, line, arrow).
+ * @extends BaseAnnotation
+ * @property {'rectangle' | 'circle' | 'line' | 'arrow'} type - The type of shape.
+ * @property {number} x - The starting x-coordinate.
+ * @property {number} y - The starting y-coordinate.
+ * @property {number} [width] - The width of the shape.
+ * @property {number} [height] - The height of the shape.
+ * @property {number} [radius] - The radius for circles.
+ * @property {number} [endX] - The ending x-coordinate for lines/arrows.
+ * @property {number} [endY] - The ending y-coordinate for lines/arrows.
+ * @property {string} [fillColor] - The fill color for the shape.
+ */
 interface ShapeAnnotation extends BaseAnnotation {
   type: 'rectangle' | 'circle' | 'line' | 'arrow';
   x: number;
@@ -32,6 +60,17 @@ interface ShapeAnnotation extends BaseAnnotation {
   fillColor?: string;
 }
 
+/**
+ * @interface TextAnnotation
+ * @description Represents a text annotation.
+ * @extends BaseAnnotation
+ * @property {'text'} type - The type of annotation.
+ * @property {number} x - The x-coordinate of the text.
+ * @property {number} y - The y-coordinate of the text.
+ * @property {string} text - The content of the text annotation.
+ * @property {string} [fontFamily] - The font family for the text.
+ * @property {number} [fontSize] - The font size for the text.
+ */
 interface TextAnnotation extends BaseAnnotation {
   type: 'text';
   x: number;
@@ -41,8 +80,22 @@ interface TextAnnotation extends BaseAnnotation {
   fontSize?: number;
 }
 
+/**
+ * @typedef {FreehandAnnotation | ShapeAnnotation | TextAnnotation} AnnotationObject
+ * @description A union type representing any possible annotation object.
+ */
 type AnnotationObject = FreehandAnnotation | ShapeAnnotation | TextAnnotation;
 
+/**
+ * @interface AnnotationToolboxProps
+ * @description Props for the AnnotationToolbox component.
+ * @property {React.RefObject<ReactSketchCanvasRef>} canvasRef - A ref to the `react-sketch-canvas` instance for freehand drawing.
+ * @property {{ width: number; height: number }} videoDimensions - The dimensions of the video player to size the overlay correctly.
+ * @property {AnnotationObject[] | null} initialAnnotations - An array of initial annotations to load.
+ * @property {(annotations: AnnotationObject[]) => void} onSaveAnnotations - Callback function to save the current state of all annotations.
+ * @property {boolean} canSave - Flag indicating if the save action is currently allowed.
+ * @property {boolean} [disabled=false] - If true, all tools in the toolbox are disabled.
+ */
 interface AnnotationToolboxProps {
   canvasRef: React.RefObject<ReactSketchCanvasRef>;
   videoDimensions: { width: number; height: number };
@@ -52,6 +105,15 @@ interface AnnotationToolboxProps {
   disabled?: boolean;
 }
 
+/**
+ * @component AnnotationToolbox
+ * @description A comprehensive toolbox for creating various types of annotations on a video overlay.
+ * It provides tools for freehand drawing, shapes (rectangles, circles, lines), and text.
+ * It uses `react-sketch-canvas` for freehand drawing and renders other shapes on an SVG overlay.
+ * The component manages the state of annotations and provides controls for tool selection, color, stroke width, saving, and clearing.
+ * @param {AnnotationToolboxProps} props The props for the component.
+ * @returns {JSX.Element} The rendered AnnotationToolbox component.
+ */
 export const AnnotationToolbox: React.FC<AnnotationToolboxProps> = ({
   canvasRef,
   videoDimensions,

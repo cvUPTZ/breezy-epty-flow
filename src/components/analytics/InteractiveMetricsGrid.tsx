@@ -19,12 +19,27 @@ import {
 import { Statistics } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 
+/**
+ * @interface InteractiveMetricsGridProps
+ * @description Props for the InteractiveMetricsGrid component.
+ * @property {Statistics} statistics - The main statistics object containing home and away team stats.
+ * @property {string} homeTeamName - The name of the home team.
+ * @property {string} awayTeamName - The name of the away team.
+ */
 interface InteractiveMetricsGridProps {
   statistics: Statistics;
   homeTeamName: string;
   awayTeamName: string;
 }
 
+/**
+ * @component InteractiveMetricsGrid
+ * @description A component that displays a grid of statistical metrics, organized into
+ * selectable categories (e.g., Offensive, Defensive). It provides a visually rich,
+ * interactive way to compare team performance across different aspects of the game.
+ * @param {InteractiveMetricsGridProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const InteractiveMetricsGrid: React.FC<InteractiveMetricsGridProps> = ({
   statistics,
   homeTeamName,

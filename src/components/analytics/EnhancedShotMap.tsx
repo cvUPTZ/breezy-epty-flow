@@ -5,12 +5,26 @@ import { Badge } from '@/components/ui/badge';
 import { Target, TrendingUp, Zap } from 'lucide-react';
 import { MatchEvent } from '@/types';
 
+/**
+ * @interface EnhancedShotMapProps
+ * @description Props for the EnhancedShotMap component.
+ * @property {MatchEvent[]} events - An array of all events from the match.
+ * @property {string} homeTeamName - The name of the home team.
+ * @property {string} awayTeamName - The name of the away team.
+ */
 interface EnhancedShotMapProps {
   events: MatchEvent[];
   homeTeamName: string;
   awayTeamName: string;
 }
 
+/**
+ * @component EnhancedShotMap
+ * @description A component that visualizes all shots and goals from a match on a 2D football pitch.
+ * It distinguishes between shots and goals, and between teams, using different colors and styles.
+ * @param {EnhancedShotMapProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const EnhancedShotMap: React.FC<EnhancedShotMapProps> = ({ events, homeTeamName, awayTeamName }) => {
   const shotData = useMemo(() => {
     const shots = events.filter(event => 

@@ -5,12 +5,27 @@ import { TimeSegmentStatistics } from '@/types';
 import TimeSegmentChart from './TimeSegmentChart';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+/**
+ * @interface TeamTimeSegmentChartsProps
+ * @description Props for the TeamTimeSegmentCharts component.
+ * @property {TimeSegmentStatistics[]} timeSegments - An array of statistics broken down by time segments.
+ * @property {string} homeTeamName - The name of the home team.
+ * @property {string} awayTeamName - The name of the away team.
+ */
 interface TeamTimeSegmentChartsProps {
   timeSegments: TimeSegmentStatistics[];
   homeTeamName: string;
   awayTeamName: string;
 }
 
+/**
+ * @component TeamTimeSegmentCharts
+ * @description A component that displays a tabbed interface for various time-segment-based charts.
+ * It organizes different statistical charts (like possession, balls played) into categories,
+ * each rendered by a `TimeSegmentChart` component.
+ * @param {TeamTimeSegmentChartsProps} props The props for the component.
+ * @returns {JSX.Element} The rendered component with a tabbed view of time segment charts.
+ */
 const TeamTimeSegmentCharts: React.FC<TeamTimeSegmentChartsProps> = ({ 
   timeSegments,
   homeTeamName,

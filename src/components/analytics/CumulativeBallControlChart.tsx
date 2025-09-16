@@ -10,6 +10,14 @@ import {
 } from '@/components/ui/chart';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 
+/**
+ * @interface CumulativeBallControlChartProps
+ * @description Props for the CumulativeBallControlChart component.
+ * @property {AggregatedStats[]} statsSegments - An array of aggregated statistics for each time segment.
+ * @property {number} intervalMinutes - The duration of each time interval in minutes.
+ * @property {string} homeTeamName - The name of the home team.
+ * @property {string} awayTeamName - The name of the away team.
+ */
 interface CumulativeBallControlChartProps {
   statsSegments: AggregatedStats[];
   intervalMinutes: number;
@@ -17,13 +25,24 @@ interface CumulativeBallControlChartProps {
   awayTeamName: string;
 }
 
+/**
+ * @interface CumulativeChartDataPoint
+ * @description Represents a single data point for the cumulative line charts.
+ * @property {string} name - The label for the time segment (e.g., "15 min").
+ * @property {Object.<string, number | string>} [teamKeyAndMetric] - Dynamic keys for metrics like "Home Played".
+ */
 interface CumulativeChartDataPoint {
-  name: string; // Time interval end point, e.g., "5 min", "10 min"
-  [teamKeyAndMetric: string]: number | string; // Allows dynamic keys like "Home Played", "Away Played", "Difference Played"
+  name: string;
+  [teamKeyAndMetric: string]: number | string;
 }
 
-// Removed SimpleLineChartPlaceholder
-
+/**
+ * @component CumulativeBallControlChart
+ * @description A component that displays line charts showing the cumulative progression
+ * of ball control metrics (balls played, balls lost) for both teams over the course of a match.
+ * @param {CumulativeBallControlChartProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const CumulativeBallControlChart: React.FC<CumulativeBallControlChartProps> = ({
   statsSegments,
   intervalMinutes,

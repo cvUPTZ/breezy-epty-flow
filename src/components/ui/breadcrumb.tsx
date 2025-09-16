@@ -4,6 +4,10 @@ import { ChevronRight, MoreHorizontal } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * @component Breadcrumb
+ * @description The root navigation component for a breadcrumb trail.
+ */
 const Breadcrumb = React.forwardRef<
   HTMLElement,
   React.ComponentPropsWithoutRef<"nav"> & {
@@ -12,6 +16,10 @@ const Breadcrumb = React.forwardRef<
 >(({ ...props }, ref) => <nav ref={ref} aria-label="breadcrumb" {...props} />)
 Breadcrumb.displayName = "Breadcrumb"
 
+/**
+ * @component BreadcrumbList
+ * @description The ordered list that contains the breadcrumb items.
+ */
 const BreadcrumbList = React.forwardRef<
   HTMLOListElement,
   React.ComponentPropsWithoutRef<"ol">
@@ -27,6 +35,10 @@ const BreadcrumbList = React.forwardRef<
 ))
 BreadcrumbList.displayName = "BreadcrumbList"
 
+/**
+ * @component BreadcrumbItem
+ * @description A single item within the breadcrumb list.
+ */
 const BreadcrumbItem = React.forwardRef<
   HTMLLIElement,
   React.ComponentPropsWithoutRef<"li">
@@ -39,6 +51,11 @@ const BreadcrumbItem = React.forwardRef<
 ))
 BreadcrumbItem.displayName = "BreadcrumbItem"
 
+/**
+ * @component BreadcrumbLink
+ * @description A link component for a breadcrumb item, typically used for previous pages in the trail.
+ * Can be rendered as a different component using the `asChild` prop.
+ */
 const BreadcrumbLink = React.forwardRef<
   HTMLAnchorElement,
   React.ComponentPropsWithoutRef<"a"> & {
@@ -57,6 +74,10 @@ const BreadcrumbLink = React.forwardRef<
 })
 BreadcrumbLink.displayName = "BreadcrumbLink"
 
+/**
+ * @component BreadcrumbPage
+ * @description A component to represent the current page in the breadcrumb trail. It is not a link.
+ */
 const BreadcrumbPage = React.forwardRef<
   HTMLSpanElement,
   React.ComponentPropsWithoutRef<"span">
@@ -72,6 +93,10 @@ const BreadcrumbPage = React.forwardRef<
 ))
 BreadcrumbPage.displayName = "BreadcrumbPage"
 
+/**
+ * @component BreadcrumbSeparator
+ * @description The separator displayed between breadcrumb items. Defaults to a chevron icon.
+ */
 const BreadcrumbSeparator = ({
   children,
   className,
@@ -88,6 +113,10 @@ const BreadcrumbSeparator = ({
 )
 BreadcrumbSeparator.displayName = "BreadcrumbSeparator"
 
+/**
+ * @component BreadcrumbEllipsis
+ * @description A component to indicate that some breadcrumb items are omitted.
+ */
 const BreadcrumbEllipsis = ({
   className,
   ...props

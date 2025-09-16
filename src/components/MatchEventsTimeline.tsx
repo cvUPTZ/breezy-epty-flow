@@ -6,6 +6,16 @@ import { Badge } from '@/components/ui/badge';
 import { Trash2, Edit } from 'lucide-react';
 import { MatchEvent, Player, Team } from '@/types';
 
+/**
+ * @interface MatchEventsTimelineProps
+ * @description Props for the MatchEventsTimeline component.
+ * @property {MatchEvent[]} events - An array of match event objects to display.
+ * @property {function(event: MatchEvent): void} [onEventSelect] - Optional callback for when an event is selected for viewing.
+ * @property {function(event: MatchEvent): void} [onEventUpdate] - Optional callback for when an event is selected for editing.
+ * @property {function(eventId: string): Promise<void>} onEventDelete - Callback function to handle the deletion of an event.
+ * @property {Team} [homeTeam] - Optional data for the home team, used to display team names.
+ * @property {Team} [awayTeam] - Optional data for the away team, used to display team names.
+ */
 interface MatchEventsTimelineProps {
   events: MatchEvent[];
   onEventSelect?: (event: MatchEvent) => void;
@@ -15,6 +25,13 @@ interface MatchEventsTimelineProps {
   awayTeam?: Team;
 }
 
+/**
+ * @component MatchEventsTimeline
+ * @description A component that displays a chronological timeline of events that occurred during a match.
+ * It provides options to view, edit, and delete each event.
+ * @param {MatchEventsTimelineProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const MatchEventsTimeline: React.FC<MatchEventsTimelineProps> = ({
   events,
   onEventSelect,

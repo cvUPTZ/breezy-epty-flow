@@ -1,5 +1,15 @@
 import React from 'react';
 
+/**
+ * @interface EventTypeSvgProps
+ * @description Props for the EventTypeSvg component.
+ * @property {string} eventType - The type of event to render an SVG for.
+ * @property {boolean} [isRecording=false] - If true, the icon will have a recording animation.
+ * @property {boolean} [isSelected=false] - If true, the icon will have a selection indicator.
+ * @property {() => void} [onClick] - Callback function to be executed when the icon is clicked.
+ * @property {boolean} [disabled=false] - If true, the icon will be visually disabled and non-interactive.
+ * @property {'xs' | 'sm' | 'md'} [size='md'] - The size of the icon.
+ */
 interface EventTypeSvgProps {
   eventType: string;
   isRecording?: boolean;
@@ -9,6 +19,13 @@ interface EventTypeSvgProps {
   size?: 'xs' | 'sm' | 'md'; // Added size prop
 }
 
+/**
+ * @component EventTypeSvg
+ * @description A component that renders a detailed, animated SVG icon based on the provided event type.
+ * It includes different visual states for recording, selection, and disabled status, as well as multiple sizes.
+ * @param {EventTypeSvgProps} props The props for the component.
+ * @returns {JSX.Element} The rendered SVG icon component.
+ */
 const EventTypeSvg: React.FC<EventTypeSvgProps> = ({
   eventType,
   isRecording = false,

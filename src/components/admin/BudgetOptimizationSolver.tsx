@@ -20,6 +20,10 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+/**
+ * @interface OptimizationParams
+ * @description Defines the parameters and constraints for the optimization simulation.
+ */
 interface OptimizationParams {
   maxBudgetPerMatch: number;
   minQualityScore: number;
@@ -27,6 +31,10 @@ interface OptimizationParams {
   prioritizeEfficiency: boolean;
 }
 
+/**
+ * @interface OptimizedResult
+ * @description Represents a single potential configuration found by the solver.
+ */
 interface OptimizedResult {
   trackersMinimum: number;
   trackersOptimal: number;
@@ -38,6 +46,14 @@ interface OptimizedResult {
   feasible: boolean;
 }
 
+/**
+ * @interface BudgetOptimizationSolverProps
+ * @description Props for the BudgetOptimizationSolver component.
+ * @property {object} currentConfig - The current tracker configuration.
+ * @property {function} onConfigUpdate - Callback to apply a new configuration.
+ * @property {function} calculateCost - A function passed from the parent to calculate the cost of a given configuration.
+ * @property {function} calculateEfficiency - A function passed from the parent to calculate the efficiency of a given configuration.
+ */
 interface BudgetOptimizationSolverProps {
   currentConfig: {
     trackersMinimum: number;
@@ -55,6 +71,14 @@ interface BudgetOptimizationSolverProps {
   calculateEfficiency: (config: any) => any;
 }
 
+/**
+ * @component BudgetOptimizationSolver
+ * @description A strategic planning tool for administrators to find the optimal balance
+ * between cost, quality, and efficiency for tracker deployment. It runs a simulation
+ * to find the best configurations based on user-defined constraints.
+ * @param {BudgetOptimizationSolverProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const BudgetOptimizationSolver: React.FC<BudgetOptimizationSolverProps> = ({
   currentConfig,
   onConfigUpdate,

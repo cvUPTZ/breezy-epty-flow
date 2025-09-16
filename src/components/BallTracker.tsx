@@ -4,11 +4,25 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { BallTrackingPoint } from '@/types';
 
+/**
+ * @interface BallTrackerProps
+ * @description Props for the BallTracker component.
+ * @property {function(data: BallTrackerPoint[]): void} onTrackingDataUpdate - Callback function to send updated tracking data to the parent component.
+ * @property {BallTrackingPoint[]} [initialData] - Optional initial tracking data to populate the component.
+ */
 interface BallTrackerProps {
   onTrackingDataUpdate: (data: BallTrackingPoint[]) => void;
   initialData?: BallTrackingPoint[];
 }
 
+/**
+ * @component BallTracker
+ * @description A component for manually tracking ball movement on a 2D plane.
+ * It allows users to start and stop recording, and click on an area to add tracking points.
+ * The collected data is visualized and passed to a parent component via a callback.
+ * @param {BallTrackerProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const BallTracker: React.FC<BallTrackerProps> = ({
   onTrackingDataUpdate,
   initialData = []

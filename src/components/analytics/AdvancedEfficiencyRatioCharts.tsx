@@ -11,6 +11,14 @@ import {
 } from '@/components/ui/chart';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 
+/**
+ * @interface AdvancedEfficiencyRatioChartsProps
+ * @description Props for the AdvancedEfficiencyRatioCharts component.
+ * @property {TeamDetailedStats} homeStats - The detailed statistics for the home team.
+ * @property {TeamDetailedStats} awayStats - The detailed statistics for the away team.
+ * @property {string} homeTeamName - The name of the home team.
+ * @property {string} awayTeamName - The name of the away team.
+ */
 interface AdvancedEfficiencyRatioChartsProps {
   homeStats: TeamDetailedStats;
   awayStats: TeamDetailedStats;
@@ -18,7 +26,12 @@ interface AdvancedEfficiencyRatioChartsProps {
   awayTeamName: string;
 }
 
-// Simple Bar component for demonstration
+/**
+ * @component SimpleRatioBar
+ * @description A simple sub-component to visualize a comparison of a single metric between two teams using horizontal bars.
+ * @param {object} props - The component props.
+ * @returns {React.FC} A React functional component.
+ */
 const SimpleRatioBar = ({ label, homeValue, awayValue, unit = '', homeTeamName, awayTeamName }: { 
   label: string; 
   homeValue: number; 
@@ -52,7 +65,14 @@ const SimpleRatioBar = ({ label, homeValue, awayValue, unit = '', homeTeamName, 
   );
 };
 
-
+/**
+ * @component AdvancedEfficiencyRatioCharts
+ * @description A component that calculates and visualizes advanced efficiency ratios
+ * for two competing teams, using bar charts for individual metrics and a radar chart
+ * for an overall profile comparison.
+ * @param {AdvancedEfficiencyRatioChartsProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const AdvancedEfficiencyRatioCharts: React.FC<AdvancedEfficiencyRatioChartsProps> = ({
   homeStats,
   awayStats,

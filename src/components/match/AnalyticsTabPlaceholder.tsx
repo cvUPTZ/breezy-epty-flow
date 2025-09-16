@@ -1,9 +1,20 @@
 import React from 'react';
 
+/**
+ * @interface AnalyticsTabPlaceholderProps
+ * @description Props for the AnalyticsTabPlaceholder component. Currently empty as it's a placeholder.
+ */
 interface AnalyticsTabPlaceholderProps {
   // Props for any data this tab might need
 }
 
+/**
+ * @component AnalyticsTabPlaceholder
+ * @description A placeholder component for the advanced analytics tab. It informs the user that this section will contain
+ * advanced analytics and visualizations, and mentions the required permission.
+ * @param {AnalyticsTabPlaceholderProps} props The props for the component.
+ * @returns {JSX.Element} The rendered AnalyticsTabPlaceholder component.
+ */
 const AnalyticsTabPlaceholder: React.FC<AnalyticsTabPlaceholderProps> = (props) => {
   return (
     <div>

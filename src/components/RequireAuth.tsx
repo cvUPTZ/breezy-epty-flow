@@ -5,6 +5,17 @@ import { useAuth } from '@/context/AuthContext';
 import { usePermissionChecker, type RolePermissions } from '@/hooks/usePermissionChecker';
 import { Loader2 } from 'lucide-react';
 
+/**
+ * @component RequireAuth
+ * @description A wrapper component that protects routes based on authentication status,
+ * user roles, and specific permissions. It handles loading states and redirects
+ * unauthenticated or unauthorized users appropriately.
+ * @param {object} props - The component props.
+ * @param {React.ReactNode} props.children - The child components to render if authorization is successful.
+ * @param {Array<'admin' | 'tracker' | 'viewer' | 'user' | 'manager' | 'teacher'>} [props.requiredRoles] - An optional array of roles that are allowed access.
+ * @param {Array<keyof RolePermissions>} [props.requiredPermissions] - An optional array of specific permissions required for access.
+ * @returns {React.FC} The child components if authorized, or a loading/error/redirect component.
+ */
 export const RequireAuth: React.FC<{ 
   children: React.ReactNode;
   requiredRoles?: Array<'admin' | 'tracker' | 'viewer' | 'user' | 'manager' | 'teacher'>;
@@ -90,7 +101,12 @@ export const RequireAuth: React.FC<{
   return <>{children}</>;
 };
 
-// Helper components for specific access levels
+/**
+ * @component AdminOnly
+ * @description A convenience wrapper for RequireAuth that restricts access to users with the 'admin' role.
+ * @param {{ children: React.ReactNode }} props - The component props.
+ * @returns {React.FC} The wrapped children, accessible only to admins.
+ */
 export const AdminOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <RequireAuth requiredRoles={['admin']}>
@@ -99,6 +115,12 @@ export const AdminOnly: React.FC<{ children: React.ReactNode }> = ({ children })
   );
 };
 
+/**
+ * @component ManagerAccess
+ * @description A convenience wrapper for RequireAuth that restricts access to users with 'admin' or 'manager' roles.
+ * @param {{ children: React.ReactNode }} props - The component props.
+ * @returns {React.FC} The wrapped children, accessible only to admins and managers.
+ */
 export const ManagerAccess: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <RequireAuth requiredRoles={['admin', 'manager']}>
@@ -107,6 +129,12 @@ export const ManagerAccess: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 };
 
+/**
+ * @component TrackerAccess
+ * @description A convenience wrapper for RequireAuth that restricts access to users with 'admin' or 'tracker' roles.
+ * @param {{ children: React.ReactNode }} props - The component props.
+ * @returns {React.FC} The wrapped children, accessible only to admins and trackers.
+ */
 export const TrackerAccess: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <RequireAuth requiredRoles={['admin', 'tracker']}>

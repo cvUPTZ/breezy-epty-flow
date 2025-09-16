@@ -6,6 +6,15 @@ import { Users, ArrowRight, Grid3X3, BarChart3 } from 'lucide-react';
 import { MatchEvent } from '@/types/index';
 import D3SankeyChart from './D3SankeyChart';
 
+/**
+ * @interface PassMatrixTableProps
+ * @description Props for the PassMatrixTable component.
+ * @property {MatchEvent[]} events - An array of all events from the match.
+ * @property {string} homeTeamName - The name of the home team.
+ * @property {string} awayTeamName - The name of the away team.
+ * @property {any[]} homeTeamPlayers - The roster for the home team.
+ * @property {any[]} awayTeamPlayers - The roster for the away team.
+ */
 interface PassMatrixTableProps {
   events: MatchEvent[];
   homeTeamName: string;
@@ -14,6 +23,10 @@ interface PassMatrixTableProps {
   awayTeamPlayers: any[];
 }
 
+/**
+ * @interface PassConnection
+ * @description Represents a connection of passes between two players.
+ */
 interface PassConnection {
   fromPlayerId: number;
   toPlayerId: number;
@@ -23,6 +36,10 @@ interface PassConnection {
   team: 'home' | 'away';
 }
 
+/**
+ * @interface PlayerSummary
+ * @description Represents a summary of a player's passing involvement.
+ */
 interface PlayerSummary {
   id: number;
   name: string;
@@ -31,6 +48,14 @@ interface PlayerSummary {
   passesReceived: number;
 }
 
+/**
+ * @component PassMatrixTable
+ * @description A comprehensive analytics component that visualizes passing networks in multiple ways,
+ * including a list of top connections, a player-to-player matrix, a summary of player involvement,
+ * and a Sankey diagram for pass flow.
+ * @param {PassMatrixTableProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const PassMatrixTable: React.FC<PassMatrixTableProps> = ({
   events,
   homeTeamName,

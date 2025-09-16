@@ -6,6 +6,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Clock, Activity } from 'lucide-react';
 
+/**
+ * @interface MatchEvent
+ * @description Represents a single event that occurred in a match.
+ */
 interface MatchEvent {
   id: string;
   event_type: string;
@@ -16,6 +20,10 @@ interface MatchEvent {
   created_by: string;
 }
 
+/**
+ * @interface Match
+ * @description Represents a match, typically one that is currently live.
+ */
 interface Match {
   id: string;
   name: string | null;
@@ -24,10 +32,22 @@ interface Match {
   away_team_name: string;
 }
 
+/**
+ * @interface RealTimeMatchEventsProps
+ * @description Props for the RealTimeMatchEvents component.
+ * @property {string} [matchId] - An optional match ID to pre-select.
+ */
 interface RealTimeMatchEventsProps {
   matchId?: string;
 }
 
+/**
+ * @component RealTimeMatchEvents
+ * @description A dashboard component that displays a live feed of events for ongoing matches.
+ * It uses Supabase real-time subscriptions to update the event list as new events are recorded.
+ * @param {RealTimeMatchEventsProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const RealTimeMatchEvents: React.FC<RealTimeMatchEventsProps> = ({ matchId }) => {
   const [events, setEvents] = useState<MatchEvent[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);

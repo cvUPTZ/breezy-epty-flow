@@ -28,14 +28,22 @@ import {
   XCircle
 } from 'lucide-react';
 
+/**
+ * @interface EventConfig
+ * @description Defines the configuration for a single trackable event type.
+ */
 interface EventConfig {
   type: string;
-  difficulty: number; // 1-100
-  detectionRate: number; // %
+  difficulty: number;
+  detectionRate: number;
   avgTimeSeconds: number;
-  costImpact: number; // DZD
+  costImpact: number;
 }
 
+/**
+ * @interface FinancialProjection
+ * @description Represents the financial data for a single year in a multi-year projection.
+ */
 interface FinancialProjection {
   year: number;
   clients: number;
@@ -47,6 +55,10 @@ interface FinancialProjection {
   cashFlow: number;
 }
 
+/**
+ * @interface LegalRequirement
+ * @description Represents a single legal or regulatory requirement for the business.
+ */
 interface LegalRequirement {
   category: string;
   requirement: string;
@@ -56,6 +68,14 @@ interface LegalRequirement {
   description: string;
 }
 
+/**
+ * @component BudgetTrackerConfig
+ * @description A comprehensive financial and business modeling dashboard.
+ * It allows for detailed configuration of operational, business, and legal parameters
+ * to generate multi-year financial projections, pricing models, and cost analyses.
+ * This component acts as the central business logic calculator for the platform.
+ * @returns {React.FC} A React functional component.
+ */
 const BudgetTrackerConfig: React.FC = () => {
   // Configuration des salaires et charges
   const [salaryConfig, setSalaryConfig] = useState({

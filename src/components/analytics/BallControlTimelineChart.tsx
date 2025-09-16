@@ -10,6 +10,14 @@ import {
 } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 
+/**
+ * @interface BallControlTimelineChartProps
+ * @description Props for the BallControlTimelineChart component.
+ * @property {AggregatedStats[]} statsSegments - An array of aggregated statistics for each time segment of the match.
+ * @property {number} intervalMinutes - The duration of each time interval in minutes.
+ * @property {string} homeTeamName - The name of the home team.
+ * @property {string} awayTeamName - The name of the away team.
+ */
 interface BallControlTimelineChartProps {
   statsSegments: AggregatedStats[];
   intervalMinutes: number;
@@ -17,12 +25,24 @@ interface BallControlTimelineChartProps {
   awayTeamName: string;
 }
 
+/**
+ * @interface ChartDataPoint
+ * @description Represents a single data point for the bar chart, corresponding to one time segment.
+ * @property {string} name - The label for the time segment (e.g., "0-5 min").
+ * @property {Object.<string, number | string>} [teamKey] - Dynamic keys for team names.
+ */
 interface ChartDataPoint {
-  name: string; // e.g., "0-5 min", "5-10 min"
-  [teamKey: string]: number | string; // Allows for dynamic team name keys and the 'name' key
+  name: string;
+  [teamKey: string]: number | string;
 }
 
-
+/**
+ * @component BallControlTimelineChart
+ * @description A component that creates bar charts to visualize ball control metrics
+ * (balls played and balls lost) over different time segments of a match.
+ * @param {BallControlTimelineChartProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const BallControlTimelineChart: React.FC<BallControlTimelineChartProps> = ({
   statsSegments,
   intervalMinutes,

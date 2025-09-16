@@ -4,12 +4,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Team, MatchEvent } from '@/types';
 
+/**
+ * @interface PlayerStatsTableProps
+ * @description Props for the PlayerStatsTable component.
+ * @property {Team} homeTeam - The data for the home team, including its players.
+ * @property {Team} awayTeam - The data for the away team, including its players.
+ * @property {MatchEvent[]} [events] - An optional array of match events, which can be used for more detailed stat calculations.
+ */
 interface PlayerStatsTableProps {
   homeTeam: Team;
   awayTeam: Team;
   events?: MatchEvent[]; // Made optional since it's not always provided
 }
 
+/**
+ * @component PlayerStatsTable
+ * @description A component that displays basic player statistics (number, name, position) for both the home and away teams in separate tables.
+ * @param {PlayerStatsTableProps} props The props for the component.
+ * @returns {JSX.Element} The rendered component with two tables for player stats.
+ */
 const PlayerStatsTable: React.FC<PlayerStatsTableProps> = ({
   homeTeam,
   awayTeam,

@@ -9,11 +9,25 @@ import { useAssignmentLogs, AssignmentLog } from '@/hooks/useAssignmentLogs';
 import { formatDistanceToNow } from 'date-fns';
 import { Search, Filter, Eye, User, Clock, Tag, Target, Users } from 'lucide-react';
 
+/**
+ * @interface AssignmentLogsViewerProps
+ * @description Props for the AssignmentLogsViewer component.
+ * @property {string} [matchId] - If provided, filters the logs to show only entries for a specific match.
+ * @property {string} [className] - Optional CSS class name for custom styling.
+ */
 interface AssignmentLogsViewerProps {
   matchId?: string;
   className?: string;
 }
 
+/**
+ * @component AssignmentLogsViewer
+ * @description A component for admins to view, search, and filter tracker assignment logs.
+ * It provides a detailed chronological view of when trackers were assigned, updated, or
+ * removed from matches, including details about their specific assignments.
+ * @param {AssignmentLogsViewerProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 export const AssignmentLogsViewer: React.FC<AssignmentLogsViewerProps> = ({
   matchId,
   className = ""
