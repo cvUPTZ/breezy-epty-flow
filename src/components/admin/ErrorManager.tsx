@@ -55,7 +55,7 @@ interface ErrorLog {
 }
 
 const ErrorManager: React.FC = () => {
-  const { hasPermission, loading: permissionLoading } = usePermissionChecker();
+  const { hasPermission } = usePermissionChecker();
   const [errors, setErrors] = useState<ErrorLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -261,8 +261,8 @@ const ErrorManager: React.FC = () => {
     }
   };
 
-  // Handle loading / permissionLoading / load error
-  if (permissionLoading || loading) {
+  // Handle loading / load error
+  if (loading) {
     return (
       <Card>
         <CardContent className="p-6">

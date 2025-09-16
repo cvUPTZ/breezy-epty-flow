@@ -31,6 +31,7 @@ import DirectVideoAnalyzer from './pages/DirectVideoAnalyzer';
 import GPUNetworkManagerPage from './pages/GPUNetworkManager';
 import ErrorManagerPage from './pages/ErrorManager';
 import ErrorBoundary from './components/ErrorBoundary';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import TrackerInterface from './pages/TrackerInterface';
 import Matches from './pages/Matches';
 import Statistics from './pages/Statistics';
@@ -341,15 +342,17 @@ const AppContent = () => {
 
   return (
     <ErrorBoundary componentName="AppRoot">
-      <div className="flex h-screen bg-background">
-        {showSidebar && <AppSidebar />}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header />
-          <main className="flex-1 overflow-y-auto p-6">
-            {AppRoutes}
-          </main>
+      <SidebarProvider>
+        <div className="flex h-screen bg-background">
+          {showSidebar && <AppSidebar />}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <Header />
+            <main className="flex-1 overflow-y-auto p-6">
+              {AppRoutes}
+            </main>
+          </div>
         </div>
-      </div>
+      </SidebarProvider>
     </ErrorBoundary>
   );
 };
