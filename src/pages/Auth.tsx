@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,103 +7,68 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from "lucide-react";
-import { toast } from 'sonner';
+import { FcGoogle } from 'react-icons/fc';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const Auth = () => {
   const { user, signIn, signUp, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [activeTab, setActiveTab] = useState<'mvpLogin' | 'mainLogin'>('mainLogin');
-  const [showSignUp, setShowSignUp] = useState(false);
+  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  useEffect(() => {
-    // If user is already logged in, redirect them.
-    // This logic runs on initial render and when `user` object changes.
-    if (user) {
-        // Simple redirect for now, could be enhanced to remember last login type
-        navigate('/dashboard');
-    }
-  }, [user, navigate]);
+  // Redirect if already logged in
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
-  const handleLogin = async (e: FormEvent, loginType: 'mvp' | 'main') => {
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
-    try {
-      await signIn(email, password);
-      // The useEffect above will handle the redirect once the `user` state is updated.
-      // For a more immediate redirect, you could navigate here, but it's cleaner to let the effect handle it.
-      toast.success('Login successful!');
-      if (loginType === 'mvp') {
-          navigate('/mvp/matches');
-      } else {
-          navigate('/dashboard');
-      }
-    } catch (error) {
-      // Error toast is handled in the signIn function
-    }
+    await signIn(email, password);
   };
 
   const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
-    try {
-        await signUp(email, password, fullName);
-        toast.success('Sign up successful! Please check your email to verify.');
-        setShowSignUp(false); // Switch back to login view
-    } catch (error) {
-      // Error toast is handled in the signUp function
-    }
+    await signUp(email, password, fullName);
   };
 
-  const LoginForm = ({ loginType }: { loginType: 'mvp' | 'main' }) => (
-    <form onSubmit={(e) => handleLogin(e, loginType)} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor={`email-${loginType}`}>Email</Label>
-        <Input
-          id={`email-${loginType}`}
-          type="email"
-          placeholder="you@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={`password-${loginType}`}>Password</Label>
-        <Input
-          id={`password-${loginType}`}
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-      </div>
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Sign In'}
-      </Button>
-    </form>
-  );
+  const handleGoogleAuth = async () => {
+    setGoogleLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        }
+      });
 
-  const SignUpForm = () => (
-    <form onSubmit={handleSignUp} className="space-y-4">
-        <h3 className="text-lg font-semibold text-center">Create an Account</h3>
-        <div className="space-y-2">
-            <Label htmlFor="fullName">Full Name</Label>
-            <Input id="fullName" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-        </div>
-        <div className="space-y-2">
-            <Label htmlFor="signupEmail">Email</Label>
-            <Input id="signupEmail" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </div>
-        <div className="space-y-2">
-            <Label htmlFor="signupPassword">Password</Label>
-            <Input id="signupPassword" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
-        </div>
-        <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Create Account'}
-        </Button>
-    </form>
-  );
+      if (error) {
+        console.error('Google auth error:', error);
+        toast({
+          title: "Authentication failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error('Google auth exception:', error);
+      toast({
+        title: "Authentication failed",
+        description: "Failed to authenticate with Google",
+        variant: "destructive",
+      });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   return (
     <div className="relative flex items-center justify-center min-h-screen p-4">
@@ -113,33 +78,133 @@ const Auth = () => {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Football Analytics</CardTitle>
           <CardDescription className="text-center text-card-foreground/80">
-            Select your login method
+            Sign in to track matches in real-time
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {showSignUp ? (
-            <SignUpForm />
-          ) : (
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'mvpLogin' | 'mainLogin')}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="mainLogin">Main App Login</TabsTrigger>
-                <TabsTrigger value="mvpLogin">MVP Login</TabsTrigger>
-              </TabsList>
-              <TabsContent value="mainLogin" className="mt-4">
-                <LoginForm loginType="main" />
-              </TabsContent>
-              <TabsContent value="mvpLogin" className="mt-4">
-                <LoginForm loginType="mvp" />
-              </TabsContent>
-            </Tabs>
-          )}
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            </TabsList>
+            
+            <div className="mt-4 space-y-4">
+              {/* Google Sign In Button */}
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleGoogleAuth}
+                disabled={googleLoading || loading}
+              >
+                {googleLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <FcGoogle className="mr-2 h-4 w-4" />
+                )}
+                Continue with Google
+              </Button>
+
+              <div className="relative flex items-center">
+                <div className="flex-grow border-t border-border/50" />
+                <span className="flex-shrink mx-4 text-xs uppercase text-card-foreground/80">
+                  Or continue with email
+                </span>
+                <div className="flex-grow border-t border-border/50" />
+              </div>
+            </div>
+
+            <TabsContent value="login" className="mt-4">
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Password</Label>
+                  </div>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    "Sign In"
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+            
+            <TabsContent value="signup" className="mt-4">
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    placeholder="John Doe"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signupEmail">Email</Label>
+                  <Input
+                    id="signupEmail"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signupPassword">Password</Label>
+                  <Input
+                    id="signupPassword"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    "Create Account"
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
         </CardContent>
         <CardFooter className="flex justify-center text-sm text-card-foreground/80">
-            {showSignUp ? (
-                <p>Already have an account? <Button variant="link" className="p-0 h-auto" onClick={() => setShowSignUp(false)}>Log In</Button></p>
-            ) : (
-                <p>Don't have an account? <Button variant="link" className="p-0 h-auto" onClick={() => setShowSignUp(true)}>Sign Up</Button></p>
-            )}
+          {activeTab === 'login' ? (
+            <p>Don't have an account? <Button variant="link" className="p-0 h-auto" onClick={() => setActiveTab('signup')}>Sign up</Button></p>
+          ) : (
+            <p>Already have an account? <Button variant="link" className="p-0 h-auto" onClick={() => setActiveTab('login')}>Log in</Button></p>
+          )}
         </CardFooter>
       </Card>
     </div>

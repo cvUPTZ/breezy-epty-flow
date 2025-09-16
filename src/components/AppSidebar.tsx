@@ -119,22 +119,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>MVP Section</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('/mvp/matches')}>
-                  <NavLink to="/mvp/matches" className="flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    {!isCollapsed && <span>MVP Matches</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
         {/* Account Switcher */}
         {user && (
           <SidebarGroup>

@@ -41,11 +41,6 @@ import NewVoiceChatPage from './pages/NewVoiceChatPage';
 import ChromeExtensionBridge from './pages/ChromeExtensionBridge';
 import NotFound from './pages/NotFound';
 
-// MVP Pages
-import MvpMatches from './pages/mvp/Matches';
-import CreateMvpMatch from './pages/mvp/CreateMatch';
-import MvpTracker from './pages/mvp/Tracker';
-
 import VideoSetupPage from './pages/Admin/VideoSetupPage';
 import Scouting from './pages/Scouting';
 import ClubDetails from './components/scouting/ClubDetails';
@@ -339,23 +334,6 @@ const AppContent = () => {
             </div>
           </div>
         </div>
-      } />
-
-      {/* MVP Routes */}
-      <Route path="/mvp/matches" element={
-        <RequireAuth>
-          <MvpMatches />
-        </RequireAuth>
-      } />
-      <Route path="/mvp/create-match" element={
-        <AdminOnly>
-          <CreateMvpMatch />
-        </AdminOnly>
-      } />
-      <Route path="/mvp/match/tracker/:matchId" element={
-        <RequireAuth requiredRoles={['admin', 'tracker']}>
-          <MvpTracker />
-        </RequireAuth>
       } />
 
       <Route path="*" element={<NotFound />} />
