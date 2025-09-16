@@ -49,6 +49,7 @@ import BusinessPlanPage from './pages/BusinessPlanPage';
 import StartupPitchPage from './pages/StartupPitchPage';
 import BusinessModelCanvasPage from './pages/BusinessModelCanvas';
 import ServiceOfferPage from './pages/ServiceOffer';
+import VisualizationPage from './pages/VisualizationPage';
 
 const queryClient = new QueryClient();
 
@@ -337,6 +338,7 @@ const AppContent = () => {
       } />
 
       <Route path="*" element={<NotFound />} />
+      <Route path="/visualization" element={<VisualizationPage />} />
     </Routes>
   );
 
