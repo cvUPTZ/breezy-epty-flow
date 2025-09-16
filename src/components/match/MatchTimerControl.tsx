@@ -7,12 +7,28 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Play, Pause, Square, RotateCcw, FileText, Timer, Clock } from 'lucide-react';
 
+/**
+ * @interface MatchTimerControlProps
+ * @description Props for the MatchTimerControl component.
+ * @property {string} matchId - The ID of the match to control the timer for.
+ * @property {(state: 'running' | 'paused' | 'stopped', currentTime: number) => void} [onTimerStateChange] - Optional callback for when the timer's state changes.
+ * @property {() => void} [onMatchEnd] - Optional callback for when the match ends.
+ */
 interface MatchTimerControlProps {
   matchId: string;
   onTimerStateChange?: (state: 'running' | 'paused' | 'stopped', currentTime: number) => void;
   onMatchEnd?: () => void;
 }
 
+/**
+ * @interface TimerState
+ * @description Represents the internal state of the timer.
+ * @property {'stopped' | 'running' | 'paused'} status - The current status of the timer.
+ * @property {number} currentValue - The value of the timer in seconds when it was last paused or stopped.
+ * @property {string | null} lastStartedAt - The ISO timestamp of when the timer was last started.
+ * @property {'first_half' | 'second_half' | 'extra_time' | 'penalties'} period - The current period of the match.
+ * @property {number} addedTime - The amount of added time in seconds for the current period.
+ */
 interface TimerState {
   status: 'stopped' | 'running' | 'paused';
   currentValue: number;
@@ -21,6 +37,14 @@ interface TimerState {
   addedTime: number;
 }
 
+/**
+ * @component MatchTimerControl
+ * @description A comprehensive UI component for controlling a match timer. It fetches and syncs the timer's state
+ * with a Supabase backend, provides controls for starting, pausing, stopping, and resetting the timer,
+ * and handles different match periods and added time. It can also trigger the generation of a match report.
+ * @param {MatchTimerControlProps} props The props for the component.
+ * @returns {JSX.Element} The rendered MatchTimerControl component.
+ */
 const MatchTimerControl: React.FC<MatchTimerControlProps> = ({
   matchId,
   onTimerStateChange,

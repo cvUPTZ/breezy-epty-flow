@@ -2,10 +2,22 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+/**
+ * @interface DashboardMetricsGridProps
+ * @description Props for the DashboardMetricsGrid component.
+ * @property {any[]} matches - An array of match objects to be aggregated.
+ */
 interface DashboardMetricsGridProps {
   matches: any[];
 }
 
+/**
+ * @component DashboardMetricsGrid
+ * @description A dashboard widget that calculates and displays a grid of four
+ * key performance indicators, aggregated across all provided matches.
+ * @param {DashboardMetricsGridProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const DashboardMetricsGrid: React.FC<DashboardMetricsGridProps> = ({ matches }) => {
   // Calculate advanced metrics
   const calculateMetrics = () => {

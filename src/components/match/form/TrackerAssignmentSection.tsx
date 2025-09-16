@@ -9,6 +9,15 @@ import { Users, UserPlus, Settings, Trash2, ChevronRight } from 'lucide-react';
 import { TrackerAssignment, Player } from '@/types/trackerAssignment';
 import { EVENT_TYPE_CATEGORIES } from '@/constants/eventTypes';
 
+/**
+ * @interface TrackerAssignmentSectionProps
+ * @description Props for the TrackerAssignmentSection component.
+ * @property {Player[]} homeTeamPlayers - An array of players for the home team.
+ * @property {Player[]} awayTeamPlayers - An array of players for the away team.
+ * @property {any[]} trackerUsers - An array of available tracker users.
+ * @property {TrackerAssignment[]} assignments - The current list of tracker assignments.
+ * @property {(assignments: TrackerAssignment[]) => void} onAssignmentsChange - Callback to update the list of assignments.
+ */
 interface TrackerAssignmentSectionProps {
   homeTeamPlayers: Player[];
   awayTeamPlayers: Player[];
@@ -17,7 +26,16 @@ interface TrackerAssignmentSectionProps {
   onAssignmentsChange: (assignments: TrackerAssignment[]) => void;
 }
 
-// Helper function to get a unique identifier for players
+/**
+ * @function getPlayerIdentifier
+ * @description A helper function to generate a consistent and unique numeric identifier for a player.
+ * It prefers an existing numeric ID, but falls back to creating a unique ID based on the team and player index
+ * to prevent collisions and ensure stability within the component's state.
+ * @param {any} player - The player object.
+ * @param {'home' | 'away'} team - The team the player belongs to.
+ * @param {number} index - The index of the player in their team's array.
+ * @returns {number} A unique numeric identifier for the player.
+ */
 const getPlayerIdentifier = (player: any, team: 'home' | 'away', index: number): number => {
   if (typeof player.id === 'number' && player.id > 0) {
     return player.id;
@@ -28,6 +46,14 @@ const getPlayerIdentifier = (player: any, team: 'home' | 'away', index: number):
   return baseId + index;
 };
 
+/**
+ * @component TrackerAssignmentSection
+ * @description A form section for creating and managing tracker assignments for a match.
+ * It provides a UI to select a tracker, assign them to multiple players from both teams,
+ * and select specific event types for them to monitor. It also displays a list of all current assignments.
+ * @param {TrackerAssignmentSectionProps} props The props for the component.
+ * @returns {JSX.Element} The rendered TrackerAssignmentSection component.
+ */
 const TrackerAssignmentSection: React.FC<TrackerAssignmentSectionProps> = ({
   homeTeamPlayers,
   awayTeamPlayers,

@@ -10,6 +10,14 @@ import {
 } from '@/components/ui/chart';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 
+/**
+ * @interface CumulativePossessionChartProps
+ * @description Props for the CumulativePossessionChart component.
+ * @property {AggregatedStats[]} statsSegments - An array of aggregated statistics for each time segment.
+ * @property {number} intervalMinutes - The duration of each time interval in minutes.
+ * @property {string} homeTeamName - The name of the home team.
+ * @property {string} awayTeamName - The name of the away team.
+ */
 interface CumulativePossessionChartProps {
   statsSegments: AggregatedStats[];
   intervalMinutes: number;
@@ -17,13 +25,24 @@ interface CumulativePossessionChartProps {
   awayTeamName: string;
 }
 
+/**
+ * @interface CumulativeDataPoint
+ * @description Represents a single data point for the cumulative area chart.
+ * @property {string} name - The label for the time segment (e.g., "15 min").
+ * @property {Object.<string, number | string>} [teamKey] - Dynamic keys for team names.
+ */
 interface CumulativeDataPoint {
-  name: string; // Time interval end point
+  name: string;
   [teamKey: string]: number | string;
 }
 
-// Removed SimpleLineChartPlaceholder
-
+/**
+ * @component CumulativePossessionChart
+ * @description A component that displays an area chart showing the cumulative possession
+ * for each team over the course of the match, providing a view of overall game dominance.
+ * @param {CumulativePossessionChartProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const CumulativePossessionChart: React.FC<CumulativePossessionChartProps> = ({
   statsSegments,
   intervalMinutes,

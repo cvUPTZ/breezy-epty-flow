@@ -43,12 +43,36 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 
+/**
+ * @interface ScoutReport
+ * @description Represents a summary of a single scout report associated with a player.
+ * @property {string} id - The unique identifier for the scout report.
+ * @property {number | null} performance_rating - The performance rating given in the report.
+ * @property {string | null} recommendation - The final recommendation (e.g., 'sign', 'monitor').
+ */
 interface ScoutReport {
   id: string;
   performance_rating: number | null;
   recommendation: string | null;
 }
 
+/**
+ * @interface Player
+ * @description Represents a scouted player in the database.
+ * @property {string} id - The unique identifier for the player.
+ * @property {string} name - The name of the player.
+ * @property {string | null} position - The player's primary position.
+ * @property {number | null} age - The age of the player.
+ * @property {string | null} nationality - The player's nationality.
+ * @property {string | null} current_club - The player's current club.
+ * @property {string | null} league - The league the player currently plays in.
+ * @property {number | null} market_value - The estimated market value of the player.
+ * @property {string | null} contract_expires - The date the player's contract expires.
+ * @property {string | null} created_at - The timestamp when the player was added.
+ * @property {string | null} [created_by] - The ID of the user who added the player.
+ * @property {string | null} [updated_at] - The timestamp of the last update.
+ * @property {ScoutReport[]} [scout_reports] - An array of associated scout reports.
+ */
 interface Player {
   id: string;
   name: string;
@@ -65,6 +89,13 @@ interface Player {
   scout_reports?: ScoutReport[];
 }
 
+/**
+ * @component PlayerIdentification
+ * @description A component for identifying, viewing, and managing a database of scouted players.
+ * It provides functionality to filter and search for players, as well as a dialog form to add new players.
+ * Player data is fetched from and saved to a Supabase database.
+ * @returns {JSX.Element} The rendered PlayerIdentification component.
+ */
 const PlayerIdentification: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);

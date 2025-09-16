@@ -6,11 +6,25 @@ import { toast } from 'sonner';
 import { Zap, Users, Bell, CheckCircle, FileText, Settings, UserCheck } from 'lucide-react';
 import { assignmentLoggingService } from '@/services/assignmentLoggingService';
 
+/**
+ * @interface QuickPlanningActionsProps
+ * @description Props for the QuickPlanningActions component.
+ * @property {string} matchId - The ID of the match to perform actions on.
+ * @property {function(): void} [onActionComplete] - Optional callback triggered after an action successfully completes.
+ */
 interface QuickPlanningActionsProps {
   matchId: string;
   onActionComplete?: () => void;
 }
 
+/**
+ * @component QuickPlanningActions
+ * @description A component that provides a set of high-level, automated actions for match planning.
+ * It allows an administrator to perform complex tasks like auto-assigning trackers,
+ * assigning replacements, and sending notifications with a single click.
+ * @param {QuickPlanningActionsProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const QuickPlanningActions: React.FC<QuickPlanningActionsProps> = ({
   matchId,
   onActionComplete

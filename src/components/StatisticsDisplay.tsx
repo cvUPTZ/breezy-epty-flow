@@ -4,12 +4,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Statistics } from '@/types';
 
+/**
+ * @interface StatisticsDisplayProps
+ * @description Props for the StatisticsDisplay component.
+ * @property {Statistics} statistics - The compiled statistics object for the match.
+ * @property {string} homeTeamName - The name of the home team.
+ * @property {string} awayTeamName - The name of the away team.
+ */
 interface StatisticsDisplayProps {
   statistics: Statistics;
   homeTeamName: string;
   awayTeamName: string;
 }
 
+/**
+ * @component StatisticsDisplay
+ * @description A component that provides a visual summary of key match statistics.
+ * It uses progress bars and side-by-side comparisons to display metrics like
+ * possession, passing, shooting, and duels.
+ * @param {StatisticsDisplayProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const StatisticsDisplay: React.FC<StatisticsDisplayProps> = ({
   statistics,
   homeTeamName,

@@ -2,6 +2,13 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Globe } from 'lucide-react';
 
+/**
+ * @component MarketAnalysis
+ * @description A presentational component that displays a strategic market analysis
+ * for the Algerian football sector. It outlines opportunities, challenges,
+ * a go-to-market strategy, and market size estimates. All data is hardcoded.
+ * @returns {React.FC} A React functional component.
+ */
 const MarketAnalysis: React.FC = () => {
   return (
     <div className="space-y-6">

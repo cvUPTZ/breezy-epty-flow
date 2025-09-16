@@ -11,7 +11,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import EventTypeSvg from '@/components/match/EventTypeSvg';
 import CancelActionIndicator from '@/components/match/CancelActionIndicator';
 
-// Define interfaces for type safety
+/**
+ * @interface TrackerPianoInputProps
+ * @description Props for the TrackerPianoInput component.
+ * @property {string} matchId - The ID of the current match.
+ * @property {function} onRecordEvent - Callback function to record a match event.
+ */
 interface TrackerPianoInputProps {
   matchId: string;
   onRecordEvent: (
@@ -22,6 +27,10 @@ interface TrackerPianoInputProps {
   ) => Promise<any | null>;
 }
 
+/**
+ * @interface PlayerForPianoInput
+ * @description A simplified player object tailored for the piano input interface.
+ */
 export interface PlayerForPianoInput {
   id: number;
   name: string;
@@ -29,11 +38,19 @@ export interface PlayerForPianoInput {
   jersey_number?: number;
 }
 
+/**
+ * @interface AssignedPlayers
+ * @description Represents the players assigned to the current tracker, separated by team.
+ */
 interface AssignedPlayers {
   home: PlayerForPianoInput[];
   away: PlayerForPianoInput[];
 }
 
+/**
+ * @interface EnhancedEventType
+ * @description Represents an event type with additional metadata for the UI.
+ */
 interface EnhancedEventType {
   key: string;
   label: string;
@@ -42,6 +59,15 @@ interface EnhancedEventType {
   description?: string;
 }
 
+/**
+ * @component TrackerPianoInput
+ * @description A specialized, highly interactive interface for live match event tracking.
+ * It fetches tracker-specific assignments (players and event types) and provides a
+ * "piano-like" layout for rapid data entry. It supports different layouts based on
+ * the complexity of the assignment.
+ * @param {TrackerPianoInputProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecordEvent }) => {
   const [assignedEventTypes, setAssignedEventTypes] = useState<EnhancedEventType[]>([]);
   const [assignedPlayers, setAssignedPlayers] = useState<AssignedPlayers | null>(null);
@@ -471,6 +497,19 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
   );
 };
 
+/**
+ * @interface RadialEventLayoutProps
+ * @description Props for the RadialEventLayout sub-component.
+ * @property {EnhancedEventType[]} eventTypes - The event types to display in the layout.
+ * @property {boolean} isEliteView - Flag to determine if the layout is for an elite (multi-player) view.
+ * @property {object} settings - UI settings for the layout (size, radius, etc.).
+ * @property {string | null} recordingEventType - The key of the event type currently being recorded.
+ * @property {number} [selectedPlayerId] - The ID of the currently selected player.
+ * @property {boolean} isRecordingGlobal - Flag indicating if any event is currently being recorded.
+ * @property {function(eventType: EnhancedEventType): void} onEventClick - Callback for when an event icon is clicked.
+ * @property {PlayerForPianoInput | null} [currentPlayerForLayout] - The player associated with this specific layout instance.
+ * @property {number} [totalPlayersInCurrentLayoutContext] - The total number of players in the current view context.
+ */
 interface RadialEventLayoutProps {
   eventTypes: EnhancedEventType[];
   isEliteView: boolean;
@@ -483,6 +522,13 @@ interface RadialEventLayoutProps {
   totalPlayersInCurrentLayoutContext?: number;
 }
 
+/**
+ * @component RadialEventLayout
+ * @description A sub-component used by TrackerPianoInput to arrange event type icons in a circular/radial pattern.
+ * This component is not intended for direct use outside of TrackerPianoInput.
+ * @param {RadialEventLayoutProps} props - The props for the component.
+ * @returns {React.FC | null} A React functional component, or null if there are no event types.
+ */
 const RadialEventLayout: React.FC<RadialEventLayoutProps> = ({
   eventTypes, isEliteView, settings, recordingEventType, selectedPlayerId,
   isRecordingGlobal, onEventClick, currentPlayerForLayout,

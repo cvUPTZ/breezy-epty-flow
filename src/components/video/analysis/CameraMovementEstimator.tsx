@@ -6,6 +6,16 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Camera, Play, Pause, RotateCcw } from 'lucide-react';
 
+/**
+ * @interface CameraMovement
+ * @description Represents a single detected camera movement event.
+ * @property {number} timestamp - The video timestamp at which the movement was detected.
+ * @property {number} x - The estimated movement in the x-axis (pan).
+ * @property {number} y - The estimated movement in the y-axis (tilt).
+ * @property {number} z - The estimated movement in the z-axis (zoom).
+ * @property {number} confidence - The confidence score of the detection (0-1).
+ * @property {'pan' | 'tilt' | 'zoom' | 'static'} movementType - The classified type of camera movement.
+ */
 interface CameraMovement {
   timestamp: number;
   x: number;
@@ -15,12 +25,27 @@ interface CameraMovement {
   movementType: 'pan' | 'tilt' | 'zoom' | 'static';
 }
 
+/**
+ * @interface CameraMovementEstimatorProps
+ * @description Props for the CameraMovementEstimator component.
+ * @property {HTMLVideoElement | null} videoElement - A reference to the HTML video element to analyze.
+ * @property {boolean} isAnalyzing - A flag to start or stop the analysis process.
+ * @property {(movement: CameraMovement) => void} onMovementDetected - Callback function that fires when a new movement is detected.
+ */
 interface CameraMovementEstimatorProps {
   videoElement: HTMLVideoElement | null;
   isAnalyzing: boolean;
   onMovementDetected: (movement: CameraMovement) => void;
 }
 
+/**
+ * @component CameraMovementEstimator
+ * @description A component that analyzes a video feed in real-time to estimate camera movement.
+ * It uses a simple optical flow algorithm on a canvas to detect panning, tilting, and zooming,
+ * and displays the recent movements and summary statistics.
+ * @param {CameraMovementEstimatorProps} props The props for the component.
+ * @returns {JSX.Element} The rendered CameraMovementEstimator component.
+ */
 export const CameraMovementEstimator: React.FC<CameraMovementEstimatorProps> = ({
   videoElement,
   isAnalyzing,

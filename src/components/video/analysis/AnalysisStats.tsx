@@ -4,11 +4,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BarChart3, Clock, Target, TrendingUp } from 'lucide-react';
 
+/**
+ * @interface AnalysisStatsProps
+ * @description Props for the AnalysisStats component.
+ * @property {string} videoUrl - The URL of the video being analyzed.
+ * @property {number} currentTime - The current playback time of the video.
+ */
 export interface AnalysisStatsProps {
   videoUrl: string;
   currentTime: number;
 }
 
+/**
+ * @component AnalysisStats
+ * @description A component that displays a set of statistics related to the video analysis.
+ * In its current form, it uses mock data to show metrics like total events, events per minute,
+ * and timeline progress.
+ * @param {AnalysisStatsProps} props The props for the component.
+ * @returns {JSX.Element} The rendered AnalysisStats component.
+ */
 export const AnalysisStats: React.FC<AnalysisStatsProps> = ({
   videoUrl,
   currentTime

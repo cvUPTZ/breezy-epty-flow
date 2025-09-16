@@ -3,6 +3,14 @@ import React, { useState } from 'react';
 import Pitch from '@/components/Pitch';
 import { Team, BallTrackingPoint } from '@/types';
 
+/**
+ * @interface PitchViewProps
+ * @description Props for the PitchView component.
+ * @property {Team} homeTeam - The data for the home team.
+ * @property {Team} awayTeam - The data for the away team.
+ * @property {BallTrackingPoint[]} ballTrackingData - An array of points representing the ball's path.
+ * @property {(event: any) => void} [onEventAdd] - Optional callback to add a new event when the pitch is clicked.
+ */
 interface PitchViewProps {
   homeTeam: Team;
   awayTeam: Team;
@@ -10,6 +18,13 @@ interface PitchViewProps {
   onEventAdd?: (event: any) => void;
 }
 
+/**
+ * @component PitchView
+ * @description A component that wraps the main `Pitch` component, providing controls for selecting a team and event type.
+ * It displays player formations and ball tracking data on the pitch and allows for creating new events by clicking on the pitch area.
+ * @param {PitchViewProps} props The props for the component.
+ * @returns {JSX.Element} The rendered PitchView component.
+ */
 const PitchView: React.FC<PitchViewProps> = ({
   homeTeam,
   awayTeam,

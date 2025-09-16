@@ -4,6 +4,10 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { EnhancedEventTypeIcon } from '@/components/match/EnhancedEventTypeIcon';
 
+/**
+ * @interface TrackerStatus
+ * @description Represents the real-time status of a single tracker.
+ */
 interface TrackerStatus {
   user_id: string;
   email?: string;
@@ -14,11 +18,25 @@ interface TrackerStatus {
   battery_level?: number;
 }
 
+/**
+ * @interface TrackerNotificationSystemProps
+ * @description Props for the TrackerNotificationSystem component.
+ * @property {TrackerStatus[]} trackers - The array of current tracker statuses to monitor.
+ * @property {string} matchId - The ID of the match being monitored.
+ */
 interface TrackerNotificationSystemProps {
   trackers: TrackerStatus[];
   matchId: string;
 }
 
+/**
+ * @component TrackerNotificationSystem
+ * @description A "headless" component that does not render any UI. Its purpose is to
+ * monitor the status of trackers and trigger toast notifications for important events
+ * like low battery, inactivity, or high activity.
+ * @param {TrackerNotificationSystemProps} props - The props for the component.
+ * @returns {null} This component renders nothing.
+ */
 const TrackerNotificationSystem: React.FC<TrackerNotificationSystemProps> = ({ 
   trackers, 
   matchId 

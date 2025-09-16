@@ -14,12 +14,26 @@ import { Statistics, ShotStats, PassStats, DuelStats, CrossStats } from '@/types
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 
+/**
+ * @interface MatchRadarChartProps
+ * @description Props for the MatchRadarChart component.
+ * @property {Statistics} statistics - The compiled statistics for the match.
+ * @property {string} homeTeamName - The name of the home team.
+ * @property {string} awayTeamName - The name of the away team.
+ */
 interface MatchRadarChartProps {
   statistics: Statistics;
   homeTeamName: string;
   awayTeamName: string;
 }
 
+/**
+ * @component MatchRadarChart
+ * @description A component that displays a radar chart comparing the key performance metrics of the home and away teams.
+ * It uses the `recharts` library to render the visualization.
+ * @param {MatchRadarChartProps} props The props for the component.
+ * @returns {JSX.Element} The rendered MatchRadarChart component.
+ */
 const MatchRadarChart: React.FC<MatchRadarChartProps> = ({ statistics, homeTeamName, awayTeamName }) => {
   // Prepare data for radar chart using direct property access from TeamDetailedStats
   const prepareRadarData = () => {

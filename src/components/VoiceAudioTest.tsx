@@ -6,6 +6,14 @@ import { Play, Pause, Volume2, VolumeX, Mic, MicOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { AudioManager } from '@/utils/audioManager';
 
+/**
+ * @component VoiceAudioTest
+ * @description An enhanced audio testing component designed for the voice system.
+ * It utilizes a centralized `AudioManager` to handle microphone access, record audio,
+ * monitor input levels, and play back recordings, ensuring no conflicts with other
+ * audio functionalities in the application.
+ * @returns {React.FC} A React functional component.
+ */
 const VoiceAudioTest: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);

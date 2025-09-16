@@ -1,20 +1,41 @@
 import React from 'react';
 import { TeamDetailedStats } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress'; // Using Progress for visual representation
+import { Progress } from '@/components/ui/progress';
 
+/**
+ * @interface EfficiencyMetricsRatiosProps
+ * @description Props for the EfficiencyMetricsRatios component.
+ * @property {TeamDetailedStats} teamStats - The detailed statistics for a single team.
+ * @property {string} teamName - The name of the team.
+ */
 interface EfficiencyMetricsRatiosProps {
   teamStats: TeamDetailedStats;
   teamName: string;
 }
 
+/**
+ * @interface RatioMetric
+ * @description Represents a single calculated ratio metric for display.
+ * @property {string} label - The display name of the metric.
+ * @property {number} value - The calculated value, typically a percentage from 0-100.
+ * @property {string} displayValue - The formatted string value to be displayed.
+ * @property {string} [description] - An optional description providing context (e.g., the raw numbers).
+ */
 interface RatioMetric {
   label: string;
-  value: number; // Value between 0 and 1 for progress bar, or raw ratio
-  displayValue: string; // User-friendly display (e.g., percentage)
+  value: number;
+  displayValue: string;
   description?: string;
 }
 
+/**
+ * @component EfficiencyMetricsRatios
+ * @description A component that calculates and displays various efficiency ratios for a single team,
+ * such as pass completion, shot efficiency, and duel success rates.
+ * @param {EfficiencyMetricsRatiosProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const EfficiencyMetricsRatios: React.FC<EfficiencyMetricsRatiosProps> = ({
   teamStats,
   teamName,

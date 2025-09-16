@@ -9,12 +9,27 @@ import FormationSelector from './FormationSelector';
 import { generatePlayersForFormation } from '@/utils/formationUtils';
 import { toast } from 'sonner';
 
+/**
+ * @interface TeamSetupWithFormationProps
+ * @description Props for the TeamSetupWithFormation component.
+ * @property {{ home: Team | null; away: Team | null }} teams - The state of the home and away teams. Can be null initially.
+ * @property {function(teams: { home: Team; away: Team }): void} onTeamsChange - Callback to update the state of both teams.
+ * @property {function(): void} onConfirm - Callback to finalize the setup and proceed.
+ */
 interface TeamSetupWithFormationProps {
   teams: { home: Team | null; away: Team | null };
   onTeamsChange: (teams: { home: Team; away: Team }) => void;
   onConfirm: () => void;
 }
 
+/**
+ * @component TeamSetupWithFormation
+ * @description An advanced team setup component that integrates formation selection.
+ * It allows users to set team names, choose a formation, and automatically generates a
+ * default roster of players based on that formation. The UI is tabbed for home and away teams.
+ * @param {TeamSetupWithFormationProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const TeamSetupWithFormation: React.FC<TeamSetupWithFormationProps> = ({ teams, onTeamsChange, onConfirm }) => {
   const [activeTab, setActiveTab] = useState<string>("home");
   

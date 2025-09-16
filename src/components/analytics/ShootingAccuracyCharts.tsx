@@ -10,12 +10,16 @@ import {
 } from '@/components/ui/chart';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 
+/**
+ * @interface ShootingAccuracyChartsProps
+ * @description Props for the ShootingAccuracyCharts component.
+ * @property {TeamDetailedStats} teamStats - The detailed statistics for a single team.
+ * @property {string} teamName - The name of the team.
+ */
 interface ShootingAccuracyChartsProps {
   teamStats: TeamDetailedStats;
   teamName: string;
 }
-
-// Removed SimplePieChart placeholder
 
 const chartColors = {
   'On Target': 'hsl(var(--chart-1))', // Blue
@@ -23,10 +27,17 @@ const chartColors = {
   'Hit Post': 'hsl(var(--chart-3))', // Yellow/Orange
   'Blocked': 'hsl(var(--chart-4))', // Gray/Purple
   'Dangerous': 'hsl(var(--chart-5))', // Darker Red/Another color
-  'Non-Dangerous': 'hsl(var(--chart-1)/0.6)', // Lighter blue
+  'Non-Dangerous': 'hsl(var(--chart-1)/0.6)',
 };
 
-
+/**
+ * @component ShootingAccuracyCharts
+ * @description A component that renders a set of pie charts to provide a detailed
+ * breakdown of a team's shooting performance, separated by shot type (foot/header)
+ * and analyzing both outcome and danger level.
+ * @param {ShootingAccuracyChartsProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const ShootingAccuracyCharts: React.FC<ShootingAccuracyChartsProps> = ({
   teamStats,
   teamName,

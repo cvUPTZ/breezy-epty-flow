@@ -15,6 +15,15 @@ import {
 import { Statistics, MatchEvent } from '@/types';
 import { motion } from 'framer-motion';
 
+/**
+ * @interface RealTimeStatsWidgetProps
+ * @description Props for the RealTimeStatsWidget component.
+ * @property {Statistics} statistics - The main statistics object, updated in real-time.
+ * @property {MatchEvent[]} events - An array of all events from the match.
+ * @property {string} homeTeamName - The name of the home team.
+ * @property {string} awayTeamName - The name of the away team.
+ * @property {boolean} [isLive=false] - Flag indicating if the match is currently live.
+ */
 interface RealTimeStatsWidgetProps {
   statistics: Statistics;
   events: MatchEvent[];
@@ -23,6 +32,13 @@ interface RealTimeStatsWidgetProps {
   isLive?: boolean;
 }
 
+/**
+ * @component RealTimeStatsWidget
+ * @description A widget designed to provide a compact, real-time overview of a live match.
+ * It displays key stats, a list of recent events, and a match timer.
+ * @param {RealTimeStatsWidgetProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const RealTimeStatsWidget: React.FC<RealTimeStatsWidgetProps> = ({
   statistics,
   events,

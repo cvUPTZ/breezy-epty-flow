@@ -7,12 +7,23 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { EventType, Team, Player } from '@/types';
 
+/**
+ * @interface PianoInputComponentProps
+ * @description Props for the PianoInputComponent.
+ * @property {Team} homeTeam - The data for the home team, including players.
+ * @property {Team} awayTeam - The data for the away team, including players.
+ * @property {(event: any) => void} onEventAdd - Callback function to add a new event to the match.
+ */
 interface PianoInputComponentProps {
   homeTeam: Team;
   awayTeam: Team;
   onEventAdd: (event: any) => void;
 }
 
+/**
+ * @constant eventTypes
+ * @description An array of all possible event types that can be recorded.
+ */
 const eventTypes: EventType[] = [
   'pass', 'shot', 'tackle', 'foul', 'corner', 'offside', 'goal',
   'assist', 'yellowCard', 'redCard', 'substitution', 'card',
@@ -22,6 +33,13 @@ const eventTypes: EventType[] = [
   'goalKick', 'aerialDuel', 'groundDuel'
 ];
 
+/**
+ * @component PianoInputComponent
+ * @description A form-based component for quick, manual entry of match events. It allows selecting a team, player,
+ * event type, and optionally a timestamp, then adding the event to the match.
+ * @param {PianoInputComponentProps} props The props for the component.
+ * @returns {JSX.Element} The rendered PianoInputComponent.
+ */
 const PianoInputComponent: React.FC<PianoInputComponentProps> = ({
   homeTeam,
   awayTeam,

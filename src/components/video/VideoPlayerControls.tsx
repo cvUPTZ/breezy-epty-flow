@@ -6,6 +6,14 @@ import { Slider } from '@/components/ui/slider';
 import { Play, Pause, Rewind, FastForward, Volume2, VolumeX, Loader2 } from 'lucide-react';
 import { YouTubePlayerInstance, PlayerControlEvent } from './YouTubePlayer'; // Assuming types are exported
 
+/**
+ * @interface VideoPlayerControlsProps
+ * @description Props for the VideoPlayerControls component.
+ * @property {YouTubePlayerInstance | null} player - An instance of the YouTube player to control.
+ * @property {string} [initialVideoId] - The initial video ID to display in the input field.
+ * @property {(event: Omit<PlayerControlEvent, 'timestamp'>) => void} onSendEvent - Callback to broadcast a control event to other clients.
+ * @property {boolean} [isLoading] - Flag to indicate if the player is in a loading state.
+ */
 interface VideoPlayerControlsProps {
   player: YouTubePlayerInstance | null;
   initialVideoId?: string;
@@ -13,6 +21,14 @@ interface VideoPlayerControlsProps {
   isLoading?: boolean; // To show loading state, e.g., when changing video
 }
 
+/**
+ * @component VideoPlayerControls
+ * @description A UI component that provides administrative controls for a shared YouTube video player.
+ * It allows an admin to load a new video, play, pause, seek, and control the volume, broadcasting these
+ * actions to all connected clients.
+ * @param {VideoPlayerControlsProps} props The props for the component.
+ * @returns {JSX.Element} The rendered VideoPlayerControls component.
+ */
 const VideoPlayerControls: React.FC<VideoPlayerControlsProps> = ({ player, initialVideoId, onSendEvent, isLoading }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);

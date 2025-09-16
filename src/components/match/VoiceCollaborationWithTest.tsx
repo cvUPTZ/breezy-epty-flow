@@ -7,12 +7,26 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useVoiceCollaborationContext } from '@/context/VoiceCollaborationContext'; // NEW
 
+/**
+ * @interface VoiceCollaborationWithTestProps
+ * @description Props for the VoiceCollaborationWithTest component.
+ * @property {string} matchId - The ID of the match for the voice chat room.
+ * @property {string} userId - The ID of the current user.
+ * @property {string} [className] - Optional CSS class names to apply to the container.
+ */
 interface VoiceCollaborationWithTestProps {
   matchId: string;
   userId: string;
   className?: string;
 }
 
+/**
+ * @component VoiceCollaborationWithTest
+ * @description A component that combines the main voice chat interface with an audio testing utility.
+ * It ensures the user is authenticated, provides a way to test microphone and speakers, and then presents the `EnhancedVoiceChat` component.
+ * @param {VoiceCollaborationWithTestProps} props The props for the component.
+ * @returns {JSX.Element} The rendered VoiceCollaborationWithTest component.
+ */
 const VoiceCollaborationWithTest: React.FC<VoiceCollaborationWithTestProps> = ({
   matchId,
   userId,

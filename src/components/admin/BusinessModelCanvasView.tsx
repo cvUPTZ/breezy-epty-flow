@@ -1,6 +1,14 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+/**
+ * @component CanvasBox
+ * @description A small, reusable sub-component for displaying a single block of the Business Model Canvas.
+ * @param {object} props - The component props.
+ * @param {string} props.title - The title of the canvas block.
+ * @param {string[]} props.items - An array of strings to be listed within the block.
+ * @returns {React.FC} A React functional component.
+ */
 const CanvasBox: React.FC<{ title: string; items: string[] }> = ({ title, items }) => (
   <div className="border p-4 rounded-lg h-full">
     <h3 className="font-semibold text-sm mb-2 text-primary">{title}</h3>
@@ -12,6 +20,12 @@ const CanvasBox: React.FC<{ title: string; items: string[] }> = ({ title, items 
   </div>
 );
 
+/**
+ * @component BusinessModelCanvasView
+ * @description A read-only component that displays the Business Model Canvas in its standard
+ * grid layout. The data is hardcoded and provides a static snapshot of the business model.
+ * @returns {React.FC} A React functional component.
+ */
 const BusinessModelCanvasView: React.FC = () => {
   return (
     <Card>

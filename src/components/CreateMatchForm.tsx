@@ -9,9 +9,22 @@ import TeamSetupSection from './match/form/TeamSetupSection';
 import VideoSetupSection from './match/form/VideoSetupSection';
 import { Button } from './ui/button';
 
+/**
+ * @typedef {'draft' | 'scheduled' | 'live' | 'completed'} MatchStatus
+ * @description The possible statuses of a match.
+ */
 type MatchStatus = 'draft' | 'scheduled' | 'live' | 'completed';
+
+/**
+ * @typedef {'4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '5-3-2' | '3-4-3'} Formation
+ * @description The possible tactical formations for a team.
+ */
 type Formation = '4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '5-3-2' | '3-4-3';
 
+/**
+ * @interface MatchFormData
+ * @description Represents the core data for a match being created or edited.
+ */
 interface MatchFormData {
   name: string;
   description: string;
@@ -29,6 +42,10 @@ interface MatchFormData {
   awayTeamFlagUrl: string;
 }
 
+/**
+ * @interface Player
+ * @description Represents a player in a team's roster.
+ */
 interface Player {
   id: number;
   name: string;
@@ -37,11 +54,25 @@ interface Player {
   isSubstitute: boolean;
 }
 
+/**
+ * @interface CreateMatchFormProps
+ * @description Props for the CreateMatchForm component.
+ * @property {string} [matchId] - The ID of the match to edit. If not provided, the form is in creation mode.
+ * @property {function(match: any): void} onMatchSubmit - Callback function triggered after a successful match creation or update.
+ */
 interface CreateMatchFormProps {
   matchId?: string;
   onMatchSubmit: (match: any) => void;
 }
 
+/**
+ * @component CreateMatchForm
+ * @description A comprehensive form for creating and editing football matches.
+ * It handles match details, team setups, player rosters, and video links.
+ * It can fetch existing match data for editing or create a new match from scratch.
+ * @param {CreateMatchFormProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmit }) => {
   const { user } = useAuth();
   const navigate = useNavigate();

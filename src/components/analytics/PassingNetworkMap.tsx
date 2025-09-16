@@ -4,6 +4,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import * as d3 from 'd3';
 import { TeamDetailedStats, PlayerStatSummary } from '@/types';
 
+/**
+ * @interface PassingNetworkMapProps
+ * @description Props for the PassingNetworkMap component.
+ * @property {PlayerStatSummary[]} playerStats - An array of statistics for each player.
+ * @property {{ name: string; players: any[] }} homeTeam - Data for the home team.
+ * @property {{ name: string; players: any[] }} awayTeam - Data for the away team.
+ * @property {number} [period=0] - The match period to filter by (0 for all).
+ * @property {number} [width=800] - The width of the SVG container.
+ * @property {number} [height=600] - The height of the SVG container.
+ * @property {string} [homeTeamColor] - The color for the home team nodes and links.
+ * @property {string} [awayTeamColor] - The color for the away team nodes and links.
+ * @property {number} [minPassesThreshold=1] - The minimum number of passes required to draw a link.
+ */
 interface PassingNetworkMapProps {
   playerStats: PlayerStatSummary[];
   homeTeam: { name: string; players: any[] }; 
@@ -16,7 +29,11 @@ interface PassingNetworkMapProps {
   minPassesThreshold?: number;
 }
 
-// Define needed D3 types
+/**
+ * @interface D3Node
+ * @description Represents a node in the D3 force-directed graph, typically a player.
+ * @extends d3.SimulationNodeDatum
+ */
 interface D3Node extends d3.SimulationNodeDatum {
   id: string;
   name: string;
@@ -27,6 +44,11 @@ interface D3Node extends d3.SimulationNodeDatum {
   y?: number;
 }
 
+/**
+ * @interface D3Link
+ * @description Represents a link in the D3 force-directed graph, typically passes between players.
+ * @extends d3.SimulationLinkDatum<D3Node>
+ */
 interface D3Link extends d3.SimulationLinkDatum<D3Node> {
   source: string | D3Node;
   target: string | D3Node;
@@ -34,6 +56,13 @@ interface D3Link extends d3.SimulationLinkDatum<D3Node> {
   team: 'home' | 'away';
 }
 
+/**
+ * @component PassingNetworkMap
+ * @description A component that renders an interactive, force-directed graph of the passing network
+ * between players using the D3.js library.
+ * @param {PassingNetworkMapProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const PassingNetworkMap: React.FC<PassingNetworkMapProps> = ({
   playerStats,
   homeTeam,

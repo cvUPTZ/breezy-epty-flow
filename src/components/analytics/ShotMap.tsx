@@ -5,23 +5,39 @@ import { ShotEventData } from '@/types/eventData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SimpleTooltip } from "@/components/ui/simple-tooltip";
-import { Target } from 'lucide-react'; // Import Target icon
+import { Target } from 'lucide-react';
 
 // Define pitch dimensions (can be props or constants)
 const DEFAULT_PITCH_LENGTH = 105;
 const DEFAULT_PITCH_WIDTH = 68;
 // Define SVG viewbox dimensions for responsiveness
-const SVG_VIEWBOX_WIDTH = DEFAULT_PITCH_LENGTH + 10; // Add padding
-const SVG_VIEWBOX_HEIGHT = DEFAULT_PITCH_WIDTH + 10; // Add padding
+const SVG_VIEWBOX_WIDTH = DEFAULT_PITCH_LENGTH + 10;
+const SVG_VIEWBOX_HEIGHT = DEFAULT_PITCH_WIDTH + 10;
 
+/**
+ * @interface ShotMapProps
+ * @description Props for the ShotMap component.
+ * @property {MatchEvent[]} shots - An array of shot events to be displayed.
+ * @property {string} [homeTeamName='Home'] - The name of the home team.
+ * @property {string} [awayTeamName='Away'] - The name of the away team.
+ * @property {number} [pitchLength] - The length of the pitch for coordinate scaling.
+ * @property {number} [pitchWidth] - The width of the pitch for coordinate scaling.
+ */
 interface ShotMapProps {
-  shots: MatchEvent[]; // Already filtered for event.type === 'shot'
+  shots: MatchEvent[];
   homeTeamName?: string;
   awayTeamName?: string;
   pitchLength?: number;
   pitchWidth?: number;
 }
 
+/**
+ * @component ShotMap
+ * @description A component that renders a detailed, interactive shot map on an SVG football pitch.
+ * It visualizes shot locations, outcomes (goal, on-target, off-target), and xG values.
+ * @param {ShotMapProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const ShotMap: React.FC<ShotMapProps> = ({
   shots,
   homeTeamName = 'Home',

@@ -8,10 +8,23 @@ import TrackerNotificationSystem from './TrackerNotificationSystem';
 import TrackerAbsenceManager from './TrackerAbsenceManager';
 import { EnhancedEventTypeIcon } from '@/components/match/EnhancedEventTypeIcon';
 
+/**
+ * @interface TrackerPresenceIndicatorProps
+ * @description Props for the TrackerPresenceIndicator component.
+ * @property {string} matchId - The ID of the match to monitor.
+ */
 interface TrackerPresenceIndicatorProps {
   matchId: string;
 }
 
+/**
+ * @component TrackerPresenceIndicator
+ * @description A high-level dashboard component that provides a real-time overview of tracker
+ * presence, status, and activity for a specific match. It composes several other components
+ * to create a comprehensive monitoring and management interface.
+ * @param {TrackerPresenceIndicatorProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const TrackerPresenceIndicator: React.FC<TrackerPresenceIndicatorProps> = ({ matchId }) => {
   const { trackers = [], isConnected } = useRealtimeMatch({ matchId });
 

@@ -9,6 +9,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { assignmentLoggingService } from '@/services/assignmentLoggingService';
 
+/**
+ * @interface PlayerAssignment
+ * @description Represents a single record of a tracker being assigned to a player for a match.
+ */
 interface PlayerAssignment {
   id: string;
   match_id: string;
@@ -27,6 +31,10 @@ interface PlayerAssignment {
   };
 }
 
+/**
+ * @interface Match
+ * @description Defines the structure for a match object, including its player rosters.
+ */
 interface Match {
   id: string;
   name?: string;
@@ -36,12 +44,22 @@ interface Match {
   away_team_players: any[];
 }
 
+/**
+ * @interface User
+ * @description Represents a user, typically a tracker in this context.
+ */
 interface User {
   id: string;
   email: string;
   full_name?: string;
 }
 
+/**
+ * @component PlayerAssignments
+ * @description An admin interface for creating and managing player-specific tracker assignments.
+ * It allows an administrator to assign a tracker to a single player for a specific match.
+ * @returns {React.FC} A React functional component.
+ */
 const PlayerAssignments: React.FC = () => {
   const [assignments, setAssignments] = useState<PlayerAssignment[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);

@@ -8,8 +8,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import CreateUserDialog from './CreateUserDialog';
 
+/**
+ * @typedef {'admin' | 'tracker' | 'teacher' | 'user' | 'manager' | 'special'} UserRole
+ * @description The possible roles a user can have in the system.
+ */
 type UserRole = 'admin' | 'tracker' | 'teacher' | 'user' | 'manager' | 'special';
 
+/**
+ * @interface UserProfile
+ * @description Represents the data structure for a user profile in the management list.
+ */
 interface UserProfile {
   id: string;
   email: string;
@@ -17,6 +25,13 @@ interface UserProfile {
   full_name?: string;
 }
 
+/**
+ * @component UserManagement
+ * @description A dashboard component for administrators to manage all users in the system.
+ * It provides functionalities to view, change roles, and delete users, as well as
+ * a dialog to create new users.
+ * @returns {React.FC} A React functional component.
+ */
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);

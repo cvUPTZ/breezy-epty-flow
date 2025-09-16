@@ -4,13 +4,32 @@ import { supabase } from '@/integrations/supabase/client';
 import { useParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
-// Updated interfaces to match the rich data from the scraper
+/**
+ * @interface PlayerStats
+ * @description Represents the basic statistics for a player.
+ * @property {number} minutes_played - Total minutes played.
+ * @property {number} goals - Total goals scored.
+ * @property {number} matches_played - Total matches played.
+ */
 interface PlayerStats {
   minutes_played: number;
   goals: number;
   matches_played: number;
 }
 
+/**
+ * @interface Player
+ * @description Represents a single player with their details and stats.
+ * @property {string} lfp_id - The unique identifier for the player from the LFP website.
+ * @property {string} name - The name of the player.
+ * @property {string} photo_url - The URL of the player's photo.
+ * @property {number} jersey_number - The player's jersey number.
+ * @property {number} age - The age of the player.
+ * @property {string} nationality - The nationality of the player.
+ * @property {string} position - The player's position on the field.
+ * @property {string} contract_expires - The date when the player's contract expires.
+ * @property {PlayerStats} stats - An object containing the player's statistics.
+ */
 interface Player {
   lfp_id: string;
   name: string;
@@ -23,6 +42,14 @@ interface Player {
   stats: PlayerStats;
 }
 
+/**
+ * @interface Club
+ * @description Represents a football club with its details and list of players.
+ * @property {string} lfp_id - The unique identifier for the club from the LFP website.
+ * @property {string} name - The name of the club.
+ * @property {string} logo_url - The URL of the club's logo.
+ * @property {Player[]} players - An array of players belonging to the club.
+ */
 interface Club {
   lfp_id: string;
   name: string;
@@ -31,6 +58,13 @@ interface Club {
   // You can add staff here later if needed
 }
 
+/**
+ * @component ClubDetails
+ * @description A component that displays detailed information about a specific football club,
+ * including its logo, name, and a grid of its players with their photos and basic details.
+ * The data is fetched from a Supabase edge function based on the club ID from the URL.
+ * @returns {JSX.Element} The rendered ClubDetails component.
+ */
 const ClubDetails: React.FC = () => {
   const { clubId } = useParams<{ clubId: string }>();
   const [club, setClub] = useState<Club | null>(null);

@@ -9,13 +9,16 @@ import {
 } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
 
-
+/**
+ * @interface ShotDistributionAnalysisProps
+ * @description Props for the ShotDistributionAnalysis component.
+ * @property {TeamDetailedStats} teamStats - The detailed statistics for a single team.
+ * @property {string} teamName - The name of the team.
+ */
 interface ShotDistributionAnalysisProps {
   teamStats: TeamDetailedStats;
   teamName: string;
 }
-
-// Removed SimpleBarDisplay
 
 const chartColors = {
   'Foot Shots': 'hsl(var(--chart-1))',
@@ -27,7 +30,14 @@ const chartColors = {
   'Blocked (All)': 'hsl(var(--chart-4))',
 };
 
-
+/**
+ * @component ShotDistributionAnalysis
+ * @description A component that provides a detailed breakdown of a team's shots,
+ * visualized with bar charts for distribution by body part and by outcome,
+ * and a detailed table for raw counts.
+ * @param {ShotDistributionAnalysisProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const ShotDistributionAnalysis: React.FC<ShotDistributionAnalysisProps> = ({
   teamStats,
   teamName,

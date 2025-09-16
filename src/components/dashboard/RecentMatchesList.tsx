@@ -3,6 +3,10 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
+/**
+ * @interface Match
+ * @description Defines the structure for a single match object in the recent matches list.
+ */
 interface Match {
   id: string;
   homeTeam: { name: string };
@@ -16,10 +20,22 @@ interface Match {
   };
 }
 
+/**
+ * @interface RecentMatchesListProps
+ * @description Props for the RecentMatchesList component.
+ * @property {Match[]} matches - An array of recent match objects to display.
+ */
 interface RecentMatchesListProps {
   matches: Match[];
 }
 
+/**
+ * @component RecentMatchesList
+ * @description A component that displays a simple, tabular list of recent matches,
+ * with each item linking to the detailed view for that match.
+ * @param {RecentMatchesListProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const RecentMatchesList: React.FC<RecentMatchesListProps> = ({ matches }) => {
   if (matches.length === 0) {
     return (

@@ -10,17 +10,37 @@ import GamepadConfig from '../gamepad/GamepadConfig';
 import { useGamepadTracker } from '@/hooks/useGamepadTracker';
 import { supabase } from '@/integrations/supabase/client';
 
+/**
+ * @interface RecordedEvent
+ * @description Represents an event that has been recorded and is temporarily stored in the component's state.
+ * @property {string} id - The unique identifier of the event.
+ * @property {EventType} eventType - The type of the recorded event.
+ * @property {number} timestamp - The timestamp when the event was recorded.
+ */
 interface RecordedEvent {
   id: string;
   eventType: EventType;
   timestamp: number;
 }
 
+/**
+ * @interface EnhancedPianoInputProps
+ * @description Props for the EnhancedPianoInput component.
+ * @property {(eventType: EventType) => Promise<any | null>} onEventRecord - Callback function to handle the recording of an event. It should return a promise that resolves with the new event object.
+ * @property {string} matchId - The ID of the current match.
+ */
 interface EnhancedPianoInputProps {
   onEventRecord: (eventType: EventType) => Promise<any | null>;
   matchId: string;
 }
 
+/**
+ * @component EnhancedPianoInput
+ * @description A sophisticated piano-style input for recording match events. It supports both mouse/touch input and gamepad input.
+ * It provides immediate visual feedback, a list of recent events, and the ability to cancel a recently recorded event.
+ * @param {EnhancedPianoInputProps} props The props for the component.
+ * @returns {JSX.Element} The rendered EnhancedPianoInput component.
+ */
 const EnhancedPianoInput: React.FC<EnhancedPianoInputProps> = ({
   onEventRecord,
   matchId

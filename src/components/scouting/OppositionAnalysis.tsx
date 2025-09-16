@@ -11,6 +11,21 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 
+/**
+ * @interface Analysis
+ * @description Represents the structure of a single opposition analysis report.
+ * @property {string} id - The unique identifier for the analysis.
+ * @property {string} opponent_team - The name of the opponent team.
+ * @property {string | null} match_date - The date of the match against the opponent.
+ * @property {string | null} formation - The typical formation of the opponent.
+ * @property {string | null} playing_style - A description of the opponent's playing style.
+ * @property {any} key_players - Information about the opponent's key players.
+ * @property {string[] | null} strengths - A list of the opponent's strengths.
+ * @property {string[] | null} weaknesses - A list of the opponent's weaknesses.
+ * @property {string | null} tactical_recommendations - Tactical advice for playing against the opponent.
+ * @property {any} set_piece_analysis - Analysis of the opponent's set pieces.
+ * @property {string | null} created_at - The timestamp when the analysis was created.
+ */
 interface Analysis {
   id: string;
   opponent_team: string;
@@ -25,6 +40,13 @@ interface Analysis {
   created_at: string | null;
 }
 
+/**
+ * @component OppositionAnalysis
+ * @description A component for creating, viewing, and searching opposition analysis reports.
+ * It fetches existing reports from Supabase, displays them in a grid, and provides a dialog form
+ * for adding new analyses.
+ * @returns {JSX.Element} The rendered OppositionAnalysis component.
+ */
 const OppositionAnalysis: React.FC = () => {
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);

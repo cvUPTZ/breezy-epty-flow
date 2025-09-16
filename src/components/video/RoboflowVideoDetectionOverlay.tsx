@@ -11,6 +11,14 @@ import { Play, Square, Settings, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { roboflowDetectionService, ProcessedDetectionResult } from '@/services/roboflowDetectionService';
 
+/**
+ * @interface RoboflowVideoDetectionOverlayProps
+ * @description Props for the RoboflowVideoDetectionOverlay component.
+ * @property {HTMLVideoElement | null} [videoElement] - A reference to the HTML video element to process.
+ * @property {boolean} isVisible - Whether the overlay is currently visible.
+ * @property {(results: ProcessedDetectionResult[]) => void} onDetectionResults - Callback to handle the final detection results.
+ * @property {React.RefObject<HTMLCanvasElement>} [canvasRef] - A reference to the canvas element for drawing detection overlays.
+ */
 interface RoboflowVideoDetectionOverlayProps {
   videoElement?: HTMLVideoElement | null;
   isVisible: boolean;
@@ -18,6 +26,13 @@ interface RoboflowVideoDetectionOverlayProps {
   canvasRef?: React.RefObject<HTMLCanvasElement>;
 }
 
+/**
+ * @component RoboflowVideoDetectionOverlay
+ * @description An overlay component that provides a control panel for running Roboflow AI object detection on a video.
+ * It allows configuration of detection parameters, starting/stopping the process, and visualizing detection results on a canvas.
+ * @param {RoboflowVideoDetectionOverlayProps} props The props for the component.
+ * @returns {JSX.Element | null} The rendered overlay component, or null if it's not visible.
+ */
 export const RoboflowVideoDetectionOverlay: React.FC<RoboflowVideoDetectionOverlayProps> = ({
   videoElement,
   isVisible,

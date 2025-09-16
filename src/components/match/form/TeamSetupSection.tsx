@@ -9,8 +9,21 @@ import { Upload, Target } from 'lucide-react';
 import { AIProcessingService } from '@/services/aiProcessingService';
 import { useToast } from '@/hooks/use-toast';
 
+/**
+ * @typedef {'4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '5-3-2' | '3-4-3'} Formation
+ * @description Defines the possible team formations.
+ */
 type Formation = '4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '5-3-2' | '3-4-3';
 
+/**
+ * @interface Player
+ * @description Represents a single player in a team.
+ * @property {number} id - A unique identifier for the player within the form session.
+ * @property {string} name - The name of the player.
+ * @property {number | null} number - The jersey number of the player.
+ * @property {string} position - The position of the player (e.g., 'GK', 'CB', 'ST').
+ * @property {boolean} isSubstitute - Flag indicating if the player is a substitute.
+ */
 interface Player {
   id: number;
   name: string;
@@ -19,6 +32,20 @@ interface Player {
   isSubstitute: boolean;
 }
 
+/**
+ * @interface TeamSetupSectionProps
+ * @description Props for the TeamSetupSection component.
+ * @property {Player[]} homeTeamPlayers - An array of players for the home team.
+ * @property {Player[]} awayTeamPlayers - An array of players for the away team.
+ * @property {object} formData - An object containing form data related to team setup.
+ * @property {Formation} formData.homeTeamFormation - The formation of the home team.
+ * @property {Formation} formData.awayTeamFormation - The formation of the away team.
+ * @property {string} formData.homeTeamFlagUrl - The URL or blob URL for the home team's flag.
+ * @property {string} formData.awayTeamFlagUrl - The URL or blob URL for the away team's flag.
+ * @property {(field: string, value: string) => void} onFormDataChange - Callback to handle changes to form data fields.
+ * @property {(team: 'home' | 'away', players: Player[]) => void} onPlayersChange - Callback to handle changes to the player list for a team.
+ * @property {(e: React.ChangeEvent<HTMLInputElement>, team: 'home' | 'away') => void} onFlagChange - Callback to handle the uploading of a new flag image.
+ */
 interface TeamSetupSectionProps {
   homeTeamPlayers: Player[];
   awayTeamPlayers: Player[];
@@ -42,7 +69,13 @@ const FOOTBALL_POSITIONS = {
   Attack: ['CF', 'ST', 'LW', 'RW', 'LF', 'RF', 'SS']
 };
 
-// Position assignment based on formation and order
+/**
+ * @function getPositionByFormationAndOrder
+ * @description A helper function that determines a player's likely position based on the team's formation and the player's index in the list.
+ * @param {Formation} formation - The team's formation.
+ * @param {number} playerIndex - The index of the player in the list (0-10 for starters).
+ * @returns {string} The guessed position for the player (e.g., 'GK', 'CB', 'ST').
+ */
 const getPositionByFormationAndOrder = (formation: Formation, playerIndex: number): string => {
   const positionMaps: Record<Formation, string[]> = {
     '4-4-2': ['GK', 'RB', 'CB', 'CB', 'LB', 'RM', 'CM', 'CM', 'LM', 'ST', 'ST'],
@@ -57,6 +90,15 @@ const getPositionByFormationAndOrder = (formation: Formation, playerIndex: numbe
   return positions[playerIndex] || (playerIndex === 0 ? 'GK' : 'SUB');
 };
 
+/**
+ * @component TeamSetupSection
+ * @description A comprehensive form section for setting up home and away teams for a match.
+ * It allows for manual input of player details, selection of formations, and uploading team flags.
+ * It also includes an AI-powered feature to extract player information from an uploaded team sheet image,
+ * automatically assigning positions based on the selected formation.
+ * @param {TeamSetupSectionProps} props The props for the component.
+ * @returns {JSX.Element} The rendered TeamSetupSection component.
+ */
 const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
   homeTeamPlayers,
   awayTeamPlayers,

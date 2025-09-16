@@ -7,6 +7,19 @@ import { useBreakpoint } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
 
+/**
+ * @interface PlayerMarkerProps
+ * @description Props for the PlayerMarker component.
+ * @property {Player} player - The player data object.
+ * @property {string} teamColor - The background color for the marker, representing the player's team.
+ * @property {{ x: number; y: number }} position - The position of the marker on the pitch (0-1 scale).
+ * @property {function(player: Player): void} [onClick] - Callback for when the marker is clicked.
+ * @property {boolean} [selected] - Whether the player is currently selected.
+ * @property {boolean} [hasBall] - Whether the player currently has the ball.
+ * @property {function(eventType: EventType, player: Player, coordinates: { x: number; y: number }): void} [onEventSelect] - Callback for when an event is selected from the circular menu.
+ * @property {boolean} [allowCircularMenu] - Whether to show the circular action menu on right-click or long-press.
+ * @property {boolean} [isPotentialPasser] - Whether to highlight the player as a potential passer.
+ */
 interface PlayerMarkerProps {
   player: Player;
   teamColor: string;
@@ -19,6 +32,14 @@ interface PlayerMarkerProps {
   isPotentialPasser?: boolean;
 }
 
+/**
+ * @component PlayerMarker
+ * @description An interactive component that represents a single player on the pitch.
+ * It handles various states (selected, has ball) and user interactions (click, right-click, touch)
+ * to allow player selection and event logging via a circular context menu.
+ * @param {PlayerMarkerProps} props - The props for the component.
+ * @returns {React.FC} A React functional component.
+ */
 const PlayerMarker: React.FC<PlayerMarkerProps> = ({ 
   player, 
   teamColor, 

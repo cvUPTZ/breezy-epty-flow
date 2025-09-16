@@ -3,6 +3,15 @@ import { EventType } from '@/types';
 import { Button } from './ui/button';
 import { EVENT_STYLES } from '@/constants/eventTypes';
 
+/**
+ * @interface CircularMenuProps
+ * @description Props for the CircularMenu component.
+ * @property {boolean} visible - Whether the menu is currently visible.
+ * @property {{ x: number; y: number }} position - The position of the menu's center, as a percentage of the screen (0 to 1).
+ * @property {function(eventType: EventType): void} onSelect - Callback function triggered when a menu item is selected.
+ * @property {function(): void} onClose - Callback function triggered when the menu should be closed (e.g., clicking outside).
+ * @property {boolean} isMobile - Flag to adjust the menu size and layout for mobile screens.
+ */
 interface CircularMenuProps {
   visible: boolean;
   position: { x: number; y: number };
@@ -11,6 +20,13 @@ interface CircularMenuProps {
   isMobile: boolean;
 }
 
+/**
+ * @component CircularMenu
+ * @description A component that displays a circular menu of event type buttons at a specified screen position.
+ * It is typically used as a context menu for quick event selection.
+ * @param {CircularMenuProps} props - The props for the component.
+ * @returns {React.FC | null} A React functional component, or null if not visible.
+ */
 const CircularMenu: React.FC<CircularMenuProps> = ({ visible, position, onSelect, onClose, isMobile }) => {
   const menuRef = useRef<HTMLDivElement>(null);
 

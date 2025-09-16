@@ -3,6 +3,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { EventType } from '@/types';
 
+/**
+ * @interface CancelActionIndicatorProps
+ * @description Props for the CancelActionIndicator component.
+ * @property {EventType} eventType - The type of event that can be cancelled.
+ * @property {() => void} onCancel - Callback function to be executed when the action is cancelled.
+ * @property {() => void} onExpire - Callback function to be executed when the time expires.
+ * @property {number} [duration=10000] - The duration in milliseconds for which the cancel option is available.
+ */
 interface CancelActionIndicatorProps {
   eventType: EventType;
   onCancel: () => void;
@@ -10,6 +18,14 @@ interface CancelActionIndicatorProps {
   duration?: number;
 }
 
+/**
+ * @component CancelActionIndicator
+ * @description A UI component that shows a countdown timer for an action that can be cancelled.
+ * It displays a circular progress bar and a cancel button. If the action is not cancelled within the given duration,
+ * an `onExpire` callback is triggered.
+ * @param {CancelActionIndicatorProps} props The props for the component.
+ * @returns {JSX.Element | null} The rendered CancelActionIndicator component, or null if it has expired.
+ */
 const CancelActionIndicator: React.FC<CancelActionIndicatorProps> = ({
   eventType,
   onCancel,

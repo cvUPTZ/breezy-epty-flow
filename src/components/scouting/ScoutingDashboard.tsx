@@ -7,6 +7,16 @@ import { Eye, FileText, Users, TrendingUp, AlertCircle, CheckCircle, Clock } fro
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+/**
+ * @interface DashboardStats
+ * @description Defines the structure for the aggregated statistics displayed on the scouting dashboard.
+ * @property {number} totalPlayers - The total number of scouted players.
+ * @property {number} activeReports - The total number of active scout reports.
+ * @property {number} youthProspects - The total number of youth prospects being tracked.
+ * @property {number} oppositionAnalyses - The total number of opposition analysis reports.
+ * @property {any[]} recentActivity - A list of the most recent scouting activities.
+ * @property {any[]} recommendations - A list of players with a 'sign' recommendation.
+ */
 interface DashboardStats {
   totalPlayers: number;
   activeReports: number;
@@ -16,6 +26,13 @@ interface DashboardStats {
   recommendations: any[];
 }
 
+/**
+ * @component ScoutingDashboard
+ * @description A dashboard component that provides a high-level overview of all scouting activities.
+ * It fetches and displays key metrics, recent reports, and top recommendations by aggregating data
+ * from various Supabase tables.
+ * @returns {JSX.Element} The rendered ScoutingDashboard component.
+ */
 const ScoutingDashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats>({
     totalPlayers: 0,

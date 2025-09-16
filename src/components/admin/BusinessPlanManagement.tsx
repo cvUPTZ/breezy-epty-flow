@@ -41,6 +41,7 @@ import MarketAnalysis from './MarketAnalysis';
 import BusinessPlanDetails from './BusinessPlanDetails';
 import BusinessModelCanvasView from './BusinessModelCanvasView';
 
+/** @interface BusinessGoal Represents a strategic business goal. */
 interface BusinessGoal {
   id: string;
   title: string;
@@ -51,6 +52,7 @@ interface BusinessGoal {
   priority: 'low' | 'medium' | 'high';
 }
 
+/** @interface RevenueStream Represents a single source of business revenue. */
 interface RevenueStream {
   id: string;
   name: string;
@@ -61,6 +63,7 @@ interface RevenueStream {
   marketSegment: string;
 }
 
+/** @interface AlgerianRegulation Represents a specific regulatory requirement in Algeria. */
 interface AlgerianRegulation {
   id: string;
   name: string;
@@ -69,6 +72,7 @@ interface AlgerianRegulation {
   deadline?: string;
 }
 
+/** @interface EventTypeConfig Defines parameters for a trackable game event. */
 interface EventTypeConfig {
   id: number;
   name: string;
@@ -78,16 +82,18 @@ interface EventTypeConfig {
   detectionRate: number;
 }
 
+/** @interface TrackerBudgetConfig Defines parameters for calculating tracker-related costs. */
 interface TrackerBudgetConfig {
   basePayPerHour: number;
   difficultyMultiplier: number;
   overtimeRate: number;
   transportAllowance: number;
   equipmentCost: number;
-  socialCharges: number; // pourcentage
+  socialCharges: number;
   desiredSalaryPerMatch: number;
 }
 
+/** @interface Founder Represents a founder, investor, or key partner. */
 interface Founder {
   id: string;
   name: string;
@@ -96,10 +102,11 @@ interface Founder {
   responsibilities: string[];
   monthlyContribution: number;
   expectedROI: number;
-  vestingPeriod: number; // in months
+  vestingPeriod: number;
   joinDate: string;
 }
 
+/** @interface FinancialProjection Represents a single year's financial forecast. */
 interface FinancialProjection {
   year: number;
   revenue: number;
@@ -108,6 +115,7 @@ interface FinancialProjection {
   founderDistribution: number;
 }
 
+/** @interface InterventionType Represents a potential strategic investment or action. */
 interface InterventionType {
   id: string;
   name: string;
@@ -115,9 +123,17 @@ interface InterventionType {
   requiredCapital: number;
   expectedReturn: number;
   riskLevel: 'low' | 'medium' | 'high';
-  timeframe: number; // in months
+  timeframe: number;
 }
 
+/**
+ * @component BusinessPlanManagement
+ * @description A master component that orchestrates the entire business planning and strategic
+ * management section of the admin panel. It uses a tabbed interface to organize various
+ * high-level components like the Business Model Canvas, financial planners, and market analysis tools.
+ * It holds and manages the state for the entire business plan.
+ * @returns {React.FC} A React functional component.
+ */
 const BusinessPlanManagement: React.FC = () => {
   const [goals, setGoals] = useState<BusinessGoal[]>([
     {

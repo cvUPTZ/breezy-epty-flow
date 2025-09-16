@@ -1,11 +1,22 @@
 import React from 'react';
 // Potentially import types for props, e.g., MatchEvent from '@/types'
 
+/**
+ * @interface TimelineTabPlaceholderProps
+ * @description Props for the TimelineTabPlaceholder component. Currently empty as it's a placeholder.
+ */
 interface TimelineTabPlaceholderProps {
   // Example: Pass events data if available
   // events: MatchEvent[];
 }
 
+/**
+ * @component TimelineTabPlaceholder
+ * @description A placeholder component for the match timeline tab. It informs the user that this section will contain
+ * a chronological timeline of match events and mentions the required permission.
+ * @param {TimelineTabPlaceholderProps} props The props for the component.
+ * @returns {JSX.Element} The rendered TimelineTabPlaceholder component.
+ */
 const TimelineTabPlaceholder: React.FC<TimelineTabPlaceholderProps> = (props) => {
   return (
     <div>
