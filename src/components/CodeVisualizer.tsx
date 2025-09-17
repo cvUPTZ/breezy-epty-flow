@@ -779,7 +779,7 @@ const RealCodebaseVisualizer: React.FC = () => {
     return 'file';
   };
 
-  const getLanguage = (fileName: string): string {
+  const getLanguage = (fileName: string): string => {
     if (fileName.endsWith('.ts') || fileName.endsWith('.tsx')) return 'TypeScript';
     if (fileName.endsWith('.js') || fileName.endsWith('.jsx')) return 'JavaScript';
     if (fileName.endsWith('.py')) return 'Python';
