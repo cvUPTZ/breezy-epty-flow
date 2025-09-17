@@ -1,5 +1,6 @@
 // supabase/functions/analyze-codebase/index.ts
 
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 
@@ -158,11 +159,11 @@ serve(async (req) => {
   }
 
   try {
-    const { githubUrl, files } = await req.json();
+    const { githubUrl, files, filePaths } = await req.json(); // Added filePaths
 
-    if (!githubUrl && !files) {
+    if (!githubUrl && !files && !filePaths) {
       return new Response(
-        JSON.stringify({ error: "Missing githubUrl or files parameter" }),
+        JSON.stringify({ error: "Missing githubUrl, files, or filePaths parameter" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -179,6 +180,10 @@ serve(async (req) => {
       const owner = urlParts[1];
       const repo = urlParts[2];
       const githubToken = Deno.env.get("GITHUB_TOKEN");
+
+      if (!githubToken) {
+        throw new Error("Server configuration error: GITHUB_TOKEN is not set. Please contact the administrator.");
+      }
 
       const headers = {
         Accept: 'application/vnd.github.v3+json',
@@ -241,7 +246,58 @@ serve(async (req) => {
         },
       };
 
-    } else if (files) {
+    } else if (filePaths) {
+      // Logic to analyze files from Supabase Storage
+      console.log(`Analyzing ${filePaths.length} files from Storage.`);
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      );
+
+      const fileContents = await Promise.all(
+        filePaths.map(async (path: string) => {
+          const { data, error } = await supabaseAdmin.storage
+            .from('code-analysis-uploads')
+            .download(path);
+
+          if (error) {
+            console.error(`Failed to download ${path}:`, error);
+            return null; // Skip failed downloads
+          }
+
+          return { name: path.split('/').pop() || path, content: await data.text() };
+        })
+      );
+
+      const validFiles = fileContents.filter(Boolean) as { name: string, content: string }[];
+
+      const allNodes: CodebaseNode[] = [];
+      const allLinks: CodebaseLink[] = [];
+      let totalLines = 0;
+      const languageCounts: Record<string, number> = {};
+
+      validFiles.forEach((file) => {
+        const { nodes, links } = analyzeCodeContent(file.content, file.name);
+        allNodes.push(...nodes);
+        allLinks.push(...links);
+        totalLines += file.content.split('\n').length;
+        const lang = getLanguage(file.name);
+        languageCounts[lang] = (languageCounts[lang] || 0) + 1;
+      });
+
+      analysisResult = {
+        nodes: allNodes,
+        links: allLinks,
+        metadata: {
+          totalFiles: validFiles.length,
+          totalLines,
+          languages: languageCounts,
+          lastAnalyzed: new Date(),
+          analysisVersion: '3.1.0-server-storage',
+        },
+      };
+
+    } else if (files) { // Keep old logic for compatibility or direct analysis if needed
       // Logic to analyze a batch of files
       const allNodes: CodebaseNode[] = [];
       const allLinks: CodebaseLink[] = [];

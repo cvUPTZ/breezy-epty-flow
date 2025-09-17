@@ -519,32 +519,57 @@ const RealCodebaseVisualizer: React.FC = () => {
     };
   }, [filteredData]);
 
-  // Function to handle file upload by calling the edge function
+  // Function to handle file upload by sending to Supabase Storage first
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
     setIsLoading(true);
     setError(null);
-    setProgress({ percent: 50, file: 'Uploading and processing files...' });
 
     try {
-      const fileContents = await Promise.all(
-        Array.from(files).map(file =>
-          file.text().then(content => ({ name: file.name, content }))
-        )
-      );
+      const uploadPromises = Array.from(files).map(async (file, index) => {
+        const filePath = `public/${Date.now()}-${file.name}`;
 
-      const { data, error } = await supabase.functions.invoke('analyze-codebase', {
-        body: { files: fileContents },
+        // Update progress for this specific file upload
+        setProgress({ percent: 0, file: `Uploading: ${file.name}` });
+
+        const { error } = await supabase.storage
+          .from('code-analysis-uploads')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false,
+          });
+
+        if (error) {
+          throw new Error(`Failed to upload ${file.name}: ${error.message}`);
+        }
+
+        // Update overall progress after each successful upload
+        const overallProgress = Math.round(((index + 1) / files.length) * 50); // Upload is 50% of the process
+        setProgress({ percent: overallProgress, file: `Uploaded: ${file.name}` });
+
+        return filePath;
       });
 
-      if (error) throw error;
-      setData(data);
+      // Await all uploads
+      const uploadedFilePaths = await Promise.all(uploadPromises);
+
+      // Now, invoke the edge function with the file paths
+      setProgress({ percent: 50, file: 'All files uploaded. Starting analysis on server...' });
+
+      const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-codebase', {
+        body: { filePaths: uploadedFilePaths },
+      });
+
+      if (analysisError) throw analysisError;
+      if (analysisData.error) throw new Error(analysisData.error);
+
+      setData(analysisData);
 
     } catch (err: any) {
-      console.error("File analysis failed:", err);
-      setError(err.message || "Failed to process uploaded files.");
+      console.error("File upload and analysis process failed:", err);
+      setError(err.message || "An unexpected error occurred during the file process.");
     } finally {
       setIsLoading(false);
       setProgress({ percent: 0, file: '' });
