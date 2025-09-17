@@ -155,6 +155,7 @@ const RealCodebaseVisualizer: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState({ percent: 0, file: '' });
+  const [jobId, setJobId] = useState<string | null>(null);
 
 
   // Advanced UI state
@@ -493,6 +494,44 @@ const RealCodebaseVisualizer: React.FC = () => {
     setIsLoading(false);
   }, []);
 
+  // Effect to listen for job updates via Supabase Realtime
+  useEffect(() => {
+    if (!jobId) return;
+
+    const channel = supabase
+      .channel(`code_analysis_job_${jobId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'code_analysis_jobs',
+          filter: `id=eq.${jobId}`,
+        },
+        (payload) => {
+          const newJob = payload.new as { status: string; result: CodebaseData; error_message: string };
+          console.log('Realtime update received for job:', newJob);
+
+          if (newJob.status === 'completed') {
+            setData(newJob.result);
+            setIsLoading(false);
+            setJobId(null);
+            channel.unsubscribe();
+          } else if (newJob.status === 'failed') {
+            setError(newJob.error_message || 'The analysis job failed.');
+            setIsLoading(false);
+            setJobId(null);
+            channel.unsubscribe();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [jobId]);
+
   // Update visualization when data or settings change
   useEffect(() => {
     if (filteredData.nodes.length > 0) {
@@ -519,7 +558,7 @@ const RealCodebaseVisualizer: React.FC = () => {
     };
   }, [filteredData]);
 
-  // Function to handle file upload by sending to Supabase Storage first
+  // Function to handle file upload using the new async job architecture
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -528,51 +567,33 @@ const RealCodebaseVisualizer: React.FC = () => {
     setError(null);
 
     try {
+      // Step 1: Upload files to storage
       const uploadPromises = Array.from(files).map(async (file, index) => {
         const filePath = `public/${Date.now()}-${file.name}`;
-
-        // Update progress for this specific file upload
-        setProgress({ percent: 0, file: `Uploading: ${file.name}` });
-
-        const { error } = await supabase.storage
-          .from('code-analysis-uploads')
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false,
-          });
-
-        if (error) {
-          throw new Error(`Failed to upload ${file.name}: ${error.message}`);
-        }
-
-        // Update overall progress after each successful upload
-        const overallProgress = Math.round(((index + 1) / files.length) * 50); // Upload is 50% of the process
-        setProgress({ percent: overallProgress, file: `Uploaded: ${file.name}` });
-
+        setProgress({ percent: Math.round(((index) / files.length) * 50), file: `Uploading: ${file.name}` });
+        const { error } = await supabase.storage.from('code-analysis-uploads').upload(filePath, file);
+        if (error) throw new Error(`Failed to upload ${file.name}: ${error.message}`);
         return filePath;
       });
-
-      // Await all uploads
       const uploadedFilePaths = await Promise.all(uploadPromises);
 
-      // Now, invoke the edge function with the file paths
-      setProgress({ percent: 50, file: 'All files uploaded. Starting analysis on server...' });
-
-      const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-codebase', {
+      // Step 2: Request analysis job from the server
+      setProgress({ percent: 50, file: 'Files uploaded. Requesting analysis...' });
+      const { data, error } = await supabase.functions.invoke('analyze-codebase', {
         body: { filePaths: uploadedFilePaths },
       });
 
-      if (analysisError) throw analysisError;
-      if (analysisData.error) throw new Error(analysisData.error);
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
 
-      setData(analysisData);
+      // Step 3: Set the job ID and wait for realtime updates
+      setJobId(data.jobId);
+      setProgress({ percent: 75, file: 'Analysis job started. Waiting for results from server...' });
 
     } catch (err: any) {
-      console.error("File upload and analysis process failed:", err);
+      console.error("File upload and analysis request failed:", err);
       setError(err.message || "An unexpected error occurred during the file process.");
-    } finally {
       setIsLoading(false);
-      setProgress({ percent: 0, file: '' });
     }
   };
 
@@ -586,9 +607,10 @@ const RealCodebaseVisualizer: React.FC = () => {
   const fetchGitHubRepository = async (repoUrl: string) => {
     setIsLoading(true);
     setError(null);
-    setProgress({ percent: 50, file: `Analyzing repository: ${repoUrl}` });
+    setProgress({ percent: 25, file: `Requesting analysis for: ${repoUrl}` });
 
     try {
+      // Step 1: Request analysis job from the server
       const { data, error } = await supabase.functions.invoke('analyze-codebase', {
         body: { githubUrl: repoUrl },
       });
@@ -596,14 +618,14 @@ const RealCodebaseVisualizer: React.FC = () => {
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
-      setData(data);
+      // Step 2: Set the job ID and wait for realtime updates
+      setJobId(data.jobId);
+      setProgress({ percent: 50, file: 'Analysis job started. Waiting for results from server...' });
 
     } catch (err: any) {
-      console.error("GitHub repository processing failed:", err);
+      console.error("GitHub repository analysis request failed:", err);
       setError(err.message || "Failed to process the GitHub repository.");
-    } finally {
       setIsLoading(false);
-      setProgress({ percent: 0, file: '' });
     }
   };
 
