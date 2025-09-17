@@ -1300,10 +1300,13 @@ const RealCodebaseVisualizer: React.FC = () => {
                   GitHub
                 </button>
                 {/* Upload Button */}
-                <button 
-                  onClick={triggerFileUpload}
-                  className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-lg"
-                >
+         <button
+  onClick={() => setIsGitHubModalOpen(true)} // <-- This is the fix
+  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-lg"
+>
+  <Github className="w-3 h-3 inline mr-1" />
+  GitHub
+</button>
                   <Upload className="w-3 h-3 inline mr-1" />
                   Upload
                 </button>
