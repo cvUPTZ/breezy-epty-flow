@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import * as d3 from 'd3';
-import { supabase } from '../supabaseClient'; // Import the Supabase client
+import { supabase } from '@/integrations/supabase/client'; // Import the Supabase client
 
 // --- TypeScript interfaces (no changes) ---
 interface CodebaseNode {
