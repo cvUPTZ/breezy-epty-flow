@@ -183,8 +183,6 @@ const RealCodebaseVisualizer: React.FC = () => {
   // Simulation refs
   const simulationRef = useRef<d3.Simulation<CodebaseNode, CodebaseLink>>();
   const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined>>();
-  const workerRef = useRef<Worker>();
-
 
   // Ref for the hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -493,31 +491,6 @@ const RealCodebaseVisualizer: React.FC = () => {
     const demoData = generateSOTADemoData();
     setData(demoData);
     setIsLoading(false);
-
-    // Initialize the web worker
-    workerRef.current = new Worker(new URL('../workers/codeAnalyzer.worker.ts', import.meta.url), {
-      type: 'module',
-    });
-
-    // Handle messages from the worker
-    workerRef.current.onmessage = (event: MessageEvent) => {
-      const { type, data, progress, file, message } = event.data;
-      if (type === 'result') {
-        setData(data);
-        setIsLoading(false);
-        setProgress({ percent: 0, file: '' });
-      } else if (type === 'progress') {
-        setProgress({ percent: progress, file });
-      } else if (type === 'error') {
-        setError(message);
-        setIsLoading(false);
-      }
-    };
-
-    // Terminate worker on component unmount
-    return () => {
-      workerRef.current?.terminate();
-    };
   }, []);
 
   // Update visualization when data or settings change
@@ -546,22 +519,36 @@ const RealCodebaseVisualizer: React.FC = () => {
     };
   }, [filteredData]);
 
-  // Function to handle file upload using the web worker
+  // Function to handle file upload by calling the edge function
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || files.length === 0 || !workerRef.current) return;
+    if (!files || files.length === 0) return;
 
     setIsLoading(true);
     setError(null);
-    setProgress({ percent: 0, file: '' });
+    setProgress({ percent: 50, file: 'Uploading and processing files...' });
 
-    const fileContents = await Promise.all(
-      Array.from(files).map(file =>
-        file.text().then(content => ({ name: file.name, content }))
-      )
-    );
+    try {
+      const fileContents = await Promise.all(
+        Array.from(files).map(file =>
+          file.text().then(content => ({ name: file.name, content }))
+        )
+      );
 
-    workerRef.current.postMessage({ files: fileContents });
+      const { data, error } = await supabase.functions.invoke('analyze-codebase', {
+        body: { files: fileContents },
+      });
+
+      if (error) throw error;
+      setData(data);
+
+    } catch (err: any) {
+      console.error("File analysis failed:", err);
+      setError(err.message || "Failed to process uploaded files.");
+    } finally {
+      setIsLoading(false);
+      setProgress({ percent: 0, file: '' });
+    }
   };
 
   // Function to trigger the file input click
@@ -572,80 +559,26 @@ const RealCodebaseVisualizer: React.FC = () => {
   };
 
   const fetchGitHubRepository = async (repoUrl: string) => {
-    if (!workerRef.current) return;
     setIsLoading(true);
     setError(null);
-    setProgress({ percent: 0, file: '' });
+    setProgress({ percent: 50, file: `Analyzing repository: ${repoUrl}` });
 
     try {
-      const urlParts = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
-      if (!urlParts) {
-        throw new Error('Invalid GitHub repository URL. Please use the format https://github.com/owner/repo');
-      }
-      const owner = urlParts[1];
-      const repo = urlParts[2];
+      const { data, error } = await supabase.functions.invoke('analyze-codebase', {
+        body: { githubUrl: repoUrl },
+      });
 
-      // Use recursive fetch to get all files in one go
-      const treeResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/main?recursive=1`);
-      if (treeResponse.status === 403) {
-        const rateLimitReset = treeResponse.headers.get('X-RateLimit-Reset');
-        const resetTime = new Date(Number(rateLimitReset) * 1000);
-        throw new Error(`GitHub API rate limit exceeded. Please try again after ${resetTime.toLocaleTimeString()}.`);
-      }
-      if (!treeResponse.ok) {
-        throw new Error(`Failed to fetch repository tree. This might be a private repository or an invalid URL.`);
-      }
-      const { tree } = await treeResponse.json();
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
 
-      const supportedExtensions = ['.js', '.ts', '.jsx', '.tsx', '.json', '.css', '.html', '.py', '.go', '.java', '.rs'];
-      const filesToFetch = tree.filter((item: any) =>
-        item.type === 'blob' && supportedExtensions.some(ext => item.path.endsWith(ext))
-      );
-
-      if (filesToFetch.length === 0) {
-        throw new Error("No supported files found in the repository.");
-      }
-
-      // Batch fetching file contents to avoid overwhelming the browser/network
-      const batchSize = 10;
-      const fileContents: Array<{ name: string, content: string }> = [];
-      for (let i = 0; i < filesToFetch.length; i += batchSize) {
-          const batch = filesToFetch.slice(i, i + batchSize);
-          const batchPromises = batch.map(async (item: any) => {
-              try {
-                  const contentResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/blobs/${item.sha}`);
-                  if (!contentResponse.ok) {
-                      console.warn(`Skipping file ${item.path} due to fetch error.`);
-                      return null;
-                  }
-                  const blob = await contentResponse.json();
-                  const content = atob(blob.content);
-                  return { name: item.path, content };
-              } catch (error) {
-                  console.error(`Failed to process file ${item.path}:`, error);
-                  return null;
-              }
-          });
-          const resolvedBatch = await Promise.all(batchPromises);
-          fileContents.push(...resolvedBatch.filter(Boolean) as Array<{ name: string, content: string }>);
-
-          // Update progress after each batch
-          setProgress({
-            percent: Math.round(((i + batch.length) / filesToFetch.length) * 50), // 50% for fetching
-            file: `Fetching ${i + batch.length}/${filesToFetch.length} files...`
-          });
-      }
-
-      // Offload analysis to the worker
-      workerRef.current.postMessage({ files: fileContents });
-      // Update progress to indicate analysis has started
-      setProgress(prev => ({ ...prev, percent: 50, file: 'Analyzing files...' }));
-
+      setData(data);
 
     } catch (err: any) {
       console.error("GitHub repository processing failed:", err);
       setError(err.message || "Failed to process the GitHub repository.");
+    } finally {
       setIsLoading(false);
+      setProgress({ percent: 0, file: '' });
     }
   };
 
