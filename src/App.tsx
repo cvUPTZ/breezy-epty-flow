@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -47,6 +46,11 @@ import BusinessPlanPage from './pages/BusinessPlanPage';
 import StartupPitchPage from './pages/StartupPitchPage';
 import BusinessModelCanvasPage from './pages/BusinessModelCanvas';
 import ServiceOfferPage from './pages/ServiceOffer';
+
+// Import business document components
+import BusinessModelCanvasDocument from './components/documents/BusinessModelCanvasDocument';
+import BusinessPlanDocument from './components/documents/BusinessPlanDocument';
+import MarketStudyDocument from './components/documents/MarketStudyDocument';
 
 const queryClient = new QueryClient();
 
@@ -293,6 +297,23 @@ const AppContent = () => {
         <Route path="/business/service-offer" element={
           <RequireAuth requiredRoles={['admin', 'manager']}>
             <ServiceOfferPage />
+          </RequireAuth>
+        } />
+
+        {/* Business Document Routes */}
+        <Route path="/documents/business-model-canvas" element={
+          <RequireAuth requiredRoles={['admin', 'manager']}>
+            <BusinessModelCanvasDocument />
+          </RequireAuth>
+        } />
+        <Route path="/documents/business-plan" element={
+          <RequireAuth requiredRoles={['admin', 'manager']}>
+            <BusinessPlanDocument />
+          </RequireAuth>
+        } />
+        <Route path="/documents/market-study" element={
+          <RequireAuth requiredRoles={['admin', 'manager']}>
+            <MarketStudyDocument />
           </RequireAuth>
         } />
 
