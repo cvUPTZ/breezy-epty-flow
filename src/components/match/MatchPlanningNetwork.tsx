@@ -124,25 +124,6 @@ const EVENT_TYPES = [
 ];
 
 /**
- * @constant EVENT_TYPES
- * @description A configuration array defining the event types available for tracking, along with their labels and priorities.
- */
-const EVENT_TYPES = [
-  { key: 'pass', label: 'Passes', priority: 'high' },
-  { key: 'shot', label: 'Shots', priority: 'high' },
-  { key: 'goal', label: 'Goals', priority: 'critical' },
-  { key: 'foul', label: 'Fouls', priority: 'medium' },
-  { key: 'card', label: 'Cards', priority: 'high' },
-  { key: 'substitution', label: 'Substitutions', priority: 'medium' },
-  { key: 'corner', label: 'Corners', priority: 'medium' },
-  { key: 'cross', label: 'Crosses', priority: 'medium' },
-  { key: 'tackle', label: 'Tackles', priority: 'medium' },
-  { key: 'interception', label: 'Interceptions', priority: 'low' },
-  { key: 'save', label: 'Saves', priority: 'high' },
-  { key: 'clearance', label: 'Clearances', priority: 'low' }
-];
-
-/**
  * @component MatchPlanningNetwork
  * @description A comprehensive dashboard component for organizing and planning all aspects of a match.
  * It provides a centralized view of match details, tracker assignments, tracker status, event coverage, and readiness.
