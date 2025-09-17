@@ -1268,7 +1268,7 @@ const RealCodebaseVisualizer: React.FC = () => {
                 <GitBranch className="w-5 h-5 mr-2" />
                 Data Sources
               </h3>
-              <div className="grid grid-cols-2 gap-2">
+                           <div className="grid grid-cols-2 gap-2">
                 <button 
                   onClick={() => {
                     const newData = generateSOTADemoData();
@@ -1278,35 +1278,19 @@ const RealCodebaseVisualizer: React.FC = () => {
                 >
                   🎯 New Demo
                 </button>
-                {/* GitHub Button with scan functionality */}
+                {/* GitHub Button - Opens Modal for Web App */}
                 <button 
-                  onClick={async () => {
-                    setIsLoading(true);
-                    setError(null);
-                    try {
-                      const repoData = await scanAndAnalyzeRepository();
-                      setData(repoData);
-                      showStatus(`Successfully analyzed repository with ${repoData.nodes.length} nodes`, 'success');
-                    } catch (err: any) {
-                      console.error("GitHub scan failed:", err);
-                      setError(err.message || "Failed to scan GitHub repository. Please make sure you're on a GitHub repository page.");
-                    } finally {
-                      setIsLoading(false);
-                    }
-                  }}
+                  onClick={() => setIsGitHubModalOpen(true)}
                   className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-lg"
                 >
                   <Github className="w-3 h-3 inline mr-1" />
                   GitHub
                 </button>
                 {/* Upload Button */}
-         <button
-  onClick={() => setIsGitHubModalOpen(true)} // <-- This is the fix
-  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-lg"
->
-  <Github className="w-3 h-3 inline mr-1" />
-  GitHub
-</button>
+                <button 
+                  onClick={triggerFileUpload}
+                  className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-lg"
+                >
                   <Upload className="w-3 h-3 inline mr-1" />
                   Upload
                 </button>
