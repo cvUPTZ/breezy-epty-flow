@@ -39,477 +39,187 @@ interface StatsData {
   bugDensity: number;
 }
 
-// Code Analysis Engine
-class CodeAnalyzer {
-  static analyzeFile(fileName: string, content: string): { nodes: CodebaseNode[], links: CodebaseLink[] } {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    const nodes: CodebaseNode[] = [];
-    const links: CodebaseLink[] = [];
-    
-    // Create file node
-    const fileId = fileName;
-    const fileNode: CodebaseNode = {
-      id: fileId,
-      type: 'file',
-      name: fileName,
-      size: content.split('\n').length,
-      issues: [],
-      bugCount: 0,
-      filePath: fileName,
-      content: content
-    };
-    
-    // Language-specific analysis
-    switch (extension) {
-      case 'js':
-      case 'jsx':
-      case 'ts':
-      case 'tsx':
-        return this.analyzeJavaScript(fileNode, content, nodes, links);
-      case 'py':
-        return this.analyzePython(fileNode, content, nodes, links);
-      case 'java':
-        return this.analyzeJava(fileNode, content, nodes, links);
-      case 'cpp':
-      case 'c':
-        return this.analyzeCpp(fileNode, content, nodes, links);
-      case 'cs':
-        return this.analyzeCSharp(fileNode, content, nodes, links);
-      case 'php':
-        return this.analyzePhp(fileNode, content, nodes, links);
-      case 'rb':
-        return this.analyzeRuby(fileNode, content, nodes, links);
-      default:
-        return this.analyzeGeneric(fileNode, content, nodes, links);
+// Demo data generator
+const generateDemoData = (): CodebaseData => {
+  const nodes: CodebaseNode[] = [];
+  const links: CodebaseLink[] = [];
+
+  // Sample files with realistic code structure
+  const sampleFiles = [
+    {
+      name: 'index.js',
+      size: 45,
+      classes: ['App'],
+      functions: ['main', 'init', 'handleError'],
+      variables: ['config', 'state'],
+      issues: ['todo-comment', 'long-line']
+    },
+    {
+      name: 'api.js',
+      size: 120,
+      classes: ['ApiClient'],
+      functions: ['fetchData', 'postData', 'handleAuth'],
+      variables: ['baseUrl', 'token'],
+      issues: ['hardcoded-secret', 'potential-null-pointer']
+    },
+    {
+      name: 'utils.js',
+      size: 80,
+      classes: [],
+      functions: ['formatDate', 'validateEmail', 'sanitize'],
+      variables: ['regex', 'constants'],
+      issues: ['xss-risk']
+    },
+    {
+      name: 'components/Header.jsx',
+      size: 65,
+      classes: ['Header'],
+      functions: ['render', 'handleClick'],
+      variables: ['props', 'state'],
+      issues: []
+    },
+    {
+      name: 'components/Footer.jsx',
+      size: 30,
+      classes: ['Footer'],
+      functions: ['render'],
+      variables: ['props'],
+      issues: ['missing-return']
+    },
+    {
+      name: 'auth/login.py',
+      size: 150,
+      classes: ['LoginManager'],
+      functions: ['authenticate', 'validate', 'logout'],
+      variables: ['session', 'credentials'],
+      issues: ['unsafe-eval', 'division-by-zero']
+    },
+    {
+      name: 'database/models.py',
+      size: 200,
+      classes: ['User', 'Product', 'Order'],
+      functions: ['save', 'find', 'delete', 'validate'],
+      variables: ['connection', 'schema'],
+      issues: ['performance-issue', 'memory-leak']
     }
-  }
+  ];
 
-  static analyzeJavaScript(fileNode: CodebaseNode, content: string, nodes: CodebaseNode[], links: CodebaseLink[]): { nodes: CodebaseNode[], links: CodebaseLink[] } {
+  // Generate nodes
+  sampleFiles.forEach(file => {
+    // File node
+    const fileNode: CodebaseNode = {
+      id: file.name,
+      type: 'file',
+      name: file.name.split('/').pop() || file.name,
+      size: file.size,
+      issues: file.issues,
+      bugCount: file.issues.length,
+      filePath: file.name
+    };
     nodes.push(fileNode);
-    const lines = content.split('\n');
-    let currentClass: string | null = null;
-    
-    lines.forEach((line, index) => {
-      const trimmed = line.trim();
-      
-      // Class detection
-      const classMatch = trimmed.match(/^(?:export\s+)?class\s+(\w+)/);
-      if (classMatch) {
-        currentClass = classMatch[1];
-        const classNode: CodebaseNode = {
-          id: `${fileNode.id}::${currentClass}`,
-          type: 'class',
-          name: currentClass,
-          parent: fileNode.id,
-          size: this.estimateBlockSize(lines, index),
-          issues: this.detectIssues(trimmed, 'class'),
-          bugCount: 0,
-          startLine: index + 1
-        };
-        classNode.bugCount = classNode.issues.length;
-        nodes.push(classNode);
-        links.push({ source: fileNode.id, target: classNode.id, type: 'contains' });
-      }
-      
-      // Function detection
-      const funcMatch = trimmed.match(/^(?:export\s+)?(?:async\s+)?(?:function\s+)?(\w+)\s*\([^)]*\)\s*(?:=>|{)/);
-      const arrowMatch = trimmed.match(/^(?:const|let|var)\s+(\w+)\s*=\s*\([^)]*\)\s*=>/);
-      const methodMatch = trimmed.match(/^\s*(?:async\s+)?(\w+)\s*\([^)]*\)\s*{/);
-      
-      const funcName = funcMatch?.[1] || arrowMatch?.[1] || methodMatch?.[1];
-      
-      if (funcName && !['if', 'for', 'while', 'switch', 'catch', 'try'].includes(funcName)) {
-        const parentId = currentClass ? `${fileNode.id}::${currentClass}` : fileNode.id;
-        const funcNode: CodebaseNode = {
-          id: `${parentId}::${funcName}`,
-          type: 'function',
-          name: `${funcName}()`,
-          parent: parentId,
-          size: this.estimateBlockSize(lines, index),
-          issues: this.detectIssues(line, 'function'),
-          bugCount: 0,
-          startLine: index + 1
-        };
-        funcNode.bugCount = funcNode.issues.length;
-        nodes.push(funcNode);
-        links.push({ source: parentId, target: funcNode.id, type: 'contains' });
-        
-        // Variable detection within functions
-        this.detectVariables(lines, index, funcNode, nodes, links);
-      }
-      
-      // Global variable detection
-      const varMatch = trimmed.match(/^(?:const|let|var)\s+(\w+)/);
-      if (varMatch && !currentClass) {
-        const varName = varMatch[1];
-        const varNode: CodebaseNode = {
-          id: `${fileNode.id}::${varName}`,
-          type: 'variable',
-          name: varName,
-          parent: fileNode.id,
-          size: 1,
-          issues: this.detectIssues(trimmed, 'variable'),
-          bugCount: 0,
-          startLine: index + 1
-        };
-        varNode.bugCount = varNode.issues.length;
-        nodes.push(varNode);
-        links.push({ source: fileNode.id, target: varNode.id, type: 'contains' });
-      }
-    });
-    
-    // Update file bug count
-    fileNode.bugCount = nodes.filter(n => n.parent === fileNode.id).reduce((sum, n) => sum + n.bugCount, 0);
-    fileNode.issues = Array.from(new Set(nodes.filter(n => n.parent === fileNode.id).flatMap(n => n.issues)));
-    
-    return { nodes, links };
-  }
 
-  static analyzePython(fileNode: CodebaseNode, content: string, nodes: CodebaseNode[], links: CodebaseLink[]): { nodes: CodebaseNode[], links: CodebaseLink[] } {
-    nodes.push(fileNode);
-    const lines = content.split('\n');
-    let currentClass: string | null = null;
-    let currentIndent = 0;
-    
-    lines.forEach((line, index) => {
-      const trimmed = line.trim();
-      const indent = line.length - line.trimLeft().length;
-      
-      // Class detection
-      const classMatch = trimmed.match(/^class\s+(\w+)/);
-      if (classMatch) {
-        currentClass = classMatch[1];
-        currentIndent = indent;
-        const classNode: CodebaseNode = {
-          id: `${fileNode.id}::${currentClass}`,
-          type: 'class',
-          name: currentClass,
-          parent: fileNode.id,
-          size: this.estimateBlockSize(lines, index),
-          issues: this.detectIssues(trimmed, 'class'),
-          bugCount: 0,
-          startLine: index + 1
-        };
-        classNode.bugCount = classNode.issues.length;
-        nodes.push(classNode);
-        links.push({ source: fileNode.id, target: classNode.id, type: 'contains' });
-      }
-      
-      // Function detection
-      const funcMatch = trimmed.match(/^def\s+(\w+)\s*\(/);
-      if (funcMatch) {
-        const funcName = funcMatch[1];
-        const isMethod = currentClass && indent > currentIndent;
-        const parentId = isMethod ? `${fileNode.id}::${currentClass}` : fileNode.id;
-        
-        const funcNode: CodebaseNode = {
-          id: `${parentId}::${funcName}`,
-          type: 'function',
-          name: `${funcName}()`,
-          parent: parentId,
-          size: this.estimateBlockSize(lines, index),
-          issues: this.detectIssues(line, 'function'),
-          bugCount: 0,
-          startLine: index + 1
-        };
-        funcNode.bugCount = funcNode.issues.length;
-        nodes.push(funcNode);
-        links.push({ source: parentId, target: funcNode.id, type: 'contains' });
-      }
-      
-      // Variable detection
-      const varMatch = trimmed.match(/^(\w+)\s*=/);
-      if (varMatch && !trimmed.startsWith('def ') && !trimmed.startsWith('class ')) {
-        const varName = varMatch[1];
-        const parentId = currentClass && indent > currentIndent ? `${fileNode.id}::${currentClass}` : fileNode.id;
-        const varNode: CodebaseNode = {
-          id: `${parentId}::${varName}`,
-          type: 'variable',
-          name: varName,
-          parent: parentId,
-          size: 1,
-          issues: this.detectIssues(trimmed, 'variable'),
-          bugCount: 0,
-          startLine: index + 1
-        };
-        varNode.bugCount = varNode.issues.length;
-        nodes.push(varNode);
-        links.push({ source: parentId, target: varNode.id, type: 'contains' });
-      }
-    });
-    
-    fileNode.bugCount = nodes.filter(n => n.parent === fileNode.id).reduce((sum, n) => sum + n.bugCount, 0);
-    fileNode.issues = Array.from(new Set(nodes.filter(n => n.parent === fileNode.id).flatMap(n => n.issues)));
-    
-    return { nodes, links };
-  }
+    // Class nodes
+    file.classes.forEach(className => {
+      const classNode: CodebaseNode = {
+        id: `${file.name}::${className}`,
+        type: 'class',
+        name: className,
+        parent: file.name,
+        size: Math.floor(file.size / (file.classes.length + 1)),
+        issues: Math.random() > 0.7 ? ['naming-convention'] : [],
+        bugCount: 0,
+        startLine: Math.floor(Math.random() * 50) + 1
+      };
+      classNode.bugCount = classNode.issues.length;
+      nodes.push(classNode);
+      links.push({ source: file.name, target: classNode.id, type: 'contains' });
 
-  static analyzeJava(fileNode: CodebaseNode, content: string, nodes: CodebaseNode[], links: CodebaseLink[]): { nodes: CodebaseNode[], links: CodebaseLink[] } {
-    nodes.push(fileNode);
-    const lines = content.split('\n');
-    let currentClass: string | null = null;
-    let braceDepth = 0;
-    
-    lines.forEach((line, index) => {
-      const trimmed = line.trim();
-      
-      // Track brace depth
-      braceDepth += (line.match(/{/g) || []).length;
-      braceDepth -= (line.match(/}/g) || []).length;
-      
-      // Class detection
-      const classMatch = trimmed.match(/(?:public\s+)?(?:abstract\s+)?class\s+(\w+)/);
-      if (classMatch) {
-        currentClass = classMatch[1];
-        const classNode: CodebaseNode = {
-          id: `${fileNode.id}::${currentClass}`,
-          type: 'class',
-          name: currentClass,
-          parent: fileNode.id,
-          size: this.estimateBlockSize(lines, index),
-          issues: this.detectIssues(trimmed, 'class'),
-          bugCount: 0,
-          startLine: index + 1
-        };
-        classNode.bugCount = classNode.issues.length;
-        nodes.push(classNode);
-        links.push({ source: fileNode.id, target: classNode.id, type: 'contains' });
-      }
-      
-      // Method detection
-      const methodMatch = trimmed.match(/(?:public|private|protected)\s+(?:static\s+)?(?:\w+\s+)?(\w+)\s*\([^)]*\)\s*{?/);
-      if (methodMatch && currentClass && braceDepth > 0) {
-        const methodName = methodMatch[1];
-        const parentId = `${fileNode.id}::${currentClass}`;
+      // Methods for classes
+      const methodCount = Math.floor(Math.random() * 3) + 2;
+      for (let i = 0; i < methodCount; i++) {
+        const methodName = `method${i + 1}`;
         const methodNode: CodebaseNode = {
-          id: `${parentId}::${methodName}`,
+          id: `${classNode.id}::${methodName}`,
           type: 'function',
           name: `${methodName}()`,
-          parent: parentId,
-          size: this.estimateBlockSize(lines, index),
-          issues: this.detectIssues(line, 'function'),
+          parent: classNode.id,
+          size: Math.floor(Math.random() * 20) + 5,
+          issues: Math.random() > 0.8 ? ['large-function'] : [],
           bugCount: 0,
-          startLine: index + 1
+          startLine: Math.floor(Math.random() * 100) + 1
         };
         methodNode.bugCount = methodNode.issues.length;
         nodes.push(methodNode);
-        links.push({ source: parentId, target: methodNode.id, type: 'contains' });
-      }
-      
-      // Field detection
-      const fieldMatch = trimmed.match(/(?:public|private|protected)\s+(?:static\s+)?(?:final\s+)?\w+\s+(\w+)/);
-      if (fieldMatch && currentClass && braceDepth === 1) {
-        const fieldName = fieldMatch[1];
-        const parentId = `${fileNode.id}::${currentClass}`;
-        const fieldNode: CodebaseNode = {
-          id: `${parentId}::${fieldName}`,
-          type: 'variable',
-          name: fieldName,
-          parent: parentId,
-          size: 1,
-          issues: this.detectIssues(trimmed, 'variable'),
-          bugCount: 0,
-          startLine: index + 1
-        };
-        fieldNode.bugCount = fieldNode.issues.length;
-        nodes.push(fieldNode);
-        links.push({ source: parentId, target: fieldNode.id, type: 'contains' });
+        links.push({ source: classNode.id, target: methodNode.id, type: 'contains' });
       }
     });
-    
-    fileNode.bugCount = nodes.filter(n => n.parent === fileNode.id).reduce((sum, n) => sum + n.bugCount, 0);
-    fileNode.issues = Array.from(new Set(nodes.filter(n => n.parent === fileNode.id).flatMap(n => n.issues)));
-    
-    return { nodes, links };
-  }
 
-  static analyzeCpp(fileNode: CodebaseNode, content: string, nodes: CodebaseNode[], links: CodebaseLink[]): { nodes: CodebaseNode[], links: CodebaseLink[] } {
-    return this.analyzeGeneric(fileNode, content, nodes, links);
-  }
-
-  static analyzeCSharp(fileNode: CodebaseNode, content: string, nodes: CodebaseNode[], links: CodebaseLink[]): { nodes: CodebaseNode[], links: CodebaseLink[] } {
-    return this.analyzeGeneric(fileNode, content, nodes, links);
-  }
-
-  static analyzePhp(fileNode: CodebaseNode, content: string, nodes: CodebaseNode[], links: CodebaseLink[]): { nodes: CodebaseNode[], links: CodebaseLink[] } {
-    return this.analyzeGeneric(fileNode, content, nodes, links);
-  }
-
-  static analyzeRuby(fileNode: CodebaseNode, content: string, nodes: CodebaseNode[], links: CodebaseLink[]): { nodes: CodebaseNode[], links: CodebaseLink[] } {
-    return this.analyzeGeneric(fileNode, content, nodes, links);
-  }
-
-  static analyzeGeneric(fileNode: CodebaseNode, content: string, nodes: CodebaseNode[], links: CodebaseLink[]): { nodes: CodebaseNode[], links: CodebaseLink[] } {
-    nodes.push(fileNode);
-    const lines = content.split('\n');
-    
-    lines.forEach((line, index) => {
-      const trimmed = line.trim();
+    // Function nodes
+    file.functions.forEach(funcName => {
+      const parentId = file.classes.length > 0 && Math.random() > 0.5 
+        ? `${file.name}::${file.classes[0]}` 
+        : file.name;
       
-      // Generic function detection
-      const funcPatterns = [
-        /function\s+(\w+)/,
-        /def\s+(\w+)/,
-        /(\w+)\s*\([^)]*\)\s*{/,
-        /(\w+)\s*:\s*function/
-      ];
-      
-      for (const pattern of funcPatterns) {
-        const match = trimmed.match(pattern);
-        if (match) {
-          const funcName = match[1];
-          const funcNode: CodebaseNode = {
-            id: `${fileNode.id}::${funcName}`,
-            type: 'function',
-            name: `${funcName}()`,
-            parent: fileNode.id,
-            size: this.estimateBlockSize(lines, index),
-            issues: this.detectIssues(line, 'function'),
-            bugCount: 0,
-            startLine: index + 1
-          };
-          funcNode.bugCount = funcNode.issues.length;
-          nodes.push(funcNode);
-          links.push({ source: fileNode.id, target: funcNode.id, type: 'contains' });
-          break;
-        }
-      }
+      const funcNode: CodebaseNode = {
+        id: `${parentId}::${funcName}`,
+        type: 'function',
+        name: `${funcName}()`,
+        parent: parentId,
+        size: Math.floor(Math.random() * 25) + 5,
+        issues: Math.random() > 0.6 ? ['todo-comment', 'performance-issue'].slice(0, Math.floor(Math.random() * 2) + 1) : [],
+        bugCount: 0,
+        startLine: Math.floor(Math.random() * 100) + 1
+      };
+      funcNode.bugCount = funcNode.issues.length;
+      nodes.push(funcNode);
+      links.push({ source: parentId, target: funcNode.id, type: 'contains' });
     });
-    
-    fileNode.bugCount = nodes.filter(n => n.parent === fileNode.id).reduce((sum, n) => sum + n.bugCount, 0);
-    fileNode.issues = Array.from(new Set(nodes.filter(n => n.parent === fileNode.id).flatMap(n => n.issues)));
-    
-    return { nodes, links };
-  }
 
-  static detectIssues(code: string, type: string): string[] {
-    const issues: string[] = [];
-    
-    // Common issues
-    if (code.includes('null') && !code.includes('!= null') && !code.includes('!== null')) {
-      issues.push('potential-null-pointer');
-    }
-    
-    if (code.includes('eval(')) {
-      issues.push('unsafe-eval');
-    }
-    
-    if (code.includes('innerHTML')) {
-      issues.push('xss-risk');
-    }
-    
-    if (code.match(/\bdivision\s*\/\s*0\b/) || code.includes('/ 0')) {
-      issues.push('division-by-zero');
-    }
-    
-    if (code.includes('TODO') || code.includes('FIXME') || code.includes('HACK')) {
-      issues.push('todo-comment');
-    }
-    
-    if (code.match(/password|token|secret|key/i) && code.includes('=')) {
-      issues.push('hardcoded-secret');
-    }
-    
-    if (code.length > 100) {
-      issues.push('long-line');
-    }
-    
-    // Type-specific issues
-    if (type === 'function') {
-      if (code.split('\n').length > 50) {
-        issues.push('large-function');
-      }
+    // Variable nodes
+    file.variables.forEach(varName => {
+      const parentId = file.classes.length > 0 && Math.random() > 0.3 
+        ? `${file.name}::${file.classes[0]}` 
+        : file.name;
       
-      if (!code.includes('return') && !code.includes('void')) {
-        issues.push('missing-return');
-      }
-    }
-    
-    if (type === 'variable') {
-      if (code.match(/^[A-Z]/)) {
-        issues.push('naming-convention');
-      }
-    }
-    
-    return issues;
-  }
-
-  static estimateBlockSize(lines: string[], startIndex: number): number {
-    let braceCount = 0;
-    let size = 1;
-    
-    for (let i = startIndex; i < lines.length && i < startIndex + 100; i++) {
-      const line = lines[i];
-      braceCount += (line.match(/{/g) || []).length;
-      braceCount -= (line.match(/}/g) || []).length;
-      size++;
-      
-      if (braceCount === 0 && i > startIndex) {
-        break;
-      }
-    }
-    
-    return Math.min(size, 50);
-  }
-
-  static detectVariables(lines: string[], funcStart: number, funcNode: CodebaseNode, nodes: CodebaseNode[], links: CodebaseLink[]) {
-    let braceCount = 0;
-    const variables = new Set<string>();
-    
-    for (let i = funcStart; i < lines.length; i++) {
-      const line = lines[i];
-      braceCount += (line.match(/{/g) || []).length;
-      braceCount -= (line.match(/}/g) || []).length;
-      
-      const varMatches = line.match(/(?:const|let|var)\s+(\w+)/g);
-      if (varMatches) {
-        varMatches.forEach(match => {
-          const varName = match.split(/\s+/)[1];
-          if (varName && !variables.has(varName)) {
-            variables.add(varName);
-            const varNode: CodebaseNode = {
-              id: `${funcNode.id}::${varName}`,
-              type: 'variable',
-              name: varName,
-              parent: funcNode.id,
-              size: 1,
-              issues: this.detectIssues(line, 'variable'),
-              bugCount: 0,
-              startLine: i + 1
-            };
-            varNode.bugCount = varNode.issues.length;
-            nodes.push(varNode);
-            links.push({ source: funcNode.id, target: varNode.id, type: 'contains' });
-          }
-        });
-      }
-      
-      if (braceCount === 0 && i > funcStart) {
-        break;
-      }
-    }
-  }
-
-  static detectCrossDependencies(allNodes: CodebaseNode[], allLinks: CodebaseLink[]): CodebaseLink[] {
-    const newLinks: CodebaseLink[] = [];
-    
-    // Detect function calls
-    allNodes.forEach(node => {
-      if (node.type === 'function' && node.content) {
-        allNodes.forEach(otherNode => {
-          if (otherNode.type === 'function' && node.id !== otherNode.id) {
-            const funcName = otherNode.name.replace('()', '');
-            if (node.content!.includes(funcName + '(')) {
-              newLinks.push({ source: node.id, target: otherNode.id, type: 'call' });
-            }
-          }
-        });
-      }
+      const varNode: CodebaseNode = {
+        id: `${parentId}::${varName}`,
+        type: 'variable',
+        name: varName,
+        parent: parentId,
+        size: 1,
+        issues: Math.random() > 0.8 ? ['naming-convention'] : [],
+        bugCount: 0,
+        startLine: Math.floor(Math.random() * 50) + 1
+      };
+      varNode.bugCount = varNode.issues.length;
+      nodes.push(varNode);
+      links.push({ source: parentId, target: varNode.id, type: 'contains' });
     });
-    
-    return newLinks;
+  });
+
+  // Add cross-dependencies
+  const functionNodes = nodes.filter(n => n.type === 'function');
+  for (let i = 0; i < Math.min(8, functionNodes.length); i++) {
+    const source = functionNodes[Math.floor(Math.random() * functionNodes.length)];
+    const target = functionNodes[Math.floor(Math.random() * functionNodes.length)];
+    if (source.id !== target.id) {
+      links.push({ source: source.id, target: target.id, type: 'call' });
+    }
   }
-}
+
+  // Add some error links
+  const errorNodes = nodes.filter(n => n.bugCount > 1);
+  errorNodes.forEach(node => {
+    if (Math.random() > 0.7) {
+      const randomNode = nodes[Math.floor(Math.random() * nodes.length)];
+      if (randomNode.id !== node.id) {
+        links.push({ source: node.id, target: randomNode.id, type: 'error' });
+      }
+    }
+  });
+
+  return { nodes, links };
+};
 
 // Main Component
 const RealCodebaseVisualizer: React.FC = () => {
@@ -519,87 +229,24 @@ const RealCodebaseVisualizer: React.FC = () => {
   const [stats, setStats] = useState<StatsData>({ errors: 0, warnings: 0, nodes: 0, links: 0, bugDensity: 0 });
   const simulationRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined>>();
   const forceSimulationRef = useRef<d3.Simulation<CodebaseNode, undefined>>();
+  const [isLoading, setIsLoading] = useState(true);
+  const [dataSource, setDataSource] = useState<'demo' | 'github'>('demo');
 
   useEffect(() => {
-    const fetchAndProcessFiles = async () => {
-      try {
-        const repoOwner = 'cvUPTZ';
-        const repoName = 'breezy-epty-flow';
-        const branch = 'main';
-        const token = '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';
-
-        const headers = {
-          'Authorization': `token ${token}`
-        };
-
-        interface GitHubBranchResponse {
-          commit: {
-            sha: string;
-          }
-        }
-        interface GitHubTreeNode {
-          path: string;
-          type: 'blob' | 'tree' | 'commit';
-        }
-        interface GitHubTreeResponse {
-          tree: GitHubTreeNode[];
-        }
-        interface GitHubContentResponse {
-            content: string;
-            encoding: string;
-        }
-
-        // 1. Get the latest commit SHA for the main branch
-        const branchResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/branches/${branch}`, { headers });
-        if (!branchResponse.ok) {
-            throw new Error(`GitHub API error for branches: ${branchResponse.status} ${await branchResponse.text()}`);
-        }
-        const branchData: GitHubBranchResponse = await branchResponse.json();
-        const commitSha = branchData.commit.sha;
-
-        // 2. Fetch the file tree recursively
-        const treeResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/git/trees/${commitSha}?recursive=1`, { headers });
-        if (!treeResponse.ok) {
-            throw new Error(`GitHub API error for trees: ${treeResponse.status} ${await treeResponse.text()}`);
-        }
-        const treeData: GitHubTreeResponse = await treeResponse.json();
-
-        const filepaths = treeData.tree
-          .filter((node) => node.type === 'blob')
-          .map((node) => node.path);
-
-        const allNodes: CodebaseNode[] = [];
-        const allLinks: CodebaseLink[] = [];
-
-        // 3. Fetch and process each file
-        await Promise.all(filepaths.map(async (filepath: string) => {
-          try {
-            const contentResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filepath}`, { headers });
-            if (contentResponse.ok) {
-              const contentData: GitHubContentResponse = await contentResponse.json();
-              if (contentData.encoding === 'base64') {
-                const content = atob(contentData.content);
-                const { nodes, links } = CodeAnalyzer.analyzeFile(filepath, content);
-                allNodes.push(...nodes);
-                allLinks.push(...links);
-              }
-            } else {
-                console.error(`Failed to fetch content for ${filepath}: ${contentResponse.status}`);
-            }
-          } catch (fileError) {
-            console.error(`Error processing file ${filepath}:`, fileError);
-          }
-        }));
-
-        const crossLinks = CodeAnalyzer.detectCrossDependencies(allNodes, allLinks);
-        allLinks.push(...crossLinks);
-
-        const newStats = calculateStats(allNodes, allLinks);
-        setStats(newStats);
-        setData({ nodes: allNodes, links: allLinks });
-      } catch (error) {
-        console.error('Error fetching or processing repository files from GitHub:', error);
-      }
+    const loadData = async () => {
+      setIsLoading(true);
+      
+      // For now, always use demo data
+      // In production, you would implement GitHub API integration here
+      const demoData = generateDemoData();
+      const newStats = calculateStats(demoData.nodes, demoData.links);
+      
+      // Simulate loading time
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      setStats(newStats);
+      setData(demoData);
+      setIsLoading(false);
     };
 
     const calculateStats = (nodes: CodebaseNode[], links: CodebaseLink[]) => {
@@ -610,7 +257,7 @@ const RealCodebaseVisualizer: React.FC = () => {
       return { errors, warnings, nodes: nodes.length, links: links.length, bugDensity };
     };
 
-    fetchAndProcessFiles();
+    loadData();
   }, []);
 
   const initializeVisualization = useCallback(() => {
@@ -864,6 +511,15 @@ const RealCodebaseVisualizer: React.FC = () => {
         return node;
       });
       
+      const newStats = {
+        errors: newNodes.filter(n => n.bugCount > 2).length,
+        warnings: newNodes.filter(n => n.bugCount > 0 && n.bugCount <= 2).length,
+        nodes: newNodes.length,
+        links: prevData.links.length,
+        bugDensity: newNodes.length > 0 ? Math.round((newNodes.filter(n => n.bugCount > 0).length / newNodes.length) * 100) : 0
+      };
+      setStats(newStats);
+      
       return { ...prevData, nodes: newNodes };
     });
   }, []);
@@ -905,6 +561,24 @@ const RealCodebaseVisualizer: React.FC = () => {
     
     allNodes.style("opacity", 1);
     allLinks?.style("opacity", 0.7);
+  }, []);
+
+  const handleGenerateNewData = useCallback(() => {
+    setIsLoading(true);
+    setTimeout(() => {
+      const newData = generateDemoData();
+      const newStats = {
+        errors: newData.nodes.filter(n => n.bugCount > 2).length,
+        warnings: newData.nodes.filter(n => n.bugCount > 0 && n.bugCount <= 2).length,
+        nodes: newData.nodes.length,
+        links: newData.links.length,
+        bugDensity: newData.nodes.length > 0 ? Math.round((newData.nodes.filter(n => n.bugCount > 0).length / newData.nodes.length) * 100) : 0
+      };
+      setStats(newStats);
+      setData(newData);
+      setSelectedNode(null);
+      setIsLoading(false);
+    }, 800);
   }, []);
 
   const NodeDetailsPanel: React.FC<{ node: CodebaseNode | null; onClose: () => void }> = ({ node, onClose }) => {
@@ -1025,6 +699,18 @@ const RealCodebaseVisualizer: React.FC = () => {
           </div>
           
           <div>
+            <label className="block text-xs text-gray-300 mb-2">Data Source</label>
+            <div className="space-x-2">
+              <button 
+                onClick={handleGenerateNewData}
+                className="bg-cyan-600 hover:bg-cyan-700 px-3 py-1 rounded text-xs transition-all transform hover:-translate-y-0.5"
+              >
+                🎲 New Demo
+              </button>
+            </div>
+          </div>
+          
+          <div>
             <label className="block text-xs text-gray-300 mb-2">Filter Nodes</label>
             <div className="grid grid-cols-2 gap-1">
               <button 
@@ -1116,6 +802,12 @@ const RealCodebaseVisualizer: React.FC = () => {
             } text-white`}>{stats.bugDensity}%</span>
           </div>
         </div>
+        
+        <div className="mt-4 pt-3 border-t border-gray-600">
+          <p className="text-xs text-gray-400 text-center">
+            {dataSource === 'demo' ? '🎭 Demo Data' : '📂 GitHub Data'}
+          </p>
+        </div>
       </div>
     );
   };
@@ -1143,6 +835,28 @@ const RealCodebaseVisualizer: React.FC = () => {
               <span>{item.label}</span>
             </div>
           ))}
+        </div>
+        
+        <div className="mt-3 pt-2 border-t border-gray-600">
+          <h5 className="text-xs font-semibold text-gray-300 mb-1">Connections</h5>
+          <div className="space-y-1 text-xs">
+            <div className="flex items-center space-x-2">
+              <div className="w-4 h-0.5 bg-blue-400"></div>
+              <span>Contains</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-4 h-0.5 bg-orange-400"></div>
+              <span>Function Call</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-4 h-0.5 bg-green-400" style={{borderTop: '1px dashed'}}></div>
+              <span>Dependency</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-4 h-1 bg-red-500"></div>
+              <span>Error Link</span>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -1174,12 +888,22 @@ const RealCodebaseVisualizer: React.FC = () => {
         onClose={() => setSelectedNode(null)} 
       />
       
-      {data.nodes.length === 0 && (
+      {isLoading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="text-white text-center">
+            <div className="animate-spin text-4xl mb-4">🔄</div>
+            <h2 className="text-xl font-bold mb-2">Loading Codebase...</h2>
+            <p className="text-gray-300">Analyzing structure and detecting issues</p>
+          </div>
+        </div>
+      )}
+      
+      {!isLoading && data.nodes.length === 0 && (
         <div className="fixed inset-0 flex items-center justify-center">
           <div className="text-white text-center">
-            <div className="text-4xl mb-4">🔍</div>
-            <h2 className="text-xl font-bold mb-2">Loading repository...</h2>
-            <p className="text-gray-300">Analyzing files, please wait.</p>
+            <div className="text-4xl mb-4">❌</div>
+            <h2 className="text-xl font-bold mb-2">No Data Available</h2>
+            <p className="text-gray-300">Click "New Demo" to generate sample data</p>
           </div>
         </div>
       )}
