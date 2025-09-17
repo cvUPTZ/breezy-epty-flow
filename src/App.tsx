@@ -13,7 +13,7 @@ import { ToastAction } from "@/components/ui/toast";
 
 // Import all the page components
 import Header from './components/Header';
-// Remove AppSidebar import
+import { AppSidebar } from './components/AppSidebar';
 import LandingPage from './pages/LandingPage';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
@@ -28,7 +28,7 @@ import DirectVideoAnalyzer from './pages/DirectVideoAnalyzer';
 import GPUNetworkManagerPage from './pages/GPUNetworkManager';
 import ErrorManagerPage from './pages/ErrorManager';
 import ErrorBoundary from './components/ErrorBoundary';
-// Remove SidebarProvider import
+import { SidebarProvider } from '@/components/ui/sidebar';
 import TrackerInterface from './pages/TrackerInterface';
 import Matches from './pages/Matches';
 import Statistics from './pages/Statistics';
@@ -85,9 +85,9 @@ const AppContent = () => {
     }
   }, []); 
 
-  // Remove sidebar logic - all pages now use full width
-  const noHeaderPaths = ['/auth', '/extension-bridge'];
-  const showHeader = !noHeaderPaths.includes(location.pathname);
+  const noSidebarPaths = ['/auth', '/extension-bridge', '/unauthorized'];
+  // Force hide sidebar for all paths to remove the divided layout
+  const showSidebar = false; // Changed from the original logic to always false
 
   const AppRoutes = (
     <Routes>
@@ -339,15 +339,18 @@ const AppContent = () => {
 
   return (
     <ErrorBoundary componentName="AppRoot">
-      {/* Remove SidebarProvider wrapper */}
-      <div className="min-h-screen bg-background">
-        {/* Header now spans full width */}
-        {showHeader && <Header />}
-        {/* Main content takes full width */}
-        <main className={`${showHeader ? 'pt-0' : ''} min-h-screen`}>
-          {AppRoutes}
-        </main>
-      </div>
+      <SidebarProvider>
+        <div className="flex h-screen bg-background">
+          {/* Sidebar is now always hidden by setting showSidebar to false */}
+          {showSidebar && <AppSidebar />}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <Header />
+            <main className="flex-1 overflow-y-auto p-6">
+              {AppRoutes}
+            </main>
+          </div>
+        </div>
+      </SidebarProvider>
     </ErrorBoundary>
   );
 };
