@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { SidebarProvider } from '@/components/ui/sidebar';import React, { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -367,12 +367,14 @@ const AppContent = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="w-full p-6">
-        {AppRoutes}
-      </main>
-    </div>
+    <SidebarProvider>
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="w-full p-6">
+          {AppRoutes}
+        </main>
+      </div>
+    </SidebarProvider>
   );
 };
 
