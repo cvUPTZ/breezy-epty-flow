@@ -579,7 +579,8 @@ const RealCodebaseVisualizer: React.FC = () => {
 
       // Step 2: Request analysis job from the server
       setProgress({ percent: 50, file: 'Files uploaded. Requesting analysis...' });
-      const { data, error } = await supabase.functions.invoke('analyze-codebase', {
+      const { data, error } = await supabase.functions.invoke('process-code-analysis-job
+', {
         body: { filePaths: uploadedFilePaths },
       });
 
