@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import * as d3 from 'd3';
 import { Search, Upload, Github, Play, Pause, RotateCcw, ZoomIn, ZoomOut, Filter, Settings, AlertTriangle, CheckCircle, XCircle, Activity, Layers, GitBranch } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { GitHubRepoModal } from '@/components/modals/GitHubRepoModal';
 
 // Enhanced interfaces with modern TypeScript patterns
 interface CodebaseNode {
@@ -95,7 +96,6 @@ const CONFIG = {
 function getRepoInfo() {
   const pathParts = window.location.pathname.split('/');
   if (pathParts.length < 3) return null;
-
   return {
     owner: pathParts[1],
     repo: pathParts[2],
@@ -110,11 +110,9 @@ async function fetchFileContent(url: string) {
       'Accept': 'application/vnd.github.v3+json'
     }
   });
-  
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
-  
   return await response.json();
 }
 
@@ -122,10 +120,8 @@ async function fetchFileContent(url: string) {
 async function fetchRepoTree(owner: string, repo: string, branch = 'main', path = '') {
   const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
   const files: Array<{name: string, path: string, download_url: string, size: number}> = [];
-
   try {
     const contents = await fetchFileContent(url);
-
     for (const item of contents) {
       if (item.type === 'file') {
         const ext = item.name.substring(item.name.lastIndexOf('.'));
@@ -145,7 +141,6 @@ async function fetchRepoTree(owner: string, repo: string, branch = 'main', path 
   } catch (error) {
     console.error('Error fetching repository tree:', error);
   }
-
   return files;
 }
 
@@ -155,33 +150,26 @@ async function scanAndAnalyzeRepository() {
   if (!repoInfo) {
     throw new Error('Please navigate to a GitHub repository');
   }
-
   const files = await fetchRepoTree(repoInfo.owner, repoInfo.repo, repoInfo.branch);
-
   if (files.length === 0) {
     throw new Error('No supported files found in repository');
   }
-
   // Analyze each file
   const allNodes: CodebaseNode[] = [];
   const allLinks: CodebaseLink[] = [];
   let totalLines = 0;
   const languageCounts: Record<string, number> = {};
-
   for (const file of files) {
     try {
       // Fetch file content
       const response = await fetch(file.download_url);
       const fileContent = await response.text();
-      
       // Analyze the file
       const analyzedData = analyzeCodeContent(fileContent, file.path);
-      
       // Add to our collection
       allNodes.push(...analyzedData.nodes);
       allLinks.push(...analyzedData.links);
       totalLines += analyzedData.metadata.totalLines;
-      
       // Update language counts
       for (const lang in analyzedData.metadata.languages) {
         if (languageCounts[lang]) {
@@ -195,7 +183,6 @@ async function scanAndAnalyzeRepository() {
       // Continue with other files
     }
   }
-
   const combinedData: CodebaseData = {
     nodes: allNodes,
     links: allLinks,
@@ -207,7 +194,6 @@ async function scanAndAnalyzeRepository() {
       analysisVersion: '2.1.0'
     }
   };
-
   return combinedData;
 }
 
@@ -285,7 +271,7 @@ const RealCodebaseVisualizer: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Advanced UI state
   const [filters, setFilters] = useState<FilterState>({
     nodeTypes: new Set(['file', 'component', 'function', 'hook', 'interface']),
@@ -296,7 +282,6 @@ const RealCodebaseVisualizer: React.FC = () => {
     showTestFiles: true,
     hideNodeModules: false
   });
-  
   const [viewState, setViewState] = useState<ViewState>({
     mode: '2d',
     colorBy: 'type',
@@ -305,18 +290,18 @@ const RealCodebaseVisualizer: React.FC = () => {
     showMetrics: false,
     animationSpeed: 1
   });
-  
   const [showSidebar, setShowSidebar] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [zoom, setZoom] = useState(1);
-  
+  const [isGitHubModalOpen, setIsGitHubModalOpen] = useState(false);
+
   // Simulation refs
   const simulationRef = useRef<d3.Simulation<CodebaseNode, CodebaseLink>>();
   const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined>>();
-  
+
   // Ref for the hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Filtered data based on current filters and search
   const filteredData = useMemo(() => {
     let filteredNodes = data.nodes.filter(node => {
@@ -334,7 +319,6 @@ const RealCodebaseVisualizer: React.FC = () => {
       if (filters.hideNodeModules && node.filePath?.includes('node_modules')) return false;
       return true;
     });
-    
     let filteredLinks = data.links.filter(link => {
       const sourceNode = typeof link.source === 'string' 
         ? filteredNodes.find(n => n.id === link.source)
@@ -344,10 +328,9 @@ const RealCodebaseVisualizer: React.FC = () => {
         : filteredNodes.includes(link.target);
       return sourceNode && targetNode && filters.linkTypes.has(link.type);
     });
-    
     return { nodes: filteredNodes, links: filteredLinks };
   }, [data, filters, searchTerm]);
-  
+
   // Advanced color schemes
   const getNodeColor = useCallback((node: CodebaseNode): string => {
     switch (viewState.colorBy) {
@@ -384,13 +367,13 @@ const RealCodebaseVisualizer: React.FC = () => {
         return '#6b7280';
     }
   }, [viewState.colorBy]);
-  
+
   const getNodeSize = useCallback((node: CodebaseNode): number => {
     const baseSize = Math.max(8, Math.min(30, Math.sqrt(node.size) * 2));
     const complexityBonus = node.complexity * 0.5;
     return Math.min(40, baseSize + complexityBonus);
   }, []);
-  
+
   // Enhanced D3 visualization with modern patterns
   const initializeVisualization = useCallback(() => {
     if (!svgRef.current || filteredData.nodes.length === 0) return;
@@ -400,7 +383,7 @@ const RealCodebaseVisualizer: React.FC = () => {
     svg.selectAll("*").remove();
     const g = svg.append("g");
     gRef.current = g;
-    
+
     // Advanced zoom with smooth transitions
     const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.1, 10])
@@ -409,7 +392,7 @@ const RealCodebaseVisualizer: React.FC = () => {
         setZoom(event.transform.k);
       });
     svg.call(zoomBehavior);
-    
+
     // Create force simulation with enhanced forces
     const simulation = d3.forceSimulation(filteredData.nodes)
       .force("link", d3.forceLink<CodebaseNode, CodebaseLink>(filteredData.links)
@@ -425,7 +408,7 @@ const RealCodebaseVisualizer: React.FC = () => {
       .force("center", d3.forceCenter(width / 2, height / 2))
       .force("collision", d3.forceCollide()
         .radius(d => getNodeSize(d) + 5));
-    
+
     if (viewState.clustering) {
       // Add clustering force based on node type
       simulation.force("cluster", d3.forceX()
@@ -435,9 +418,9 @@ const RealCodebaseVisualizer: React.FC = () => {
         })
         .strength(0.1));
     }
-    
+
     simulationRef.current = simulation;
-    
+
     // Enhanced gradient definitions
     const defs = svg.append("defs");
     // Create gradients for different node types
@@ -451,7 +434,7 @@ const RealCodebaseVisualizer: React.FC = () => {
       gradient.append("stop").attr("offset", "0%").attr("stop-color", color).attr("stop-opacity", 0.9);
       gradient.append("stop").attr("offset", "100%").attr("stop-color", d3.color(color)?.darker(0.5) || color).attr("stop-opacity", 0.7);
     });
-    
+
     // Enhanced link rendering with animated flow
     const linkGroup = g.append("g").attr("class", "links");
     const link = linkGroup.selectAll("line")
@@ -469,7 +452,7 @@ const RealCodebaseVisualizer: React.FC = () => {
       .style("stroke-width", d => Math.max(1, d.count * 2))
       .style("stroke-opacity", d => 0.3 + (d.strength * 0.4))
       .style("stroke-dasharray", d => d.type === 'uses' ? "5,5" : "none");
-    
+
     // Animated particles along links for active connections
     if (isPlaying) {
       const particles = linkGroup.selectAll("circle.particle")
@@ -479,7 +462,7 @@ const RealCodebaseVisualizer: React.FC = () => {
         .attr("r", 2)
         .style("fill", "#fff")
         .style("opacity", 0.8);
-      
+
       particles.each(function(d) {
         const particle = d3.select(this);
         particle.transition()
@@ -497,7 +480,7 @@ const RealCodebaseVisualizer: React.FC = () => {
           .on("end", () => particle.remove());
       });
     }
-    
+
     // Enhanced node rendering
     const nodeGroup = g.append("g").attr("class", "nodes");
     const node = nodeGroup.selectAll(".node")
@@ -520,7 +503,7 @@ const RealCodebaseVisualizer: React.FC = () => {
           d.fx = null;
           d.fy = null;
         }));
-    
+
     // Main node circle with gradient fill
     node.append("circle")
       .attr("r", getNodeSize)
@@ -528,19 +511,19 @@ const RealCodebaseVisualizer: React.FC = () => {
       .style("stroke", "#ffffff")
       .style("stroke-width", 2)
       .style("filter", d => d.issues.some(i => i.type === 'error') ? "drop-shadow(0 0 6px #ef4444)" : "none");
-    
+
     // Node icons
     node.append("text")
       .text(d => ({
-        'file': '📄', 'component': '🧩', 'function': '⚙️', 
-        'hook': '🪝', 'interface': '📋', 'class': '🏛️',
-        'variable': '📊', 'import': '📦'
+        'file': '📄', 'component': '⚛️', 'function': 'ƒ️', 
+        'hook': '🎣', 'interface': '🔌', 'class': 'CppClass️',
+        'variable': '🔢', 'import': '📦'
       }[d.type] || '❓'))
       .attr("text-anchor", "middle")
       .attr("dy", "0.35em")
       .style("font-size", d => `${getNodeSize(d) * 0.6}px`)
       .style("pointer-events", "none");
-    
+
     // Issue indicators
     node.filter(d => d.issues.length > 0)
       .append("circle")
@@ -550,7 +533,7 @@ const RealCodebaseVisualizer: React.FC = () => {
       .style("fill", d => d.issues.some(i => i.type === 'error') ? '#ef4444' : '#f59e0b')
       .style("stroke", "#ffffff")
       .style("stroke-width", 1);
-    
+
     // Node labels
     if (viewState.showLabels) {
       node.append("text")
@@ -563,7 +546,7 @@ const RealCodebaseVisualizer: React.FC = () => {
         .style("text-shadow", "1px 1px 2px rgba(0,0,0,0.8)")
         .style("pointer-events", "none");
     }
-    
+
     // Metrics overlay
     if (viewState.showMetrics) {
       node.append("text")
@@ -574,7 +557,7 @@ const RealCodebaseVisualizer: React.FC = () => {
         .style("fill", "#94a3b8")
         .style("pointer-events", "none");
     }
-    
+
     // Enhanced interactions
     node
       .on("click", (event, d) => {
@@ -603,7 +586,7 @@ const RealCodebaseVisualizer: React.FC = () => {
         node.style("opacity", 1);
         link.style("opacity", d => 0.3 + (d.strength * 0.4));
       });
-    
+
     // Simulation tick with smooth animations
     simulation.on("tick", () => {
       link
@@ -613,25 +596,25 @@ const RealCodebaseVisualizer: React.FC = () => {
         .attr("y2", d => (d.target as CodebaseNode).y!);
       node.attr("transform", d => `translate(${d.x!},${d.y!})`);
     });
-    
+
     // Click to deselect
     svg.on("click", () => setSelectedNode(null));
   }, [filteredData, viewState, showSidebar, isPlaying, getNodeColor, getNodeSize, selectedNode]);
-  
+
   // Initialize with demo data
   useEffect(() => {
     const demoData = generateSOTADemoData();
     setData(demoData);
     setIsLoading(false);
   }, []);
-  
+
   // Update visualization when data or settings change
   useEffect(() => {
     if (filteredData.nodes.length > 0) {
       initializeVisualization();
     }
   }, [initializeVisualization]);
-  
+
   // Stats computation
   const stats = useMemo(() => {
     const nodes = filteredData.nodes;
@@ -650,7 +633,7 @@ const RealCodebaseVisualizer: React.FC = () => {
       avgTestCoverage: Math.round(avgTestCoverage)
     };
   }, [filteredData]);
-  
+
   // Function to handle file upload with REAL processing via Supabase
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -666,7 +649,6 @@ const RealCodebaseVisualizer: React.FC = () => {
       const allLinks: CodebaseLink[] = [];
       let totalLines = 0;
       const languageCounts: Record<string, number> = {};
-      
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const fileExt = file.name.split('.').pop();
@@ -677,17 +659,14 @@ const RealCodebaseVisualizer: React.FC = () => {
             cacheControl: '3600',
             upsert: false,
           });
-        
         if (uploadError) {
           throw new Error(`Upload failed for ${file.name}: ${uploadError.message}`);
         }
-        
         const fileContent = await file.text();
         const analyzedData = analyzeCodeContent(fileContent, file.name);
         allNodes.push(...analyzedData.nodes);
         allLinks.push(...analyzedData.links);
         totalLines += analyzedData.metadata.totalLines;
-        
         for (const lang in analyzedData.metadata.languages) {
           if (languageCounts[lang]) {
             languageCounts[lang] += analyzedData.metadata.languages[lang];
@@ -696,7 +675,6 @@ const RealCodebaseVisualizer: React.FC = () => {
           }
         }
       }
-      
       const combinedData: CodebaseData = {
         nodes: allNodes,
         links: allLinks,
@@ -708,7 +686,6 @@ const RealCodebaseVisualizer: React.FC = () => {
           analysisVersion: '1.1.0'
         }
       };
-      
       setData(combinedData);
     } catch (err: any) {
       console.error("Upload and analysis failed:", err);
@@ -717,23 +694,21 @@ const RealCodebaseVisualizer: React.FC = () => {
       setIsLoading(false);
     }
   };
-  
+
   // Function to trigger the file input click
   const triggerFileUpload = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
-  
+
   // Basic code analysis function
   const analyzeCodeContent = (content: string, fileName: string): CodebaseData => {
     const lines = content.split('\n');
     const loc = lines.length;
-    
     // Create nodes array
     const nodes: CodebaseNode[] = [];
     const links: CodebaseLink[] = [];
-    
     // Create a file node
     const fileId = `file_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     const fileNode: CodebaseNode = {
@@ -760,7 +735,6 @@ const RealCodebaseVisualizer: React.FC = () => {
       lastModified: new Date()
     };
     nodes.push(fileNode);
-    
     // Basic function detection
     const functionRegex = /function\s+([a-zA-Z_$][0-9a-zA-Z_$]*)\s*\(/g;
     let funcMatch;
@@ -799,7 +773,6 @@ const RealCodebaseVisualizer: React.FC = () => {
         count: 1
       });
     }
-    
     // Basic class detection
     const classRegex = /class\s+([a-zA-Z_$][0-9a-zA-Z_$]*)\s*(?:extends\s+[a-zA-Z_$][0-9a-zA-Z_$]*\s*)?\{/g;
     let classMatch;
@@ -838,7 +811,6 @@ const RealCodebaseVisualizer: React.FC = () => {
         count: 1
       });
     }
-    
     // Basic import detection
     const importRegex = /import\s+(?:{[^}]*}|\*|\w+)\s+from\s+['"]([^'"]+)['"]/g;
     let importMatch;
@@ -877,7 +849,6 @@ const RealCodebaseVisualizer: React.FC = () => {
         count: 1
       });
     }
-    
     return {
       nodes,
       links,
@@ -890,7 +861,7 @@ const RealCodebaseVisualizer: React.FC = () => {
       }
     };
   };
-  
+
   // Helper functions for code analysis
   const getFileType = (fileName: string): 'file' | 'component' | 'class' | 'function' | 'hook' | 'interface' | 'variable' | 'import' => {
     if (fileName.endsWith('.tsx') || fileName.endsWith('.jsx')) return 'component';
@@ -898,7 +869,7 @@ const RealCodebaseVisualizer: React.FC = () => {
     if (fileName.endsWith('.css') || fileName.endsWith('.scss')) return 'file';
     return 'file';
   };
-  
+
   const getLanguage = (fileName: string): string => {
     if (fileName.endsWith('.ts') || fileName.endsWith('.tsx')) return 'TypeScript';
     if (fileName.endsWith('.js') || fileName.endsWith('.jsx')) return 'JavaScript';
@@ -908,7 +879,7 @@ const RealCodebaseVisualizer: React.FC = () => {
     if (fileName.endsWith('.rs')) return 'Rust';
     return 'Unknown';
   };
-  
+
   const calculateComplexity = (content: string): number => {
     // Count branches, loops, etc. for complexity
     const complexityKeywords = ['if', 'else', 'for', 'while', 'switch', 'case', 'catch', '&&', '||', '??', '?.'];
@@ -922,7 +893,7 @@ const RealCodebaseVisualizer: React.FC = () => {
     });
     return Math.min(complexity, 50); // Cap complexity
   };
-  
+
   const calculateCyclomaticComplexity = (content: string): number => {
     // Simple cyclomatic complexity calculation
     const decisionPoints = ['if', 'for', 'while', 'switch', 'case', 'catch', '&&', '||', '?', '??', '?.'];
@@ -936,10 +907,9 @@ const RealCodebaseVisualizer: React.FC = () => {
     });
     return complexity;
   };
-  
+
   const detectIssues = (content: string): CodeIssue[] => {
     const issues: CodeIssue[] = [];
-    
     // Check for console.log
     const consoleLogRegex = /console\.log\s*\(/g;
     let match;
@@ -952,7 +922,6 @@ const RealCodebaseVisualizer: React.FC = () => {
         line: content.substring(0, match.index).split('\n').length
       });
     }
-    
     // Check for TODO comments
     const todoRegex = /\/\/\s*TODO:/gi;
     while ((match = todoRegex.exec(content)) !== null) {
@@ -964,7 +933,6 @@ const RealCodebaseVisualizer: React.FC = () => {
         line: content.substring(0, match.index).split('\n').length
       });
     }
-    
     // Check for debugger statements
     const debuggerRegex = /\bdebugger\b/gi;
     while ((match = debuggerRegex.exec(content)) !== null) {
@@ -976,24 +944,112 @@ const RealCodebaseVisualizer: React.FC = () => {
         line: content.substring(0, match.index).split('\n').length
       });
     }
-    
     return issues;
   };
-  
+
+  const fetchGitHubRepository = async (repoUrl: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+        const urlParts = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
+        if (!urlParts) {
+            throw new Error('Invalid GitHub repository URL. Please use the format https://github.com/owner/repo');
+        }
+        const owner = urlParts[1];
+        const repo = urlParts[2];
+        const allNodes: CodebaseNode[] = [];
+        const allLinks: CodebaseLink[] = [];
+        let totalLines = 0;
+        const languageCounts: Record<string, number> = {};
+        let totalFiles = 0;
+        async function processDirectory(path: string) {
+            const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`);
+            if (response.status === 403) {
+                 const rateLimitReset = response.headers.get('X-RateLimit-Reset');
+                 const resetTime = new Date(Number(rateLimitReset) * 1000);
+                 throw new Error(`GitHub API rate limit exceeded. Please try again after ${resetTime.toLocaleTimeString()}.`);
+            }
+            if (!response.ok) {
+                throw new Error(`Failed to fetch repository contents from path: ${path}. This might be a private repository.`);
+            }
+            const contents = await response.json();
+            for (const item of contents) {
+                if (item.type === 'file') {
+                    const supportedExtensions = ['.js', '.ts', '.jsx', '.tsx', '.json', '.css', '.html', '.py', '.go', '.java', '.rs'];
+                    if (supportedExtensions.some(ext => item.name.endsWith(ext))) {
+                        try {
+                            const contentResponse = await fetch(item.download_url);
+                            if (!contentResponse.ok) {
+                                console.warn(`Skipping file ${item.path} due to fetch error.`);
+                                continue;
+                            }
+                            const content = await contentResponse.text();
+                            const analyzedData = analyzeCodeContent(content, item.path);
+                            allNodes.push(...analyzedData.nodes);
+                            allLinks.push(...analyzedData.links);
+                            totalLines += analyzedData.metadata.totalLines;
+                            for (const lang in analyzedData.metadata.languages) {
+                                if (languageCounts[lang]) {
+                                    languageCounts[lang] += analyzedData.metadata.languages[lang];
+                                } else {
+                                    languageCounts[lang] = analyzedData.metadata.languages[lang];
+                                }
+                            }
+                            totalFiles++;
+                        } catch (error) {
+                            console.error(`Failed to process file ${item.path}:`, error);
+                        }
+                    }
+                } else if (item.type === 'dir') {
+                    if (path.split('/').length < 5) {
+                        await processDirectory(item.path);
+                    } else {
+                        console.warn(`Skipping directory ${item.path} due to depth limit.`);
+                    }
+                }
+            }
+        }
+        await processDirectory('');
+        const combinedData: CodebaseData = {
+            nodes: allNodes,
+            links: allLinks,
+            metadata: {
+                totalFiles: totalFiles,
+                totalLines: totalLines,
+                languages: languageCounts,
+                lastAnalyzed: new Date(),
+                analysisVersion: '1.2.0-github'
+            }
+        };
+        if (totalFiles === 0) {
+            throw new Error("No supported files found in the repository. The visualizer supports common web development, Python, Java, Go, and Rust files.");
+        }
+        setData(combinedData);
+    } catch (err: any) {
+        console.error("GitHub repository processing failed:", err);
+        setError(err.message || "Failed to process the GitHub repository.");
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  const handleVisualizeFromGitHub = (repoUrl: string) => {
+    setIsGitHubModalOpen(false);
+    fetchGitHubRepository(repoUrl);
+  };
+
   return (
     <div className="w-full h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 relative overflow-hidden font-sans text-white">
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.1)_1px,transparent_0)] bg-[size:20px_20px]"></div>
       </div>
-      
       {/* Main SVG Canvas */}
       <svg 
         ref={svgRef} 
         className={`transition-all duration-300 ${showSidebar ? 'w-[calc(100%-350px)]' : 'w-full'} h-full`}
         style={{ background: 'transparent' }}
       />
-      
       {/* Top Control Bar */}
       <div className="fixed top-4 left-4 right-4 z-50 flex items-center justify-between">
         <div className="flex items-center space-x-3">
@@ -1030,7 +1086,6 @@ const RealCodebaseVisualizer: React.FC = () => {
           </button>
         </div>
       </div>
-      
       {/* Sidebar */}
       {showSidebar && (
         <div className="fixed right-0 top-0 h-full w-80 bg-gray-900/95 backdrop-blur-sm border-l border-gray-700 z-40 overflow-y-auto">
@@ -1074,7 +1129,6 @@ const RealCodebaseVisualizer: React.FC = () => {
                 </div>
               </div>
             </div>
-            
             {/* View Controls */}
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-cyan-400 flex items-center">
@@ -1147,7 +1201,6 @@ const RealCodebaseVisualizer: React.FC = () => {
                 </div>
               </div>
             </div>
-            
             {/* Filters */}
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-cyan-400 flex items-center">
@@ -1209,7 +1262,6 @@ const RealCodebaseVisualizer: React.FC = () => {
                 </div>
               </div>
             </div>
-            
             {/* Data Source Actions */}
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-cyan-400 flex items-center">
@@ -1224,9 +1276,8 @@ const RealCodebaseVisualizer: React.FC = () => {
                   }}
                   className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-lg"
                 >
-                  🎲 New Demo
+                  🎯 New Demo
                 </button>
-                
                 {/* GitHub Button with scan functionality */}
                 <button 
                   onClick={async () => {
@@ -1248,7 +1299,6 @@ const RealCodebaseVisualizer: React.FC = () => {
                   <Github className="w-3 h-3 inline mr-1" />
                   GitHub
                 </button>
-                
                 {/* Upload Button */}
                 <button 
                   onClick={triggerFileUpload}
@@ -1257,13 +1307,11 @@ const RealCodebaseVisualizer: React.FC = () => {
                   <Upload className="w-3 h-3 inline mr-1" />
                   Upload
                 </button>
-                
                 <button className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-lg">
-                  ⚡ AI Scan
+                  🚀 AI Scan
                 </button>
               </div>
             </div>
-            
             {/* Legend */}
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-cyan-400">Legend</h3>
@@ -1293,7 +1341,6 @@ const RealCodebaseVisualizer: React.FC = () => {
           </div>
         </div>
       )}
-      
       {/* Node Details Panel */}
       {selectedNode && (
         <div className="fixed bottom-6 left-6 right-6 bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-xl p-6 z-50 max-w-4xl mx-auto shadow-2xl">
@@ -1311,9 +1358,9 @@ const RealCodebaseVisualizer: React.FC = () => {
                   style={{ backgroundColor: getNodeColor(selectedNode) }}
                 >
                   {{
-                    'file': '📄', 'component': '🧩', 'function': '⚙️', 
-                    'hook': '🪝', 'interface': '📋', 'class': '🏛️',
-                    'variable': '📊', 'import': '📦'
+                    'file': '📄', 'component': '⚛️', 'function': 'ƒ️', 
+                    'hook': '🎣', 'interface': '🔌', 'class': 'CppClass️',
+                    'variable': '🔢', 'import': '📦'
                   }[selectedNode.type] || '❓'}
                 </div>
                 <div>
@@ -1373,7 +1420,6 @@ const RealCodebaseVisualizer: React.FC = () => {
                   </div>
                 </div>
               )}
-              
               {/* Metrics */}
               <div>
                 <h4 className="font-semibold text-cyan-400 mb-2 flex items-center">
@@ -1403,7 +1449,6 @@ const RealCodebaseVisualizer: React.FC = () => {
           </div>
         </div>
       )}
-      
       {/* Hover Tooltip */}
       {hoveredNode && (
         <div className="fixed z-60 pointer-events-none bg-gray-800/90 backdrop-blur-sm border border-gray-600 rounded-lg p-3 text-sm shadow-lg">
@@ -1419,18 +1464,16 @@ const RealCodebaseVisualizer: React.FC = () => {
           )}
         </div>
       )}
-      
       {/* Loading State */}
       {isLoading && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
           <div className="bg-gray-800 rounded-lg p-6 text-center">
-            <div className="animate-spin text-4xl mb-4">🔄</div>
+            <div className="animate-spin text-4xl mb-4">🌀</div>
             <h2 className="text-xl font-bold mb-2">Analyzing Codebase</h2>
             <p className="text-gray-400">Please wait while we process your code...</p>
           </div>
         </div>
       )}
-      
       {/* Error State */}
       {error && (
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-red-600 text-white p-4 rounded-lg z-50 shadow-lg">
@@ -1440,12 +1483,10 @@ const RealCodebaseVisualizer: React.FC = () => {
           </div>
         </div>
       )}
-      
       {/* Zoom Indicator */}
       <div className="fixed bottom-6 right-6 bg-gray-800/80 backdrop-blur-sm border border-gray-600 rounded-lg px-3 py-1 text-xs z-30">
         Zoom: {Math.round(zoom * 100)}%
       </div>
-      
       {/* Hidden File Input */}
       <input
         type="file"
@@ -1455,7 +1496,11 @@ const RealCodebaseVisualizer: React.FC = () => {
         multiple
         style={{ display: 'none' }}
       />
-      
+      <GitHubRepoModal
+        isOpen={isGitHubModalOpen}
+        onClose={() => setIsGitHubModalOpen(false)}
+        onVisualize={handleVisualizeFromGitHub}
+      />
       {/* Custom Styles */}
       <style jsx>{`
         .slider::-webkit-slider-thumb {
