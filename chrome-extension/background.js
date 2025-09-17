@@ -235,50 +235,49 @@ class TrackerBackground {
           break;
 
         case 'GET_TRACKER_ASSIGNMENTS':
-          (async () => {
-            console.log('Background: GET_TRACKER_ASSIGNMENTS received for matchId:', message.data?.matchId, 'userId:', message.data?.userId);
-            if (!this.supabase) {
-              console.error('Supabase client not initialized. Cannot fetch tracker assignments.');
-              sendResponse({ success: false, error: 'Supabase client not available.', eventTypes: [] });
+          // This block is now directly awaited by the async handleMessage function
+          console.log('Background: GET_TRACKER_ASSIGNMENTS received for matchId:', message.data?.matchId, 'userId:', message.data?.userId);
+          if (!this.supabase) {
+            console.error('Supabase client not initialized. Cannot fetch tracker assignments.');
+            sendResponse({ success: false, error: 'Supabase client not available.', eventTypes: [] });
+            return;
+          }
+          if (!message.data || !message.data.matchId || !message.data.userId) {
+            console.error('GET_TRACKER_ASSIGNMENTS: Missing matchId or userId in message data.');
+            sendResponse({ success: false, error: 'matchId and userId are required.', eventTypes: [] });
+            return;
+          }
+
+          try {
+            const { data: assignments, error } = await this.supabase
+              .from('match_tracker_assignments')
+              .select('assigned_event_types')
+              .eq('match_id', message.data.matchId)
+              .eq('tracker_user_id', message.data.userId);
+
+            if (error) {
+              console.error('Error fetching tracker assignments from Supabase:', error);
+              sendResponse({ success: false, error: error.message, eventTypes: [] });
               return;
             }
-            if (!message.data || !message.data.matchId || !message.data.userId) {
-              console.error('GET_TRACKER_ASSIGNMENTS: Missing matchId or userId in message data.');
-              sendResponse({ success: false, error: 'matchId and userId are required.', eventTypes: [] });
-              return;
+
+            let allEventTypes = [];
+            if (assignments && assignments.length > 0) {
+              assignments.forEach(assignment => {
+                if (assignment.assigned_event_types && Array.isArray(assignment.assigned_event_types)) {
+                  allEventTypes.push(...assignment.assigned_event_types);
+                }
+              });
             }
 
-            try {
-              const { data: assignments, error } = await this.supabase
-                .from('match_tracker_assignments')
-                .select('assigned_event_types')
-                .eq('match_id', message.data.matchId)
-                .eq('tracker_user_id', message.data.userId);
+            const uniqueEventTypes = [...new Set(allEventTypes)];
+            console.log('Background: Sending tracker assignments:', uniqueEventTypes);
+            sendResponse({ success: true, eventTypes: uniqueEventTypes });
 
-              if (error) {
-                console.error('Error fetching tracker assignments from Supabase:', error);
-                sendResponse({ success: false, error: error.message, eventTypes: [] });
-                return;
-              }
-
-              let allEventTypes = [];
-              if (assignments && assignments.length > 0) {
-                assignments.forEach(assignment => {
-                  if (assignment.assigned_event_types && Array.isArray(assignment.assigned_event_types)) {
-                    allEventTypes.push(...assignment.assigned_event_types);
-                  }
-                });
-              }
-
-              const uniqueEventTypes = [...new Set(allEventTypes)];
-              console.log('Background: Sending tracker assignments:', uniqueEventTypes);
-              sendResponse({ success: true, eventTypes: uniqueEventTypes });
-
-            } catch (e) {
-              console.error('Exception while fetching tracker assignments:', e);
-              sendResponse({ success: false, error: e.message || 'An unexpected error occurred.', eventTypes: [] });
-            }
-          })();
+          } catch (e) {
+            console.error('Exception while fetching tracker assignments:', e);
+            sendResponse({ success: false, error: e.message || 'An unexpected error occurred.', eventTypes: [] });
+          }
           break;
 
         case 'PING':
