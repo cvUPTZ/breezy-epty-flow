@@ -19,7 +19,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Security, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 # Use msgspec for better performance
 import msgspec
@@ -356,6 +356,56 @@ async def get_vercel_job_status(job_id: str):
         raise HTTPException(status_code=404, detail="Job not found")
     
     return vercel_jobs[job_id]
+
+@app.get("/api/list-files", response_model=List[str])
+async def list_files():
+    """Lists all files in the src directory, recursively."""
+    # Go up two levels from vercel_main.py to the project root
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    src_path = os.path.join(project_root, 'src')
+
+    if not os.path.isdir(src_path):
+        raise HTTPException(status_code=500, detail="src directory not found")
+
+    file_list = []
+    for root, _, files in os.walk(src_path):
+        for file in files:
+            full_path = os.path.join(root, file)
+            # Return relative path from project root
+            relative_path = os.path.relpath(full_path, project_root)
+            file_list.append(relative_path.replace('\\', '/'))
+
+    return file_list
+
+@app.get("/api/get-file-content")
+async def get_file_content(filepath: str):
+    """Returns the content of a file, with security checks."""
+
+    # Go up two levels from vercel_main.py to the project root
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+    # Basic security: prevent access to anything outside the project root
+    # Normalize the requested path
+    requested_path = os.path.abspath(os.path.join(project_root, filepath))
+
+    # Security check: ensure the requested path is within the project root
+    if not requested_path.startswith(project_root):
+        raise HTTPException(status_code=400, detail="Invalid file path")
+
+    # Security check: prevent directory traversal
+    if ".." in filepath:
+        raise HTTPException(status_code=400, detail="Directory traversal is not allowed")
+
+    if not os.path.isfile(requested_path):
+        raise HTTPException(status_code=404, detail=f"File not found: {requested_path}")
+
+    try:
+        with open(requested_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return PlainTextResponse(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading file: {str(e)}")
+
 
 # Vercel serverless handler
 handler = app

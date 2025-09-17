@@ -31,11 +31,6 @@ interface CodebaseData {
   links: CodebaseLink[];
 }
 
-interface FileUploadProps {
-  onFilesUploaded: (files: FileList) => void;
-  isProcessing: boolean;
-}
-
 interface StatsData {
   errors: number;
   warnings: number;
@@ -43,64 +38,6 @@ interface StatsData {
   links: number;
   bugDensity: number;
 }
-
-// File Upload Component
-const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded, isProcessing }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files.length > 0) {
-      onFilesUploaded(event.target.files);
-    }
-  };
-
-  const handleDrop = (event: React.DragEvent) => {
-    event.preventDefault();
-    if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
-      onFilesUploaded(event.dataTransfer.files);
-    }
-  };
-
-  const handleDragOver = (event: React.DragEvent) => {
-    event.preventDefault();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div 
-        className="bg-gray-900 p-8 rounded-lg border-2 border-dashed border-gray-600 max-w-md w-full text-center"
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-      >
-        <div className="text-6xl mb-4">📁</div>
-        <h2 className="text-xl font-bold text-white mb-4">Upload Code Files</h2>
-        <p className="text-gray-300 mb-6">
-          Drag & drop your code files here or click to browse
-        </p>
-        <p className="text-sm text-gray-400 mb-4">
-          Supports: .js, .ts, .jsx, .tsx, .py, .java, .cpp, .c, .cs, .php, .rb
-        </p>
-        
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept=".js,.ts,.jsx,.tsx,.py,.java,.cpp,.c,.cs,.php,.rb,.go,.rust,.swift"
-          onChange={handleFileChange}
-          className="hidden"
-        />
-        
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isProcessing}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-6 py-3 rounded-lg text-white font-semibold transition-colors"
-        >
-          {isProcessing ? 'Processing...' : 'Select Files'}
-        </button>
-      </div>
-    </div>
-  );
-};
 
 // Code Analysis Engine
 class CodeAnalyzer {
@@ -580,48 +517,49 @@ const RealCodebaseVisualizer: React.FC = () => {
   const [data, setData] = useState<CodebaseData>({ nodes: [], links: [] });
   const [selectedNode, setSelectedNode] = useState<CodebaseNode | null>(null);
   const [stats, setStats] = useState<StatsData>({ errors: 0, warnings: 0, nodes: 0, links: 0, bugDensity: 0 });
-  const [showFileUpload, setShowFileUpload] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
   const simulationRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined>>();
   const forceSimulationRef = useRef<d3.Simulation<CodebaseNode, undefined>>();
 
-  const calculateStats = useCallback((nodes: CodebaseNode[], links: CodebaseLink[]) => {
-    const errors = nodes.filter(n => n.bugCount > 2).length;
-    const warnings = nodes.filter(n => n.bugCount > 0 && n.bugCount <= 2).length;
-    const buggyNodes = nodes.filter(n => n.bugCount > 0).length;
-    const bugDensity = nodes.length > 0 ? Math.round((buggyNodes / nodes.length) * 100) : 0;
+  useEffect(() => {
+    const fetchAndProcessFiles = async () => {
+      try {
+        const response = await fetch('/api/list-files');
+        const filepaths = await response.json();
 
-    return { errors, warnings, nodes: nodes.length, links: links.length, bugDensity };
+        const allNodes: CodebaseNode[] = [];
+        const allLinks: CodebaseLink[] = [];
+
+        for (const filepath of filepaths) {
+          const contentResponse = await fetch(`/api/get-file-content?filepath=${filepath}`);
+          const content = await contentResponse.text();
+          const { nodes, links } = CodeAnalyzer.analyzeFile(filepath, content);
+          allNodes.push(...nodes);
+          allLinks.push(...links);
+        }
+
+        const crossLinks = CodeAnalyzer.detectCrossDependencies(allNodes, allLinks);
+        allLinks.push(...crossLinks);
+
+        const newStats = calculateStats(allNodes, allLinks);
+        setStats(newStats);
+        setData({ nodes: allNodes, links: allLinks });
+      } catch (error) {
+        console.error('Error fetching or processing repository files:', error);
+      }
+    };
+
+    const calculateStats = (nodes: CodebaseNode[], links: CodebaseLink[]) => {
+      const errors = nodes.filter(n => n.bugCount > 2).length;
+      const warnings = nodes.filter(n => n.bugCount > 0 && n.bugCount <= 2).length;
+      const buggyNodes = nodes.filter(n => n.bugCount > 0).length;
+      const bugDensity = nodes.length > 0 ? Math.round((buggyNodes / nodes.length) * 100) : 0;
+      return { errors, warnings, nodes: nodes.length, links: links.length, bugDensity };
+    };
+
+    fetchAndProcessFiles();
   }, []);
 
-  const handleFilesUploaded = async (files: FileList) => {
-    setIsProcessing(true);
-    const allNodes: CodebaseNode[] = [];
-    const allLinks: CodebaseLink[] = [];
-
-    try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const content = await file.text();
-        const { nodes, links } = CodeAnalyzer.analyzeFile(file.name, content);
-        allNodes.push(...nodes);
-        allLinks.push(...links);
-      }
-
-      // Detect cross-file dependencies
-      const crossLinks = CodeAnalyzer.detectCrossDependencies(allNodes, allLinks);
-      allLinks.push(...crossLinks);
-
-      setData({ nodes: allNodes, links: allLinks });
-      setShowFileUpload(false);
-    } catch (error) {
-      console.error('Error processing files:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const initializeVisualization = useCallback(() => {
+  useEffect(() => {
     if (!svgRef.current || data.nodes.length === 0) return;
 
     const svg = d3.select(svgRef.current);
@@ -833,15 +771,7 @@ const RealCodebaseVisualizer: React.FC = () => {
 
     // Click on SVG to deselect
     svg.on("click", () => setSelectedNode(null));
-
   }, [data]);
-
-  useEffect(() => {
-    if (data.nodes.length > 0) {
-      initializeVisualization();
-      setStats(calculateStats(data.nodes, data.links));
-    }
-  }, [data, initializeVisualization, calculateStats]);
 
   const handleResetLayout = useCallback(() => {
     if (forceSimulationRef.current) {
@@ -1088,14 +1018,6 @@ const RealCodebaseVisualizer: React.FC = () => {
             </div>
           </div>
 
-          <div>
-            <button 
-              onClick={() => setShowFileUpload(true)}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 px-3 py-2 rounded text-xs transition-all transform hover:-translate-y-0.5"
-            >
-              📂 Load New Files
-            </button>
-          </div>
         </div>
       </div>
     );
@@ -1166,14 +1088,6 @@ const RealCodebaseVisualizer: React.FC = () => {
     );
   };
 
-  if (showFileUpload) {
-    return (
-      <div className="w-full h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900 relative overflow-hidden">
-        <FileUpload onFilesUploaded={handleFilesUploaded} isProcessing={isProcessing} />
-      </div>
-    );
-  }
-
   return (
     <div className="w-full h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900 relative overflow-hidden">
       <style>{`
@@ -1200,12 +1114,12 @@ const RealCodebaseVisualizer: React.FC = () => {
         onClose={() => setSelectedNode(null)} 
       />
       
-      {data.nodes.length === 0 && !showFileUpload && (
+      {data.nodes.length === 0 && (
         <div className="fixed inset-0 flex items-center justify-center">
           <div className="text-white text-center">
             <div className="text-4xl mb-4">🔍</div>
-            <h2 className="text-xl font-bold mb-2">No files loaded</h2>
-            <p className="text-gray-300">Click "Load New Files" to analyze your code</p>
+            <h2 className="text-xl font-bold mb-2">Loading repository...</h2>
+            <p className="text-gray-300">Analyzing files, please wait.</p>
           </div>
         </div>
       )}
