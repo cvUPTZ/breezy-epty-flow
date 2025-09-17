@@ -90,9 +90,7 @@ const AppContent = () => {
     }
   }, []); 
 
-  const noSidebarPaths = ['/auth', '/extension-bridge', '/unauthorized'];
-  // Force hide sidebar for all paths to remove the divided layout
-  const showSidebar = false; // Changed from the original logic to always false
+  // Remove all sidebar-related variables since we're not using sidebar anymore
 
   const AppRoutes = (
     <Routes>
@@ -369,15 +367,11 @@ const AppContent = () => {
   );
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Sidebar is now always hidden by setting showSidebar to false */}
-      {showSidebar && <AppSidebar />}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-y-auto p-6">
-          {AppRoutes}
-        </main>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main className="w-full p-6">
+        {AppRoutes}
+      </main>
     </div>
   );
 };
