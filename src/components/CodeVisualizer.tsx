@@ -3,12 +3,6 @@ import * as d3 from 'd3';
 import { Search, Upload, Github, Play, Pause, RotateCcw, ZoomIn, ZoomOut, Filter, Settings, AlertTriangle, CheckCircle, XCircle, Activity, Layers, GitBranch } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
-
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
 // Enhanced interfaces with modern TypeScript patterns
 interface CodebaseNode {
   id: string;
