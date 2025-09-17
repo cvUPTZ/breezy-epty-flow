@@ -48,6 +48,11 @@ import BusinessModelCanvasPage from './pages/BusinessModelCanvas';
 import ServiceOfferPage from './pages/ServiceOffer';
 import RealCodebaseVisualizer from './components/CodeVisualizer';
 
+// Import Business Document Components
+import BusinessModelCanvasDocument from './components/documents/BusinessModelCanvasDocument';
+import BusinessPlanDocument from './components/documents/BusinessPlanDocument';
+import MarketStudyDocument from './components/documents/MarketStudyDocument';
+
 const queryClient = new QueryClient();
 
 interface MatchPayload {
@@ -56,7 +61,7 @@ interface MatchPayload {
   home_team_name?: string | null;
   away_team_name?: string | null;
   status?: string | null;
-  [key:string]: unknown;
+  [key: string]: unknown;
 }
 
 const AppContent = () => {
@@ -212,7 +217,7 @@ const AppContent = () => {
 
       <Route path="/analytics" element={
         <RequireAuth
-          requiredRoles={['admin', 'manager','tracker']}
+          requiredRoles={['admin', 'manager', 'tracker']}
           requiredPermissions={['canViewAnalytics']}
         >
           <AnalyticsDashboard />
@@ -295,6 +300,23 @@ const AppContent = () => {
         </RequireAuth>
       } />
 
+      {/* Business Document Routes */}
+      <Route path="/documents/business-model-canvas" element={
+        <RequireAuth requiredRoles={['admin', 'manager']}>
+          <BusinessModelCanvasDocument />
+        </RequireAuth>
+      } />
+      <Route path="/documents/business-plan" element={
+        <RequireAuth requiredRoles={['admin', 'manager']}>
+          <BusinessPlanDocument />
+        </RequireAuth>
+      } />
+      <Route path="/documents/market-study" element={
+        <RequireAuth requiredRoles={['admin', 'manager']}>
+          <MarketStudyDocument />
+        </RequireAuth>
+      } />
+
       {/* Communication Routes */}
       <Route path="/match/:matchId/voice-chat" element={
         <RequireAuth
@@ -347,20 +369,18 @@ const AppContent = () => {
   );
 
   return (
-    
-      
-        <div className="flex h-screen bg-background">
-          {/* Sidebar is now always hidden by setting showSidebar to false */}
-          {showSidebar && <AppSidebar />}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <Header />
-            <main className="flex-1 overflow-y-auto p-6">
-              {AppRoutes}
-            </main>
-          </div>
+    <SidebarProvider>
+      <div className="flex h-screen bg-background">
+        {/* Sidebar is now always hidden by setting showSidebar to false */}
+        {showSidebar && <AppSidebar />}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header />
+          <main className="flex-1 overflow-y-auto p-6">
+            {AppRoutes}
+          </main>
         </div>
-      
-    
+      </div>
+    </SidebarProvider>
   );
 };
 
