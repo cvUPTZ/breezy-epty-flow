@@ -529,65 +529,77 @@ const RealCodebaseVisualizer: React.FC = () => {
   }, [filteredData]);
 
   // --- NEW: Function to handle file upload with REAL processing via Supabase ---
- // --- MODIFIED: Function to handle file upload with authentication ---
 const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-  const files = event.target.files;
-  if (!files || files.length === 0) return;
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-  setIsLoading(true);
-  setError(null);
+    setIsLoading(true);
+    setError(null);
 
-  try {
-    // Get the current user session
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      throw new Error("User must be logged in to upload files");
-    }
-
-    // Process each file
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      
-      // Generate a unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-      
-      // Upload file to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('code-uploads')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false,
-          // The session token will be automatically included in the request
-        });
-
-      if (uploadError) {
-        throw new Error(`Upload failed: ${uploadError.message}`);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("User must be logged in to upload files");
       }
 
-      // Get the public URL of the uploaded file
-      const { data: urlData } = supabase.storage
-        .from('code-uploads')
-        .getPublicUrl(fileName);
+      const allNodes: CodebaseNode[] = [];
+      const allLinks: CodebaseLink[] = [];
+      let totalLines = 0;
+      const languageCounts: Record<string, number> = {};
 
-      // Read the file content
-      const fileContent = await file.text();
-      
-      // Analyze the code content
-      const analyzedData = analyzeCodeContent(fileContent, file.name);
-      
-      // Update the state with the analyzed data
-      setData(analyzedData);
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('code-uploads')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false,
+          });
+
+        if (uploadError) {
+          throw new Error(`Upload failed for ${file.name}: ${uploadError.message}`);
+        }
+
+        const fileContent = await file.text();
+        const analyzedData = analyzeCodeContent(fileContent, file.name);
+
+        allNodes.push(...analyzedData.nodes);
+        allLinks.push(...analyzedData.links);
+        totalLines += analyzedData.metadata.totalLines;
+
+        for (const lang in analyzedData.metadata.languages) {
+          if (languageCounts[lang]) {
+            languageCounts[lang] += analyzedData.metadata.languages[lang];
+          } else {
+            languageCounts[lang] = analyzedData.metadata.languages[lang];
+          }
+        }
+      }
+
+      const combinedData: CodebaseData = {
+        nodes: allNodes,
+        links: allLinks,
+        metadata: {
+          totalFiles: files.length,
+          totalLines: totalLines,
+          languages: languageCounts,
+          lastAnalyzed: new Date(),
+          analysisVersion: '1.1.0'
+        }
+      };
+
+      setData(combinedData);
+
+    } catch (err: any) {
+      console.error("Upload and analysis failed:", err);
+      setError(err.message || "Failed to process uploaded files. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-
-  } catch (err: any) {
-    console.error("Upload failed:", err);
-    setError("Failed to process uploaded files. Please try again.");
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   // --- NEW: Function to trigger the file input click ---
   const triggerFileUpload = () => {
