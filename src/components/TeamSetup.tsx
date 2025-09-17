@@ -6,13 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Team, Player } from '@/types';
 import { Plus, Minus } from 'lucide-react';
 
-/**
- * @interface TeamSetupProps
- * @description Props for the TeamSetup component.
- * @property {{ home: Team; away: Team }} teams - The current state of the home and away teams.
- * @property {function(teams: { home: Team; away: Team }): void} onTeamsChange - Callback function to update the teams' state.
- * @property {function(): void} onConfirm - Callback function to be called when the setup is confirmed.
- */
 interface TeamSetupProps {
   teams: { home: Team; away: Team };
   onTeamsChange: (teams: { home: Team; away: Team }) => void;
@@ -28,14 +21,6 @@ const defaultPlayer = (id: number): Player => ({
   position: 'Not Set',
 });
 
-/**
- * @component TeamSetup
- * @description A component that provides a user interface for setting up the home and away teams
- * for a match, including their names and player rosters. It uses the TeamForm sub-component
- * for each team.
- * @param {TeamSetupProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const TeamSetup: React.FC<TeamSetupProps> = ({ teams, onTeamsChange, onConfirm }) => {
   const handleTeamNameChange = (team: 'home' | 'away', name: string) => {
     onTeamsChange({
@@ -122,16 +107,6 @@ const TeamSetup: React.FC<TeamSetupProps> = ({ teams, onTeamsChange, onConfirm }
   );
 };
 
-/**
- * @interface TeamFormProps
- * @description Props for the TeamForm sub-component.
- * @property {Team} team - The team object to be managed by the form.
- * @property {'home' | 'away'} teamType - The type of team, used for styling and labeling.
- * @property {function(name: string): void} onTeamNameChange - Callback for when the team name changes.
- * @property {function(player: Player): void} onPlayerChange - Callback for when a player's details change.
- * @property {function(): void} onAddPlayer - Callback to add a new player to the team.
- * @property {function(id: string | number): void} onRemovePlayer - Callback to remove a player from the team.
- */
 interface TeamFormProps {
   team: Team;
   teamType: 'home' | 'away';
@@ -141,13 +116,6 @@ interface TeamFormProps {
   onRemovePlayer: (id: string | number) => void;
 }
 
-/**
- * @component TeamForm
- * @description A form component for editing the details of a single team,
- * including its name and a list of players.
- * @param {TeamFormProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const TeamForm: React.FC<TeamFormProps> = ({
   team,
   teamType,

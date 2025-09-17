@@ -10,15 +10,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { EVENT_TYPE_CATEGORIES } from '@/constants/eventTypes';
 
-/**
- * @interface Player
- * @description Represents a player with basic information for assignment purposes.
- * @property {number} id - The unique identifier for the player.
- * @property {number} jersey_number - The player's jersey number.
- * @property {string} player_name - The name of the player.
- * @property {'home' | 'away'} team - The team the player belongs to.
- * @property {string} [position] - The player's position on the field.
- */
 interface Player {
   id: number;
   jersey_number: number;
@@ -27,14 +18,6 @@ interface Player {
   position?: string;
 }
 
-/**
- * @interface TrackerUser
- * @description Represents a user with the 'tracker' role.
- * @property {string} id - The unique identifier for the user.
- * @property {string | null} email - The user's email address.
- * @property {string | null} [full_name] - The full name of the user.
- * @property {string | null} role - The user's role (e.g., 'tracker').
- */
 interface TrackerUser {
   id: string;
   email: string | null;
@@ -42,16 +25,6 @@ interface TrackerUser {
   role: 'admin' | 'user' | 'tracker' | 'teacher' | string | null;
 }
 
-/**
- * @interface Assignment
- * @description Represents a single, consolidated assignment of a tracker to players and event types.
- * @property {string} id - The unique identifier for the assignment.
- * @property {string} tracker_user_id - The ID of the assigned tracker.
- * @property {string} tracker_name - The name of the assigned tracker.
- * @property {string} tracker_email - The email of the assigned tracker.
- * @property {number[]} player_ids - An array of player IDs assigned to the tracker.
- * @property {string[]} assigned_event_types - An array of event type keys assigned to the tracker.
- */
 interface Assignment {
   id: string;
   tracker_user_id: string;
@@ -61,18 +34,6 @@ interface Assignment {
   assigned_event_types: string[];
 }
 
-/**
- * @interface UnifiedTrackerAssignmentProps
- * @description Props for the UnifiedTrackerAssignment component.
- * @property {string} [matchId] - The ID of the match for which assignments are being made.
- * @property {string} [videoUrl] - The URL of the video to be tracked, if applicable.
- * @property {Player[]} homeTeamPlayers - An array of players for the home team.
- * @property {Player[]} awayTeamPlayers - An array of players for the away team.
- * @property {TrackerUser[]} [trackerUsers] - An optional pre-fetched list of available tracker users.
- * @property {Assignment[]} [assignments] - An optional pre-fetched list of existing assignments.
- * @property {(assignments: Assignment[]) => void} [onAssignmentsChange] - Callback to update the parent component's state when assignments change.
- * @property {boolean} [showTypeAssignment=true] - Flag to show or hide the tracker type assignment UI.
- */
 interface UnifiedTrackerAssignmentProps {
   matchId?: string;
   videoUrl?: string;
@@ -119,15 +80,6 @@ const trackerTypeConfig = {
   }
 };
 
-/**
- * @component UnifiedTrackerAssignment
- * @description A comprehensive component for creating and managing all tracker assignments for a match.
- * It supports assigning trackers to individual players or to entire lines (defence, midfield, attack).
- * The component fetches necessary data (trackers, existing assignments) from Supabase and provides a rich UI
- * for creating, viewing, and deleting assignments.
- * @param {UnifiedTrackerAssignmentProps} props The props for the component.
- * @returns {JSX.Element} The rendered UnifiedTrackerAssignment component.
- */
 const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   matchId,
   videoUrl,

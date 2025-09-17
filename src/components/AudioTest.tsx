@@ -4,13 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, MicOff, TestTube } from 'lucide-react';
 
-/**
- * @component AudioTest
- * @description A self-contained component for testing microphone input.
- * It requests microphone access, visualizes the audio level in real-time,
- * and provides a log of events for debugging purposes.
- * @returns {React.FC} A React functional component.
- */
 const AudioTest: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
@@ -20,12 +13,12 @@ const AudioTest: React.FC = () => {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const addLog = React.useCallback((message: string) => {
+  const addLog = (message: string) => {
     const timestamp = new Date().toISOString().slice(11, 23);
     const logMessage = `[${timestamp}] ${message}`;
     console.log('🧪 AUDIO TEST:', logMessage);
     setLogs(prev => [...prev.slice(-4), logMessage]);
-  }, []);
+  };
 
   const startTest = async () => {
     try {
@@ -51,7 +44,7 @@ const AudioTest: React.FC = () => {
       streamRef.current = stream;
       
       // Setup audio analysis
-      const AudioContext = window.AudioContext || (window as Window & typeof globalThis & { webkitAudioContext: typeof window.AudioContext }).webkitAudioContext;
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
       audioContextRef.current = new AudioContext();
       
       if (audioContextRef.current.state === 'suspended') {
@@ -89,17 +82,13 @@ const AudioTest: React.FC = () => {
       intervalRef.current = setInterval(monitorAudio, 100);
       addLog('🎵 Started audio monitoring');
       
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        addLog(`❌ Error: ${error.name} - ${error.message}`);
-      } else {
-        addLog(`❌ An unknown error occurred`);
-      }
+    } catch (error: any) {
+      addLog(`❌ Error: ${error.name} - ${error.message}`);
       console.error('Audio test error:', error);
     }
   };
 
-  const stopTest = React.useCallback(() => {
+  const stopTest = () => {
     addLog('🛑 Stopping audio test');
     
     if (intervalRef.current) {
@@ -123,7 +112,7 @@ const AudioTest: React.FC = () => {
     setIsRecording(false);
     setAudioLevel(0);
     addLog('✅ Cleanup complete');
-  }, [addLog]);
+  };
 
   useEffect(() => {
     return () => {
@@ -131,7 +120,7 @@ const AudioTest: React.FC = () => {
         stopTest();
       }
     };
-  }, [isRecording, stopTest]);
+  }, [isRecording]);
 
   const AudioLevelBar = () => (
     <div className="flex items-center gap-2">

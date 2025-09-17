@@ -10,29 +10,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Shield, Zap, Target, Users, Trash2, Plus, PersonStanding, ChevronRight } from 'lucide-react';
 import { EVENT_TYPE_CATEGORIES } from '@/constants/eventTypes';
 
-/**
- * @interface TrackerTypeAssignmentProps
- * @description Props for the TrackerTypeAssignment component.
- * @property {string} matchId - The ID of the match to manage assignments for.
- * @property {any[]} homeTeamPlayers - The roster for the home team.
- * @property {any[]} awayTeamPlayers - The roster for the away team.
- */
 interface TrackerTypeAssignmentProps {
   matchId: string;
   homeTeamPlayers: any[];
   awayTeamPlayers: any[];
 }
 
-/**
- * @typedef {'specialized' | 'defence' | 'midfield' | 'attack'} TrackerType
- * @description The different high-level types of tracker assignments.
- */
 type TrackerType = 'specialized' | 'defence' | 'midfield' | 'attack';
 
-/**
- * @interface TrackerAssignment
- * @description Represents a "tracker type" or "line" assignment record.
- */
 interface TrackerAssignment {
   id: string;
   tracker_type: TrackerType;
@@ -50,14 +35,6 @@ const LINE_DEFINITIONS: Record<string, string[]> = {
   Attack: ['CF', 'ST', 'LW', 'RW', 'LF', 'RF', 'SS', 'FW'],
 };
 
-/**
- * @component TrackerTypeAssignment
- * @description A comprehensive UI for creating and managing tracker assignments based on "tracker types".
- * This allows for high-level assignment strategies, such as assigning a tracker to an entire
- * tactical line (e.g., 'Defence') or to a specialized group of players.
- * @param {TrackerTypeAssignmentProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
   matchId,
   homeTeamPlayers,

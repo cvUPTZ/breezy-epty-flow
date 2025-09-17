@@ -7,26 +7,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { UserX, Users } from 'lucide-react';
 
-/**
- * @interface TrackerAbsenceNotifierProps
- * @description Props for the TrackerAbsenceNotifier component.
- * @property {string} matchId - The ID of the match where the absence occurred.
- * @property {string} absentTrackerId - The ID of the tracker who is absent.
- * @property {function(): void} onClose - Callback function to close the notifier interface.
- */
 interface TrackerAbsenceNotifierProps {
   matchId: string;
   absentTrackerId: string;
   onClose: () => void;
 }
 
-/**
- * @component TrackerAbsenceNotifier
- * @description A component that provides an interface to assign a replacement for an absent tracker.
- * It fetches available trackers and sends notifications to the relevant parties upon assignment.
- * @param {TrackerAbsenceNotifierProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const TrackerAbsenceNotifier: React.FC<TrackerAbsenceNotifierProps> = ({
   matchId,
   absentTrackerId,

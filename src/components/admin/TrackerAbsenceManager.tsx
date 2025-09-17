@@ -12,19 +12,10 @@ import TrackerStatusIndicator from './TrackerStatusIndicator';
 import AbsenceSummaryDashboard from './AbsenceSummaryDashboard';
 import ReplacementTrackerFinder from './ReplacementTrackerFinder';
 
-/**
- * @interface TrackerAbsenceManagerProps
- * @description Props for the TrackerAbsenceManager component.
- * @property {string} matchId - The ID of the match to manage tracker absences for.
- */
 interface TrackerAbsenceManagerProps {
   matchId: string;
 }
 
-/**
- * @interface AssignedTracker
- * @description Represents a tracker assigned to the current match.
- */
 interface AssignedTracker {
   id: string;
   tracker_user_id: string;
@@ -32,13 +23,6 @@ interface AssignedTracker {
   tracker_email?: string;
 }
 
-/**
- * @component TrackerAbsenceManager
- * @description A dashboard for monitoring tracker activity and managing absences during a live match.
- * It uses custom hooks to detect inactive trackers and provides an interface to find and assign replacements.
- * @param {TrackerAbsenceManagerProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const TrackerAbsenceManager: React.FC<TrackerAbsenceManagerProps> = ({ matchId }) => {
   const [assignedTrackers, setAssignedTrackers] = useState<AssignedTracker[]>([]);
   const [showReplacementFinder, setShowReplacementFinder] = useState<string>('');

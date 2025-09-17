@@ -6,10 +6,17 @@ import CreateMatchForm from '@/components/CreateMatchForm';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import MatchAnalysisSidebar from '@/components/match/MatchAnalysisSidebar';
 import { Loader2 } from 'lucide-react';
 import { usePermissionChecker } from '@/hooks/usePermissionChecker';
 import { useMenuItems } from '@/hooks/useMenuItems';
+ 
+
+
+
+
+
 
 interface Match {
   id: string;
@@ -101,80 +108,85 @@ const Index: React.FC = () => {
   const canCreateMatch = hasPermission('canCreateMatches');
 
   return (
-    <SidebarInset>
-      <div className="container mx-auto max-w-6xl px-2 sm:px-4 py-4 space-y-4">
-        <div className="flex items-center gap-4 mb-2">
-          <SidebarTrigger />
-          <h1 className="text-2xl sm:text-3xl font-bold">Football Matches</h1>
-        </div>
-        
-        {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          </div>
-        ) : (
-          <>
-            {canCreateMatch && (
-              <Card className="mb-3">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base sm:text-lg">Create New Match</CardTitle>
-                </CardHeader>
-                <CardContent className="py-2">
-                  <CreateMatchForm onMatchSubmit={handleMatchCreated} />
-                </CardContent>
-              </Card>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {matches.map((match) => (
-                <Card 
-                  key={match.id} 
-                  className="hover:shadow-lg transition-shadow cursor-pointer"
-                >
-                  <CardHeader className="pb-0 pt-4 px-4">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-base sm:text-lg">
-                        {match.name || `${match.home_team_name} vs ${match.away_team_name}`}
-                      </CardTitle>
-                      <span className={`px-2 py-1 rounded-full text-xs text-white ${getStatusColor(match.status)}`}>
-                        {match.status}
-                      </span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-2 pb-4 px-4">
-                    <div className="space-y-1">
-                      <div className="text-xs sm:text-sm text-muted-foreground">
-                        <strong>Teams:</strong> {match.home_team_name} vs {match.away_team_name}
-                      </div>
-                      {match.match_date && (
-                        <div className="text-xs sm:text-sm text-muted-foreground">
-                          <strong>Date:</strong> {new Date(match.match_date).toLocaleDateString()}
-                        </div>
-                      )}
-                      <Button 
-                        onClick={() => navigate(`/match/${match.id}`)}
-                        className="w-full mt-3"
-                        size="sm"
-                      >
-                        View Match
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+    <SidebarProvider>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex w-full">
+        <MatchAnalysisSidebar menuItems={menuItems} groupLabel="Navigation" />
+        <SidebarInset>
+          <div className="container mx-auto max-w-6xl px-2 sm:px-4 py-4 space-y-4">
+            <div className="flex items-center gap-4 mb-2">
+              <SidebarTrigger />
+              <h1 className="text-2xl sm:text-3xl font-bold">Football Matches</h1>
             </div>
+            
+            {isLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              </div>
+            ) : (
+              <>
+                {canCreateMatch && (
+                  <Card className="mb-3">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base sm:text-lg">Create New Match</CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-2">
+                      <CreateMatchForm onMatchSubmit={handleMatchCreated} />
+                    </CardContent>
+                  </Card>
+                )}
 
-            {matches.length === 0 && !isLoading && (
-              <Card>
-                <CardContent className="text-center py-6">
-                  <p className="text-muted-foreground text-sm sm:text-base">No matches found. Create your first match to get started!</p>
-                </CardContent>
-              </Card>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {matches.map((match) => (
+                    <Card 
+                      key={match.id} 
+                      className="hover:shadow-lg transition-shadow cursor-pointer"
+                    >
+                      <CardHeader className="pb-0 pt-4 px-4">
+                        <div className="flex justify-between items-start">
+                          <CardTitle className="text-base sm:text-lg">
+                            {match.name || `${match.home_team_name} vs ${match.away_team_name}`}
+                          </CardTitle>
+                          <span className={`px-2 py-1 rounded-full text-xs text-white ${getStatusColor(match.status)}`}>
+                            {match.status}
+                          </span>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-2 pb-4 px-4">
+                        <div className="space-y-1">
+                          <div className="text-xs sm:text-sm text-muted-foreground">
+                            <strong>Teams:</strong> {match.home_team_name} vs {match.away_team_name}
+                          </div>
+                          {match.match_date && (
+                            <div className="text-xs sm:text-sm text-muted-foreground">
+                              <strong>Date:</strong> {new Date(match.match_date).toLocaleDateString()}
+                            </div>
+                          )}
+                          <Button 
+                            onClick={() => navigate(`/match/${match.id}`)}
+                            className="w-full mt-3"
+                            size="sm"
+                          >
+                            View Match
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                {matches.length === 0 && !isLoading && (
+                  <Card>
+                    <CardContent className="text-center py-6">
+                      <p className="text-muted-foreground text-sm sm:text-base">No matches found. Create your first match to get started!</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
             )}
-          </>
-        )}
+          </div>
+        </SidebarInset>
       </div>
-    </SidebarInset>
+    </SidebarProvider>
   );
 };
 

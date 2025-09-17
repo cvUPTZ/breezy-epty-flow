@@ -29,13 +29,6 @@ import {
   UserCheck
 } from 'lucide-react';
 
-/**
- * @component StartupPitchPresentation
- * @description A self-contained, interactive slideshow component that presents a startup pitch deck.
- * It includes slides covering the business model, market analysis, technology, and roadmap.
- * The component manages its own state for slide navigation.
- * @returns {React.FC} A React functional component.
- */
 const StartupPitchPresentation: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
 

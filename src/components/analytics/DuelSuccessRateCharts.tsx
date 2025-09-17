@@ -1,40 +1,20 @@
 import React from 'react';
 import { TeamDetailedStats } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Progress } from '@/components/ui/progress'; // Using Progress for visual representation
 
-/**
- * @interface DuelSuccessRateChartsProps
- * @description Props for the DuelSuccessRateCharts component.
- * @property {TeamDetailedStats} teamStats - The detailed statistics for a single team.
- * @property {string} teamName - The name of the team.
- */
 interface DuelSuccessRateChartsProps {
   teamStats: TeamDetailedStats;
   teamName: string;
 }
 
-/**
- * @interface SuccessRateMetric
- * @description Represents the data for a single success rate metric to be displayed.
- * @property {string} label - The display name of the metric (e.g., 'Overall Duel Success Rate').
- * @property {number} value - The calculated percentage value (0-100).
- * @property {number} won - The number of successful actions.
- * @property {number} total - The total number of actions.
- */
 interface SuccessRateMetric {
   label: string;
-  value: number;
+  value: number; // Percentage value (0-100)
   won: number;
   total: number;
 }
 
-/**
- * @component DuelSuccessRateCharts
- * @description A component that visualizes the success rates for overall and aerial duels for a single team.
- * @param {DuelSuccessRateChartsProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const DuelSuccessRateCharts: React.FC<DuelSuccessRateChartsProps> = ({
   teamStats,
   teamName,

@@ -9,16 +9,6 @@ import { PassEventData } from '@/types/eventData';
 import { PlayerForPianoInput } from '../TrackerPianoInput';
 import { useToast } from '@/hooks/use-toast';
 
-/**
- * @interface PassDetailModalProps
- * @description Props for the PassDetailModal component.
- * @property {boolean} isOpen - Whether the modal is currently open.
- * @property {() => void} onClose - Callback function to close the modal.
- * @property {(details: PassEventData) => void} onSubmit - Callback function to submit the pass details.
- * @property {Partial<PassEventData>} initialDetails - The initial details to populate the form with.
- * @property {PlayerForPianoInput | null} passer - The player who made the pass.
- * @property {PlayerForPianoInput[]} teamPlayers - A list of all players on the same team as the passer.
- */
 interface PassDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -28,13 +18,6 @@ interface PassDetailModalProps {
   teamPlayers: PlayerForPianoInput[];
 }
 
-/**
- * @component PassDetailModal
- * @description A modal dialog for capturing detailed information about a football pass event.
- * It allows the user to specify the recipient, success status, and type of the pass.
- * @param {PassDetailModalProps} props The props for the component.
- * @returns {JSX.Element} The rendered PassDetailModal component.
- */
 const PassDetailModal: React.FC<PassDetailModalProps> = ({
   isOpen,
   onClose,

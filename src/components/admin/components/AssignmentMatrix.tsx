@@ -6,14 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Trash2, Users } from 'lucide-react';
 import { Assignment, EVENT_TYPES, Player } from '../types/TrackerAssignmentTypes';
 
-/**
- * @interface AssignmentMatrixProps
- * @description Props for the AssignmentMatrix component.
- * @property {any[]} homeTeamPlayers - The roster of players for the home team.
- * @property {any[]} awayTeamPlayers - The roster of players for the away team.
- * @property {Assignment[]} assignments - A flat list of all assignment records for the match.
- * @property {function(assignmentId: string): void} onDeleteAssignment - Callback to handle the deletion of an assignment.
- */
 interface AssignmentMatrixProps {
   homeTeamPlayers: any[];
   awayTeamPlayers: any[];
@@ -21,14 +13,6 @@ interface AssignmentMatrixProps {
   onDeleteAssignment: (assignmentId: string) => void;
 }
 
-/**
- * @component AssignmentMatrix
- * @description A component that displays a detailed matrix of tracker assignments.
- * It visualizes which event types are assigned to which tracker for every player in the match,
- * providing a clear overview of coverage.
- * @param {AssignmentMatrixProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const AssignmentMatrix: React.FC<AssignmentMatrixProps> = ({
   homeTeamPlayers,
   awayTeamPlayers,

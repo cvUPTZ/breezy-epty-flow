@@ -5,14 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Users, Clock, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-/**
- * @interface AbsenceSummaryDashboardProps
- * @description Props for the AbsenceSummaryDashboard component.
- * @property {number} totalTrackers - The total number of trackers in the system.
- * @property {number} activeTrackers - The number of currently active trackers.
- * @property {number} absentTrackers - The number of trackers marked as absent.
- * @property {number} averageResponseTime - The average response time for tracker actions, in seconds.
- */
 interface AbsenceSummaryDashboardProps {
   totalTrackers: number;
   activeTrackers: number;
@@ -20,13 +12,6 @@ interface AbsenceSummaryDashboardProps {
   averageResponseTime: number;
 }
 
-/**
- * @component AbsenceSummaryDashboard
- * @description A dashboard component that provides a high-level summary of tracker network health,
- * displaying key metrics like active vs. absent trackers and overall status.
- * @param {AbsenceSummaryDashboardProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const AbsenceSummaryDashboard: React.FC<AbsenceSummaryDashboardProps> = ({
   totalTrackers,
   activeTrackers,

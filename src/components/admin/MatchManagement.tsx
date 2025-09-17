@@ -10,13 +10,6 @@ import { toast } from 'sonner';
 import { Trash2, Edit, Eye, Plus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-/**
- * @component MatchManagement
- * @description A dashboard component for viewing, managing, and deleting football matches.
- * It fetches and displays a list of all matches, providing key details and action
- * buttons for navigation and management tasks.
- * @returns {React.FC} A React functional component.
- */
 const MatchManagement: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);

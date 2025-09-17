@@ -33,15 +33,7 @@ import {
 } from 'lucide-react';
 import { EventType as GlobalEventType } from 'src/types/index';
 
-/**
- * @interface IconProps
- * @description Defines the customization props for an event icon.
- * @property {number} [size=24] - The size of the icon in pixels.
- * @property {string} [className] - Additional CSS class names to apply to the icon.
- * @property {string} [color] - A specific color to apply to the icon.
- * @property {number} [strokeWidth=2] - The stroke width for outline icons.
- * @property {'default' | 'filled' | 'outline'} [variant='default'] - The visual variant of the icon.
- */
+// Enhanced interface with more customization options
 export interface IconProps {
   size?: number;
   className?: string;
@@ -50,10 +42,7 @@ export interface IconProps {
   variant?: 'default' | 'filled' | 'outline';
 }
 
-/**
- * @enum {string} EventCategory
- * @description Defines the categories for different types of match events for better organization.
- */
+// Event categories for better organization
 export enum EventCategory {
   BALL_ACTION = 'ball_action',
   PLAYER_ACTION = 'player_action',
@@ -62,14 +51,7 @@ export enum EventCategory {
   TACTICAL = 'tactical'
 }
 
-/**
- * @interface EventMetadata
- * @description Provides additional context and metadata for a specific event type.
- * @property {EventCategory} category - The category the event belongs to.
- * @property {'low' | 'medium' | 'high' | 'critical'} [severity] - The severity or importance of the event.
- * @property {string} description - A human-readable description of the event.
- * @property {string[]} aliases - An array of alternative names or keys for the event.
- */
+// Event metadata for additional context
 export interface EventMetadata {
   category: EventCategory;
   severity?: 'low' | 'medium' | 'high' | 'critical';
@@ -77,12 +59,8 @@ export interface EventMetadata {
   aliases: string[];
 }
 
-/**
- * @constant EVENT_MAP
- * @description A comprehensive mapping of event types to their corresponding icons and metadata.
- * This serves as the central registry for all event-related information in the application.
- * The keys of this object define the local `EventType` for this utility file.
- */
+// Comprehensive event mapping with metadata. Keys are camelCase.
+// This map defines the local EventType for this file.
 const EVENT_MAP = {
   // Ball Actions
   pass: {
@@ -476,21 +454,10 @@ const EVENT_MAP = {
   }
 };
 
-/**
- * @typedef {keyof typeof EVENT_MAP} EventType
- * @description Defines the local event type based on the keys of the `EVENT_MAP` object.
- * This provides a strongly-typed set of all supported event keys within this utility.
- */
+// This defines the local EventType based on the keys of the extended EVENT_MAP
 export type EventType = keyof typeof EVENT_MAP;
 
-/**
- * @function getEventTypeIcon
- * @description Retrieves the appropriate Lucide icon component for a given event type key.
- * It normalizes the input key and can find the correct event by its primary key or any of its aliases.
- * @param {string} eventKey - The key or alias for the event type.
- * @param {IconProps} [props={}] - Optional props to customize the icon's appearance (size, color, etc.).
- * @returns {JSX.Element} A React component instance of the corresponding Lucide icon.
- */
+// Enhanced function with better error handling and flexibility
 export function getEventTypeIcon(
   eventKey: string, 
   props: IconProps = {}
@@ -536,12 +503,7 @@ export function getEventTypeIcon(
   return <IconComponent {...iconProps} />;
 }
 
-/**
- * @function getEventMetadata
- * @description Retrieves the metadata for a given event type key or alias.
- * @param {string} eventKey - The key or alias for the event type.
- * @returns {EventMetadata | null} The metadata object for the event, or null if not found.
- */
+// Utility functions for working with events
 export function getEventMetadata(eventKey: string): EventMetadata | null {
   const normalizedKey = eventKey.toLowerCase().trim();
   let eventConfig = EVENT_MAP[normalizedKey as EventType];
@@ -558,12 +520,6 @@ export function getEventMetadata(eventKey: string): EventMetadata | null {
   return eventConfig ? eventConfig.metadata : null;
 }
 
-/**
- * @function getEventsByCategory
- * @description Gets all event types that belong to a specific category.
- * @param {EventCategory} category - The category to filter by.
- * @returns {EventType[]} An array of event type keys belonging to the category.
- */
 export function getEventsByCategory(category: EventCategory): EventType[] {
   const events: EventType[] = [];
   for (const mapKey in EVENT_MAP) {
@@ -576,12 +532,6 @@ export function getEventsByCategory(category: EventCategory): EventType[] {
   return events;
 }
 
-/**
- * @function getEventsBySeverity
- * @description Gets all event types that have a specific severity level.
- * @param {'low' | 'medium' | 'high' | 'critical'} severity - The severity level to filter by.
- * @returns {EventType[]} An array of event type keys with the specified severity.
- */
 export function getEventsBySeverity(severity: 'low' | 'medium' | 'high' | 'critical'): EventType[] {
   const events: EventType[] = [];
   for (const mapKey in EVENT_MAP) {
@@ -594,21 +544,10 @@ export function getEventsBySeverity(severity: 'low' | 'medium' | 'high' | 'criti
   return events;
 }
 
-/**
- * @function getAllSupportedEvents
- * @description Gets a list of all primary event type keys supported by this utility.
- * @returns {EventType[]} An array of all event type keys.
- */
 export function getAllSupportedEvents(): EventType[] {
   return Object.keys(EVENT_MAP) as EventType[];
 }
 
-/**
- * @function isValidEventType
- * @description Checks if a given string is a valid event type key or alias.
- * @param {string} eventKey - The event key or alias to validate.
- * @returns {boolean} True if the event key is valid, false otherwise.
- */
 export function isValidEventType(eventKey: string): boolean {
   const normalizedKey = eventKey.toLowerCase().trim();
   if (EVENT_MAP[normalizedKey as EventType]) { // Check primary keys
@@ -624,27 +563,13 @@ export function isValidEventType(eventKey: string): boolean {
   return false;
 }
 
-/**
- * @interface EventIconWithInfoProps
- * @description Props for the EventIconWithInfo component.
- * @extends IconProps
- * @property {string} eventType - The key or alias for the event type.
- * @property {boolean} [showTooltip=false] - If true, displays a tooltip with the event description.
- * @property {boolean} [showLabel=false] - If true, displays a text label with the event description next to the icon.
- */
+// React component for displaying event info
 export interface EventIconWithInfoProps extends IconProps {
   eventType: string;
   showTooltip?: boolean;
   showLabel?: boolean;
 }
 
-/**
- * @component EventIconWithInfo
- * @description A React component that displays an event icon along with optional labels or tooltips.
- * It serves as a convenient wrapper around `getEventTypeIcon` and `getEventMetadata`.
- * @param {EventIconWithInfoProps} props The props for the component.
- * @returns {JSX.Element} The rendered EventIconWithInfo component.
- */
 export function EventIconWithInfo({ 
   eventType, 
   showTooltip = false, 
@@ -673,12 +598,7 @@ export function EventIconWithInfo({
   );
 }
 
-/**
- * @constant eventIconStyles
- * @description A string containing CSS classes for styling the event icons and related components.
- * This can be imported and injected into a global stylesheet or used with a CSS-in-JS solution.
- * It includes styles for icon variants, severity levels, and categories.
- */
+// CSS classes for styling (can be imported separately)
 export const eventIconStyles = `
 .event-icon {
   transition: all 0.2s ease;

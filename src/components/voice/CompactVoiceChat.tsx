@@ -7,15 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { VolumeX, Volume2, Shield, Mic, PhoneOff, Wifi, WifiOff, Loader2, MicOff } from 'lucide-react';
 
-/**
- * @interface CompactVoiceChatProps
- * @description Props for the CompactVoiceChat component.
- * @property {string} matchId - The ID of the match, used to find available voice rooms.
- * @property {string} userId - The ID of the current user.
- * @property {string} userRole - The role of the current user, used for moderation permissions.
- * @property {string} userName - The display name for the current user in the voice chat.
- * @property {ReturnType<typeof useVoiceCollaborationContext>} [voiceCollabCtx] - Optional pre-existing voice collaboration context.
- */
 interface CompactVoiceChatProps {
   matchId: string;
   userId: string;
@@ -24,14 +15,6 @@ interface CompactVoiceChatProps {
   voiceCollabCtx?: ReturnType<typeof useVoiceCollaborationContext>;
 }
 
-/**
- * @component CompactVoiceChat
- * @description A compact UI component for voice collaboration. It allows users to join available rooms,
- * leave, mute/unmute themselves, and see other participants. Admins have additional moderation
- * capabilities like muting all trackers. It leverages the `VoiceCollaborationContext` for all its state and logic.
- * @param {CompactVoiceChatProps} props The props for the component.
- * @returns {JSX.Element} The rendered CompactVoiceChat component.
- */
 export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
   matchId, 
   userId, 

@@ -19,15 +19,6 @@ import { RolePermissions } from '@/hooks/useUserPermissions';
 import { Badge } from '@/components/ui/badge';
 import { LogOut, User, Shield, Loader2, SwitchCamera } from 'lucide-react';
 
-/**
- * @interface MenuItem
- * @description Defines the structure for a single item in the sidebar menu.
- * @property {string} value - A unique value for the menu item.
- * @property {string} label - The text label to display for the item.
- * @property {ElementType} icon - The icon component to display for the item.
- * @property {string} [path] - The URL path to navigate to on click.
- * @property {keyof RolePermissions} [permission] - The permission required to view this menu item.
- */
 interface MenuItem {
   value: string;
   label: string;
@@ -36,14 +27,6 @@ interface MenuItem {
   permission?: keyof RolePermissions;
 }
 
-/**
- * @interface MatchAnalysisSidebarProps
- * @description Props for the MatchAnalysisSidebar component.
- * @property {string} [activeView] - The currently active view, used for highlighting the correct menu item.
- * @property {(view: string) => void} [setActiveView] - Callback to set the active view when a menu item is clicked.
- * @property {MenuItem[]} menuItems - An array of menu item objects to display in the sidebar.
- * @property {string} [groupLabel="Tools"] - The label for the main group of menu items.
- */
 interface MatchAnalysisSidebarProps {
   activeView?: string;
   setActiveView?: (view: string) => void;
@@ -51,14 +34,6 @@ interface MatchAnalysisSidebarProps {
   groupLabel?: string;
 }
 
-/**
- * @component MatchAnalysisSidebar
- * @description A flexible and reusable sidebar component designed for match analysis interfaces.
- * It handles navigation via `react-router-dom`, view switching within a page, and filters menu items based on user permissions.
- * It also displays user information and provides logout and admin access functionality.
- * @param {MatchAnalysisSidebarProps} props The props for the component.
- * @returns {JSX.Element | null} The rendered MatchAnalysisSidebar component, or null if no user is authenticated.
- */
 const MatchAnalysisSidebar: FC<MatchAnalysisSidebarProps> = ({ 
   activeView, 
   setActiveView, 

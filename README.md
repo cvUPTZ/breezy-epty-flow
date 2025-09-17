@@ -1,114 +1,79 @@
-# Football Analytics Platform
+# Welcome to your Lovable project
 
-This project is a comprehensive, full-stack platform for football (soccer) match analysis. It provides a complete ecosystem for recording, analyzing, and visualizing match data, with advanced collaboration features and administrative tools for coaches, analysts, and football organizations.
+## Project info
 
-For a more detailed feature list, see [APP_DESCRIPTION.md](APP_DESCRIPTION.md).
+**URL**: https://lovable.dev/projects/ccd210db-42e4-41db-8e65-3ae1c8d22f4c
 
-## Architecture Overview
+## What is this App?
 
-The platform consists of several key components:
+This project is a comprehensive platform for football (soccer) match analysis. It allows users to record, analyze, and visualize match data, providing valuable insights for coaches, analysts, and enthusiasts.
 
-- **React Frontend**: The main web application built with React, Vite, and TypeScript. It provides all the user interfaces for data entry, visualization, and administration.
-- **Python Detection Service**: A backend service written in Python using FastAPI. It's designed to handle computationally intensive tasks like player and ball detection in video footage using machine learning models.
-- **Supabase**: Used as the primary backend-as-a-service provider. It handles the PostgreSQL database, user authentication, real-time data synchronization via subscriptions, and serverless Edge Functions.
-- **Chrome Extension**: A browser extension that facilitates integration and data capture from external sources.
+For a more detailed description of the application's features and purpose, please see [APP_DESCRIPTION.md](APP_DESCRIPTION.md).
 
-## Local Development Setup
+## How can I edit this code?
 
-To run the full application locally, you will need to set up each component.
+There are several ways of editing your application.
 
-### Prerequisites
+**Use Lovable**
 
-- [Node.js](https://nodejs.org/) (v18 or later)
-- [Python](https://www.python.org/) (v3.10 or later)
-- [Supabase CLI](https://supabase.com/docs/guides/cli)
-- [Git](https://git-scm.com/)
+Simply visit the [Lovable Project](https://lovable.dev/projects/ccd210db-42e4-41db-8e65-3ae1c8d22f4c) and start prompting.
 
-### 1. Clone the Repository
+Changes made via Lovable will be committed automatically to this repo.
+
+**Use your preferred IDE**
+
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+
+Follow these steps:
 
 ```sh
+# Step 1: Clone the repository using the project's Git URL.
 git clone <YOUR_GIT_URL>
-cd <YOUR_PROJECT_DIRECTORY>
-```
 
-### 2. Supabase Setup
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
 
-The project uses Supabase for the database and authentication. To run it locally, you need to use the Supabase CLI.
+# Step 3: Install the necessary dependencies.
+npm i
 
-```sh
-# Start the local Supabase services
-supabase start
-```
-
-Once the services are running, the CLI will output the local Supabase configuration, including the **URL** and the **anon key**. You will need these for the frontend.
-
-**Example output:**
-```
-Started local development setup.
-...
-API URL: http://127.0.0.1:54321
-anon key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-### 3. Frontend Setup
-
-The frontend is a React application built with Vite.
-
-```sh
-# Navigate to the root directory
-cd <YOUR_PROJECT_DIRECTORY>
-
-# Install dependencies
-npm install
-```
-
-**Connecting to Supabase:**
-
-The frontend needs to connect to your local Supabase instance. The connection is configured using environment variables.
-
-1.  Create a new file named `.env` in the root of the project.
-2.  Copy the contents of the `.env.example` file into the new `.env` file.
-3.  In the `.env` file, set the `VITE_SUPABASE_URL` to the `API URL` from the `supabase start` output.
-4.  Set the `VITE_SUPABASE_ANON_KEY` to the `anon key` from the `supabase start` output.
-
-The Vite development server will automatically load these environment variables.
-
-**Running the Frontend:**
-
-```sh
-# Start the development server
+# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
 
-The application should now be running at `http://localhost:5173`.
+**Edit a file directly in GitHub**
 
-### 4. Python Detection Service Setup
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
 
-The detection service is a FastAPI application.
+**Use GitHub Codespaces**
 
-```sh
-# Navigate to the service directory
-cd python-detection-service
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
 
-# Create and activate a virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+## What technologies are used for this project?
 
-# Install dependencies
-pip install -r requirements.txt
+This project is built with:
 
-# Run the FastAPI server
-# You may need to check main.py for the correct run command.
-# A common way to run FastAPI is with uvicorn:
-uvicorn main:app --reload
-```
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
 
-The Python service will typically run on `http://127.0.0.1:8000`. You may need to configure the frontend to point to this local service URL via environment variables if you are testing features that rely on it.
+## How can I deploy this project?
 
-### 5. Chrome Extension Setup
+Simply open [Lovable](https://lovable.dev/projects/ccd210db-42e4-41db-8e65-3ae1c8d22f4c) and click on Share -> Publish.
 
-1.  Open Google Chrome and navigate to `chrome://extensions`.
-2.  Enable "Developer mode" using the toggle in the top-right corner.
-3.  Click the "Load unpacked" button.
-4.  Select the `chrome-extension` directory from this project.
-5.  The extension should now be loaded and active in your browser.
+## Can I connect a custom domain to my Lovable project?
+
+Yes, you can!
+
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)

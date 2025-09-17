@@ -2,28 +2,14 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Statistics as StatisticsType, TeamDetailedStats } from '@/types';
+import { Statistics as StatisticsType, TeamDetailedStats } from '@/types'; // Use StatisticsType
 
-/**
- * @interface AdvancedStatsTableProps
- * @description Props for the AdvancedStatsTable component.
- * @property {StatisticsType} statistics - The main statistics object containing home and away team stats.
- * @property {string} homeTeamName - The name of the home team.
- * @property {string} awayTeamName - The name of the away team.
- */
 interface AdvancedStatsTableProps {
-  statistics: StatisticsType;
+  statistics: StatisticsType; // This now contains home: TeamDetailedStats, away: TeamDetailedStats
   homeTeamName: string;
   awayTeamName: string;
 }
 
-/**
- * @component AdvancedStatsTable
- * @description A component that displays a detailed, three-column table comparing a wide range
- * of advanced and derived statistics between two teams.
- * @param {AdvancedStatsTableProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const AdvancedStatsTable: React.FC<AdvancedStatsTableProps> = ({
   statistics,
   homeTeamName,

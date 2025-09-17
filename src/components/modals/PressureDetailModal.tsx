@@ -7,15 +7,6 @@ import { PressureEventData } from '@/types/eventData';
 import { PlayerForPianoInput } from '../TrackerPianoInput'; // Assuming PlayerForPianoInput is exported
 import { useToast } from '@/hooks/use-toast';
 
-/**
- * @interface PressureDetailModalProps
- * @description Props for the PressureDetailModal component.
- * @property {boolean} isOpen - Whether the modal is currently open.
- * @property {() => void} onClose - Callback function to close the modal.
- * @property {(details: PressureEventData) => void} onSubmit - Callback function to submit the pressure event details.
- * @property {Partial<PressureEventData>} initialDetails - The initial details to populate the form with.
- * @property {PlayerForPianoInput | null} pressurer - The player who is applying the pressure.
- */
 interface PressureDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -25,13 +16,6 @@ interface PressureDetailModalProps {
   // opponentPlayers?: PlayerForPianoInput[]; // Optional for V1
 }
 
-/**
- * @component PressureDetailModal
- * @description A modal dialog for capturing detailed information about a defensive pressure event.
- * It allows the user to specify the outcome of the pressure applied by a player.
- * @param {PressureDetailModalProps} props The props for the component.
- * @returns {JSX.Element} The rendered PressureDetailModal component.
- */
 const PressureDetailModal: React.FC<PressureDetailModalProps> = ({
   isOpen,
   onClose,

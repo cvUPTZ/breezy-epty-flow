@@ -5,14 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Plus, Play, Trash2, List } from 'lucide-react';
 import { toast } from 'sonner';
 
-/**
- * @interface LocalPlaylist
- * @description Represents a single playlist created locally within the analysis session.
- * @property {string} id - The unique identifier for the playlist.
- * @property {string} name - The name of the playlist.
- * @property {LocalPlaylistItem[]} items - An array of items in the playlist.
- * @property {string} createdAt - The ISO timestamp when the playlist was created.
- */
+// Local playlist interfaces for direct analyzer (not using Supabase)
 interface LocalPlaylist {
   id: string;
   name: string;
@@ -20,15 +13,6 @@ interface LocalPlaylist {
   createdAt: string;
 }
 
-/**
- * @interface LocalPlaylistItem
- * @description Represents a single item within a local playlist.
- * @property {string} id - The unique identifier for the playlist item.
- * @property {string} taggedEventId - The ID of the tagged event this item refers to.
- * @property {string} eventName - The name or type of the event.
- * @property {number} timestamp - The video timestamp of the event.
- * @property {number} order - The order of the item in the playlist.
- */
 interface LocalPlaylistItem {
   id: string;
   taggedEventId: string;
@@ -37,16 +21,6 @@ interface LocalPlaylistItem {
   order: number;
 }
 
-/**
- * @interface LocalTaggedEvent
- * @description Represents a single event that has been tagged in the video, available to be added to a playlist.
- * @property {string} id - The unique identifier for the tagged event.
- * @property {number} timestamp - The video timestamp of the event.
- * @property {string} typeId - The ID of the event type.
- * @property {string} typeName - The name of the event type.
- * @property {string} [notes] - Optional notes for the event.
- * @property {any[]} [annotations] - Optional drawing annotations associated with the event.
- */
 interface LocalTaggedEvent {
   id: string;
   timestamp: number;
@@ -56,23 +30,12 @@ interface LocalTaggedEvent {
   annotations?: any[];
 }
 
-/**
- * @interface PlaylistPanelProps
- * @description Props for the PlaylistPanel component.
- * @property {LocalTaggedEvent[]} taggedEvents - An array of all tagged events available to be added to playlists.
- * @property {boolean} [disabled=false] - If true, all controls in the panel are disabled.
- */
 interface PlaylistPanelProps {
   taggedEvents: LocalTaggedEvent[];
   disabled?: boolean;
 }
 
-/**
- * @function formatTime
- * @description A utility function to format a duration in seconds into a HH:MM:SS or MM:SS string.
- * @param {number | null | undefined} seconds - The duration in seconds.
- * @returns {string} The formatted time string.
- */
+// Utility function
 const formatTime = (seconds: number | null | undefined): string => {
   if (seconds === null || seconds === undefined || isNaN(seconds) || seconds < 0) return '00:00';
   const totalSeconds = Math.floor(seconds);
@@ -85,13 +48,6 @@ const formatTime = (seconds: number | null | undefined): string => {
   return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 
-/**
- * @component PlaylistPanel
- * @description A UI component for creating and managing video playlists from a list of tagged events.
- * It allows users to create multiple playlists, add events to the selected playlist, and manage the items within it.
- * @param {PlaylistPanelProps} props The props for the component.
- * @returns {JSX.Element} The rendered PlaylistPanel component.
- */
 export const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
   taggedEvents,
   disabled = false,

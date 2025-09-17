@@ -6,13 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Gamepad2, Settings } from 'lucide-react';
 
-/**
- * @interface GamepadConfigProps
- * @description Props for the GamepadConfig component.
- * @property {boolean} isConnected - Whether a gamepad is currently connected.
- * @property {function(mapping: { [buttonIndex: number]: string }): void} onConfigChange - Callback to handle changes to the button mapping.
- * @property {string[]} availableEvents - A list of event types that can be mapped to buttons.
- */
 interface GamepadConfigProps {
   isConnected: boolean;
   onConfigChange: (mapping: { [buttonIndex: number]: string }) => void;

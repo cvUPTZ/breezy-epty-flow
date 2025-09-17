@@ -5,15 +5,6 @@ import PlayerStatsTable from '@/components/visualizations/PlayerStatsTable';
 import MatchEventsTimeline from '@/components/match/MatchEventsTimeline';
 import { Team, MatchEvent, Statistics } from '@/types';
 
-/**
- * @interface MainTabContentProps
- * @description Props for the MainTabContent component.
- * @property {Team} homeTeam - The home team's data.
- * @property {Team} awayTeam - The away team's data.
- * @property {MatchEvent[]} events - An array of all match events.
- * @property {Statistics} statistics - The compiled statistics for the match.
- * @property {(eventId: string) => Promise<void>} onEventDelete - Callback function to handle the deletion of an event.
- */
 interface MainTabContentProps {
   homeTeam: Team;
   awayTeam: Team;
@@ -22,13 +13,6 @@ interface MainTabContentProps {
   onEventDelete: (eventId: string) => Promise<void>;
 }
 
-/**
- * @component MainTabContent
- * @description This component serves as the primary content display for a match's main analysis tab.
- * It aggregates and displays key match information including overall statistics, player-specific stats, and a timeline of events.
- * @param {MainTabContentProps} props The props for the component.
- * @returns {JSX.Element} The rendered MainTabContent component.
- */
 const MainTabContent: React.FC<MainTabContentProps> = ({
   homeTeam,
   awayTeam,

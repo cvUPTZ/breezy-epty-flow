@@ -1,49 +1,14 @@
 
 import React from 'react';
 
-/**
- * @interface PitchProps
- * @description Props for the Pitch component.
- * @property {any[]} players - An array of player objects to display on the pitch.
- * @property {any[]} [events] - An optional array of event objects to visualize on the pitch.
- * @property {string} [formation] - The formation to use for positioning players (currently uses placeholder logic).
- * @property {function(playerId: number): void} [onPlayerClick] - Optional callback triggered when a player marker is clicked.
- * @property {'home' | 'away' | null} [selectedTeam] - The currently selected team, which can affect interactions.
- */
-interface Player {
-  id: number;
-  name?: string;
-  player_name?: string;
-  jersey_number?: number;
-  number?: number;
-}
-
-interface MatchEvent {
-  id: number;
-  type: string;
-  timestamp: number;
-  coordinates?: {
-    x: number;
-    y: number;
-  };
-}
-
 interface PitchProps {
-  players: Player[];
-  events?: MatchEvent[];
+  players: any[];
+  events?: any[];
   formation?: string;
   onPlayerClick?: (playerId: number) => void;
   selectedTeam?: 'home' | 'away' | null;
 }
 
-/**
- * @component Pitch
- * @description A component that renders a simplified, div-based representation of a football pitch.
- * It is used to display player positions and visualize match events.
- * Note: Player positioning is currently based on a simple grid and does not reflect the actual formation prop.
- * @param {PitchProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const Pitch: React.FC<PitchProps> = ({ 
   players, 
   events = [], 

@@ -2,35 +2,21 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Legend, Tooltip as RechartsTooltip } from 'recharts';
-import { Statistics as StatisticsType, TeamDetailedStats } from '@/types';
+import { Statistics as StatisticsType, TeamDetailedStats } from '@/types'; // Use StatisticsType for clarity
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   ChartLegend,
   ChartLegendContent
-} from '@/components/ui/chart';
+} from '@/components/ui/chart'; // Import missing chart components
 
-/**
- * @interface TeamPerformanceRadarProps
- * @description Props for the TeamPerformanceRadar component.
- * @property {StatisticsType} statistics - The main statistics object containing home and away team stats.
- * @property {string} homeTeamName - The name of the home team.
- * @property {string} awayTeamName - The name of the away team.
- */
 interface TeamPerformanceRadarProps {
-  statistics: StatisticsType;
+  statistics: StatisticsType; // This now contains home: TeamDetailedStats, away: TeamDetailedStats
   homeTeamName: string;
   awayTeamName: string;
 }
 
-/**
- * @component TeamPerformanceRadar
- * @description A component that renders a radar chart to provide a holistic,
- * multi-dimensional comparison of two teams' performance across key metrics.
- * @param {TeamPerformanceRadarProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const TeamPerformanceRadar: React.FC<TeamPerformanceRadarProps> = ({
   statistics,
   homeTeamName,

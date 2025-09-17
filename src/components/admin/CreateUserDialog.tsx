@@ -8,40 +8,26 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from '@/components/ui/dialog'; // Adjust path if needed
+import { supabase } from '@/integrations/supabase/client'; // Adjust path to your supabase client
+import { Button } from '@/components/ui/button'; // Adjust path if needed
+import { Input } from '@/components/ui/input'; // Adjust path if needed
+import { Label } from '@/components/ui/label'; // Adjust path if needed
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/components/ui/select'; // Adjust path if needed
 import { toast } from 'sonner';
 
-/**
- * @interface CreateUserDialogProps
- * @description Props for the CreateUserDialog component.
- * @property {boolean} open - Controls whether the dialog is open or closed.
- * @property {function(open: boolean): void} onOpenChange - Callback function to handle changes to the open state.
- * @property {function(): void} onUserCreated - Callback function triggered after a user is successfully created.
- */
 interface CreateUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUserCreated: () => void;
+  onUserCreated: () => void; // Callback after successful user creation
 }
 
-/**
- * @component CreateUserDialog
- * @description A dialog component containing a form to create a new user.
- * It handles form input, validation, and submission to a Supabase Edge Function.
- * @param {CreateUserDialogProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
   open,
   onOpenChange,

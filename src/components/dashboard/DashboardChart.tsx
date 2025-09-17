@@ -16,22 +16,10 @@ import {
   YAxis 
 } from 'recharts';
 
-/**
- * @interface DashboardChartProps
- * @description Props for the DashboardChart component.
- * @property {any[]} matches - An array of match objects to be visualized.
- */
 interface DashboardChartProps {
   matches: any[];
 }
 
-/**
- * @component DashboardChart
- * @description A bar chart component for the main dashboard that visualizes and compares
- * key statistics (goals and passes) for a series of recent matches.
- * @param {DashboardChartProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const DashboardChart: React.FC<DashboardChartProps> = ({ matches }) => {
   const prepareChartData = () => {
     if (!matches.length) return [];
@@ -106,16 +94,6 @@ const DashboardChart: React.FC<DashboardChartProps> = ({ matches }) => {
   );
 };
 
-/**
- * @component CustomTooltip
- * @description A custom tooltip component for the dashboard chart, providing a formatted
- * display of data when a user hovers over a bar.
- * @param {object} props - The props provided by Recharts.
- * @param {boolean} props.active - Whether the tooltip is active.
- * @param {any[]} props.payload - The data payload for the hovered item.
- * @param {string} props.label - The label for the hovered item.
- * @returns {React.FC | null} A React functional component or null.
- */
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload || !payload.length) {
     return null;

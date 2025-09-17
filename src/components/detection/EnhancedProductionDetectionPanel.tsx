@@ -20,25 +20,11 @@ import { productionMLDetectionService, MLModelConfig, DetectionRequest } from '@
 import { mlJobQueueService, QueuedMLJob, QueueStats } from '@/services/mlJobQueueService';
 import { toast } from 'sonner';
 
-/**
- * @interface EnhancedProductionDetectionPanelProps
- * @description Props for the EnhancedProductionDetectionPanel component.
- * @property {string} videoId - The ID of the video to be analyzed.
- * @property {function(results: any[]): void} onDetectionResults - Callback function to handle the final detection results.
- */
 interface EnhancedProductionDetectionPanelProps {
   videoId: string;
   onDetectionResults: (results: any[]) => void;
 }
 
-/**
- * @component EnhancedProductionDetectionPanel
- * @description A control panel for managing production-grade, queue-based machine learning detection jobs.
- * It allows users to configure and submit a video for analysis, and then monitors the job's
- * progress in real-time.
- * @param {EnhancedProductionDetectionPanelProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 export const EnhancedProductionDetectionPanel: React.FC<EnhancedProductionDetectionPanelProps> = ({
   videoId,
   onDetectionResults,

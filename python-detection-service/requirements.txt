@@ -24,11 +24,9 @@ httpx==0.25.1
 cryptography==41.0.7
 
 # Core ML Models (CPU optimized for Vercel)
-# The following libraries are too large for the Vercel free tier.
-# Commenting them out will allow the app to deploy and use the mock-data fallback.
-# torch==2.1.0+cpu
-# torchvision==0.16.0+cpu
-# ultralytics==8.0.220
+torch==2.1.0+cpu
+torchvision==0.16.0+cpu
+ultralytics==8.0.220
 
 # Performance utilities
 scipy==1.11.4

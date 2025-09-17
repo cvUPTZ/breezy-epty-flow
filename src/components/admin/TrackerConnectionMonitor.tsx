@@ -5,19 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import TrackerStatusIndicator from './TrackerStatusIndicator';
 
-/**
- * @interface TrackerConnectionMonitorProps
- * @description Props for the TrackerConnectionMonitor component.
- * @property {string} matchId - The ID of the match to monitor.
- */
 interface TrackerConnectionMonitorProps {
   matchId: string;
 }
 
-/**
- * @interface TrackerInfo
- * @description Represents the real-time status and activity of a single tracker.
- */
 interface TrackerInfo {
   user_id: string;
   email?: string;
@@ -29,14 +20,6 @@ interface TrackerInfo {
   network_quality?: 'excellent' | 'good' | 'poor';
 }
 
-/**
- * @component TrackerConnectionMonitor
- * @description A real-time dashboard that monitors the connection status and activity of all
- * trackers assigned to a specific match. It subscribes to a Supabase broadcast channel
- * to receive live status updates from each tracker's client.
- * @param {TrackerConnectionMonitorProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 export const TrackerConnectionMonitor: React.FC<TrackerConnectionMonitorProps> = ({ matchId }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [trackers, setTrackers] = useState<TrackerInfo[]>([]);

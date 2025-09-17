@@ -7,15 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { VolumeX, Volume2, Shield, Users, Mic, PhoneOff, Wifi, WifiOff, Loader2, MicOff } from 'lucide-react';
 
-/**
- * @interface EnhancedVoiceChatProps
- * @description Props for the EnhancedVoiceChat component.
- * @property {string} matchId - The ID of the match, used to find available voice rooms.
- * @property {string} userId - The ID of the current user.
- * @property {string} userRole - The role of the current user, used for moderation permissions.
- * @property {string} userName - The display name for the current user in the voice chat.
- * @property {ReturnType<typeof useVoiceCollaborationContext>} [voiceCollabCtx] - Optional pre-existing voice collaboration context.
- */
 interface EnhancedVoiceChatProps {
   matchId: string;
   userId: string;
@@ -24,14 +15,6 @@ interface EnhancedVoiceChatProps {
   voiceCollabCtx?: ReturnType<typeof useVoiceCollaborationContext>;
 }
 
-/**
- * @component EnhancedVoiceChat
- * @description An enhanced, detailed UI for voice collaboration. It provides a full-featured interface
- * for joining voice rooms, managing personal audio, and viewing all participants with their speaking and mute status.
- * It also includes moderation tools for users with appropriate permissions.
- * @param {EnhancedVoiceChatProps} props The props for the component.
- * @returns {JSX.Element} The rendered EnhancedVoiceChat component.
- */
 export const EnhancedVoiceChat: React.FC<EnhancedVoiceChatProps> = ({
   matchId, 
   userId, 

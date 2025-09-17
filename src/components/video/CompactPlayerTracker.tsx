@@ -8,17 +8,6 @@ import { useToast } from '@/hooks/use-toast';
 import { EnhancedEventTypeIcon } from '@/components/match/EnhancedEventTypeIcon';
 import { Loader2, User } from 'lucide-react';
 
-/**
- * @interface CompactPlayerTrackerProps
- * @description Props for the CompactPlayerTracker component.
- * @property {string} playerId - The ID of the player being tracked.
- * @property {string} playerName - The name of the player.
- * @property {'home' | 'away'} playerTeam - The team the player belongs to.
- * @property {string[]} assignedEventTypes - An array of event types assigned to this player.
- * @property {string} matchId - The ID of the current match.
- * @property {() => number} getCurrentVideoTime - A function that returns the current timestamp of the video.
- * @property {number} [jerseyNumber] - The jersey number of the player.
- */
 interface CompactPlayerTrackerProps {
   playerId: string;
   playerName: string;
@@ -29,14 +18,6 @@ interface CompactPlayerTrackerProps {
   jerseyNumber?: number;
 }
 
-/**
- * @component CompactPlayerTracker
- * @description A compact UI component designed for tracking the events of a single player,
- * typically used alongside a video player. It displays the player's name, team, and a grid of
- * buttons for their assigned event types, which records events with the video's current timestamp.
- * @param {CompactPlayerTrackerProps} props The props for the component.
- * @returns {JSX.Element} The rendered CompactPlayerTracker component.
- */
 const CompactPlayerTracker: React.FC<CompactPlayerTrackerProps> = ({
   playerId,
   playerName,

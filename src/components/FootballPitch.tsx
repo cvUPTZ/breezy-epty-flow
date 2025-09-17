@@ -3,14 +3,6 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Team, BallTrackingPoint } from '@/types';
 
-/**
- * @interface PitchProps
- * @description Props for the FootballPitch component.
- * @property {function(x: number, y: number): void} [onCoordinateClick] - Optional callback function triggered when the pitch is clicked, providing the x and y coordinates (as percentages).
- * @property {Team} [homeTeam] - Optional data for the home team, for displaying player positions.
- * @property {Team} [awayTeam] - Optional data for the away team, for displaying player positions.
- * @property {BallTrackingPoint[]} [ballTrackingData] - Optional array of points to display the ball's trajectory.
- */
 interface PitchProps {
   onCoordinateClick?: (x: number, y: number) => void;
   homeTeam?: Team;
@@ -18,13 +10,6 @@ interface PitchProps {
   ballTrackingData?: BallTrackingPoint[];
 }
 
-/**
- * @component FootballPitch
- * @description A component that renders an SVG representation of a football pitch.
- * It can be interactive, capturing click coordinates, and can display team formations and ball tracking data.
- * @param {PitchProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const FootballPitch: React.FC<PitchProps> = ({ onCoordinateClick, homeTeam, awayTeam, ballTrackingData }) => {
   const handleClick = (event: React.MouseEvent<SVGElement>) => {
     if (!onCoordinateClick) return;

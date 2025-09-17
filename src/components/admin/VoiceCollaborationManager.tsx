@@ -9,10 +9,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Mic, MicOff, Users, Settings, Phone, PhoneOff } from 'lucide-react';
 
-/**
- * @interface VoiceRoom
- * @description Represents a voice collaboration room.
- */
 interface VoiceRoom {
   id: string;
   name: string;
@@ -27,10 +23,6 @@ interface VoiceRoom {
   updated_at?: string;
 }
 
-/**
- * @interface Participant
- * @description Represents a participant in a voice room, enriched with profile data.
- */
 interface Participant {
   id: string;
   user_id: string;
@@ -46,10 +38,6 @@ interface Participant {
   profiles?: any;
 }
 
-/**
- * @interface Match
- * @description Represents a match that can be associated with a voice room.
- */
 interface Match {
   id: string;
   name?: string;
@@ -59,12 +47,6 @@ interface Match {
   match_date?: string;
 }
 
-/**
- * @component VoiceCollaborationManager
- * @description An administrative dashboard for managing voice chat rooms. It allows for the
- * creation, deletion, and status management of rooms, as well as viewing participants.
- * @returns {React.FC} A React functional component.
- */
 const VoiceCollaborationManager: React.FC = () => {
   const [voiceRooms, setVoiceRooms] = useState<VoiceRoom[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);

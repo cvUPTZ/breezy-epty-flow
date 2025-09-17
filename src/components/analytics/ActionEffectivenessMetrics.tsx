@@ -1,28 +1,13 @@
 import React from 'react';
 import { TeamDetailedStats } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Progress } from '@/components/ui/progress'; // Using Progress for visual representation
 
-/**
- * @interface ActionEffectivenessMetricsProps
- * @description Props for the ActionEffectivenessMetrics component.
- * @property {TeamDetailedStats} teamStats - The detailed statistics object for a single team.
- * @property {string} teamName - The name of the team.
- */
 interface ActionEffectivenessMetricsProps {
   teamStats: TeamDetailedStats;
   teamName: string;
 }
 
-/**
- * @interface EffectivenessMetric
- * @description Represents a single calculated effectiveness metric for display.
- * @property {string} label - The display name of the metric.
- * @property {number} value - The raw value, used for progress bars if it's a ratio.
- * @property {string} displayValue - The formatted string value to be displayed.
- * @property {string} [description] - An optional description or context for the metric.
- * @property {boolean} isRatio - A flag to indicate if the value is a percentage (0-100).
- */
 interface EffectivenessMetric {
   label: string;
   value: number; // Raw count or percentage (0-100 if ratio)
@@ -31,13 +16,6 @@ interface EffectivenessMetric {
   isRatio: boolean; // To determine if progress bar is applicable (0-100 scale)
 }
 
-/**
- * @component ActionEffectivenessMetrics
- * @description A component that calculates and displays key effectiveness metrics for a team,
- * such as crossing accuracy and successful dribbles.
- * @param {ActionEffectivenessMetricsProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const ActionEffectivenessMetrics: React.FC<ActionEffectivenessMetricsProps> = ({
   teamStats,
   teamName,

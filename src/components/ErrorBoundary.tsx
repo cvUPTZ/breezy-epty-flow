@@ -2,39 +2,20 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { errorManager } from '@/services/errorManager';
 
-/**
- * @interface Props
- * @description Props for the ErrorBoundary component.
- * @property {ReactNode} children - The child components that the boundary will wrap.
- * @property {ReactNode} [fallback] - An optional custom fallback UI to render on error.
- * @property {string} [componentName] - An optional name for the component being wrapped, used for logging.
- */
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
   componentName?: string;
 }
 
-/**
- * @interface State
- * @description State for the ErrorBoundary component.
- * @property {boolean} hasError - True if an error has been caught.
- * @property {Error} [error] - The caught error object.
- * @property {ErrorInfo} [errorInfo] - The component stack trace information.
- */
 interface State {
   hasError: boolean;
   error?: Error;
   errorInfo?: ErrorInfo;
 }
 
-/**
- * @class ErrorBoundary
- * @extends Component<Props, State>
- * @description A React class component that catches JavaScript errors anywhere in its child
- * component tree, logs those errors, and displays a fallback UI instead of the crashed component tree.
- */
 class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
@@ -50,26 +31,15 @@ class ErrorBoundary extends Component<Props, State> {
     
     this.setState({ errorInfo });
 
-    // Safely log error to our error management system
-    try {
-      // Dynamically import errorManager to prevent circular dependency issues
-      import('@/services/errorManager').then((module) => {
-        if (module.errorManager && module.errorManager.logComponentError) {
-          module.errorManager.logComponentError(
-            error,
-            this.props.componentName || 'ErrorBoundary',
-            {
-              componentStack: errorInfo.componentStack,
-              errorInfo
-            }
-          );
-        }
-      }).catch((importError) => {
-        console.warn('Could not import errorManager:', importError);
-      });
-    } catch (logError) {
-      console.warn('Error logging failed:', logError);
-    }
+    // Log error to our error management system
+    errorManager.logComponentError(
+      error,
+      this.props.componentName || 'ErrorBoundary',
+      {
+        componentStack: errorInfo.componentStack,
+        errorInfo
+      }
+    );
   }
 
   handleRetry = () => {
@@ -147,15 +117,7 @@ class ErrorBoundary extends Component<Props, State> {
 
 export default ErrorBoundary;
 
-/**
- * @function withErrorBoundary
- * @description A Higher-Order Component (HOC) that wraps a given component with the ErrorBoundary.
- * This is a convenient way to apply error handling to functional components.
- * @template P - The props of the component to be wrapped.
- * @param {React.ComponentType<P>} Component - The React component to wrap.
- * @param {string} [componentName] - An optional name for the component, used for logging. If not provided, the component's `name` property is used.
- * @returns {React.FC<P>} A new component that renders the original component inside an ErrorBoundary.
- */
+// HOC for wrapping components with error boundary
 export const withErrorBoundary = <P extends object>(
   Component: React.ComponentType<P>,
   componentName?: string

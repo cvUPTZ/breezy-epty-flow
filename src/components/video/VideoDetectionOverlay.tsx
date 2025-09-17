@@ -4,15 +4,6 @@ import { createPortal } from 'react-dom';
 import { NetworkGPUDetectionPanel } from '../detection/NetworkGPUDetectionPanel';
 import { DetectionFrame } from '@/services/distributedGPUService';
 
-/**
- * @interface VideoDetectionOverlayProps
- * @description Props for the VideoDetectionOverlay component.
- * @property {string} videoId - The YouTube video ID to run detection on.
- * @property {boolean} isVisible - Whether the overlay is currently visible.
- * @property {() => void} onClose - Callback function to close the overlay.
- * @property {(results: DetectionFrame[]) => void} onDetectionResults - Callback function to handle the detection results from the panel.
- * @property {boolean} isFullscreen - Whether the video player is in fullscreen mode, which affects rendering via a portal.
- */
 interface VideoDetectionOverlayProps {
   videoId: string;
   isVisible: boolean;
@@ -21,14 +12,6 @@ interface VideoDetectionOverlayProps {
   isFullscreen: boolean;
 }
 
-/**
- * @component VideoDetectionOverlay
- * @description An overlay component designed to house the `NetworkGPUDetectionPanel`.
- * It floats on top of a video player and uses a React portal to ensure it remains visible and functional
- * even when the video is in fullscreen mode.
- * @param {VideoDetectionOverlayProps} props The props for the component.
- * @returns {JSX.Element | null} The rendered overlay component, or null if it's not visible.
- */
 export const VideoDetectionOverlay: React.FC<VideoDetectionOverlayProps> = ({
   videoId,
   isVisible,

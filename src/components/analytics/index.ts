@@ -1,10 +1,3 @@
-/**
- * @file This file serves as a central export point for all components within the 'analytics' directory.
- * This pattern allows for cleaner and more organized imports in other parts of the application.
- * For example, instead of `import Component from './components/analytics/Component'`, you can use
- * `import { Component } from './components/analytics'`.
- */
-
 // Main analytics components
 export { default as AdvancedAnalyticsDashboard } from './AdvancedAnalyticsDashboard';
 export { default as InteractiveMetricsGrid } from './InteractiveMetricsGrid';

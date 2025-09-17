@@ -11,10 +11,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { assignmentLoggingService } from '@/services/assignmentLoggingService';
 
-/**
- * @interface TrackerAssignment
- * @description Represents a single tracker assignment record, enriched with profile information.
- */
 interface TrackerAssignment {
   id: string;
   tracker_user_id: string;
@@ -30,22 +26,10 @@ interface TrackerAssignment {
   } | null;
 }
 
-/**
- * @interface EventAssignmentsProps
- * @description Props for the EventAssignments component.
- * @property {string} [matchId] - The ID of the match for which to manage event assignments.
- */
 interface EventAssignmentsProps {
   matchId?: string;
 }
 
-/**
- * @component EventAssignments
- * @description An admin component for assigning specific event types to trackers for a given match.
- * It allows viewing current assignments and creating new ones.
- * @param {EventAssignmentsProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const EventAssignments: React.FC<EventAssignmentsProps> = ({ matchId }) => {
   const [assignments, setAssignments] = useState<TrackerAssignment[]>([]);
   const [availableTrackers, setAvailableTrackers] = useState<any[]>([]);

@@ -6,14 +6,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Flag } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
-/**
- * @interface TeamHeaderData
- * @description Defines the data structure for a team displayed in the MatchHeader.
- * @property {string} name - The name of the team.
- * @property {string} [formation] - The team's formation (e.g., "4-4-2").
- * @property {number} [score] - The team's current score.
- * @property {string | null} [flagUrl] - The URL of the team's flag image.
- */
 interface TeamHeaderData {
   name: string;
   formation?: string;
@@ -21,25 +13,8 @@ interface TeamHeaderData {
   flagUrl?: string | null;
 }
 
-/**
- * @typedef {'live' | 'draft' | 'scheduled' | 'completed'} MatchStatus
- * @description Defines the possible statuses of a match.
- */
 type MatchStatus = 'live' | 'draft' | 'scheduled' | 'completed';
 
-/**
- * @interface MatchHeaderProps
- * @description Props for the MatchHeader component.
- * @property {TeamHeaderData} homeTeam - The data for the home team.
- * @property {TeamHeaderData} awayTeam - The data for the away team.
- * @property {string} [name] - The name of the match.
- * @property {MatchStatus} [status] - The current status of the match.
- * @property {string} [matchId] - The ID of the match, used to fetch additional data like flag URLs.
- * @property {string} [mode] - The current mode of the parent component.
- * @property {(mode: any) => void} [setMode] - Function to set the mode of the parent component.
- * @property {() => void} [handleToggleTracking] - Callback for toggling tracking.
- * @property {() => void} [handleSave] - Callback for saving data.
- */
 interface MatchHeaderProps {
   homeTeam: TeamHeaderData;
   awayTeam: TeamHeaderData;

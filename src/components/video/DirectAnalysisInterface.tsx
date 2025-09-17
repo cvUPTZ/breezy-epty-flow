@@ -13,23 +13,10 @@ import { ExternalVideoControls } from './analysis/ExternalVideoControls';
 import { ComprehensiveAnnotationSystem, AnnotationType } from './analysis/ComprehensiveAnnotationSystem';
 import { pythonDetectionService, DetectionJob, DetectionResult } from '@/services/pythonDetectionService';
 
-/**
- * @interface DirectAnalysisInterfaceProps
- * @description Props for the DirectAnalysisInterface component.
- * @property {string} videoUrl - The URL of the video to be analyzed.
- */
 interface DirectAnalysisInterfaceProps {
   videoUrl: string;
 }
 
-/**
- * @component DirectAnalysisInterface
- * @description A comprehensive, all-in-one interface for direct video analysis. It integrates a video player,
- * tactical overlays, annotation tools, and controls for interacting with a Python-based detection service.
- * This component serves as a central hub for detailed video-based tactical analysis.
- * @param {DirectAnalysisInterfaceProps} props The props for the component.
- * @returns {JSX.Element} The rendered DirectAnalysisInterface component.
- */
 export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = ({ videoUrl }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);

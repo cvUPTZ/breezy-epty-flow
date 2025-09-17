@@ -4,15 +4,6 @@ import { createPortal } from 'react-dom';
 import { ProductionPlayerBallDetectionPanel } from '../detection/ProductionPlayerBallDetectionPanel';
 import { DetectionResult } from '@/services/enhancedPythonDetectionService';
 
-/**
- * @interface EnhancedVideoDetectionOverlayProps
- * @description Props for the EnhancedVideoDetectionOverlay component.
- * @property {string} videoId - The ID of the video to run detection on.
- * @property {boolean} isVisible - Whether the overlay is currently visible.
- * @property {() => void} onClose - Callback function to close the overlay.
- * @property {(results: DetectionResult[]) => void} onDetectionResults - Callback function to handle the detection results.
- * @property {boolean} isFullscreen - Whether the video player is in fullscreen mode, which affects rendering via a portal.
- */
 interface EnhancedVideoDetectionOverlayProps {
   videoId: string;
   isVisible: boolean;
@@ -21,14 +12,6 @@ interface EnhancedVideoDetectionOverlayProps {
   isFullscreen: boolean;
 }
 
-/**
- * @component EnhancedVideoDetectionOverlay
- * @description An overlay component designed to house the AI detection panel (`ProductionPlayerBallDetectionPanel`).
- * It floats on top of a video player and uses a React portal to ensure it remains visible and functional
- * even when the video is in fullscreen mode.
- * @param {EnhancedVideoDetectionOverlayProps} props The props for the component.
- * @returns {JSX.Element | null} The rendered overlay component, or null if it's not visible.
- */
 export const EnhancedVideoDetectionOverlay: React.FC<EnhancedVideoDetectionOverlayProps> = ({
   videoId,
   isVisible,

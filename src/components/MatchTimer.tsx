@@ -3,16 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-/**
- * @interface MatchTimerProps
- * @description Props for the MatchTimer component. These props are typically sourced from a 'matches' table in the database.
- * @property {number | null} [dbTimerValue] - The last saved timer value in seconds from the database (e.g., `match.current_timer_value`).
- * @property {string | null} [timerStatus] - The current status of the timer (e.g., 'stopped', 'running', 'paused').
- * @property {string | null} [timerLastStartedAt] - An ISO string representing the last time the timer was started. Used to calculate elapsed time.
- * @property {string | null} [timerPeriod] - The current period of the match (e.g., 'first_half', 'second_half').
- * @property {number | null} [timerAddedTime] - The amount of added/stoppage time in seconds.
- * @property {boolean} [showControls] - Whether to display administrative controls for the timer (functionality not implemented in this component).
- */
 interface MatchTimerProps {
   dbTimerValue?: number | null; // from match.current_timer_value
   timerStatus?: string | null; // from match.timer_status: 'stopped', 'running', 'paused'
@@ -22,15 +12,6 @@ interface MatchTimerProps {
   showControls?: boolean; // whether to show admin controls
 }
 
-/**
- * @component MatchTimer
- * @description A component that displays a synchronized match timer. It calculates the
- * real-time clock display by combining the last saved time from the database with the
- * elapsed time since the timer was last started. This ensures the timer is consistent
- * across different clients and sessions.
- * @param {MatchTimerProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const MatchTimer: React.FC<MatchTimerProps> = ({ 
   dbTimerValue = 0, 
   timerStatus = 'stopped', 

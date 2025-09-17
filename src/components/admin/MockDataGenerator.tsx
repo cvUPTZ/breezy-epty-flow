@@ -8,13 +8,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Users, UserPlus, RefreshCw, Zap } from 'lucide-react';
 
-/**
- * @component MockDataGenerator
- * @description A developer tool for generating various types of mock data for testing and demonstration.
- * It can create mock tracker users and generate realistic, complex tracker assignments for a selected match.
- * This component is intended for development environments only.
- * @returns {React.FC} A React functional component.
- */
 const MockDataGenerator: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [trackerCount, setTrackerCount] = useState('5');

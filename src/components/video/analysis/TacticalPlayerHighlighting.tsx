@@ -1,16 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 
-/**
- * @interface PlayerPosition
- * @description Represents the position and details of a single player for tactical visualization.
- * @property {string} id - The unique identifier for the player.
- * @property {number} x - The x-coordinate as a percentage of the video width (0-1).
- * @property {number} y - The y-coordinate as a percentage of the video height (0-1).
- * @property {'home' | 'away'} team - The team the player belongs to.
- * @property {number} [jerseyNumber] - The player's jersey number.
- * @property {'GK' | 'DEF' | 'MID' | 'FWD'} position - The general position of the player.
- */
 interface PlayerPosition {
   id: string;
   x: number; // Percentage (0-1)
@@ -20,37 +10,19 @@ interface PlayerPosition {
   position: 'GK' | 'DEF' | 'MID' | 'FWD';
 }
 
-/**
- * @interface FormationLine
- * @description Represents a line connecting two players to visualize a team's formation.
- * @property {string} from - The ID of the starting player.
- * @property {string} to - The ID of the ending player.
- * @property {'home' | 'away'} team - The team the line belongs to.
- */
 interface FormationLine {
   from: string; // player id
   to: string; // player id
   team: 'home' | 'away';
 }
 
-/**
- * @interface TacticalPlayerHighlightingProps
- * @description Props for the TacticalPlayerHighlighting component.
- * @property {{ width: number; height: number }} videoDimensions - The dimensions of the video player.
- * @property {boolean} isVisible - Whether the highlighting overlay is currently visible.
- * @property {() => void} onToggle - Callback function to toggle the visibility of the overlay.
- */
 interface TacticalPlayerHighlightingProps {
   videoDimensions: { width: number; height: number };
   isVisible: boolean;
   onToggle: () => void;
 }
 
-/**
- * @function generateMockPlayerPositions
- * @description A helper function to generate a set of mock player positions for demonstration purposes.
- * @returns {PlayerPosition[]} An array of mock player positions.
- */
+// Mock player positions for demonstration
 const generateMockPlayerPositions = (): PlayerPosition[] => {
   return [
     // Home team (Purple/Barcelona-style) - More spread out attacking formation
@@ -81,12 +53,7 @@ const generateMockPlayerPositions = (): PlayerPosition[] => {
   ];
 };
 
-/**
- * @function generateFormationLines
- * @description A helper function that generates formation lines by connecting players of the same team and position type.
- * @param {PlayerPosition[]} players - An array of player positions.
- * @returns {FormationLine[]} An array of formation lines to be drawn.
- */
+// Generate formation lines based on positions
 const generateFormationLines = (players: PlayerPosition[]): FormationLine[] => {
   const lines: FormationLine[] = [];
   
@@ -157,13 +124,6 @@ const generateFormationLines = (players: PlayerPosition[]): FormationLine[] => {
   return lines;
 };
 
-/**
- * @component TacticalPlayerHighlighting
- * @description An overlay component that visualizes team formations by drawing markers for players
- * and lines connecting them. It uses mock data for demonstration purposes.
- * @param {TacticalPlayerHighlightingProps} props The props for the component.
- * @returns {JSX.Element | null} The rendered overlay, or null if it's not visible or dimensions are not set.
- */
 export const TacticalPlayerHighlighting: React.FC<TacticalPlayerHighlightingProps> = ({
   videoDimensions,
   isVisible,

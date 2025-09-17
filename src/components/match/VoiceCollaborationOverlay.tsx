@@ -6,11 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useDraggableOverlay } from "@/hooks/useDraggableOverlay";
 
 /**
- * @component VoiceCollaborationOverlay
- * @description A draggable, minimalist overlay that displays the live status of the voice collaboration feature.
- * It uses the `useVoiceCollaborationContext` to get real-time data about the connection, room, participants, and mute status.
- * The overlay's position is managed by the `useDraggableOverlay` hook, making it movable by the user.
- * @returns {JSX.Element} The rendered VoiceCollaborationOverlay component.
+ * Draggable, beautiful minimalist overlay displaying live voice collaboration status.
  */
 const VoiceCollaborationOverlay: React.FC = () => {
   const {

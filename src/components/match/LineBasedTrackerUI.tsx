@@ -5,30 +5,13 @@ import { Badge } from '@/components/ui/badge';
 import { EventType } from '@/types';
 import { Shield, Zap, Target, Globe } from 'lucide-react';
 
-/**
- * @interface LineBasedPlayer
- * @description Represents a player within a line-based assignment.
- * @property {number} id - The unique ID of the player.
- * @property {string} name - The name of the player.
- * @property {number} [jersey_number] - The jersey number of the player.
- * @property {string} [position] - The position of the player.
- */
 interface LineBasedPlayer {
   id: number; // Updated to use consistent number type
-  name:string;
+  name: string;
   jersey_number?: number;
   position?: string;
 }
 
-/**
- * @interface LineAssignment
- * @description Defines an assignment for a line-based tracker.
- * @property {'defense' | 'midfield' | 'attack' | 'all_events'} line - The line the tracker is assigned to.
- * @property {'home' | 'away' | 'both'} team - The team(s) the tracker is assigned to.
- * @property {LineBasedPlayer[]} players - The list of players in the assigned line.
- * @property {string[]} eventTypes - The list of event types the tracker is responsible for.
- * @property {string} teamName - The name of the assigned team.
- */
 interface LineAssignment {
   line: 'defense' | 'midfield' | 'attack' | 'all_events';
   team: 'home' | 'away' | 'both';
@@ -37,26 +20,12 @@ interface LineAssignment {
   teamName: string;
 }
 
-/**
- * @interface LineBasedTrackerUIProps
- * @description Props for the LineBasedTrackerUI component.
- * @property {LineAssignment[]} assignments - An array of line-based assignments for this tracker.
- * @property {(eventType: EventType, playerId?: number, teamId?: 'home' | 'away') => void} recordEvent - Function to record a match event.
- * @property {string} matchId - The ID of the current match.
- */
 interface LineBasedTrackerUIProps {
   assignments: LineAssignment[];
   recordEvent: (eventType: EventType, playerId?: number, teamId?: 'home' | 'away') => void; // Updated playerId type
   matchId: string;
 }
 
-/**
- * @component LineBasedTrackerUI
- * @description A user interface designed for trackers who are assigned to specific lines of players (e.g., defense, midfield).
- * It displays the assigned players and provides buttons to record events for them.
- * @param {LineBasedTrackerUIProps} props The props for the component.
- * @returns {JSX.Element} The rendered LineBasedTrackerUI component.
- */
 const LineBasedTrackerUI: React.FC<LineBasedTrackerUIProps> = ({
   assignments,
   recordEvent,

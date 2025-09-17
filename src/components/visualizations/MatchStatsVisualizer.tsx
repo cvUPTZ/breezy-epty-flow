@@ -8,16 +8,6 @@ import PlayerStatsTable from './PlayerStatsTable';
 import BallFlowVisualization from './BallFlowVisualization';
 import { useBreakpoint, useCurrentBreakpoint, useIsMobile } from '@/hooks/use-mobile';
 
-/**
- * @interface MatchStatsVisualizerProps
- * @description Props for the MatchStatsVisualizer component.
- * @property {Team} homeTeam - The data for the home team.
- * @property {Team} awayTeam - The data for the away team.
- * @property {BallTrackingPoint[]} ballTrackingPoints - An array of ball tracking data points.
- * @property {TimeSegmentStatistics[]} timeSegments - An array of statistics broken down by time segments.
- * @property {any[]} events - An array of all match events.
- * @property {any[]} ballTrackingData - An array of data specifically for the ball flow visualization.
- */
 interface MatchStatsVisualizerProps {
   homeTeam: Team;
   awayTeam: Team;
@@ -27,14 +17,6 @@ interface MatchStatsVisualizerProps {
   ballTrackingData: any[];
 }
 
-/**
- * @component MatchStatsVisualizer
- * @description A dashboard component that provides a comprehensive visualization of match statistics.
- * It uses a tabbed interface to present different views: time-based analysis, player statistics, and a ball flow graph.
- * The component is responsive and adapts its layout based on the screen size.
- * @param {MatchStatsVisualizerProps} props The props for the component.
- * @returns {JSX.Element} The rendered MatchStatsVisualizer component.
- */
 const MatchStatsVisualizer: React.FC<MatchStatsVisualizerProps> = ({
   homeTeam,
   awayTeam,

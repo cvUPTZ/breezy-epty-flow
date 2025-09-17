@@ -4,12 +4,6 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
-/**
- * @constant buttonVariants
- * @description Defines the variants for the Button component using `class-variance-authority`.
- * Includes variants for `default`, `destructive`, `outline`, `secondary`, `ghost`, and `link`,
- * as well as sizes for `default`, `sm`, `lg`, and `icon`.
- */
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
@@ -39,27 +33,12 @@ const buttonVariants = cva(
   }
 )
 
-/**
- * @interface ButtonProps
- * @description Props for the Button component.
- * @extends React.ButtonHTMLAttributes<HTMLButtonElement>
- * @extends VariantProps<typeof buttonVariants>
- * @property {boolean} [asChild=false] - If true, the button will be rendered as a child component, inheriting its props.
- */
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
 }
 
-/**
- * @component Button
- * @description A customizable button component with different variants and sizes.
- * Can be rendered as a child component to inherit functionality from other components like links.
- * It's a `React.forwardRef` component.
- * @param {ButtonProps} props The props for the component.
- * @returns {JSX.Element} The rendered Button component.
- */
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"

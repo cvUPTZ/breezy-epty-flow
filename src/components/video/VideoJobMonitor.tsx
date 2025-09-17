@@ -10,12 +10,7 @@ import { Clock, CheckCircle, XCircle, Loader2, Trash2, Eye } from 'lucide-react'
 import { VideoJob, VideoJobService } from '@/services/videoJobService';
 import { toast } from 'sonner';
 
-/**
- * @function formatTime
- * @description A utility function to format a duration in seconds into a HH:MM:SS or MM:SS string.
- * @param {number | null | undefined} seconds - The duration in seconds.
- * @returns {string} The formatted time string.
- */
+// Utility function (consider moving to a shared utils file)
 const formatTime = (seconds: number | null | undefined): string => {
   if (seconds === null || seconds === undefined || isNaN(seconds) || seconds < 0) return '00:00';
   const totalSeconds = Math.floor(seconds);
@@ -28,27 +23,12 @@ const formatTime = (seconds: number | null | undefined): string => {
   return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 
-/**
- * @interface VideoJobMonitorProps
- * @description Props for the VideoJobMonitor component.
- * @property {VideoJob & { videoUrl?: string }} job - The video job object to monitor, with an optional videoUrl.
- * @property {(job: VideoJob) => void} onJobUpdate - Callback function to handle updates to the job's status.
- * @property {(jobId: string) => void} onJobDelete - Callback function to handle the deletion of the job.
- */
 interface VideoJobMonitorProps {
   job: VideoJob & { videoUrl?: string }; // Include videoUrl from PageVideoJob
   onJobUpdate: (job: VideoJob) => void;
   onJobDelete: (jobId: string) => void;
 }
 
-/**
- * @component VideoJobMonitor
- * @description A component that displays the status of a single video analysis job.
- * It polls for status updates, shows progress, and provides controls to delete the job or view the results.
- * When results are shown, it includes an embedded video player.
- * @param {VideoJobMonitorProps} props The props for the component.
- * @returns {JSX.Element} The rendered VideoJobMonitor component.
- */
 export const VideoJobMonitor: React.FC<VideoJobMonitorProps> = ({ job, onJobUpdate, onJobDelete }) => {
   // Core UI State
   const [showAnalysisUI, setShowAnalysisUI] = useState(false);

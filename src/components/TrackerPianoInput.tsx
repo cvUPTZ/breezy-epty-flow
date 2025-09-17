@@ -11,26 +11,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import EventTypeSvg from '@/components/match/EventTypeSvg';
 import CancelActionIndicator from '@/components/match/CancelActionIndicator';
 
-/**
- * @interface TrackerPianoInputProps
- * @description Props for the TrackerPianoInput component.
- * @property {string} matchId - The ID of the current match.
- * @property {function} onRecordEvent - Callback function to record a match event.
- */
+// Define interfaces for type safety
 interface TrackerPianoInputProps {
   matchId: string;
   onRecordEvent: (
     eventTypeKey: string,
     playerId?: number,
     teamContext?: 'home' | 'away',
-    details?: Record<string, unknown>
-  ) => Promise<unknown | null>;
+    details?: Record<string, any>
+  ) => Promise<any | null>;
 }
 
-/**
- * @interface PlayerForPianoInput
- * @description A simplified player object tailored for the piano input interface.
- */
 export interface PlayerForPianoInput {
   id: number;
   name: string;
@@ -38,19 +29,11 @@ export interface PlayerForPianoInput {
   jersey_number?: number;
 }
 
-/**
- * @interface AssignedPlayers
- * @description Represents the players assigned to the current tracker, separated by team.
- */
 interface AssignedPlayers {
   home: PlayerForPianoInput[];
   away: PlayerForPianoInput[];
 }
 
-/**
- * @interface EnhancedEventType
- * @description Represents an event type with additional metadata for the UI.
- */
 interface EnhancedEventType {
   key: string;
   label: string;
@@ -59,15 +42,6 @@ interface EnhancedEventType {
   description?: string;
 }
 
-/**
- * @component TrackerPianoInput
- * @description A specialized, highly interactive interface for live match event tracking.
- * It fetches tracker-specific assignments (players and event types) and provides a
- * "piano-like" layout for rapid data entry. It supports different layouts based on
- * the complexity of the assignment.
- * @param {TrackerPianoInputProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecordEvent }) => {
   const [assignedEventTypes, setAssignedEventTypes] = useState<EnhancedEventType[]>([]);
   const [assignedPlayers, setAssignedPlayers] = useState<AssignedPlayers | null>(null);
@@ -76,16 +50,16 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [lastRecordedEvent, setLastRecordedEvent] = useState<{id: string; eventType: { key: string; label: string; }; player: PlayerForPianoInput | null; timestamp: number} | null>(null);
+  const [lastRecordedEvent, setLastRecordedEvent] = useState<any>(null);
   const [fullMatchRoster, setFullMatchRoster] = useState<AssignedPlayers | null>(null);
   const [recordingEventType, setRecordingEventType] = useState<string | null>(null);
-  const [recentEvents, setRecentEvents] = useState<{id: string; eventType: { key: string; label: string; }; player: PlayerForPianoInput | null; timestamp: number}[]>([]);
+  const [recentEvents, setRecentEvents] = useState<any[]>([]);
 
   const { toast } = useToast();
   const { user } = useAuth();
   const userIdForConnection = useMemo(() => user?.id || '', [user?.id]);
 
-  useRealtimeMatch({
+  const { } = useRealtimeMatch({
     matchId,
     onEventReceived: (event) => {
       if (event.created_by === user?.id) {
@@ -115,7 +89,7 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
         .eq('id', matchId)
         .single();
       if (matchError) throw matchError;
-      const parsePlayerData = (data: unknown): PlayerForPianoInput[] => {
+      const parsePlayerData = (data: any): PlayerForPianoInput[] => {
         if (typeof data === 'string') {
           try { return JSON.parse(data); } catch { return []; }
         }
@@ -125,7 +99,7 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
         home: parsePlayerData(matchData.home_team_players),
         away: parsePlayerData(matchData.away_team_players)
       });
-    } catch (e: unknown) { console.error("Error fetching match details:", e); }
+    } catch (e: any) { console.error("Error fetching match details:", e); }
   }, [matchId]);
 
   const fetchAssignments = useCallback(async () => {
@@ -157,7 +131,7 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
       });
       setAssignedPlayers({ home: homeP, away: awayP });
       setError(null);
-    } catch (e: unknown) {
+    } catch (e: any) {
       console.error("Error fetching tracker assignments:", e);
       setError("Failed to fetch tracker assignments");
     } finally { setLoading(false); }
@@ -201,24 +175,24 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
     setIsRecording(true);
     setRecordingEventType(eventType.key);
     broadcastStatus({ status: 'recording', timestamp: Date.now() });
-    const teamCtx = (selectedPlayer && selectedTeam) ? selectedTeam : undefined;
+    let teamCtx = (selectedPlayer && selectedTeam) ? selectedTeam : undefined;
     try {
       const newEvent = await onRecordEvent(eventType.key, selectedPlayer?.id, teamCtx, { recorded_via: 'piano' });
       if (newEvent) {
         const eventInfo = { 
-          id: (newEvent as {id: string}).id,
-          eventType: { key: (newEvent as {event_type: string}).event_type, label: (newEvent as {event_type: string}).event_type },
+          id: newEvent.id, 
+          eventType: { key: newEvent.event_type, label: newEvent.event_type }, 
           player: selectedPlayer, 
           timestamp: Date.now() 
         };
         setLastRecordedEvent(eventInfo);
         setRecentEvents(prev => [eventInfo, ...prev.slice(0, 4)]);
       }
-    } catch (e: unknown) {
+    } catch (e: any) { 
       console.error('Error in onRecordEvent:', e); 
       toast({
         title: "Error recording event",
-        description: (e as Error).message || "An unknown error occurred",
+        description: e.message || "An unknown error occurred",
         variant: "destructive"
       });
     }
@@ -497,19 +471,6 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
   );
 };
 
-/**
- * @interface RadialEventLayoutProps
- * @description Props for the RadialEventLayout sub-component.
- * @property {EnhancedEventType[]} eventTypes - The event types to display in the layout.
- * @property {boolean} isEliteView - Flag to determine if the layout is for an elite (multi-player) view.
- * @property {object} settings - UI settings for the layout (size, radius, etc.).
- * @property {string | null} recordingEventType - The key of the event type currently being recorded.
- * @property {number} [selectedPlayerId] - The ID of the currently selected player.
- * @property {boolean} isRecordingGlobal - Flag indicating if any event is currently being recorded.
- * @property {function(eventType: EnhancedEventType): void} onEventClick - Callback for when an event icon is clicked.
- * @property {PlayerForPianoInput | null} [currentPlayerForLayout] - The player associated with this specific layout instance.
- * @property {number} [totalPlayersInCurrentLayoutContext] - The total number of players in the current view context.
- */
 interface RadialEventLayoutProps {
   eventTypes: EnhancedEventType[];
   isEliteView: boolean;
@@ -522,13 +483,6 @@ interface RadialEventLayoutProps {
   totalPlayersInCurrentLayoutContext?: number;
 }
 
-/**
- * @component RadialEventLayout
- * @description A sub-component used by TrackerPianoInput to arrange event type icons in a circular/radial pattern.
- * This component is not intended for direct use outside of TrackerPianoInput.
- * @param {RadialEventLayoutProps} props - The props for the component.
- * @returns {React.FC | null} A React functional component, or null if there are no event types.
- */
 const RadialEventLayout: React.FC<RadialEventLayoutProps> = ({
   eventTypes, isEliteView, settings, recordingEventType, selectedPlayerId,
   isRecordingGlobal, onEventClick, currentPlayerForLayout,

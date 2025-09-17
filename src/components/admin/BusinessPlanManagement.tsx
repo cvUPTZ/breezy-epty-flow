@@ -37,11 +37,7 @@ import {
 import { toast } from 'sonner';
 import StartupPitchPresentation from './StartupPitchPresentation';
 import BudgetOptimizationSolver from './BudgetOptimizationSolver';
-import MarketAnalysis from './MarketAnalysis';
-import BusinessPlanDetails from './BusinessPlanDetails';
-import BusinessModelCanvasView from './BusinessModelCanvasView';
 
-/** @interface BusinessGoal Represents a strategic business goal. */
 interface BusinessGoal {
   id: string;
   title: string;
@@ -52,7 +48,6 @@ interface BusinessGoal {
   priority: 'low' | 'medium' | 'high';
 }
 
-/** @interface RevenueStream Represents a single source of business revenue. */
 interface RevenueStream {
   id: string;
   name: string;
@@ -63,7 +58,6 @@ interface RevenueStream {
   marketSegment: string;
 }
 
-/** @interface AlgerianRegulation Represents a specific regulatory requirement in Algeria. */
 interface AlgerianRegulation {
   id: string;
   name: string;
@@ -72,7 +66,6 @@ interface AlgerianRegulation {
   deadline?: string;
 }
 
-/** @interface EventTypeConfig Defines parameters for a trackable game event. */
 interface EventTypeConfig {
   id: number;
   name: string;
@@ -82,18 +75,16 @@ interface EventTypeConfig {
   detectionRate: number;
 }
 
-/** @interface TrackerBudgetConfig Defines parameters for calculating tracker-related costs. */
 interface TrackerBudgetConfig {
   basePayPerHour: number;
   difficultyMultiplier: number;
   overtimeRate: number;
   transportAllowance: number;
   equipmentCost: number;
-  socialCharges: number;
+  socialCharges: number; // pourcentage
   desiredSalaryPerMatch: number;
 }
 
-/** @interface Founder Represents a founder, investor, or key partner. */
 interface Founder {
   id: string;
   name: string;
@@ -102,11 +93,10 @@ interface Founder {
   responsibilities: string[];
   monthlyContribution: number;
   expectedROI: number;
-  vestingPeriod: number;
+  vestingPeriod: number; // in months
   joinDate: string;
 }
 
-/** @interface FinancialProjection Represents a single year's financial forecast. */
 interface FinancialProjection {
   year: number;
   revenue: number;
@@ -115,7 +105,6 @@ interface FinancialProjection {
   founderDistribution: number;
 }
 
-/** @interface InterventionType Represents a potential strategic investment or action. */
 interface InterventionType {
   id: string;
   name: string;
@@ -123,57 +112,40 @@ interface InterventionType {
   requiredCapital: number;
   expectedReturn: number;
   riskLevel: 'low' | 'medium' | 'high';
-  timeframe: number;
+  timeframe: number; // in months
 }
 
-/**
- * @component BusinessPlanManagement
- * @description A master component that orchestrates the entire business planning and strategic
- * management section of the admin panel. It uses a tabbed interface to organize various
- * high-level components like the Business Model Canvas, financial planners, and market analysis tools.
- * It holds and manages the state for the entire business plan.
- * @returns {React.FC} A React functional component.
- */
 const BusinessPlanManagement: React.FC = () => {
   const [goals, setGoals] = useState<BusinessGoal[]>([
     {
       id: '1',
-      title: 'Devenir le leader du SportTech en Algérie',
-      description: 'Atteindre 80% des clubs de Ligue 1 et 60% de Ligue 2.',
-      target: '60+ clubs professionnels',
-      deadline: '2029-12-31',
+      title: 'Pénétrer le marché algérien du football',
+      description: 'Établir une présence forte sur le marché du football en Algérie',
+      target: '50 clubs partenaires',
+      deadline: '2024-12-31',
       status: 'in-progress',
       priority: 'high'
-    },
-    {
-      id: '2',
-      title: 'Expansion Régionale',
-      description: 'Lancer des opérations en Tunisie et au Maroc.',
-      target: '2 marchés',
-      deadline: '2028-12-31',
-      status: 'pending',
-      priority: 'medium'
     }
   ]);
 
   const [revenueStreams, setRevenueStreams] = useState<RevenueStream[]>([
     {
       id: '1',
-      name: 'Licences SaaS B2B',
-      description: 'Abonnements annuels pour les clubs (Ligue 1 & 2) et académies.',
-      monthlyRevenue: 230000,
+      name: 'Abonnements Clubs',
+      description: 'Abonnements mensuels pour les clubs de football',
+      monthlyRevenue: 150000,
       growth: 15,
       status: 'active',
-      marketSegment: 'Clubs professionnels & FAF'
+      marketSegment: 'Clubs professionnels'
     },
     {
       id: '2',
-      name: 'Services à Valeur Ajoutée',
-      description: 'Formation, consulting, et rapports d\'intégrité.',
-      monthlyRevenue: 50000,
+      name: 'Formation et Consulting',
+      description: 'Services de formation pour entraîneurs et analystes',
+      monthlyRevenue: 80000,
       growth: 25,
-      status: 'planned',
-      marketSegment: 'Premium'
+      status: 'active',
+      marketSegment: 'Éducation sportive'
     }
   ]);
 
@@ -308,11 +280,11 @@ const BusinessPlanManagement: React.FC = () => {
   ]);
 
   const [financialProjections] = useState<FinancialProjection[]>([
-    { year: 2025, revenue: 2760000, expenses: 1980000, profit: 780000, founderDistribution: 390000 },
-    { year: 2026, revenue: 4140000, expenses: 2730000, profit: 1410000, founderDistribution: 705000 },
-    { year: 2027, revenue: 6210000, expenses: 3800000, profit: 2410000, founderDistribution: 1205000 },
-    { year: 2028, revenue: 8280000, expenses: 4680000, profit: 3600000, founderDistribution: 1800000 },
-    { year: 2029, revenue: 11040000, expenses: 5940000, profit: 5100000, founderDistribution: 2550000 }
+    { year: 2024, revenue: 2760000, expenses: 1980000, profit: 780000, founderDistribution: 390000 },
+    { year: 2025, revenue: 4140000, expenses: 2730000, profit: 1410000, founderDistribution: 705000 },
+    { year: 2026, revenue: 6210000, expenses: 3795000, profit: 2415000, founderDistribution: 1207500 },
+    { year: 2027, revenue: 8280000, expenses: 4680000, profit: 3600000, founderDistribution: 1800000 },
+    { year: 2028, revenue: 11040000, expenses: 5940000, profit: 5100000, founderDistribution: 2550000 }
   ]);
 
   // Enhanced configuration for real-world tracker budget parameters
@@ -610,7 +582,9 @@ const BusinessPlanManagement: React.FC = () => {
         <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="pitch">Pitch Startup</TabsTrigger>
-          <TabsTrigger value="details">Détails du Plan</TabsTrigger>
+          <TabsTrigger value="goals">Objectifs</TabsTrigger>
+          <TabsTrigger value="revenue">Revenus</TabsTrigger>
+          <TabsTrigger value="founders">Fondateurs</TabsTrigger>
           <TabsTrigger value="match-planning">Planification</TabsTrigger>
           <TabsTrigger value="budget">Budget Trackers</TabsTrigger>
           <TabsTrigger value="market">Marché Local</TabsTrigger>
@@ -668,7 +642,7 @@ const BusinessPlanManagement: React.FC = () => {
                   <Users className="h-8 w-8 text-purple-600" />
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Objectif: 60+ clubs
+                  Objectif: 50 clubs
                 </p>
               </CardContent>
             </Card>
@@ -691,25 +665,48 @@ const BusinessPlanManagement: React.FC = () => {
             </Card>
           </div>
 
-          <BusinessModelCanvasView />
-        </TabsContent>
-
-        <TabsContent value="details" className="space-y-6">
-            <BusinessPlanDetails
-                goals={goals}
-                revenueStreams={revenueStreams}
-                founders={founders}
-                financialProjections={financialProjections}
-                interventions={interventions}
-                activePositions={activePositions}
-                includeInvestors={includeInvestors}
-                onNewGoal={addGoal}
-                onNewRevenue={addRevenueStream}
-            />
-        </TabsContent>
-
-        <TabsContent value="market" className="space-y-6">
-            <MarketAnalysis />
+          {/* Business Model Canvas - Algerian Context */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Briefcase className="h-5 w-5" />
+                Modèle d'Affaires - Contexte Algérien
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-foreground">Partenaires Clés</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Fédération Algérienne de Football (FAF)</li>
+                    <li>• Ligues Régionales</li>
+                    <li>• Clubs Professionnels</li>
+                    <li>• Centres de Formation</li>
+                  </ul>
+                </div>
+                
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-foreground">Segments Clients</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Clubs de Ligue 1 et 2</li>
+                    <li>• Académies de football</li>
+                    <li>• Entraîneurs professionnels</li>
+                    <li>• Analystes sportifs</li>
+                  </ul>
+                </div>
+                
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-foreground">Canaux de Distribution</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Plateforme web</li>
+                    <li>• Partenariats directs</li>
+                    <li>• Formations présentielles</li>
+                    <li>• Support technique local</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="budget" className="space-y-6">
@@ -1205,116 +1202,753 @@ const BusinessPlanManagement: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="goals" className="space-y-6">
-            <BusinessPlanDetails
-                goals={goals}
-                revenueStreams={revenueStreams}
-                founders={founders}
-                financialProjections={financialProjections}
-                interventions={interventions}
-                activePositions={activePositions}
-                includeInvestors={includeInvestors}
-                onNewGoal={addGoal}
-                onNewRevenue={addRevenueStream}
-            />
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">Objectifs Stratégiques</h3>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nouvel Objectif
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Ajouter un Objectif</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="goal-title">Titre</Label>
+                    <Input
+                      id="goal-title"
+                      value={newGoal.title}
+                      onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
+                      placeholder="Ex: Expansion dans 3 nouvelles wilayas"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="goal-description">Description</Label>
+                    <Textarea
+                      id="goal-description"
+                      value={newGoal.description}
+                      onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
+                      placeholder="Description détaillée de l'objectif"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="goal-target">Cible</Label>
+                    <Input
+                      id="goal-target"
+                      value={newGoal.target}
+                      onChange={(e) => setNewGoal({ ...newGoal, target: e.target.value })}
+                      placeholder="Ex: 15 nouveaux clubs"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="goal-deadline">Date Limite</Label>
+                    <Input
+                      id="goal-deadline"
+                      type="date"
+                      value={newGoal.deadline}
+                      onChange={(e) => setNewGoal({ ...newGoal, deadline: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="goal-priority">Priorité</Label>
+                    <Select
+                      value={newGoal.priority}
+                      onValueChange={(value: 'low' | 'medium' | 'high') => 
+                        setNewGoal({ ...newGoal, priority: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Faible</SelectItem>
+                        <SelectItem value="medium">Moyenne</SelectItem>
+                        <SelectItem value="high">Élevée</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button onClick={addGoal} className="w-full">
+                    Ajouter l'Objectif
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <div className="grid gap-4">
+            {goals.map((goal) => (
+              <Card key={goal.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="font-semibold text-foreground">{goal.title}</h4>
+                        <Badge variant={
+                          goal.priority === 'high' ? 'destructive' :
+                          goal.priority === 'medium' ? 'default' : 'secondary'
+                        }>
+                          {goal.priority === 'high' ? 'Élevée' :
+                           goal.priority === 'medium' ? 'Moyenne' : 'Faible'}
+                        </Badge>
+                        <Badge variant={
+                          goal.status === 'completed' ? 'default' :
+                          goal.status === 'in-progress' ? 'secondary' : 'outline'
+                        }>
+                          {goal.status === 'completed' ? 'Terminé' :
+                           goal.status === 'in-progress' ? 'En cours' : 'En attente'}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">{goal.description}</p>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span>Cible: {goal.target}</span>
+                        {goal.deadline && (
+                          <span>Échéance: {new Date(goal.deadline).toLocaleDateString('fr-FR')}</span>
+                        )}
+                      </div>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </TabsContent>
 
         <TabsContent value="revenue" className="space-y-6">
-             <BusinessPlanDetails
-                goals={goals}
-                revenueStreams={revenueStreams}
-                founders={founders}
-                financialProjections={financialProjections}
-                interventions={interventions}
-                activePositions={activePositions}
-                includeInvestors={includeInvestors}
-                onNewGoal={addGoal}
-                onNewRevenue={addRevenueStream}
-            />
-        </TabsContent>
-
-        <TabsContent value="founders" className="space-y-6">
-             <BusinessPlanDetails
-                goals={goals}
-                revenueStreams={revenueStreams}
-                founders={founders}
-                financialProjections={financialProjections}
-                interventions={interventions}
-                activePositions={activePositions}
-                includeInvestors={includeInvestors}
-                onNewGoal={addGoal}
-                onNewRevenue={addRevenueStream}
-            />
-        </TabsContent>
-
-        <TabsContent value="compliance" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Revenue Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Conformité Réglementaire Algérienne
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {regulations.map((regulation) => (
-                    <div key={regulation.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-foreground">{regulation.name}</h4>
-                        <p className="text-sm text-muted-foreground">{regulation.description}</p>
-                        {regulation.deadline && (
-                          <p className="text-xs text-orange-600 mt-1">
-                            Échéance: {new Date(regulation.deadline).toLocaleDateString('fr-FR')}
-                          </p>
-                        )}
-                      </div>
-                      <Badge variant={
-                        regulation.compliance === 'compliant' ? 'default' :
-                        regulation.compliance === 'pending' ? 'secondary' : 'destructive'
-                      }>
-                        {regulation.compliance === 'compliant' ? 'Conforme' :
-                         regulation.compliance === 'pending' ? 'En cours' : 'Non conforme'}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
+              <CardContent className="p-4">
+                <h4 className="font-semibold text-foreground mb-2">Revenus Mensuels</h4>
+                <p className="text-2xl font-bold text-green-600">
+                  {formatCurrency(totalMonthlyRevenue)}
+                </p>
               </CardContent>
             </Card>
             <Card>
+              <CardContent className="p-4">
+                <h4 className="font-semibold text-foreground mb-2">Revenus Annuels</h4>
+                <p className="text-2xl font-bold text-blue-600">
+                  {formatCurrency(totalYearlyRevenue)}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <h4 className="font-semibold text-foreground mb-2">Sources Actives</h4>
+                <p className="text-2xl font-bold text-purple-600">
+                  {revenueStreams.filter(stream => stream.status === 'active').length}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Add New Revenue Stream */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Ajouter une Source de Revenus</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="revenue-name">Nom</Label>
+                  <Input
+                    id="revenue-name"
+                    value={newRevenue.name}
+                    onChange={(e) => setNewRevenue({ ...newRevenue, name: e.target.value })}
+                    placeholder="Ex: Licences logiciels"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="revenue-segment">Segment de Marché</Label>
+                  <Input
+                    id="revenue-segment"
+                    value={newRevenue.marketSegment}
+                    onChange={(e) => setNewRevenue({ ...newRevenue, marketSegment: e.target.value })}
+                    placeholder="Ex: Clubs amateurs"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label htmlFor="revenue-description">Description</Label>
+                  <Textarea
+                    id="revenue-description"
+                    value={newRevenue.description}
+                    onChange={(e) => setNewRevenue({ ...newRevenue, description: e.target.value })}
+                    placeholder="Description de la source de revenus"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="revenue-amount">Revenus Mensuels Estimés (DZD)</Label>
+                  <Input
+                    id="revenue-amount"
+                    type="number"
+                    value={newRevenue.monthlyRevenue}
+                    onChange={(e) => setNewRevenue({ ...newRevenue, monthlyRevenue: Number(e.target.value) })}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button onClick={addRevenueStream} className="w-full">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Revenue Streams List */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Sources de Revenus</h3>
+            {revenueStreams.map((stream) => (
+              <Card key={stream.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="font-semibold text-foreground">{stream.name}</h4>
+                        <Badge variant={
+                          stream.status === 'active' ? 'default' :
+                          stream.status === 'planned' ? 'secondary' : 'outline'
+                        }>
+                          {stream.status === 'active' ? 'Actif' :
+                           stream.status === 'planned' ? 'Planifié' : 'Discontinué'}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">{stream.description}</p>
+                      <div className="flex items-center gap-4 text-sm">
+                        <span className="font-medium text-green-600">
+                          {formatCurrency(stream.monthlyRevenue)}/mois
+                        </span>
+                        <span className="text-muted-foreground">
+                          Segment: {stream.marketSegment}
+                        </span>
+                        {stream.growth > 0 && (
+                          <span className="text-green-600 flex items-center gap-1">
+                            <TrendingUp className="h-3 w-3" />
+                            +{stream.growth}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="market" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-primary">
-                  <Shield className="h-5 w-5" />
-                  Stratégie de Conformité des Données
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="h-5 w-5" />
+                  Analyse du Marché Algérien
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                    <div>
-                      <h4 className="font-semibold mb-2">Loi sur la Protection des Données 18-07</h4>
-                      <p className="text-sm text-muted-foreground">
-                        La loi algérienne impose des restrictions strictes sur le transfert de données personnelles hors du pays. Notre stratégie est de garantir une conformité totale.
-                      </p>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold mb-2">Stratégie de Cloud Hybride</h4>
-                      <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-4">
-                        <li>**Hébergement Local :** Toutes les données personnelles sensibles seront hébergées sur des serveurs situés en Algérie.</li>
-                        <li>**Partenaires Locaux :** Collaboration avec des fournisseurs de cloud locaux agréés (ex: ICOSNET, CenterServ, AYRADE).</li>
-                        <li>**Données Non-Sensibles :** Utilisation possible de clouds internationaux pour les données non-personnelles et les services génériques.</li>
-                      </ul>
-                    </div>
-                     <div>
-                      <h4 className="font-semibold mb-2">Avantages de cette approche</h4>
-                       <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-4">
-                        <li>**Conformité Garantie :** Évite les risques légaux et les amendes.</li>
-                        <li>**Confiance du Marché :** Démontre un engagement envers la souveraineté des données algériennes.</li>
-                        <li>**Faible Latence :** Améliore les performances de l'application pour les utilisateurs locaux.</li>
-                      </ul>
-                    </div>
+              <CardContent className="space-y-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Taille du Marché</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• 140+ clubs professionnels</li>
+                    <li>• 48 wilayas couvertes</li>
+                    <li>• 2M+ joueurs licenciés</li>
+                    <li>• Marché estimé: 2.5B DZD</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Opportunités</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Digitalisation du sport</li>
+                    <li>• Formation des entraîneurs</li>
+                    <li>• Analyse de performance</li>
+                    <li>• Jeunes talents</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Défis du Marché Local</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Défis Techniques</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Infrastructure internet variable</li>
+                    <li>• Adoption technologique lente</li>
+                    <li>• Formation numérique nécessaire</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Défis Économiques</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Budgets limités des clubs</li>
+                    <li>• Volatilité du dinar</li>
+                    <li>• Financement difficile</li>
+                  </ul>
                 </div>
               </CardContent>
             </Card>
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Stratégie de Pénétration</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <h4 className="font-semibold">Phase 1: Établissement</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Partenariat avec FAF</li>
+                    <li>• Clubs pilotes à Alger</li>
+                    <li>• Formation équipes locales</li>
+                  </ul>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-semibold">Phase 2: Expansion</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Extension à Oran, Constantine</li>
+                    <li>• Recrutement commercial</li>
+                    <li>• Adaptation produit local</li>
+                  </ul>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-semibold">Phase 3: Consolidation</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Couverture nationale</li>
+                    <li>• Diversification services</li>
+                    <li>• Leadership marché</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="match-planning" className="space-y-6">
+          <div className="grid gap-6">
+            {/* Match Planning Overview */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Timer className="h-5 w-5" />
+                  Paramètres de Planification des Matchs
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-4">
+                    <Label>Durée du match (minutes)</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.duration}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        duration: parseInt(e.target.value) || 90
+                      }))}
+                    />
+                  </div>
+                   <div className="space-y-4">
+                     <Label>Nombre total d'événements (calculé)</Label>
+                     <div className="flex items-center gap-2">
+                       <Input
+                         type="number"
+                         value={eventTypes.reduce((sum, et) => sum + et.frequency, 0)}
+                         disabled
+                         className="bg-muted"
+                       />
+                       <Badge variant="outline" className="text-xs">
+                         Auto-calculé
+                       </Badge>
+                     </div>
+                     <p className="text-xs text-muted-foreground">
+                       Basé sur la configuration des types d'événements ci-dessous
+                     </p>
+                   </div>
+                  <div className="space-y-4">
+                    <Label>Joueurs à tracker</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.playersToTrack}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        playersToTrack: parseInt(e.target.value) || 22
+                      }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-4">
+                    <Label>Trackers minimum requis</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.trackersMinimum}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        trackersMinimum: parseInt(e.target.value) || 0
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <Label>Trackers optimal</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.trackersOptimal}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        trackersOptimal: parseInt(e.target.value) || 0
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <Label>Remplacements prévus</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.replacements}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        replacements: parseInt(e.target.value) || 0
+                      }))}
+                    />
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <Label>Trackers requis pour tous les matchs mensuels</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="p-2 bg-muted rounded text-center">
+                        <p className="text-sm text-muted-foreground">Minimum</p>
+                        <p className="font-bold">{matchSimulation.trackersMinimum * matchSimulation.matchFrequency}</p>
+                      </div>
+                      <div className="p-2 bg-muted rounded text-center">
+                        <p className="text-sm text-muted-foreground">Optimal</p>
+                        <p className="font-bold">{matchSimulation.trackersOptimal * matchSimulation.matchFrequency}</p>
+                      </div>
+                      <div className="p-2 bg-muted rounded text-center">
+                        <p className="text-sm text-muted-foreground">Remplacements</p>
+                        <p className="font-bold">{matchSimulation.replacements * matchSimulation.matchFrequency}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <Label>Fréquence des matchs par mois</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.matchFrequency}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        matchFrequency: parseInt(e.target.value) || 15
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <Label>Durée de la saison (mois)</Label>
+                    <Input
+                      type="number"
+                      value={matchSimulation.seasonDuration}
+                      onChange={(e) => setMatchSimulation(prev => ({
+                        ...prev,
+                        seasonDuration: parseInt(e.target.value) || 9
+                      }))}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Resource Requirements */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Exigences en Ressources
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="h-4 w-4 text-primary" />
+                      <span className="font-medium">Équipe Humaine</span>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <p>Trackers minimum: {matchSimulation.trackersMinimum}</p>
+                      <p>Trackers optimal: {matchSimulation.trackersOptimal}</p>
+                      <p>Remplacements: {matchSimulation.replacements}</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Activity className="h-4 w-4 text-green-600" />
+                      <span className="font-medium">Charge de Travail</span>
+                    </div>
+                     <div className="space-y-1 text-sm">
+                       <p>Durée: {matchSimulation.duration} min</p>
+                       <p>Événements: {eventTypes.reduce((sum, et) => sum + et.frequency, 0)}</p>
+                       <p>Événements/tracker: {Math.round(getTotalEvents() / matchSimulation.trackersOptimal)}</p>
+                     </div>
+                  </div>
+
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <BarChart3 className="h-4 w-4 text-blue-600" />
+                      <span className="font-medium">Fréquence</span>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <p>Matchs/mois: {matchSimulation.matchFrequency}</p>
+                      <p>Saison: {matchSimulation.seasonDuration} mois</p>
+                      <p>Total saison: {matchSimulation.matchFrequency * matchSimulation.seasonDuration} matchs</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Calculator className="h-4 w-4 text-purple-600" />
+                      <span className="font-medium">Complexité</span>
+                    </div>
+                     <div className="space-y-1 text-sm">
+                       <p>Score: {Math.round(calculateComplexityScore() / eventTypes.reduce((sum, et) => sum + et.frequency, 0) * 10) / 10}</p>
+                       <p>Difficulté: {calculateComplexityScore() > 2000 ? 'Élevée' : calculateComplexityScore() > 1500 ? 'Moyenne' : 'Faible'}</p>
+                       <p>Précision: {Math.round(eventTypes.reduce((sum, et) => sum + et.detectionRate, 0) / eventTypes.length)}%</p>
+                     </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Technology and Equipment */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5" />
+                  Technologie et Équipement
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold">Équipement par Tracker</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span>Tablette/Laptop</span>
+                        <Badge variant="outline">Requis</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Casque audio</span>
+                        <Badge variant="outline">Requis</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Souris</span>
+                        <Badge variant="outline">Recommandé</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Connexion internet</span>
+                        <Badge variant="outline">Critique</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Logiciel tracking</span>
+                        <Badge variant="outline">Licence</Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-semibold">Spécifications Techniques</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>RAM minimum:</span>
+                        <span>8GB</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Processeur:</span>
+                        <span>i5 ou équivalent</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Écran:</span>
+                        <span>15" minimum</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Stockage:</span>
+                        <span>256GB SSD</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Bande passante:</span>
+                        <span>50 Mbps minimum</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Performance Metrics */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Métriques de Performance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  {(() => {
+                    const metrics = calculateEfficiencyMetrics();
+                    return (
+                      <>
+                        <div className="text-center p-4 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">Coût par Événement</p>
+                          <p className="text-lg font-bold">{formatCurrency(metrics.costPerEvent)}</p>
+                        </div>
+                        <div className="text-center p-4 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">Coût par Minute</p>
+                          <p className="text-lg font-bold">{formatCurrency(metrics.costPerMinute)}</p>
+                        </div>
+                        <div className="text-center p-4 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">Coût par Joueur</p>
+                          <p className="text-lg font-bold">{formatCurrency(metrics.costPerPlayer)}</p>
+                        </div>
+                        <div className="text-center p-4 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">Taux Horaire/Tracker</p>
+                          <p className="text-lg font-bold">{formatCurrency(metrics.hourlyRatePerTracker)}</p>
+                        </div>
+                        <div className="text-center p-4 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">Efficacité Complexité</p>
+                          <p className="text-lg font-bold">{metrics.complexityEfficiency}</p>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Event Types Configuration */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5" />
+                  Configuration des Types d'Événements
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+                    {eventTypes.map((eventType) => (
+                      <div key={eventType.id} className="p-3 border rounded-lg space-y-2">
+                        <div className="flex justify-between items-start">
+                          <h5 className="font-medium">{eventType.name}</h5>
+                          <Badge variant={eventType.difficultyScore > 6 ? 'destructive' : eventType.difficultyScore > 4 ? 'default' : 'secondary'}>
+                            Difficulté: {eventType.difficultyScore}
+                          </Badge>
+                        </div>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <span>Taux détection:</span>
+                            <span>{eventType.detectionRate}%</span>
+                          </div>
+                           <div className="flex justify-between">
+                             <span>Fréquence:</span>
+                             <span>{eventType.frequency}/match</span>
+                           </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Cost Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Résumé des Coûts de Planification
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const costs = calculateMonthlyAndSeasonalCosts();
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="text-center p-6 bg-primary/5 rounded-lg">
+                        <h4 className="font-semibold text-primary">Par Match</h4>
+                        <p className="text-2xl font-bold mt-2">{formatCurrency(costs.perMatch)}</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {matchSimulation.trackersOptimal} trackers × {matchSimulation.duration} min
+                        </p>
+                      </div>
+                      <div className="text-center p-6 bg-secondary/5 rounded-lg">
+                        <h4 className="font-semibold text-secondary-foreground">Par Mois</h4>
+                        <p className="text-2xl font-bold mt-2">{formatCurrency(costs.monthly)}</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {matchSimulation.matchFrequency} matchs/mois
+                        </p>
+                      </div>
+                      <div className="text-center p-6 bg-accent/5 rounded-lg">
+                        <h4 className="font-semibold text-accent-foreground">Par Saison</h4>
+                        <p className="text-2xl font-bold mt-2">{formatCurrency(costs.seasonal)}</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {matchSimulation.seasonDuration} mois de saison
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="compliance" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Conformité Réglementaire Algérienne
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {regulations.map((regulation) => (
+                  <div key={regulation.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-foreground">{regulation.name}</h4>
+                      <p className="text-sm text-muted-foreground">{regulation.description}</p>
+                      {regulation.deadline && (
+                        <p className="text-xs text-orange-600 mt-1">
+                          Échéance: {new Date(regulation.deadline).toLocaleDateString('fr-FR')}
+                        </p>
+                      )}
+                    </div>
+                    <Badge variant={
+                      regulation.compliance === 'compliant' ? 'default' :
+                      regulation.compliance === 'pending' ? 'secondary' : 'destructive'
+                    }>
+                      {regulation.compliance === 'compliant' ? 'Conforme' :
+                       regulation.compliance === 'pending' ? 'En cours' : 'Non conforme'}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>

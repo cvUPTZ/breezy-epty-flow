@@ -9,22 +9,9 @@ import TeamSetupSection from './match/form/TeamSetupSection';
 import VideoSetupSection from './match/form/VideoSetupSection';
 import { Button } from './ui/button';
 
-/**
- * @typedef {'draft' | 'scheduled' | 'live' | 'completed'} MatchStatus
- * @description The possible statuses of a match.
- */
 type MatchStatus = 'draft' | 'scheduled' | 'live' | 'completed';
-
-/**
- * @typedef {'4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '5-3-2' | '3-4-3'} Formation
- * @description The possible tactical formations for a team.
- */
 type Formation = '4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '5-3-2' | '3-4-3';
 
-/**
- * @interface MatchFormData
- * @description Represents the core data for a match being created or edited.
- */
 interface MatchFormData {
   name: string;
   description: string;
@@ -42,10 +29,6 @@ interface MatchFormData {
   awayTeamFlagUrl: string;
 }
 
-/**
- * @interface Player
- * @description Represents a player in a team's roster.
- */
 interface Player {
   id: number;
   name: string;
@@ -54,48 +37,11 @@ interface Player {
   isSubstitute: boolean;
 }
 
-/**
- * @interface CreateMatchFormProps
- * @description Props for the CreateMatchForm component.
- * @property {string} [matchId] - The ID of the match to edit. If not provided, the form is in creation mode.
- * @property {function(match: any): void} onMatchSubmit - Callback function triggered after a successful match creation or update.
- */
-interface Match {
-  id: string;
-  name: string;
-  description: string;
-  home_team_name: string;
-  away_team_name: string;
-  match_date: string;
-  location: string;
-  competition: string;
-  match_type: string;
-  status: MatchStatus;
-  notes: string;
-  home_team_formation: Formation;
-  away_team_formation: Formation;
-  home_team_flag_url: string;
-  away_team_flag_url: string;
-  home_team_players: Player[];
-  away_team_players: Player[];
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-}
-
 interface CreateMatchFormProps {
   matchId?: string;
-  onMatchSubmit: (match: Partial<Match>) => void;
+  onMatchSubmit: (match: any) => void;
 }
 
-/**
- * @component CreateMatchForm
- * @description A comprehensive form for creating and editing football matches.
- * It handles match details, team setups, player rosters, and video links.
- * It can fetch existing match data for editing or create a new match from scratch.
- * @param {CreateMatchFormProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmit }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -159,7 +105,7 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
           });
           
           const homeTeamPlayersData = Array.isArray(data.home_team_players) 
-            ? (data.home_team_players as Player[]).map((player: Player) => ({
+            ? (data.home_team_players as any[]).map((player: any) => ({
                 id: player.id || 0,
                 name: player.name || '',
                 number: player.number || null,
@@ -168,7 +114,7 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
               }))
             : [];
           const awayTeamPlayersData = Array.isArray(data.away_team_players)
-            ? (data.away_team_players as Player[]).map((player: Player) => ({
+            ? (data.away_team_players as any[]).map((player: any) => ({
                 id: player.id || 0,
                 name: player.name || '',
                 number: player.number || null,
@@ -244,8 +190,8 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
         away_team_formation: formData.awayTeamFormation,
         home_team_flag_url: formData.homeTeamFlagUrl,
         away_team_flag_url: formData.awayTeamFlagUrl,
-        home_team_players: homeTeamPlayers,
-        away_team_players: awayTeamPlayers,
+        home_team_players: homeTeamPlayers as any,
+        away_team_players: awayTeamPlayers as any,
         updated_at: new Date().toISOString(),
       };
 
@@ -289,10 +235,9 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
       if (onMatchSubmit) {
         onMatchSubmit(savedMatch);
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error saving match:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      toast({ title: 'Error', description: `Failed to save match: ${errorMessage}`, variant: 'destructive' });
+      toast({ title: 'Error', description: `Failed to save match: ${error.message}`, variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }

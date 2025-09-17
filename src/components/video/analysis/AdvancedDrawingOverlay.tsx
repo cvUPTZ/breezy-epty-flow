@@ -9,17 +9,6 @@ import { Eye, EyeOff, Layers, MapPin, Users, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { DrawingToolsPanel } from './DrawingToolsPanel';
 
-/**
- * @interface PlayerPosition
- * @description Represents the position and state of a single player on the overlay.
- * @property {string} id - The unique identifier for the player.
- * @property {number} x - The x-coordinate of the player.
- * @property {number} y - The y-coordinate of the player.
- * @property {'home' | 'away'} team - The team the player belongs to.
- * @property {number} [jerseyNumber] - The player's jersey number.
- * @property {boolean} [isCorrectPosition] - Flag indicating if the player is in the correct tactical position.
- * @property {number} [heatIntensity] - The intensity value for heatmap rendering (0-1).
- */
 interface PlayerPosition {
   id: string;
   x: number;
@@ -30,17 +19,6 @@ interface PlayerPosition {
   heatIntensity?: number;
 }
 
-/**
- * @interface AnnotationElement
- * @description Represents a single drawing or annotation on the overlay.
- * @property {string} id - The unique identifier for the annotation.
- * @property {'circle' | 'line' | 'arrow' | 'distance' | 'spotlight' | 'trajectory' | 'area' | 'offside-line' | 'pressure-zone' | 'passing-lane' | 'ellipse-light' | 'cone'} type - The type of annotation.
- * @property {{ x: number; y: number }[]} points - An array of points defining the annotation's shape and position.
- * @property {string} color - The color of the annotation.
- * @property {string} [label] - An optional text label for the annotation.
- * @property {number} [measurement] - A calculated measurement (e.g., distance).
- * @property {number} [intensity] - An intensity value for effects like spotlights.
- */
 interface AnnotationElement {
   id: string;
   type: 'circle' | 'line' | 'arrow' | 'distance' | 'spotlight' | 'trajectory' | 'area' | 'offside-line' | 'pressure-zone' | 'passing-lane' | 'ellipse-light' | 'cone';
@@ -51,15 +29,6 @@ interface AnnotationElement {
   intensity?: number;
 }
 
-/**
- * @interface TacticalRule
- * @description Represents a tactical rule to be visualized on the overlay.
- * @property {string} id - The unique identifier for the rule.
- * @property {'distance' | 'formation' | 'offside' | 'pressing'} type - The type of tactical rule.
- * @property {string} name - The name of the rule.
- * @property {any} parameters - The parameters for the rule's logic.
- * @property {boolean} active - Whether the rule is currently active.
- */
 interface TacticalRule {
   id: string;
   type: 'distance' | 'formation' | 'offside' | 'pressing';
@@ -68,15 +37,6 @@ interface TacticalRule {
   active: boolean;
 }
 
-/**
- * @interface AdvancedDrawingOverlayProps
- * @description Props for the AdvancedDrawingOverlay component.
- * @property {{ width: number; height: number }} videoDimensions - The dimensions of the video player.
- * @property {number} currentTime - The current time of the video, for time-based annotations.
- * @property {(annotations: AnnotationElement[]) => void} onAnnotationSave - Callback to save the current set of annotations.
- * @property {PlayerPosition[]} [playerPositions] - An array of player positions to display.
- * @property {{ x: number; y: number } | null} [ballPosition] - The position of the ball to display.
- */
 interface AdvancedDrawingOverlayProps {
   videoDimensions: { width: number; height: number };
   currentTime: number;
@@ -85,14 +45,6 @@ interface AdvancedDrawingOverlayProps {
   ballPosition?: { x: number; y: number } | null;
 }
 
-/**
- * @component AdvancedDrawingOverlay
- * @description A sophisticated overlay for tactical video analysis. It allows users to draw various shapes,
- * lines, and indicators on top of a video to highlight tactical situations. It features an isometric
- * projection to give a sense of depth, and can display player positions, heatmaps, and other data layers.
- * @param {AdvancedDrawingOverlayProps} props The props for the component.
- * @returns {JSX.Element} The rendered AdvancedDrawingOverlay component.
- */
 export const AdvancedDrawingOverlay: React.FC<AdvancedDrawingOverlayProps> = ({
   videoDimensions,
   currentTime,

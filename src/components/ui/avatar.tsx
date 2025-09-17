@@ -3,11 +3,6 @@ import * as AvatarPrimitive from "@radix-ui/react-avatar"
 
 import { cn } from "@/lib/utils"
 
-/**
- * @component Avatar
- * @description The root component for displaying an avatar.
- * It's a `React.forwardRef` component that wraps `AvatarPrimitive.Root`.
- */
 const Avatar = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>
@@ -23,11 +18,6 @@ const Avatar = React.forwardRef<
 ))
 Avatar.displayName = AvatarPrimitive.Root.displayName
 
-/**
- * @component AvatarImage
- * @description The image component for the avatar. It will be rendered if the image loads successfully.
- * It's a `React.forwardRef` component that wraps `AvatarPrimitive.Image`.
- */
 const AvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
@@ -40,12 +30,6 @@ const AvatarImage = React.forwardRef<
 ))
 AvatarImage.displayName = AvatarPrimitive.Image.displayName
 
-/**
- * @component AvatarFallback
- * @description A fallback component that is rendered if the `AvatarImage` fails to load.
- * It typically displays the user's initials.
- * It's a `React.forwardRef` component that wraps `AvatarPrimitive.Fallback`.
- */
 const AvatarFallback = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Fallback>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback>

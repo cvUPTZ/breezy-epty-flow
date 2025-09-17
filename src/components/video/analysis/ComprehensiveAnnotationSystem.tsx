@@ -20,15 +20,6 @@ import {
   Activity
 } from 'lucide-react';
 
-/**
- * @interface AnnotationType
- * @description Defines the structure for a single tactical annotation.
- * @property {string} id - The unique identifier for the annotation.
- * @property {'formation' | 'pressing' | 'defensive-lines' | 'attacking-patterns' | 'set-pieces' | 'transitions'} type - The category of the tactical annotation.
- * @property {number} timestamp - The video timestamp at which the annotation occurs.
- * @property {any} data - The specific data associated with the annotation type (e.g., formation details).
- * @property {string} [notes] - Optional user-provided notes for the annotation.
- */
 export interface AnnotationType {
   id: string;
   type: 'formation' | 'pressing' | 'defensive-lines' | 'attacking-patterns' | 'set-pieces' | 'transitions';
@@ -37,15 +28,6 @@ export interface AnnotationType {
   notes?: string;
 }
 
-/**
- * @interface ComprehensiveAnnotationSystemProps
- * @description Props for the ComprehensiveAnnotationSystem component.
- * @property {number} currentTime - The current playback time of the video.
- * @property {AnnotationType[]} annotations - The current list of saved annotations.
- * @property {(annotation: AnnotationType) => void} onAnnotationSave - Callback function to save a new annotation.
- * @property {(id: string) => void} onAnnotationDelete - Callback function to delete an existing annotation.
- * @property {boolean} drawingMode - A flag to indicate if the drawing mode is active, which might affect the visibility of this component.
- */
 interface ComprehensiveAnnotationSystemProps {
   currentTime: number;
   annotations: AnnotationType[];
@@ -54,14 +36,6 @@ interface ComprehensiveAnnotationSystemProps {
   drawingMode: boolean;
 }
 
-/**
- * @component ComprehensiveAnnotationSystem
- * @description A detailed system for creating and managing various types of tactical annotations on a video.
- * It provides a tabbed interface for different annotation categories (e.g., formation, pressing) and allows
- * users to add specific data and notes for each annotation at the current video timestamp.
- * @param {ComprehensiveAnnotationSystemProps} props The props for the component.
- * @returns {JSX.Element | null} The rendered annotation system, or null if not in drawing mode.
- */
 export const ComprehensiveAnnotationSystem: React.FC<ComprehensiveAnnotationSystemProps> = ({
   currentTime,
   annotations,

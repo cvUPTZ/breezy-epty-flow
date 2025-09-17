@@ -3,22 +3,11 @@ import { PlayerStatSummary, Player } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-/**
- * @interface PlayerPassingStatsTableProps
- * @description Props for the PlayerPassingStatsTable component.
- * @property {PlayerStatSummary[]} playerStats - An array of statistics for each player.
- */
 interface PlayerPassingStatsTableProps {
   playerStats: PlayerStatSummary[];
+  // allPlayersForMatch: Player[];
 }
 
-/**
- * @component PlayerPassingStatsTable
- * @description A component that displays a detailed table of passing statistics for each player,
- * including breakdowns by pass type and overall accuracy.
- * @param {PlayerPassingStatsTableProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const PlayerPassingStatsTable: React.FC<PlayerPassingStatsTableProps> = ({
   playerStats,
 }) => {

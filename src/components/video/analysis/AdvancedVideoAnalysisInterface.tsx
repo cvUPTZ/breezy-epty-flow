@@ -11,14 +11,6 @@ import { ProductionVideoAnalysisService } from '@/services/productionVideoAnalys
 import { DetectionResult } from '@/services/pythonDetectionService';
 import { toast } from 'sonner';
 
-/**
- * @component AdvancedVideoAnalysisInterface
- * @description A comprehensive, full-page interface for production-level video analysis. It allows users to
- * upload a local video file or provide a URL, and then utilize a suite of advanced analysis tools.
- * This includes a tactical overlay for visualizing data, detailed video controls, an analysis control panel,
- * and a history of past analysis jobs.
- * @returns {JSX.Element} The rendered AdvancedVideoAnalysisInterface component.
- */
 export const AdvancedVideoAnalysisInterface: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
