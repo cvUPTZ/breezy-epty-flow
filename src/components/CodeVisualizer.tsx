@@ -588,7 +588,7 @@ const RealCodebaseVisualizer: React.FC = () => {
 
       // Step 3: Set the job ID and wait for realtime updates
       setJobId(data.jobId);
-      setProgress({ percent: 75, file: 'Analysis job started. Waiting for results from server...' });
+      setProgress({ percent: 75, file: 'Job created. Server is processing files from Supabase...' });
 
     } catch (err: any) {
       console.error("File upload and analysis request failed:", err);
@@ -620,7 +620,7 @@ const RealCodebaseVisualizer: React.FC = () => {
 
       // Step 2: Set the job ID and wait for realtime updates
       setJobId(data.jobId);
-      setProgress({ percent: 50, file: 'Analysis job started. Waiting for results from server...' });
+      setProgress({ percent: 50, file: 'Job created. Server is processing repository...' });
 
     } catch (err: any) {
       console.error("GitHub repository analysis request failed:", err);
