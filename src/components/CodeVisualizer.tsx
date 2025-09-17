@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import * as d3 from 'd3';
 import { Search, Upload, Github, Play, Pause, RotateCcw, ZoomIn, ZoomOut, Filter, Settings, AlertTriangle, CheckCircle, XCircle, Activity, Layers, GitBranch } from 'lucide-react';
-import { createClient } from '@integrations/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
