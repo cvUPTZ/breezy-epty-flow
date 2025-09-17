@@ -85,6 +85,138 @@ interface ViewState {
   animationSpeed: number;
 }
 
+// Configuration for GitHub scanning
+const CONFIG = {
+  SUPPORTED_EXTENSIONS: ['.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.go', '.rs', '.json', '.txt'],
+  MAX_FILE_SIZE: 1000000 // 1MB limit
+};
+
+// Extract repository information from GitHub URL
+function getRepoInfo() {
+  const pathParts = window.location.pathname.split('/');
+  if (pathParts.length < 3) return null;
+
+  return {
+    owner: pathParts[1],
+    repo: pathParts[2],
+    branch: 'main' // Default to main, could be extracted from URL
+  };
+}
+
+// Fetch file content from GitHub API
+async function fetchFileContent(url: string) {
+  const response = await fetch(url, {
+    headers: {
+      'Accept': 'application/vnd.github.v3+json'
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+  
+  return await response.json();
+}
+
+// Recursively fetch repository tree
+async function fetchRepoTree(owner: string, repo: string, branch = 'main', path = '') {
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
+  const files: Array<{name: string, path: string, download_url: string, size: number}> = [];
+
+  try {
+    const contents = await fetchFileContent(url);
+
+    for (const item of contents) {
+      if (item.type === 'file') {
+        const ext = item.name.substring(item.name.lastIndexOf('.'));
+        if (CONFIG.SUPPORTED_EXTENSIONS.includes(ext) && item.size < CONFIG.MAX_FILE_SIZE) {
+          files.push({
+            name: item.name,
+            path: item.path,
+            download_url: item.download_url,
+            size: item.size
+          });
+        }
+      } else if (item.type === 'dir' && !item.name.startsWith('.') && item.name !== 'node_modules') {
+        const subFiles = await fetchRepoTree(owner, repo, branch, item.path);
+        files.push(...subFiles);
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching repository tree:', error);
+  }
+
+  return files;
+}
+
+// Scan repository for files and analyze them
+async function scanAndAnalyzeRepository() {
+  const repoInfo = getRepoInfo();
+  if (!repoInfo) {
+    throw new Error('Please navigate to a GitHub repository');
+  }
+
+  const files = await fetchRepoTree(repoInfo.owner, repoInfo.repo, repoInfo.branch);
+
+  if (files.length === 0) {
+    throw new Error('No supported files found in repository');
+  }
+
+  // Analyze each file
+  const allNodes: CodebaseNode[] = [];
+  const allLinks: CodebaseLink[] = [];
+  let totalLines = 0;
+  const languageCounts: Record<string, number> = {};
+
+  for (const file of files) {
+    try {
+      // Fetch file content
+      const response = await fetch(file.download_url);
+      const fileContent = await response.text();
+      
+      // Analyze the file
+      const analyzedData = analyzeCodeContent(fileContent, file.path);
+      
+      // Add to our collection
+      allNodes.push(...analyzedData.nodes);
+      allLinks.push(...analyzedData.links);
+      totalLines += analyzedData.metadata.totalLines;
+      
+      // Update language counts
+      for (const lang in analyzedData.metadata.languages) {
+        if (languageCounts[lang]) {
+          languageCounts[lang] += analyzedData.metadata.languages[lang];
+        } else {
+          languageCounts[lang] = analyzedData.metadata.languages[lang];
+        }
+      }
+    } catch (error) {
+      console.error(`Error analyzing file ${file.path}:`, error);
+      // Continue with other files
+    }
+  }
+
+  const combinedData: CodebaseData = {
+    nodes: allNodes,
+    links: allLinks,
+    metadata: {
+      totalFiles: files.length,
+      totalLines: totalLines,
+      languages: languageCounts,
+      lastAnalyzed: new Date(),
+      analysisVersion: '2.1.0'
+    }
+  };
+
+  return combinedData;
+}
+
+// Helper function for showing status messages
+const showStatus = (message: string, type: 'success' | 'error' | 'info') => {
+  // This will show a temporary status message
+  console.log(`${type}: ${message}`);
+};
+
 // Advanced demo data generator with realistic metrics
 const generateSOTADemoData = (): CodebaseData => {
   const nodes: CodebaseNode[] = [
@@ -125,14 +257,12 @@ const generateSOTADemoData = (): CodebaseData => {
       lastModified: new Date('2024-12-12')
     }
   ];
-
   const links: CodebaseLink[] = [
     { source: 'src/App.tsx', target: 'src/components/Header.tsx', type: 'imports', strength: 1, count: 1 },
     { source: 'src/App.tsx', target: 'src/hooks/useData.ts', type: 'uses', strength: 0.8, count: 3 },
     { source: 'src/hooks/useData.ts', target: 'src/utils/analytics.ts', type: 'calls', strength: 0.6, count: 2 },
     { source: 'src/components/Header.tsx', target: 'src/types/index.ts', type: 'uses', strength: 0.4, count: 1 }
   ];
-
   return {
     nodes,
     links,
@@ -155,7 +285,7 @@ const RealCodebaseVisualizer: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  
   // Advanced UI state
   const [filters, setFilters] = useState<FilterState>({
     nodeTypes: new Set(['file', 'component', 'function', 'hook', 'interface']),
@@ -166,7 +296,7 @@ const RealCodebaseVisualizer: React.FC = () => {
     showTestFiles: true,
     hideNodeModules: false
   });
-
+  
   const [viewState, setViewState] = useState<ViewState>({
     mode: '2d',
     colorBy: 'type',
@@ -175,18 +305,18 @@ const RealCodebaseVisualizer: React.FC = () => {
     showMetrics: false,
     animationSpeed: 1
   });
-
+  
   const [showSidebar, setShowSidebar] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [zoom, setZoom] = useState(1);
-
+  
   // Simulation refs
   const simulationRef = useRef<d3.Simulation<CodebaseNode, CodebaseLink>>();
   const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined>>();
-
-  // --- NEW: Ref for the hidden file input ---
+  
+  // Ref for the hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  
   // Filtered data based on current filters and search
   const filteredData = useMemo(() => {
     let filteredNodes = data.nodes.filter(node => {
@@ -204,7 +334,7 @@ const RealCodebaseVisualizer: React.FC = () => {
       if (filters.hideNodeModules && node.filePath?.includes('node_modules')) return false;
       return true;
     });
-
+    
     let filteredLinks = data.links.filter(link => {
       const sourceNode = typeof link.source === 'string' 
         ? filteredNodes.find(n => n.id === link.source)
@@ -214,10 +344,10 @@ const RealCodebaseVisualizer: React.FC = () => {
         : filteredNodes.includes(link.target);
       return sourceNode && targetNode && filters.linkTypes.has(link.type);
     });
-
+    
     return { nodes: filteredNodes, links: filteredLinks };
   }, [data, filters, searchTerm]);
-
+  
   // Advanced color schemes
   const getNodeColor = useCallback((node: CodebaseNode): string => {
     switch (viewState.colorBy) {
@@ -254,25 +384,23 @@ const RealCodebaseVisualizer: React.FC = () => {
         return '#6b7280';
     }
   }, [viewState.colorBy]);
-
+  
   const getNodeSize = useCallback((node: CodebaseNode): number => {
     const baseSize = Math.max(8, Math.min(30, Math.sqrt(node.size) * 2));
     const complexityBonus = node.complexity * 0.5;
     return Math.min(40, baseSize + complexityBonus);
   }, []);
-
+  
   // Enhanced D3 visualization with modern patterns
   const initializeVisualization = useCallback(() => {
     if (!svgRef.current || filteredData.nodes.length === 0) return;
-
     const svg = d3.select(svgRef.current);
     const width = window.innerWidth - (showSidebar ? 350 : 0);
     const height = window.innerHeight;
-
     svg.selectAll("*").remove();
     const g = svg.append("g");
     gRef.current = g;
-
+    
     // Advanced zoom with smooth transitions
     const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.1, 10])
@@ -280,9 +408,8 @@ const RealCodebaseVisualizer: React.FC = () => {
         g.attr("transform", event.transform);
         setZoom(event.transform.k);
       });
-
     svg.call(zoomBehavior);
-
+    
     // Create force simulation with enhanced forces
     const simulation = d3.forceSimulation(filteredData.nodes)
       .force("link", d3.forceLink<CodebaseNode, CodebaseLink>(filteredData.links)
@@ -298,7 +425,7 @@ const RealCodebaseVisualizer: React.FC = () => {
       .force("center", d3.forceCenter(width / 2, height / 2))
       .force("collision", d3.forceCollide()
         .radius(d => getNodeSize(d) + 5));
-
+    
     if (viewState.clustering) {
       // Add clustering force based on node type
       simulation.force("cluster", d3.forceX()
@@ -308,12 +435,11 @@ const RealCodebaseVisualizer: React.FC = () => {
         })
         .strength(0.1));
     }
-
+    
     simulationRef.current = simulation;
-
+    
     // Enhanced gradient definitions
     const defs = svg.append("defs");
-
     // Create gradients for different node types
     const gradients = ['file', 'component', 'function', 'hook', 'interface'];
     gradients.forEach(type => {
@@ -321,12 +447,11 @@ const RealCodebaseVisualizer: React.FC = () => {
         .attr("id", `gradient-${type}`)
         .attr("cx", "30%")
         .attr("cy", "30%");
-
       const color = getNodeColor({ type, complexity: 1, maintainability: 85, size: 50 } as CodebaseNode);
       gradient.append("stop").attr("offset", "0%").attr("stop-color", color).attr("stop-opacity", 0.9);
       gradient.append("stop").attr("offset", "100%").attr("stop-color", d3.color(color)?.darker(0.5) || color).attr("stop-opacity", 0.7);
     });
-
+    
     // Enhanced link rendering with animated flow
     const linkGroup = g.append("g").attr("class", "links");
     const link = linkGroup.selectAll("line")
@@ -344,7 +469,7 @@ const RealCodebaseVisualizer: React.FC = () => {
       .style("stroke-width", d => Math.max(1, d.count * 2))
       .style("stroke-opacity", d => 0.3 + (d.strength * 0.4))
       .style("stroke-dasharray", d => d.type === 'uses' ? "5,5" : "none");
-
+    
     // Animated particles along links for active connections
     if (isPlaying) {
       const particles = linkGroup.selectAll("circle.particle")
@@ -354,7 +479,7 @@ const RealCodebaseVisualizer: React.FC = () => {
         .attr("r", 2)
         .style("fill", "#fff")
         .style("opacity", 0.8);
-
+      
       particles.each(function(d) {
         const particle = d3.select(this);
         particle.transition()
@@ -372,7 +497,7 @@ const RealCodebaseVisualizer: React.FC = () => {
           .on("end", () => particle.remove());
       });
     }
-
+    
     // Enhanced node rendering
     const nodeGroup = g.append("g").attr("class", "nodes");
     const node = nodeGroup.selectAll(".node")
@@ -395,7 +520,7 @@ const RealCodebaseVisualizer: React.FC = () => {
           d.fx = null;
           d.fy = null;
         }));
-
+    
     // Main node circle with gradient fill
     node.append("circle")
       .attr("r", getNodeSize)
@@ -403,7 +528,7 @@ const RealCodebaseVisualizer: React.FC = () => {
       .style("stroke", "#ffffff")
       .style("stroke-width", 2)
       .style("filter", d => d.issues.some(i => i.type === 'error') ? "drop-shadow(0 0 6px #ef4444)" : "none");
-
+    
     // Node icons
     node.append("text")
       .text(d => ({
@@ -415,7 +540,7 @@ const RealCodebaseVisualizer: React.FC = () => {
       .attr("dy", "0.35em")
       .style("font-size", d => `${getNodeSize(d) * 0.6}px`)
       .style("pointer-events", "none");
-
+    
     // Issue indicators
     node.filter(d => d.issues.length > 0)
       .append("circle")
@@ -425,7 +550,7 @@ const RealCodebaseVisualizer: React.FC = () => {
       .style("fill", d => d.issues.some(i => i.type === 'error') ? '#ef4444' : '#f59e0b')
       .style("stroke", "#ffffff")
       .style("stroke-width", 1);
-
+    
     // Node labels
     if (viewState.showLabels) {
       node.append("text")
@@ -438,7 +563,7 @@ const RealCodebaseVisualizer: React.FC = () => {
         .style("text-shadow", "1px 1px 2px rgba(0,0,0,0.8)")
         .style("pointer-events", "none");
     }
-
+    
     // Metrics overlay
     if (viewState.showMetrics) {
       node.append("text")
@@ -449,7 +574,7 @@ const RealCodebaseVisualizer: React.FC = () => {
         .style("fill", "#94a3b8")
         .style("pointer-events", "none");
     }
-
+    
     // Enhanced interactions
     node
       .on("click", (event, d) => {
@@ -478,7 +603,7 @@ const RealCodebaseVisualizer: React.FC = () => {
         node.style("opacity", 1);
         link.style("opacity", d => 0.3 + (d.strength * 0.4));
       });
-
+    
     // Simulation tick with smooth animations
     simulation.on("tick", () => {
       link
@@ -486,28 +611,27 @@ const RealCodebaseVisualizer: React.FC = () => {
         .attr("y1", d => (d.source as CodebaseNode).y!)
         .attr("x2", d => (d.target as CodebaseNode).x!)
         .attr("y2", d => (d.target as CodebaseNode).y!);
-
       node.attr("transform", d => `translate(${d.x!},${d.y!})`);
     });
-
+    
     // Click to deselect
     svg.on("click", () => setSelectedNode(null));
   }, [filteredData, viewState, showSidebar, isPlaying, getNodeColor, getNodeSize, selectedNode]);
-
+  
   // Initialize with demo data
   useEffect(() => {
     const demoData = generateSOTADemoData();
     setData(demoData);
     setIsLoading(false);
   }, []);
-
+  
   // Update visualization when data or settings change
   useEffect(() => {
     if (filteredData.nodes.length > 0) {
       initializeVisualization();
     }
   }, [initializeVisualization]);
-
+  
   // Stats computation
   const stats = useMemo(() => {
     const nodes = filteredData.nodes;
@@ -516,7 +640,6 @@ const RealCodebaseVisualizer: React.FC = () => {
     const avgComplexity = nodes.length > 0 ? nodes.reduce((sum, n) => sum + n.complexity, 0) / nodes.length : 0;
     const avgMaintainability = nodes.length > 0 ? nodes.reduce((sum, n) => sum + n.maintainability, 0) / nodes.length : 0;
     const avgTestCoverage = nodes.length > 0 ? nodes.reduce((sum, n) => sum + n.testCoverage, 0) / nodes.length : 0;
-
     return {
       totalNodes: nodes.length,
       totalLinks: filteredData.links.length,
@@ -527,49 +650,44 @@ const RealCodebaseVisualizer: React.FC = () => {
       avgTestCoverage: Math.round(avgTestCoverage)
     };
   }, [filteredData]);
-
-  // --- NEW: Function to handle file upload with REAL processing via Supabase ---
-const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  
+  // Function to handle file upload with REAL processing via Supabase
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
-
     setIsLoading(true);
     setError(null);
-
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error("User must be logged in to upload files");
       }
-
       const allNodes: CodebaseNode[] = [];
       const allLinks: CodebaseLink[] = [];
       let totalLines = 0;
       const languageCounts: Record<string, number> = {};
-
+      
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-
         const { error: uploadError } = await supabase.storage
           .from('code-uploads')
           .upload(fileName, file, {
             cacheControl: '3600',
             upsert: false,
           });
-
+        
         if (uploadError) {
           throw new Error(`Upload failed for ${file.name}: ${uploadError.message}`);
         }
-
+        
         const fileContent = await file.text();
         const analyzedData = analyzeCodeContent(fileContent, file.name);
-
         allNodes.push(...analyzedData.nodes);
         allLinks.push(...analyzedData.links);
         totalLines += analyzedData.metadata.totalLines;
-
+        
         for (const lang in analyzedData.metadata.languages) {
           if (languageCounts[lang]) {
             languageCounts[lang] += analyzedData.metadata.languages[lang];
@@ -578,7 +696,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
           }
         }
       }
-
+      
       const combinedData: CodebaseData = {
         nodes: allNodes,
         links: allLinks,
@@ -590,9 +708,8 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
           analysisVersion: '1.1.0'
         }
       };
-
+      
       setData(combinedData);
-
     } catch (err: any) {
       console.error("Upload and analysis failed:", err);
       setError(err.message || "Failed to process uploaded files. Please try again.");
@@ -600,23 +717,23 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
       setIsLoading(false);
     }
   };
-
-  // --- NEW: Function to trigger the file input click ---
+  
+  // Function to trigger the file input click
   const triggerFileUpload = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
-
-  // --- NEW: Basic code analysis function ---
+  
+  // Basic code analysis function
   const analyzeCodeContent = (content: string, fileName: string): CodebaseData => {
     const lines = content.split('\n');
     const loc = lines.length;
-
+    
     // Create nodes array
     const nodes: CodebaseNode[] = [];
     const links: CodebaseLink[] = [];
-
+    
     // Create a file node
     const fileId = `file_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     const fileNode: CodebaseNode = {
@@ -642,18 +759,15 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
       content: content,
       lastModified: new Date()
     };
-
     nodes.push(fileNode);
-
+    
     // Basic function detection
     const functionRegex = /function\s+([a-zA-Z_$][0-9a-zA-Z_$]*)\s*\(/g;
     let funcMatch;
     let funcIndex = 0;
-    
     while ((funcMatch = functionRegex.exec(content)) !== null) {
       const funcName = funcMatch[1];
       const funcId = `${fileId}_func_${funcIndex++}`;
-      
       const funcNode: CodebaseNode = {
         id: funcId,
         type: 'function',
@@ -676,9 +790,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         },
         filePath: fileName
       };
-
       nodes.push(funcNode);
-
       links.push({
         source: fileId,
         target: funcId,
@@ -687,16 +799,14 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         count: 1
       });
     }
-
+    
     // Basic class detection
     const classRegex = /class\s+([a-zA-Z_$][0-9a-zA-Z_$]*)\s*(?:extends\s+[a-zA-Z_$][0-9a-zA-Z_$]*\s*)?\{/g;
     let classMatch;
     let classIndex = 0;
-    
     while ((classMatch = classRegex.exec(content)) !== null) {
       const className = classMatch[1];
       const classId = `${fileId}_class_${classIndex++}`;
-      
       const classNode: CodebaseNode = {
         id: classId,
         type: 'class',
@@ -719,9 +829,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         },
         filePath: fileName
       };
-
       nodes.push(classNode);
-
       links.push({
         source: fileId,
         target: classId,
@@ -730,16 +838,14 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         count: 1
       });
     }
-
+    
     // Basic import detection
     const importRegex = /import\s+(?:{[^}]*}|\*|\w+)\s+from\s+['"]([^'"]+)['"]/g;
     let importMatch;
-    
     while ((importMatch = importRegex.exec(content)) !== null) {
       const importedPath = importMatch[1];
       // Create a simple import node
       const importId = `import_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-      
       const importNode: CodebaseNode = {
         id: importId,
         type: 'import',
@@ -762,9 +868,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         },
         filePath: importedPath
       };
-
       nodes.push(importNode);
-
       links.push({
         source: fileId,
         target: importId,
@@ -773,7 +877,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         count: 1
       });
     }
-
+    
     return {
       nodes,
       links,
@@ -786,7 +890,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
       }
     };
   };
-
+  
   // Helper functions for code analysis
   const getFileType = (fileName: string): 'file' | 'component' | 'class' | 'function' | 'hook' | 'interface' | 'variable' | 'import' => {
     if (fileName.endsWith('.tsx') || fileName.endsWith('.jsx')) return 'component';
@@ -794,7 +898,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (fileName.endsWith('.css') || fileName.endsWith('.scss')) return 'file';
     return 'file';
   };
-
+  
   const getLanguage = (fileName: string): string => {
     if (fileName.endsWith('.ts') || fileName.endsWith('.tsx')) return 'TypeScript';
     if (fileName.endsWith('.js') || fileName.endsWith('.jsx')) return 'JavaScript';
@@ -804,7 +908,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (fileName.endsWith('.rs')) return 'Rust';
     return 'Unknown';
   };
-
+  
   const calculateComplexity = (content: string): number => {
     // Count branches, loops, etc. for complexity
     const complexityKeywords = ['if', 'else', 'for', 'while', 'switch', 'case', 'catch', '&&', '||', '??', '?.'];
@@ -818,7 +922,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     });
     return Math.min(complexity, 50); // Cap complexity
   };
-
+  
   const calculateCyclomaticComplexity = (content: string): number => {
     // Simple cyclomatic complexity calculation
     const decisionPoints = ['if', 'for', 'while', 'switch', 'case', 'catch', '&&', '||', '?', '??', '?.'];
@@ -832,7 +936,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     });
     return complexity;
   };
-
+  
   const detectIssues = (content: string): CodeIssue[] => {
     const issues: CodeIssue[] = [];
     
@@ -848,7 +952,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         line: content.substring(0, match.index).split('\n').length
       });
     }
-
+    
     // Check for TODO comments
     const todoRegex = /\/\/\s*TODO:/gi;
     while ((match = todoRegex.exec(content)) !== null) {
@@ -860,7 +964,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         line: content.substring(0, match.index).split('\n').length
       });
     }
-
+    
     // Check for debugger statements
     const debuggerRegex = /\bdebugger\b/gi;
     while ((match = debuggerRegex.exec(content)) !== null) {
@@ -872,22 +976,24 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         line: content.substring(0, match.index).split('\n').length
       });
     }
-
+    
     return issues;
   };
-
+  
   return (
     <div className="w-full h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 relative overflow-hidden font-sans text-white">
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.1)_1px,transparent_0)] bg-[size:20px_20px]"></div>
       </div>
+      
       {/* Main SVG Canvas */}
       <svg 
         ref={svgRef} 
         className={`transition-all duration-300 ${showSidebar ? 'w-[calc(100%-350px)]' : 'w-full'} h-full`}
         style={{ background: 'transparent' }}
       />
+      
       {/* Top Control Bar */}
       <div className="fixed top-4 left-4 right-4 z-50 flex items-center justify-between">
         <div className="flex items-center space-x-3">
@@ -924,6 +1030,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
           </button>
         </div>
       </div>
+      
       {/* Sidebar */}
       {showSidebar && (
         <div className="fixed right-0 top-0 h-full w-80 bg-gray-900/95 backdrop-blur-sm border-l border-gray-700 z-40 overflow-y-auto">
@@ -967,6 +1074,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
                 </div>
               </div>
             </div>
+            
             {/* View Controls */}
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-cyan-400 flex items-center">
@@ -1039,6 +1147,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
                 </div>
               </div>
             </div>
+            
             {/* Filters */}
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-cyan-400 flex items-center">
@@ -1100,6 +1209,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
                 </div>
               </div>
             </div>
+            
             {/* Data Source Actions */}
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-cyan-400 flex items-center">
@@ -1116,11 +1226,30 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
                 >
                   🎲 New Demo
                 </button>
-                <button className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-lg">
+                
+                {/* GitHub Button with scan functionality */}
+                <button 
+                  onClick={async () => {
+                    setIsLoading(true);
+                    setError(null);
+                    try {
+                      const repoData = await scanAndAnalyzeRepository();
+                      setData(repoData);
+                      showStatus(`Successfully analyzed repository with ${repoData.nodes.length} nodes`, 'success');
+                    } catch (err: any) {
+                      console.error("GitHub scan failed:", err);
+                      setError(err.message || "Failed to scan GitHub repository. Please make sure you're on a GitHub repository page.");
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }}
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-lg"
+                >
                   <Github className="w-3 h-3 inline mr-1" />
                   GitHub
                 </button>
-                {/* --- MODIFIED: Upload Button with onClick handler --- */}
+                
+                {/* Upload Button */}
                 <button 
                   onClick={triggerFileUpload}
                   className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-lg"
@@ -1128,11 +1257,13 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
                   <Upload className="w-3 h-3 inline mr-1" />
                   Upload
                 </button>
+                
                 <button className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-lg">
                   ⚡ AI Scan
                 </button>
               </div>
             </div>
+            
             {/* Legend */}
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-cyan-400">Legend</h3>
@@ -1162,6 +1293,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
           </div>
         </div>
       )}
+      
       {/* Node Details Panel */}
       {selectedNode && (
         <div className="fixed bottom-6 left-6 right-6 bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-xl p-6 z-50 max-w-4xl mx-auto shadow-2xl">
@@ -1241,6 +1373,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
                   </div>
                 </div>
               )}
+              
               {/* Metrics */}
               <div>
                 <h4 className="font-semibold text-cyan-400 mb-2 flex items-center">
@@ -1270,6 +1403,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
           </div>
         </div>
       )}
+      
       {/* Hover Tooltip */}
       {hoveredNode && (
         <div className="fixed z-60 pointer-events-none bg-gray-800/90 backdrop-blur-sm border border-gray-600 rounded-lg p-3 text-sm shadow-lg">
@@ -1285,6 +1419,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
           )}
         </div>
       )}
+      
       {/* Loading State */}
       {isLoading && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
@@ -1295,6 +1430,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
           </div>
         </div>
       )}
+      
       {/* Error State */}
       {error && (
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-red-600 text-white p-4 rounded-lg z-50 shadow-lg">
@@ -1304,21 +1440,22 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
           </div>
         </div>
       )}
+      
       {/* Zoom Indicator */}
       <div className="fixed bottom-6 right-6 bg-gray-800/80 backdrop-blur-sm border border-gray-600 rounded-lg px-3 py-1 text-xs z-30">
         Zoom: {Math.round(zoom * 100)}%
       </div>
-
-      {/* --- NEW: Hidden File Input --- */}
+      
+      {/* Hidden File Input */}
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleFileUpload}
-        accept=".js,.ts,.jsx,.tsx,.py,.java,.go,.rs,.json,.txt" // Adjust accepted file types
-        multiple // Allow multiple files
-        style={{ display: 'none' }} // Hide the default input
+        accept=".js,.ts,.jsx,.tsx,.py,.java,.go,.rs,.json,.txt"
+        multiple
+        style={{ display: 'none' }}
       />
-
+      
       {/* Custom Styles */}
       <style jsx>{`
         .slider::-webkit-slider-thumb {
