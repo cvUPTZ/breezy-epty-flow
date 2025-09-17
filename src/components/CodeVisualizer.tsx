@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import * as d3 from 'd3';
 import { Search, Upload, Github, Play, Pause, RotateCcw, ZoomIn, ZoomOut, Filter, Settings, AlertTriangle, CheckCircle, XCircle, Activity, Layers, GitBranch } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { GitHubRepoModal } from '@/components/modals/GitHubRepoModal';
 
 // Enhanced interfaces with modern TypeScript patterns
 interface CodebaseNode {
@@ -179,6 +180,7 @@ const RealCodebaseVisualizer: React.FC = () => {
   const [showSidebar, setShowSidebar] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [isGitHubModalOpen, setIsGitHubModalOpen] = useState(false);
 
   // Simulation refs
   const simulationRef = useRef<d3.Simulation<CodebaseNode, CodebaseLink>>();
@@ -876,6 +878,107 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     return issues;
   };
 
+  const fetchGitHubRepository = async (repoUrl: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+        const urlParts = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
+        if (!urlParts) {
+            throw new Error('Invalid GitHub repository URL. Please use the format https://github.com/owner/repo');
+        }
+        const owner = urlParts[1];
+        const repo = urlParts[2];
+
+        const allNodes: CodebaseNode[] = [];
+        const allLinks: CodebaseLink[] = [];
+        let totalLines = 0;
+        const languageCounts: Record<string, number> = {};
+        let totalFiles = 0;
+
+        async function processDirectory(path: string) {
+            const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`);
+            if (response.status === 403) {
+                 const rateLimitReset = response.headers.get('X-RateLimit-Reset');
+                 const resetTime = new Date(Number(rateLimitReset) * 1000);
+                 throw new Error(`GitHub API rate limit exceeded. Please try again after ${resetTime.toLocaleTimeString()}.`);
+            }
+            if (!response.ok) {
+                throw new Error(`Failed to fetch repository contents from path: ${path}. This might be a private repository.`);
+            }
+            const contents = await response.json();
+
+            for (const item of contents) {
+                if (item.type === 'file') {
+                    const supportedExtensions = ['.js', '.ts', '.jsx', '.tsx', '.json', '.css', '.html', '.py', '.go', '.java', '.rs'];
+                    if (supportedExtensions.some(ext => item.name.endsWith(ext))) {
+                        try {
+                            const contentResponse = await fetch(item.download_url);
+                            if (!contentResponse.ok) {
+                                console.warn(`Skipping file ${item.path} due to fetch error.`);
+                                continue;
+                            }
+                            const content = await contentResponse.text();
+                            const analyzedData = analyzeCodeContent(content, item.path);
+
+                            allNodes.push(...analyzedData.nodes);
+                            allLinks.push(...analyzedData.links);
+                            totalLines += analyzedData.metadata.totalLines;
+                            for (const lang in analyzedData.metadata.languages) {
+                                if (languageCounts[lang]) {
+                                    languageCounts[lang] += analyzedData.metadata.languages[lang];
+                                } else {
+                                    languageCounts[lang] = analyzedData.metadata.languages[lang];
+                                }
+                            }
+                            totalFiles++;
+                        } catch (error) {
+                            console.error(`Failed to process file ${item.path}:`, error);
+                        }
+                    }
+                } else if (item.type === 'dir') {
+                    if (path.split('/').length < 5) {
+                        await processDirectory(item.path);
+                    } else {
+                        console.warn(`Skipping directory ${item.path} due to depth limit.`);
+                    }
+                }
+            }
+        }
+
+        await processDirectory('');
+
+        const combinedData: CodebaseData = {
+            nodes: allNodes,
+            links: allLinks,
+            metadata: {
+                totalFiles: totalFiles,
+                totalLines: totalLines,
+                languages: languageCounts,
+                lastAnalyzed: new Date(),
+                analysisVersion: '1.2.0-github'
+            }
+        };
+
+        if (totalFiles === 0) {
+            throw new Error("No supported files found in the repository. The visualizer supports common web development, Python, Java, Go, and Rust files.");
+        }
+
+        setData(combinedData);
+
+    } catch (err: any) {
+        console.error("GitHub repository processing failed:", err);
+        setError(err.message || "Failed to process the GitHub repository.");
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  const handleVisualizeFromGitHub = (repoUrl: string) => {
+    setIsGitHubModalOpen(false);
+    fetchGitHubRepository(repoUrl);
+  };
+
   return (
     <div className="w-full h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 relative overflow-hidden font-sans text-white">
       {/* Background pattern */}
@@ -1116,7 +1219,10 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
                 >
                   🎲 New Demo
                 </button>
-                <button className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-lg">
+                <button
+                  onClick={() => setIsGitHubModalOpen(true)}
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-lg"
+                >
                   <Github className="w-3 h-3 inline mr-1" />
                   GitHub
                 </button>
@@ -1317,6 +1423,12 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         accept=".js,.ts,.jsx,.tsx,.py,.java,.go,.rs,.json,.txt" // Adjust accepted file types
         multiple // Allow multiple files
         style={{ display: 'none' }} // Hide the default input
+      />
+
+      <GitHubRepoModal
+        isOpen={isGitHubModalOpen}
+        onClose={() => setIsGitHubModalOpen(false)}
+        onVisualize={handleVisualizeFromGitHub}
       />
 
       {/* Custom Styles */}
