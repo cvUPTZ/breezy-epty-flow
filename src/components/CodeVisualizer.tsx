@@ -229,35 +229,151 @@ const RealCodebaseVisualizer: React.FC = () => {
   const [stats, setStats] = useState<StatsData>({ errors: 0, warnings: 0, nodes: 0, links: 0, bugDensity: 0 });
   const simulationRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined>>();
   const forceSimulationRef = useRef<d3.Simulation<CodebaseNode, undefined>>();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [dataSource, setDataSource] = useState<'demo' | 'github'>('demo');
+  const [repoUrl, setRepoUrl] = useState('');
+  const [githubToken, setGithubToken] = useState('');
+  const [showRepoInput, setShowRepoInput] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
+  const calculateStats = (nodes: CodebaseNode[], links: CodebaseLink[]) => {
+    const errors = nodes.filter(n => n.bugCount > 2).length;
+    const warnings = nodes.filter(n => n.bugCount > 0 && n.bugCount <= 2).length;
+    const buggyNodes = nodes.filter(n => n.bugCount > 0).length;
+    const bugDensity = nodes.length > 0 ? Math.round((buggyNodes / nodes.length) * 100) : 0;
+    return { errors, warnings, nodes: nodes.length, links: links.length, bugDensity };
+  };
+
+  const parseGitHubUrl = (url: string) => {
+    const regex = /github\.com\/([^\/]+)\/([^\/]+)/;
+    const match = url.match(regex);
+    if (match) {
+      return {
+        owner: match[1],
+        repo: match[2].replace('.git', '')
+      };
+    }
+    return null;
+  };
+
+  const loadGitHubRepository = async (url: string, token?: string) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const repoInfo = parseGitHubUrl(url);
+      if (!repoInfo) {
+        throw new Error('Invalid GitHub URL format. Use: https://github.com/owner/repo');
+      }
+
+      const headers: Record<string, string> = {
+        'Accept': 'application/vnd.github.v3+json'
+      };
       
-      // For now, always use demo data
-      // In production, you would implement GitHub API integration here
+      if (token) {
+        headers['Authorization'] = `token ${token}`;
+      }
+
+      const { owner, repo } = repoInfo;
+
+      // Get the default branch
+      const repoResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
+      if (!repoResponse.ok) {
+        if (repoResponse.status === 404) {
+          throw new Error('Repository not found or not accessible');
+        } else if (repoResponse.status === 403) {
+          throw new Error('Rate limit exceeded or repository requires authentication');
+        }
+        throw new Error(`GitHub API error: ${repoResponse.status}`);
+      }
+      
+      const repoData = await repoResponse.json();
+      const defaultBranch = repoData.default_branch || 'main';
+
+      // Get the file tree
+      const treeResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${defaultBranch}?recursive=1`, { headers });
+      if (!treeResponse.ok) {
+        throw new Error(`Failed to fetch repository tree: ${treeResponse.status}`);
+      }
+      
+      const treeData = await treeResponse.json();
+      
+      const codeFiles = treeData.tree.filter((item: any) => 
+        item.type === 'blob' && 
+        /\.(js|jsx|ts|tsx|py|java|cpp|c|cs|php|rb|go)$/.test(item.path)
+      );
+
+      if (codeFiles.length === 0) {
+        throw new Error('No supported code files found in repository');
+      }
+
+      const allNodes: CodebaseNode[] = [];
+      const allLinks: CodebaseLink[] = [];
+      
+      // Limit to first 20 files to avoid API rate limits
+      const filesToProcess = codeFiles.slice(0, 20);
+      
+      await Promise.all(filesToProcess.map(async (file: any) => {
+        try {
+          const contentResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${file.path}`, { headers });
+          if (contentResponse.ok) {
+            const contentData = await contentResponse.json();
+            if (contentData.encoding === 'base64') {
+              const content = atob(contentData.content);
+              const { nodes, links } = CodeAnalyzer.analyzeFile(file.path, content);
+              allNodes.push(...nodes);
+              allLinks.push(...links);
+            }
+          }
+        } catch (fileError) {
+          console.warn(`Failed to process file ${file.path}:`, fileError);
+        }
+      }));
+
+      if (allNodes.length === 0) {
+        throw new Error('No code structure could be analyzed from the repository');
+      }
+
+      // Add cross-dependencies
+      const crossLinks = CodeAnalyzer.detectCrossDependencies(allNodes, allLinks);
+      allLinks.push(...crossLinks);
+
+      const newStats = calculateStats(allNodes, allLinks);
+      setStats(newStats);
+      setData({ nodes: allNodes, links: allLinks });
+      setDataSource('github');
+      
+    } catch (error) {
+      console.error('Error loading GitHub repository:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load repository');
+      // Fall back to demo data
       const demoData = generateDemoData();
       const newStats = calculateStats(demoData.nodes, demoData.links);
-      
-      // Simulate loading time
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
       setStats(newStats);
       setData(demoData);
+      setDataSource('demo');
+    } finally {
       setIsLoading(false);
-    };
+    }
+  };
 
-    const calculateStats = (nodes: CodebaseNode[], links: CodebaseLink[]) => {
-      const errors = nodes.filter(n => n.bugCount > 2).length;
-      const warnings = nodes.filter(n => n.bugCount > 0 && n.bugCount <= 2).length;
-      const buggyNodes = nodes.filter(n => n.bugCount > 0).length;
-      const bugDensity = nodes.length > 0 ? Math.round((buggyNodes / nodes.length) * 100) : 0;
-      return { errors, warnings, nodes: nodes.length, links: links.length, bugDensity };
-    };
+  const loadDemoData = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    // Simulate loading time
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    const demoData = generateDemoData();
+    const newStats = calculateStats(demoData.nodes, demoData.links);
+    setStats(newStats);
+    setData(demoData);
+    setDataSource('demo');
+    setIsLoading(false);
+  };
 
-    loadData();
+  useEffect(() => {
+    loadDemoData();
   }, []);
 
   const initializeVisualization = useCallback(() => {
@@ -564,22 +680,95 @@ const RealCodebaseVisualizer: React.FC = () => {
   }, []);
 
   const handleGenerateNewData = useCallback(() => {
-    setIsLoading(true);
-    setTimeout(() => {
-      const newData = generateDemoData();
-      const newStats = {
-        errors: newData.nodes.filter(n => n.bugCount > 2).length,
-        warnings: newData.nodes.filter(n => n.bugCount > 0 && n.bugCount <= 2).length,
-        nodes: newData.nodes.length,
-        links: newData.links.length,
-        bugDensity: newData.nodes.length > 0 ? Math.round((newData.nodes.filter(n => n.bugCount > 0).length / newData.nodes.length) * 100) : 0
-      };
-      setStats(newStats);
-      setData(newData);
-      setSelectedNode(null);
-      setIsLoading(false);
-    }, 800);
+    loadDemoData();
   }, []);
+
+  const handleLoadRepository = useCallback(() => {
+    if (repoUrl.trim()) {
+      loadGitHubRepository(repoUrl.trim(), githubToken.trim() || undefined);
+      setShowRepoInput(false);
+    }
+  }, [repoUrl, githubToken]);
+
+  const RepositoryInputModal: React.FC = () => {
+    if (!showRepoInput) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
+        <div className="bg-gray-900 border border-gray-600 rounded-lg p-6 w-96 max-w-90vw">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold text-white">Load GitHub Repository</h3>
+            <button 
+              onClick={() => setShowRepoInput(false)}
+              className="text-gray-400 hover:text-white text-xl"
+            >
+              ✕
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Repository URL*
+              </label>
+              <input
+                type="text"
+                value={repoUrl}
+                onChange={(e) => setRepoUrl(e.target.value)}
+                placeholder="https://github.com/owner/repository"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                GitHub Token (Optional)
+              </label>
+              <input
+                type="password"
+                value={githubToken}
+                onChange={(e) => setGithubToken(e.target.value)}
+                placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Optional: Provide for private repos or higher rate limits
+              </p>
+            </div>
+            
+            <div className="bg-blue-900 bg-opacity-30 border border-blue-700 rounded p-3">
+              <p className="text-blue-200 text-sm">
+                <strong>Note:</strong> Analysis is limited to 20 code files to respect API rate limits. 
+                Supported languages: JS, TS, Python, Java, C/C++, C#, PHP, Ruby, Go.
+              </p>
+            </div>
+            
+            {error && (
+              <div className="bg-red-900 bg-opacity-30 border border-red-700 rounded p-3">
+                <p className="text-red-200 text-sm">{error}</p>
+              </div>
+            )}
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={handleLoadRepository}
+                disabled={!repoUrl.trim() || isLoading}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded transition-colors"
+              >
+                {isLoading ? 'Loading...' : 'Load Repository'}
+              </button>
+              <button
+                onClick={() => setShowRepoInput(false)}
+                className="px-4 py-2 border border-gray-600 text-gray-300 rounded hover:bg-gray-800 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const NodeDetailsPanel: React.FC<{ node: CodebaseNode | null; onClose: () => void }> = ({ node, onClose }) => {
     if (!node) return null;
@@ -703,9 +892,17 @@ const RealCodebaseVisualizer: React.FC = () => {
             <div className="space-x-2">
               <button 
                 onClick={handleGenerateNewData}
-                className="bg-cyan-600 hover:bg-cyan-700 px-3 py-1 rounded text-xs transition-all transform hover:-translate-y-0.5"
+                disabled={isLoading}
+                className="bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 px-3 py-1 rounded text-xs transition-all transform hover:-translate-y-0.5 disabled:transform-none"
               >
                 🎲 New Demo
+              </button>
+              <button 
+                onClick={() => setShowRepoInput(true)}
+                disabled={isLoading}
+                className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 px-3 py-1 rounded text-xs transition-all transform hover:-translate-y-0.5 disabled:transform-none"
+              >
+                📂 GitHub Repo
               </button>
             </div>
           </div>
@@ -805,7 +1002,7 @@ const RealCodebaseVisualizer: React.FC = () => {
         
         <div className="mt-4 pt-3 border-t border-gray-600">
           <p className="text-xs text-gray-400 text-center">
-            {dataSource === 'demo' ? '🎭 Demo Data' : '📂 GitHub Data'}
+            {dataSource === 'demo' ? '🎭 Demo Data' : `📂 GitHub: ${parseGitHubUrl(repoUrl)?.repo || 'Repository'}`}
           </p>
         </div>
       </div>
@@ -882,6 +1079,7 @@ const RealCodebaseVisualizer: React.FC = () => {
       <ControlPanel />
       <StatsPanel />
       <Legend />
+      <RepositoryInputModal />
       
       <NodeDetailsPanel 
         node={selectedNode} 
