@@ -29,7 +29,7 @@ const RepoVisualizer: React.FC<RepoVisualizerProps> = ({ graphData, eventsData, 
 
         const container = svg.append('g');
 
-        const zoom = d3.zoom().on('zoom', (event) => {
+        const zoom = d3.zoom<SVGSVGElement, unknown>().on('zoom', (event) => {
             container.attr('transform', event.transform);
         });
         svg.call(zoom);
@@ -160,7 +160,7 @@ const RepoVisualizer: React.FC<RepoVisualizerProps> = ({ graphData, eventsData, 
         }
     }
 
-    const nodeTypes = [...new Set(graphData.nodes.map((d: any) => d.type))];
+    const nodeTypes: string[] = [...new Set(graphData.nodes.map((d: any) => d.type))];
 
     return (
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -169,7 +169,7 @@ const RepoVisualizer: React.FC<RepoVisualizerProps> = ({ graphData, eventsData, 
                 <select value={filterType} onChange={e => setFilterType(e.target.value)}>
                     <option value="">All Node Types</option>
                     {nodeTypes.map(type => (
-                        <option key={type} value={type}>{type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>
+                        <option key={type} value={type}>{type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</option>
                     ))}
                 </select>
             </div>
