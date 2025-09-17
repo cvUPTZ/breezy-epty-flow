@@ -47,6 +47,7 @@ import StartupPitchPage from './pages/StartupPitchPage';
 import BusinessModelCanvasPage from './pages/BusinessModelCanvas';
 import ServiceOfferPage from './pages/ServiceOffer';
 import VisualizationPage from './pages/VisualizationPage';
+import RealCodebaseVisualizer from './components/RealCodebaseVisualizer';
 
 const queryClient = new QueryClient();
 
@@ -304,6 +305,16 @@ const AppContent = () => {
         </RequireAuth>
       } />
 
+      {/* Development Tools */}
+      <Route path="/code-visualizer" element={
+        <RequireAuth requiredRoles={['admin', 'manager']}>
+          <RealCodebaseVisualizer />
+        </RequireAuth>
+      } />
+
+      {/* Utility Routes */}
+      <Route path="/visualization" element={<VisualizationPage />} />
+
       {/* Fallback Routes */}
       <Route path="/unauthorized" element={
         <div className="flex items-center justify-center min-h-screen bg-background">
@@ -333,7 +344,6 @@ const AppContent = () => {
       } />
 
       <Route path="*" element={<NotFound />} />
-      <Route path="/visualization" element={<VisualizationPage />} />
     </Routes>
   );
 
