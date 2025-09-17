@@ -64,13 +64,14 @@ npm install
 
 **Connecting to Supabase:**
 
-The frontend needs to connect to your local Supabase instance. The connection details are located in `src/integrations/supabase/client.ts`. This file is auto-generated in the production environment and contains production keys. For local development, you must **temporarily** replace them.
+The frontend needs to connect to your local Supabase instance. The connection is configured using environment variables.
 
-1.  Open `src/integrations/supabase/client.ts`.
-2.  Replace the hardcoded `SUPABASE_URL` with the `API URL` from the `supabase start` output.
-3.  Replace the hardcoded `SUPABASE_PUBLISHABLE_KEY` with the `anon key` from the `supabase start` output.
+1.  Create a new file named `.env` in the root of the project.
+2.  Copy the contents of the `.env.example` file into the new `.env` file.
+3.  In the `.env` file, set the `VITE_SUPABASE_URL` to the `API URL` from the `supabase start` output.
+4.  Set the `VITE_SUPABASE_ANON_KEY` to the `anon key` from the `supabase start` output.
 
-**WARNING:** Do **NOT** commit these changes to `src/integrations/supabase/client.ts`. This file should remain with the production keys in version control.
+The Vite development server will automatically load these environment variables.
 
 **Running the Frontend:**
 
