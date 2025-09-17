@@ -529,56 +529,65 @@ const RealCodebaseVisualizer: React.FC = () => {
   }, [filteredData]);
 
   // --- NEW: Function to handle file upload with REAL processing via Supabase ---
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+ // --- MODIFIED: Function to handle file upload with authentication ---
+const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const files = event.target.files;
+  if (!files || files.length === 0) return;
 
-    setIsLoading(true);
-    setError(null);
+  setIsLoading(true);
+  setError(null);
 
-    try {
-      // Process each file
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        
-        // Generate a unique filename
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        
-        // Upload file to Supabase Storage
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('code-uploads') // Make sure this bucket exists in your Supabase project
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
+  try {
+    // Get the current user session
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      throw new Error("User must be logged in to upload files");
+    }
 
-        if (uploadError) {
-          throw new Error(`Upload failed: ${uploadError.message}`);
-        }
+    // Process each file
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      // Generate a unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      
+      // Upload file to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('code-uploads')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+          // The session token will be automatically included in the request
+        });
 
-        // Get the public URL of the uploaded file
-        const { data: urlData } = supabase.storage
-          .from('code-uploads')
-          .getPublicUrl(fileName);
-
-        // Read the file content
-        const fileContent = await file.text();
-        
-        // Analyze the code content (basic analysis - you can enhance this)
-        const analyzedData = analyzeCodeContent(fileContent, file.name);
-        
-        // Update the state with the analyzed data
-        setData(analyzedData);
+      if (uploadError) {
+        throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
-    } catch (err: any) {
-      console.error("Upload failed:", err);
-      setError("Failed to process uploaded files. Please try again.");
-    } finally {
-      setIsLoading(false);
+      // Get the public URL of the uploaded file
+      const { data: urlData } = supabase.storage
+        .from('code-uploads')
+        .getPublicUrl(fileName);
+
+      // Read the file content
+      const fileContent = await file.text();
+      
+      // Analyze the code content
+      const analyzedData = analyzeCodeContent(fileContent, file.name);
+      
+      // Update the state with the analyzed data
+      setData(analyzedData);
     }
-  };
+
+  } catch (err: any) {
+    console.error("Upload failed:", err);
+    setError("Failed to process uploaded files. Please try again.");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // --- NEW: Function to trigger the file input click ---
   const triggerFileUpload = () => {
