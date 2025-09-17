@@ -349,7 +349,7 @@ const AppContent = () => {
 
   return (
     <ErrorBoundary componentName="AppRoot">
-      <SidebarProvider>
+      
         <div className="flex h-screen bg-background">
           {/* Sidebar is now always hidden by setting showSidebar to false */}
           {showSidebar && <AppSidebar />}
@@ -360,7 +360,7 @@ const AppContent = () => {
             </main>
           </div>
         </div>
-      </SidebarProvider>
+      
     </ErrorBoundary>
   );
 };
