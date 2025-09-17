@@ -56,7 +56,7 @@ interface MatchPayload {
   home_team_name?: string | null;
   away_team_name?: string | null;
   status?: string | null;
-  [key: string]: any;
+  [key:string]: unknown;
 }
 
 const AppContent = () => {

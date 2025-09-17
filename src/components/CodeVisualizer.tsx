@@ -21,8 +21,8 @@ interface CodebaseNode {
 }
 
 interface CodebaseLink {
-  source: string;
-  target: string;
+  source: string | CodebaseNode;
+  target: string | CodebaseNode;
   type: 'contains' | 'call' | 'dependency' | 'error';
 }
 
@@ -116,7 +116,7 @@ class CodeAnalyzer {
       const arrowMatch = trimmed.match(/^(?:const|let|var)\s+(\w+)\s*=\s*\([^)]*\)\s*=>/);
       const methodMatch = trimmed.match(/^\s*(?:async\s+)?(\w+)\s*\([^)]*\)\s*{/);
       
-      let funcName = funcMatch?.[1] || arrowMatch?.[1] || methodMatch?.[1];
+      const funcName = funcMatch?.[1] || arrowMatch?.[1] || methodMatch?.[1];
       
       if (funcName && !['if', 'for', 'while', 'switch', 'catch', 'try'].includes(funcName)) {
         const parentId = currentClass ? `${fileNode.id}::${currentClass}` : fileNode.id;
@@ -523,19 +523,53 @@ const RealCodebaseVisualizer: React.FC = () => {
   useEffect(() => {
     const fetchAndProcessFiles = async () => {
       try {
-        const response = await fetch('/api/list-files');
-        const filepaths = await response.json();
+        const repoOwner = 'cvUPTZ';
+        const repoName = 'breezy-epty-flow';
+        const branch = 'main';
+
+        interface GitHubBranchResponse {
+          commit: {
+            sha: string;
+          }
+        }
+        interface GitHubTreeNode {
+          path: string;
+          type: 'blob' | 'tree' | 'commit';
+        }
+        interface GitHubTreeResponse {
+          tree: GitHubTreeNode[];
+        }
+
+        // 1. Get the latest commit SHA for the main branch
+        const branchResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/branches/${branch}`);
+        const branchData: GitHubBranchResponse = await branchResponse.json();
+        const commitSha = branchData.commit.sha;
+
+        // 2. Fetch the file tree recursively
+        const treeResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/git/trees/${commitSha}?recursive=1`);
+        const treeData: GitHubTreeResponse = await treeResponse.json();
+
+        const filepaths = treeData.tree
+          .filter((node) => node.type === 'blob')
+          .map((node) => node.path);
 
         const allNodes: CodebaseNode[] = [];
         const allLinks: CodebaseLink[] = [];
 
-        for (const filepath of filepaths) {
-          const contentResponse = await fetch(`/api/get-file-content?filepath=${filepath}`);
-          const content = await contentResponse.text();
-          const { nodes, links } = CodeAnalyzer.analyzeFile(filepath, content);
-          allNodes.push(...nodes);
-          allLinks.push(...links);
-        }
+        // 3. Fetch and process each file
+        await Promise.all(filepaths.map(async (filepath: string) => {
+          try {
+            const contentResponse = await fetch(`https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${filepath}`);
+            if (contentResponse.ok) {
+              const content = await contentResponse.text();
+              const { nodes, links } = CodeAnalyzer.analyzeFile(filepath, content);
+              allNodes.push(...nodes);
+              allLinks.push(...links);
+            }
+          } catch (fileError) {
+            console.error(`Error fetching file ${filepath}:`, fileError);
+          }
+        }));
 
         const crossLinks = CodeAnalyzer.detectCrossDependencies(allNodes, allLinks);
         allLinks.push(...crossLinks);
@@ -544,7 +578,7 @@ const RealCodebaseVisualizer: React.FC = () => {
         setStats(newStats);
         setData({ nodes: allNodes, links: allLinks });
       } catch (error) {
-        console.error('Error fetching or processing repository files:', error);
+        console.error('Error fetching or processing repository files from GitHub:', error);
       }
     };
 
@@ -559,7 +593,7 @@ const RealCodebaseVisualizer: React.FC = () => {
     fetchAndProcessFiles();
   }, []);
 
-  useEffect(() => {
+  const initializeVisualization = useCallback(() => {
     if (!svgRef.current || data.nodes.length === 0) return;
 
     const svg = d3.select(svgRef.current);
@@ -582,10 +616,10 @@ const RealCodebaseVisualizer: React.FC = () => {
 
     // Force simulation
     const simulation = d3.forceSimulation(data.nodes)
-      .force("link", d3.forceLink(data.links).id((d: any) => d.id).distance(150))
+      .force("link", d3.forceLink<CodebaseNode, CodebaseLink>(data.links).id((d) => d.id).distance(150))
       .force("charge", d3.forceManyBody().strength(-500))
       .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("collision", d3.forceCollide().radius((d: any) => Math.max(12, Math.sqrt(d.size) * 2) + 5));
+      .force("collision", d3.forceCollide().radius((d: CodebaseNode) => Math.max(12, Math.sqrt(d.size) * 2) + 5));
 
     forceSimulationRef.current = simulation;
 
@@ -729,8 +763,8 @@ const RealCodebaseVisualizer: React.FC = () => {
       // Highlight connected nodes
       const connectedNodeIds = new Set();
       data.links.forEach(link => {
-        if (link.source === d.id) connectedNodeIds.add(link.target);
-        if (link.target === d.id) connectedNodeIds.add(link.source);
+        if ((link.source as CodebaseNode).id === d.id) connectedNodeIds.add((link.target as CodebaseNode).id);
+        if ((link.target as CodebaseNode).id === d.id) connectedNodeIds.add((link.source as CodebaseNode).id);
       });
       
       // Dim other nodes
@@ -739,8 +773,8 @@ const RealCodebaseVisualizer: React.FC = () => {
       );
       
       // Highlight connected links
-      link.style("opacity", (linkData: any) =>
-        linkData.source.id === d.id || linkData.target.id === d.id ? 1 : 0.1
+      link.style("opacity", (linkData: CodebaseLink) =>
+        (linkData.source as CodebaseNode).id === d.id || (linkData.target as CodebaseNode).id === d.id ? 1 : 0.1
       );
       
       // Scale up current node
@@ -761,17 +795,23 @@ const RealCodebaseVisualizer: React.FC = () => {
     // Update positions on simulation tick
     simulation.on("tick", () => {
       link
-        .attr("x1", (d: any) => d.source.x)
-        .attr("y1", (d: any) => d.source.y)
-        .attr("x2", (d: any) => d.target.x)
-        .attr("y2", (d: any) => d.target.y);
+        .attr("x1", (d) => (d.source as CodebaseNode).x!)
+        .attr("y1", (d) => (d.source as CodebaseNode).y!)
+        .attr("x2", (d) => (d.target as CodebaseNode).x!)
+        .attr("y2", (d) => (d.target as CodebaseNode).y!);
 
-      node.attr("transform", (d: CodebaseNode) => `translate(${d.x},${d.y})`);
+      node.attr("transform", (d: CodebaseNode) => `translate(${d.x!},${d.y!})`);
     });
 
     // Click on SVG to deselect
     svg.on("click", () => setSelectedNode(null));
   }, [data]);
+
+  useEffect(() => {
+    if (data.nodes.length > 0) {
+      initializeVisualization();
+    }
+  }, [data, initializeVisualization]);
 
   const handleResetLayout = useCallback(() => {
     if (forceSimulationRef.current) {
@@ -810,32 +850,32 @@ const RealCodebaseVisualizer: React.FC = () => {
 
   const handleToggleNodeType = useCallback((type: string) => {
     if (!simulationRef.current) return;
-    const nodes = simulationRef.current.selectAll(`.node`).filter((d: any) => d.type === type);
+    const nodes = simulationRef.current.selectAll<SVGGElement, CodebaseNode>(".node").filter((d: CodebaseNode) => d.type === type);
     const isVisible = nodes.style("opacity") !== "0";
     nodes.style("opacity", isVisible ? 0 : 1);
   }, []);
 
   const handleHighlightErrors = useCallback(() => {
     if (!simulationRef.current) return;
-    const allNodes = simulationRef.current.selectAll(".node");
-    const allLinks = simulationRef.current.parent()?.selectAll(".link");
+    const allNodes = simulationRef.current.selectAll<SVGGElement, CodebaseNode>(".node");
+    const allLinks = simulationRef.current.parent()?.selectAll<SVGLineElement, CodebaseLink>(".link");
     
     allNodes.style("opacity", 0.2);
     allLinks?.style("opacity", 0.1);
     
-    allNodes.filter((d: any) => d.bugCount > 2).style("opacity", 1);
-    allLinks?.filter((d: any) => d.type === "error").style("opacity", 1);
+    allNodes.filter((d: CodebaseNode) => d.bugCount > 2).style("opacity", 1);
+    allLinks?.filter((d: CodebaseLink) => d.type === "error").style("opacity", 1);
   }, []);
 
   const handleHighlightWarnings = useCallback(() => {
     if (!simulationRef.current) return;
-    const allNodes = simulationRef.current.selectAll(".node");
-    const allLinks = simulationRef.current.parent()?.selectAll(".link");
+    const allNodes = simulationRef.current.selectAll<SVGGElement, CodebaseNode>(".node");
+    const allLinks = simulationRef.current.parent()?.selectAll<SVGLineElement, CodebaseLink>(".link");
     
     allNodes.style("opacity", 0.2);
     allLinks?.style("opacity", 0.2);
     
-    allNodes.filter((d: any) => d.bugCount > 0 && d.bugCount <= 2).style("opacity", 1);
+    allNodes.filter((d: CodebaseNode) => d.bugCount > 0 && d.bugCount <= 2).style("opacity", 1);
   }, []);
 
   const handleClearHighlights = useCallback(() => {

@@ -10,9 +10,27 @@ import React from 'react';
  * @property {function(playerId: number): void} [onPlayerClick] - Optional callback triggered when a player marker is clicked.
  * @property {'home' | 'away' | null} [selectedTeam] - The currently selected team, which can affect interactions.
  */
+interface Player {
+  id: number;
+  name?: string;
+  player_name?: string;
+  jersey_number?: number;
+  number?: number;
+}
+
+interface MatchEvent {
+  id: number;
+  type: string;
+  timestamp: number;
+  coordinates?: {
+    x: number;
+    y: number;
+  };
+}
+
 interface PitchProps {
-  players: any[];
-  events?: any[];
+  players: Player[];
+  events?: MatchEvent[];
   formation?: string;
   onPlayerClick?: (playerId: number) => void;
   selectedTeam?: 'home' | 'away' | null;

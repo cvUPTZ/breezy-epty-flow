@@ -85,7 +85,7 @@ const TrackerNotifications: React.FC = () => {
     if ('Audio' in window) {
       try {
         // Create a more attention-grabbing sound for urgent notifications
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const audioContext = new (window.AudioContext || (window as Window & typeof globalThis & { webkitAudioContext: typeof window.AudioContext }).webkitAudioContext)();
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
         
@@ -223,13 +223,13 @@ const TrackerNotifications: React.FC = () => {
 
       console.log('Processed notifications:', notificationsWithMatches.length);
       setNotifications(notificationsWithMatches);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching notifications:', error);
       toast.error('Failed to load notifications');
     } finally {
       setLoading(false);
     }
-  }, [user?.id, playNotificationSound]);
+  }, [user?.id]);
 
   const markAsRead = async (notificationId: string) => {
     try {
@@ -243,7 +243,7 @@ const TrackerNotifications: React.FC = () => {
       setNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error marking notification as read:', error);
       toast.error('Failed to mark notification as read');
     }
@@ -266,7 +266,7 @@ const TrackerNotifications: React.FC = () => {
       );
 
       toast.success('All notifications marked as read');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error marking all as read:', error);
       toast.error('Failed to mark all as read');
     }
@@ -283,7 +283,7 @@ const TrackerNotifications: React.FC = () => {
 
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
       toast.success('Notification dismissed');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error dismissing notification:', error);
       toast.error('Failed to dismiss notification');
     }
@@ -339,7 +339,7 @@ const TrackerNotifications: React.FC = () => {
             console.log('Notification change received via Supabase RT:', payload);
             fetchNotifications();
             if (payload.eventType === 'INSERT') {
-              const newNotification = payload.new as any;
+              const newNotification = payload.new as NotificationWithMatch;
               console.log('New notification received:', newNotification);
               
               // Play sound for urgent notifications

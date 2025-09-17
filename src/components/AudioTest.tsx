@@ -20,12 +20,12 @@ const AudioTest: React.FC = () => {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const addLog = (message: string) => {
+  const addLog = React.useCallback((message: string) => {
     const timestamp = new Date().toISOString().slice(11, 23);
     const logMessage = `[${timestamp}] ${message}`;
     console.log('🧪 AUDIO TEST:', logMessage);
     setLogs(prev => [...prev.slice(-4), logMessage]);
-  };
+  }, []);
 
   const startTest = async () => {
     try {
@@ -51,7 +51,7 @@ const AudioTest: React.FC = () => {
       streamRef.current = stream;
       
       // Setup audio analysis
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContext = window.AudioContext || (window as Window & typeof globalThis & { webkitAudioContext: typeof window.AudioContext }).webkitAudioContext;
       audioContextRef.current = new AudioContext();
       
       if (audioContextRef.current.state === 'suspended') {
@@ -89,13 +89,17 @@ const AudioTest: React.FC = () => {
       intervalRef.current = setInterval(monitorAudio, 100);
       addLog('🎵 Started audio monitoring');
       
-    } catch (error: any) {
-      addLog(`❌ Error: ${error.name} - ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        addLog(`❌ Error: ${error.name} - ${error.message}`);
+      } else {
+        addLog(`❌ An unknown error occurred`);
+      }
       console.error('Audio test error:', error);
     }
   };
 
-  const stopTest = () => {
+  const stopTest = React.useCallback(() => {
     addLog('🛑 Stopping audio test');
     
     if (intervalRef.current) {
@@ -119,7 +123,7 @@ const AudioTest: React.FC = () => {
     setIsRecording(false);
     setAudioLevel(0);
     addLog('✅ Cleanup complete');
-  };
+  }, [addLog]);
 
   useEffect(() => {
     return () => {
@@ -127,7 +131,7 @@ const AudioTest: React.FC = () => {
         stopTest();
       }
     };
-  }, [isRecording]);
+  }, [isRecording, stopTest]);
 
   const AudioLevelBar = () => (
     <div className="flex items-center gap-2">

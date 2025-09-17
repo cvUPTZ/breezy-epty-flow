@@ -16,9 +16,11 @@ import { Loader2 } from 'lucide-react';
  * @param {Array<keyof RolePermissions>} [props.requiredPermissions] - An optional array of specific permissions required for access.
  * @returns {React.FC} The child components if authorized, or a loading/error/redirect component.
  */
+type UserRole = 'admin' | 'tracker' | 'viewer' | 'user' | 'manager' | 'teacher';
+
 export const RequireAuth: React.FC<{ 
   children: React.ReactNode;
-  requiredRoles?: Array<'admin' | 'tracker' | 'viewer' | 'user' | 'manager' | 'teacher'>;
+  requiredRoles?: Array<UserRole>;
   requiredPermissions?: Array<keyof RolePermissions>;
 }> = ({ 
   children, 
@@ -60,7 +62,7 @@ export const RequireAuth: React.FC<{
 
   // If specific roles are required, check user's role
   if (requiredRoles && requiredRoles.length > 0) {
-    if (!role || !requiredRoles.includes(role as any)) {
+    if (!role || !requiredRoles.includes(role as UserRole)) {
       // Log permission denied event
       console.warn(`Access denied: User role '${role}' not in required roles: ${requiredRoles.join(', ')}`);
       
