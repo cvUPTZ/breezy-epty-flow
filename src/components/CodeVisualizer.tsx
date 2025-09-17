@@ -511,7 +511,7 @@ const RealCodebaseVisualizer: React.FC = () => {
         (payload) => {
           const newJob = payload.new as { status: string; result: CodebaseData; error_message: string };
           console.log('Realtime update received for job:', newJob);
-
+          
           if (newJob.status === 'completed') {
             setData(newJob.result);
             setIsLoading(false);
@@ -565,7 +565,7 @@ const RealCodebaseVisualizer: React.FC = () => {
 
     setIsLoading(true);
     setError(null);
-
+    
     try {
       // Step 1: Upload files to storage
       const uploadPromises = Array.from(files).map(async (file, index) => {
@@ -579,8 +579,7 @@ const RealCodebaseVisualizer: React.FC = () => {
 
       // Step 2: Request analysis job from the server
       setProgress({ percent: 50, file: 'Files uploaded. Requesting analysis...' });
-      const { data, error } = await supabase.functions.invoke('process-code-analysis-job
-', {
+      const { data, error } = await supabase.functions.invoke('analyze-codebase', {
         body: { filePaths: uploadedFilePaths },
       });
 
@@ -1056,8 +1055,8 @@ const RealCodebaseVisualizer: React.FC = () => {
             <h2 className="text-xl font-bold mb-2">Analyzing Codebase</h2>
             <p className="text-gray-400 mb-4">{progress.file || "Please wait..."}</p>
             <div className="w-full bg-gray-700 rounded-full h-2.5">
-              <div
-                className="bg-cyan-500 h-2.5 rounded-full transition-all duration-300"
+              <div 
+                className="bg-cyan-500 h-2.5 rounded-full transition-all duration-300" 
                 style={{ width: `${progress.percent}%` }}
               ></div>
             </div>
