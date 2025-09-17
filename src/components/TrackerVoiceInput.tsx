@@ -37,7 +37,7 @@ interface TrackerVoiceInputProps {
     eventTypeKey: string, 
     playerId?: number, 
     teamId?: 'home' | 'away', 
-    details?: Record<string, any> 
+    details?: Record<string, unknown>
   ) => Promise<void>;
   assignedPlayers: AssignedPlayers;
   assignedEventTypes: AssignedEventType[];
@@ -74,7 +74,7 @@ export function TrackerVoiceInput({
   const playSuccessSound = useCallback(() => {
     if (!isAudioEnabled) return;
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioContext = new (window.AudioContext || (window as Window & typeof globalThis & { webkitAudioContext: typeof window.AudioContext }).webkitAudioContext)();
       const oscillator = audioContext.createOscillator()
       const gainNode = audioContext.createGain()
       oscillator.connect(gainNode)
@@ -141,9 +141,9 @@ export function TrackerVoiceInput({
       setCommandHistory(prev => [successMessage, ...prev.slice(0, 4)]);
       playSuccessSound();
 
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Error during command parsing or recording:", e);
-      setFeedback({ status: 'error', message: `Failed to process command: ${e.message}` });
+      setFeedback({ status: 'error', message: `Failed to process command: ${(e as Error).message}` });
     } finally {
       setIsParsingCommand(false);
     }

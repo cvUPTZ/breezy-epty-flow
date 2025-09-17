@@ -61,7 +61,7 @@ const TeamSetupWithFormation: React.FC<TeamSetupWithFormationProps> = ({ teams, 
     if (needsUpdate) {
       onTeamsChange(updatedTeams as { home: Team, away: Team });
     }
-  }, []);
+  }, [onTeamsChange, teams]);
   
   const updateTeamName = (teamId: 'home' | 'away', name: string) => {
     if (!teams[teamId]) return;
@@ -75,7 +75,7 @@ const TeamSetupWithFormation: React.FC<TeamSetupWithFormationProps> = ({ teams, 
     } as { home: Team, away: Team });
   };
   
-  const updateTeamFormation = (teamId: 'home' | 'away', formation: Formation) => {
+  const updateTeamFormation = React.useCallback((teamId: 'home' | 'away', formation: Formation) => {
     if (!teams[teamId]) return;
     
     const team = teams[teamId]!;
@@ -94,7 +94,7 @@ const TeamSetupWithFormation: React.FC<TeamSetupWithFormationProps> = ({ teams, 
     } as { home: Team, away: Team });
     
     toast.success(`${teamId === 'home' ? 'Home' : 'Away'} team formation updated to ${formation} with new players`);
-  };
+  }, [onTeamsChange, teams]);
   
   const addPlayer = (teamId: 'home' | 'away') => {
     if (!teams[teamId]) return;
@@ -161,7 +161,7 @@ const TeamSetupWithFormation: React.FC<TeamSetupWithFormationProps> = ({ teams, 
     if (teams.away?.formation && teams.away.players.length === 0) {
       updateTeamFormation('away', teams.away.formation as Formation);
     }
-  }, [teams.home?.formation, teams.away?.formation]);
+  }, [teams.home?.formation, teams.away?.formation, teams.home?.players.length, teams.away?.players.length, updateTeamFormation]);
   
   // Render nothing if teams are not initialized yet
   if (!teams.home || !teams.away) {

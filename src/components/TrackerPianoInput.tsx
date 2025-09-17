@@ -23,8 +23,8 @@ interface TrackerPianoInputProps {
     eventTypeKey: string,
     playerId?: number,
     teamContext?: 'home' | 'away',
-    details?: Record<string, any>
-  ) => Promise<any | null>;
+    details?: Record<string, unknown>
+  ) => Promise<unknown | null>;
 }
 
 /**
@@ -76,16 +76,16 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [lastRecordedEvent, setLastRecordedEvent] = useState<any>(null);
+  const [lastRecordedEvent, setLastRecordedEvent] = useState<{id: string; eventType: { key: string; label: string; }; player: PlayerForPianoInput | null; timestamp: number} | null>(null);
   const [fullMatchRoster, setFullMatchRoster] = useState<AssignedPlayers | null>(null);
   const [recordingEventType, setRecordingEventType] = useState<string | null>(null);
-  const [recentEvents, setRecentEvents] = useState<any[]>([]);
+  const [recentEvents, setRecentEvents] = useState<{id: string; eventType: { key: string; label: string; }; player: PlayerForPianoInput | null; timestamp: number}[]>([]);
 
   const { toast } = useToast();
   const { user } = useAuth();
   const userIdForConnection = useMemo(() => user?.id || '', [user?.id]);
 
-  const { } = useRealtimeMatch({
+  useRealtimeMatch({
     matchId,
     onEventReceived: (event) => {
       if (event.created_by === user?.id) {
@@ -115,7 +115,7 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
         .eq('id', matchId)
         .single();
       if (matchError) throw matchError;
-      const parsePlayerData = (data: any): PlayerForPianoInput[] => {
+      const parsePlayerData = (data: unknown): PlayerForPianoInput[] => {
         if (typeof data === 'string') {
           try { return JSON.parse(data); } catch { return []; }
         }
@@ -125,7 +125,7 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
         home: parsePlayerData(matchData.home_team_players),
         away: parsePlayerData(matchData.away_team_players)
       });
-    } catch (e: any) { console.error("Error fetching match details:", e); }
+    } catch (e: unknown) { console.error("Error fetching match details:", e); }
   }, [matchId]);
 
   const fetchAssignments = useCallback(async () => {
@@ -157,7 +157,7 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
       });
       setAssignedPlayers({ home: homeP, away: awayP });
       setError(null);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Error fetching tracker assignments:", e);
       setError("Failed to fetch tracker assignments");
     } finally { setLoading(false); }
@@ -201,24 +201,24 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
     setIsRecording(true);
     setRecordingEventType(eventType.key);
     broadcastStatus({ status: 'recording', timestamp: Date.now() });
-    let teamCtx = (selectedPlayer && selectedTeam) ? selectedTeam : undefined;
+    const teamCtx = (selectedPlayer && selectedTeam) ? selectedTeam : undefined;
     try {
       const newEvent = await onRecordEvent(eventType.key, selectedPlayer?.id, teamCtx, { recorded_via: 'piano' });
       if (newEvent) {
         const eventInfo = { 
-          id: newEvent.id, 
-          eventType: { key: newEvent.event_type, label: newEvent.event_type }, 
+          id: (newEvent as {id: string}).id,
+          eventType: { key: (newEvent as {event_type: string}).event_type, label: (newEvent as {event_type: string}).event_type },
           player: selectedPlayer, 
           timestamp: Date.now() 
         };
         setLastRecordedEvent(eventInfo);
         setRecentEvents(prev => [eventInfo, ...prev.slice(0, 4)]);
       }
-    } catch (e: any) { 
+    } catch (e: unknown) {
       console.error('Error in onRecordEvent:', e); 
       toast({
         title: "Error recording event",
-        description: e.message || "An unknown error occurred",
+        description: (e as Error).message || "An unknown error occurred",
         variant: "destructive"
       });
     }
