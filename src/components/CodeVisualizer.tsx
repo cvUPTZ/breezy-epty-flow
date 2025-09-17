@@ -526,6 +526,11 @@ const RealCodebaseVisualizer: React.FC = () => {
         const repoOwner = 'cvUPTZ';
         const repoName = 'breezy-epty-flow';
         const branch = 'main';
+        const token = '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';
+
+        const headers = {
+          'Authorization': `token ${token}`
+        };
 
         interface GitHubBranchResponse {
           commit: {
@@ -539,14 +544,24 @@ const RealCodebaseVisualizer: React.FC = () => {
         interface GitHubTreeResponse {
           tree: GitHubTreeNode[];
         }
+        interface GitHubContentResponse {
+            content: string;
+            encoding: string;
+        }
 
         // 1. Get the latest commit SHA for the main branch
-        const branchResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/branches/${branch}`);
+        const branchResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/branches/${branch}`, { headers });
+        if (!branchResponse.ok) {
+            throw new Error(`GitHub API error for branches: ${branchResponse.status} ${await branchResponse.text()}`);
+        }
         const branchData: GitHubBranchResponse = await branchResponse.json();
         const commitSha = branchData.commit.sha;
 
         // 2. Fetch the file tree recursively
-        const treeResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/git/trees/${commitSha}?recursive=1`);
+        const treeResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/git/trees/${commitSha}?recursive=1`, { headers });
+        if (!treeResponse.ok) {
+            throw new Error(`GitHub API error for trees: ${treeResponse.status} ${await treeResponse.text()}`);
+        }
         const treeData: GitHubTreeResponse = await treeResponse.json();
 
         const filepaths = treeData.tree
@@ -559,15 +574,20 @@ const RealCodebaseVisualizer: React.FC = () => {
         // 3. Fetch and process each file
         await Promise.all(filepaths.map(async (filepath: string) => {
           try {
-            const contentResponse = await fetch(`https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${filepath}`);
+            const contentResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filepath}`, { headers });
             if (contentResponse.ok) {
-              const content = await contentResponse.text();
-              const { nodes, links } = CodeAnalyzer.analyzeFile(filepath, content);
-              allNodes.push(...nodes);
-              allLinks.push(...links);
+              const contentData: GitHubContentResponse = await contentResponse.json();
+              if (contentData.encoding === 'base64') {
+                const content = atob(contentData.content);
+                const { nodes, links } = CodeAnalyzer.analyzeFile(filepath, content);
+                allNodes.push(...nodes);
+                allLinks.push(...links);
+              }
+            } else {
+                console.error(`Failed to fetch content for ${filepath}: ${contentResponse.status}`);
             }
           } catch (fileError) {
-            console.error(`Error fetching file ${filepath}:`, fileError);
+            console.error(`Error processing file ${filepath}:`, fileError);
           }
         }));
 
