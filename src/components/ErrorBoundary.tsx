@@ -2,7 +2,6 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { errorManager } from '@/services/errorManager';
 
 /**
  * @interface Props
@@ -51,15 +50,26 @@ class ErrorBoundary extends Component<Props, State> {
     
     this.setState({ errorInfo });
 
-    // Log error to our error management system
-    errorManager.logComponentError(
-      error,
-      this.props.componentName || 'ErrorBoundary',
-      {
-        componentStack: errorInfo.componentStack,
-        errorInfo
-      }
-    );
+    // Safely log error to our error management system
+    try {
+      // Dynamically import errorManager to prevent circular dependency issues
+      import('@/services/errorManager').then((module) => {
+        if (module.errorManager && module.errorManager.logComponentError) {
+          module.errorManager.logComponentError(
+            error,
+            this.props.componentName || 'ErrorBoundary',
+            {
+              componentStack: errorInfo.componentStack,
+              errorInfo
+            }
+          );
+        }
+      }).catch((importError) => {
+        console.warn('Could not import errorManager:', importError);
+      });
+    } catch (logError) {
+      console.warn('Error logging failed:', logError);
+    }
   }
 
   handleRetry = () => {
