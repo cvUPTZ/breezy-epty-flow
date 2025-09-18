@@ -39,6 +39,10 @@ import BusinessPlanManagement from './BusinessPlanManagement';
 import BusinessModelCanvasDocument from '../documents/BusinessModelCanvasDocument';
 import MarketStudyDocument from '../documents/MarketStudyDocument';
 import AIInsightGenerator from './AIInsightGenerator';
+import BudgetOptimizationSolver from './BudgetOptimizationSolver';
+import RealDataInputPanel from './RealDataInputPanel';
+import GeminiAIFlashPanel from './GeminiAIFlashPanel';
+import { supabase } from '@/integrations/supabase/client';
 
 // === AI INSIGHTS & RECOMMENDATIONS ===
 interface AIInsight {
@@ -99,6 +103,13 @@ const BusinessSimulationDashboard: React.FC = () => {
   const [scenarios, setScenarios] = useState<SimulationScenario[]>([]);
   const [eventTrackers, setEventTrackers] = useState<EventTracker[]>([]);
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+  const [realBusinessData, setRealBusinessData] = useState<any>(null);
+  const [solverConfig, setSolverConfig] = useState({
+    trackersMinimum: 2,
+    trackersOptimal: 4,
+    replacements: 1,
+    playersToTrack: 22
+  });
 
   // === MOCK DATA INITIALIZATION ===
   useEffect(() => {
@@ -317,13 +328,15 @@ const BusinessSimulationDashboard: React.FC = () => {
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="dashboard">Dashboard IA</TabsTrigger>
           <TabsTrigger value="scenarios">Scénarios</TabsTrigger>
-          <TabsTrigger value="kpis">KPIs & Métriques</TabsTrigger>
-          <TabsTrigger value="trackers">Event Trackers</TabsTrigger>
+          <TabsTrigger value="solver">Solver</TabsTrigger>
+          <TabsTrigger value="data-input">Données Réelles</TabsTrigger>
+          <TabsTrigger value="gemini-ai">Gemini Flash 2.0</TabsTrigger>
+          <TabsTrigger value="kpis">KPIs</TabsTrigger>
+          <TabsTrigger value="trackers">Trackers</TabsTrigger>
           <TabsTrigger value="business-plan">Business Plan</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
 
         {/* === DASHBOARD IA === */}
@@ -497,6 +510,52 @@ const BusinessSimulationDashboard: React.FC = () => {
               ))}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* === SOLVER === */}
+        <TabsContent value="solver" className="space-y-6">
+          <BudgetOptimizationSolver
+            currentConfig={solverConfig}
+            onConfigUpdate={setSolverConfig}
+            calculateCost={(config) => ({
+              totalCost: (config.trackersOptimal * 25000) + (config.replacements * 15000) + (config.playersToTrack * 2000),
+              breakdown: {
+                trackers: config.trackersOptimal * 25000,
+                replacements: config.replacements * 15000,
+                players: config.playersToTrack * 2000
+              }
+            })}
+            calculateEfficiency={(config) => ({
+              coverage: (config.trackersOptimal / config.playersToTrack) * 100,
+              redundancy: config.replacements > 0 ? 20 : 0,
+              costPerPlayer: ((config.trackersOptimal * 25000) + (config.replacements * 15000)) / config.playersToTrack
+            })}
+          />
+        </TabsContent>
+
+        {/* === REAL DATA INPUT === */}
+        <TabsContent value="data-input" className="space-y-6">
+          <RealDataInputPanel
+            onDataUpdate={(data) => {
+              setRealBusinessData(data);
+              toast.success('Données réelles intégrées dans le système!');
+            }}
+          />
+        </TabsContent>
+
+        {/* === GEMINI AI FLASH 2.0 === */}
+        <TabsContent value="gemini-ai" className="space-y-6">
+          <GeminiAIFlashPanel
+            businessData={realBusinessData || {
+              monthlyRevenue: 75000,
+              customerCount: 8,
+              churnRate: 15,
+              marketPenetration: 22
+            }}
+            onInsightsGenerated={(newInsights) => {
+              setAiInsights(prev => [...newInsights, ...prev]);
+            }}
+          />
         </TabsContent>
 
         {/* === KPIs === */}
