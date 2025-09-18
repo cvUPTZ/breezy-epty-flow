@@ -55,7 +55,7 @@ interface ErrorLog {
 }
 
 const ErrorManager: React.FC = () => {
-  const { hasPermission, loading: permissionLoading } = usePermissionChecker();
+  const { hasPermission, isLoading: permissionLoading } = usePermissionChecker();
   const [errors, setErrors] = useState<ErrorLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);

@@ -62,6 +62,7 @@ import RealTimeMatchEvents from '@/components/admin/RealTimeMatchEvents';
 import AbsenceSummaryDashboard from '@/components/admin/AbsenceSummaryDashboard';
 import QuickPlanningActions from '@/components/admin/QuickPlanningActions';
 import BusinessPlanManagement from '@/components/admin/BusinessPlanManagement';
+import BusinessSimulationDashboard from '@/components/admin/BusinessSimulationDashboard';
 import BudgetTrackerConfig from '@/components/admin/BudgetTrackerConfig';
 import LineBasedTrackerAssignment from '@/components/admin/LineBasedTrackerAssignment';
 import UnifiedTrackerAssignment from '@/components/tracker/UnifiedTrackerAssignment';
@@ -83,6 +84,7 @@ const sidebarItems = [
   { id: 'assignments', label: 'Assignment Logs', icon: FileText },
   { id: 'audit', label: 'Audit', icon: FileText },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+  { id: 'simulation', label: 'Business Simulation', icon: Building2 },
   { id: 'business', label: 'Business Plan', icon: Building2 },
   { id: 'budget', label: 'Budget Tracker', icon: Calculator },
   { id: 'video-analyzer', label: 'Video Analyzer', icon: Video },
@@ -563,6 +565,9 @@ const Admin: React.FC = () => {
             </Card>
           </div>
         );
+
+      case 'simulation':
+        return <BusinessSimulationDashboard />;
 
       case 'business':
         return <BusinessPlanManagement />;

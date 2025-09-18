@@ -11,7 +11,7 @@ const BusinessModelCanvasDocument: React.FC = () => {
   return (
     <div className="max-w-[210mm] mx-auto bg-white text-black">
       {/* Print Styles */}
-      <style jsx global>{`
+      <style>{`
         @media print {
           @page { size: A4; margin: 10mm; }
           body { font-size: 8pt !important; }
