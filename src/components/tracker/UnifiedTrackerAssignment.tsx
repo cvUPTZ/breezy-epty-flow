@@ -434,28 +434,143 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     }
   };
 
-  const saveAssignmentToDB = async (assignment: Assignment) => {
-    if (!matchId) return;
+  // Updated saveAssignmentToDB function with proper ID handling
+const saveAssignmentToDB = async (assignment: Assignment) => {
+  if (!matchId) return null;
 
-    const dbRecords = assignment.player_ids.map(playerId => {
-      const playerTeamId = homeTeamPlayers.some(p => p.id === playerId) ? 'home' : 'away';
+  const dbRecords = assignment.player_ids.map(playerId => {
+    const playerTeamId = homeTeamPlayers.some(p => p.id === playerId) ? 'home' : 'away';
+    
+    return {
+      match_id: matchId,
+      tracker_user_id: assignment.tracker_user_id,
+      assigned_player_id: playerId,
+      player_team_id: playerTeamId,
+      assigned_event_types: assignment.assigned_event_types,
+    };
+  });
+
+  const { data, error } = await supabase
+    .from('match_tracker_assignments')
+    .insert(dbRecords)
+    .select('id'); // Return the inserted IDs
+
+  if (error) throw error;
+  
+  // Return the first inserted record's ID to use as the real assignment ID
+  return data && data.length > 0 ? data[0].id : null;
+};
+
+// Updated handleCreateAssignment function
+const handleCreateAssignment = async () => {
+  if (!selectedTracker || selectedEventTypes.length === 0) {
+    toast({
+      title: "Validation Error",
+      description: "Please select a tracker and at least one event type",
+      variant: "destructive"
+    });
+    return;
+  }
+
+  const playersToAssign = selectedTrackerType === 'specialized' 
+    ? selectedPlayers 
+    : getLinePlayers(selectedTrackerType, selectedTeam).map(p => p.id);
+
+  if (playersToAssign.length === 0) {
+    toast({
+      title: "Validation Error",
+      description: "Please select at least one player",
+      variant: "destructive"
+    });
+    return;
+  }
+
+  setCreatingAssignment(true);
+
+  try {
+    const trackerUser = localTrackers.find(t => t.id === selectedTracker);
+    if (!trackerUser) {
+      throw new Error('Selected tracker not found');
+    }
+
+    // Create the assignment object with a temporary ID first
+    const tempAssignment: Assignment = {
+      id: `temp-${Date.now()}`,
+      tracker_user_id: selectedTracker,
+      tracker_name: trackerUser.full_name || trackerUser.email || 'Unknown',
+      tracker_email: trackerUser.email || 'Unknown',
+      player_ids: playersToAssign,
+      assigned_event_types: selectedEventTypes
+    };
+
+    let realAssignmentId: string | null = null;
+
+    // Save to database first if matchId exists
+    if (matchId) {
+      realAssignmentId = await saveAssignmentToDB(tempAssignment);
       
-      return {
-        match_id: matchId,
-        tracker_user_id: assignment.tracker_user_id,
-        assigned_player_id: playerId,
-        player_team_id: playerTeamId,
-        assigned_event_types: assignment.assigned_event_types,
-      };
+      // Send notification after successful DB save
+      const finalVideoUrl = assignmentVideoUrl.trim() || undefined;
+      await sendNotificationToTracker(selectedTracker, matchId, finalVideoUrl);
+    }
+
+    // Create the final assignment object with the real ID from database
+    const finalAssignment: Assignment = {
+      ...tempAssignment,
+      id: realAssignmentId || tempAssignment.id // Use real ID if available, fallback to temp
+    };
+
+    // Update local state with the final assignment
+    const updatedAssignments = [...localAssignments, finalAssignment];
+    safeSetState(setLocalAssignments, updatedAssignments);
+    
+    if (onAssignmentsChange && mountedRef.current) {
+      onAssignmentsChange(updatedAssignments);
+    }
+
+    // Reset form
+    resetForm();
+
+    toast({
+      title: "Success",
+      description: "Assignment created successfully"
     });
 
-    const { error } = await supabase
-      .from('match_tracker_assignments')
-      .insert(dbRecords);
+  } catch (error: any) {
+    console.error('Error creating assignment:', error);
+    toast({
+      title: "Error",
+      description: error.message || "Failed to create assignment",
+      variant: "destructive"
+    });
+  } finally {
+    safeSetState(setCreatingAssignment, false);
+  }
+};
 
-    if (error) throw error;
+// Alternative approach: If you need to create a single assignment record instead of multiple
+const saveAssignmentToDBAlternative = async (assignment: Assignment) => {
+  if (!matchId) return null;
+
+  // Create a single record with arrays for player IDs
+  const dbRecord = {
+    match_id: matchId,
+    tracker_user_id: assignment.tracker_user_id,
+    assigned_player_ids: assignment.player_ids, // Use the array column
+    player_team_id: 'both', // Or determine logic for mixed teams
+    assigned_event_types: assignment.assigned_event_types,
   };
 
+  const { data, error } = await supabase
+    .from('match_tracker_assignments')
+    .insert(dbRecord)
+    .select('id')
+    .single(); // Get single record
+
+  if (error) throw error;
+  
+  return data?.id || null;
+};
   const sendNotificationToTracker = async (trackerId: string, matchId: string, videoUrl?: string) => {
     try {
       const notificationType = videoUrl ? 'video_assignment' : 'match_assignment';
