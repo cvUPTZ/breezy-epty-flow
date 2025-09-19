@@ -133,6 +133,8 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
         return;
       }
       const eventTypes = Array.from(new Set(data.flatMap(assignment => assignment.assigned_event_types || [])));
+      console.log('TrackerPianoInput - Fetched assignments:', data);
+      console.log('TrackerPianoInput - Extracted event types:', eventTypes);
       setAssignedEventTypes(eventTypes.filter(key => key).map(key => ({ key, label: key })));
       const homeP: PlayerForPianoInput[] = [], awayP: PlayerForPianoInput[] = [];
       data.forEach(assignment => {
@@ -145,6 +147,7 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
           if (!targetList.some(p => p.id === player.id)) targetList.push(player);
         }
       });
+      console.log('TrackerPianoInput - Assigned players:', { home: homeP, away: awayP });
       setAssignedPlayers({ home: homeP, away: awayP });
       setError(null);
     } catch (e: any) {
@@ -349,11 +352,11 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
       {showRosterPlayerSelectionCard && assignedPlayers && (
         <Card>
           <CardHeader className="pb-1">
-            <CardTitle className="text-base font-semibold">Select Player from Full Roster</CardTitle>
+            <CardTitle className="text-base font-semibold">Select Player from Your Assignments</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 pt-0">
             {['home', 'away'].map(team => {
-              const players = team === 'home' ? fullMatchRoster?.home : fullMatchRoster?.away;
+              const players = team === 'home' ? assignedPlayers.home : assignedPlayers.away;
               if (!players?.length) return null;
               return (
                 <div key={team}>
