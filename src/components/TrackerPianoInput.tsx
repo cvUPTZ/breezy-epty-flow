@@ -265,49 +265,74 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
         return;
       }
 
-      // Extract unique event types with validation
-      const eventTypes = Array.from(
-        new Set(
-          data.flatMap(assignment => 
-            Array.isArray(assignment.assigned_event_types) 
-              ? assignment.assigned_event_types 
-              : []
-          )
-        )
-      ).filter(Boolean);
-
       console.log('TrackerPianoInput - Fetched assignments:', data);
+
+      // Extract unique event types from all assignments
+      const eventTypesSet = new Set<string>();
+      data.forEach(assignment => {
+        if (Array.isArray(assignment.assigned_event_types)) {
+          assignment.assigned_event_types.forEach(eventType => {
+            if (eventType && typeof eventType === 'string') {
+              eventTypesSet.add(eventType);
+            }
+          });
+        }
+      });
+
+      const eventTypes = Array.from(eventTypesSet);
       console.log('TrackerPianoInput - Extracted event types:', eventTypes);
 
       setAssignedEventTypes(
         eventTypes.map(key => ({ key, label: key }))
       );
 
-      // Process assigned players with consistent ID handling
+      // Process assigned players using the new array-based fields
       const homeP: PlayerForPianoInput[] = [];
       const awayP: PlayerForPianoInput[] = [];
 
       data.forEach(assignment => {
-        const teamList = assignment.player_team_id === 'home' 
-          ? fullMatchRoster?.home 
-          : fullMatchRoster?.away;
+        const team = assignment.player_team_id;
+        const teamList = team === 'home' ? fullMatchRoster?.home : fullMatchRoster?.away;
         
-        // Unified handling of player ID fields
-        const playerId = assignment.assigned_player_id || assignment.player_id;
+        if (!teamList || teamList.length === 0) return;
+
+        // Get player IDs from the new array fields, falling back to legacy fields
+        let playerIds: number[] = [];
         
-        if (!playerId || !teamList) return;
-        
-        const player = teamList.find(p => String(p.id) === String(playerId));
-        
-        if (player) {
-          const targetList = assignment.player_team_id === 'home' ? homeP : awayP;
-          if (!targetList.some(p => p.id === player.id)) {
-            targetList.push(player);
-          }
+        if (Array.isArray(assignment.assigned_player_ids) && assignment.assigned_player_ids.length > 0) {
+          playerIds = assignment.assigned_player_ids.filter(id => id != null);
+        } else if (Array.isArray(assignment.player_ids) && assignment.player_ids.length > 0) {
+          playerIds = assignment.player_ids.filter(id => id != null);
+        } else if (assignment.assigned_player_id != null) {
+          playerIds = [assignment.assigned_player_id];
+        } else if (assignment.player_id != null) {
+          playerIds = [assignment.player_id];
         }
+
+        console.log(`TrackerPianoInput - Processing ${team} team assignment:`, {
+          assignment_id: assignment.id,
+          player_ids: playerIds,
+          team_roster_count: teamList.length
+        });
+
+        // Find and add assigned players
+        playerIds.forEach(playerId => {
+          const player = teamList.find(p => String(p.id) === String(playerId));
+          
+          if (player) {
+            const targetList = team === 'home' ? homeP : awayP;
+            // Avoid duplicates
+            if (!targetList.some(p => p.id === player.id)) {
+              targetList.push(player);
+              console.log(`TrackerPianoInput - Added player to ${team}:`, player);
+            }
+          } else {
+            console.warn(`TrackerPianoInput - Player with ID ${playerId} not found in ${team} team roster`);
+          }
+        });
       });
 
-      console.log('TrackerPianoInput - Assigned players:', { home: homeP, away: awayP });
+      console.log('TrackerPianoInput - Final assigned players:', { home: homeP, away: awayP });
       setAssignedPlayers({ home: homeP, away: awayP });
       setError(null);
     } catch (e: any) {
