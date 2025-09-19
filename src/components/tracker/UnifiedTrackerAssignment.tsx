@@ -136,7 +136,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   }, []);
 
   // Safe state update helper
-  const safeSetState = useCallback(<T>(setter: React.Dispatch<React.SetStateAction<T>>, value: T | ((prev: T) => T)) => {
+  const safeSetState = useCallback(<T,>(setter: React.Dispatch<React.SetStateAction<T>>, value: T | ((prev: T) => T)) => {
     if (mountedRef.current) {
       setter(value);
     }
@@ -357,82 +357,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     setExpandedCategories(new Set());
     setAssignmentVideoUrl(videoUrl || '');
   }, [videoUrl]);
-
-  const handleCreateAssignment = async () => {
-    if (!selectedTracker || selectedEventTypes.length === 0) {
-      toast({
-        title: "Validation Error",
-        description: "Please select a tracker and at least one event type",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const playersToAssign = selectedTrackerType === 'specialized' 
-      ? selectedPlayers 
-      : getLinePlayers(selectedTrackerType, selectedTeam).map(p => p.id);
-
-    if (playersToAssign.length === 0) {
-      toast({
-        title: "Validation Error",
-        description: "Please select at least one player",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setCreatingAssignment(true);
-
-    try {
-      const trackerUser = localTrackers.find(t => t.id === selectedTracker);
-      if (!trackerUser) {
-        throw new Error('Selected tracker not found');
-      }
-
-      const newAssignment: Assignment = {
-        id: `temp-${Date.now()}`,
-        tracker_user_id: selectedTracker,
-        tracker_name: trackerUser.full_name || trackerUser.email || 'Unknown',
-        tracker_email: trackerUser.email || 'Unknown',
-        player_ids: playersToAssign,
-        assigned_event_types: selectedEventTypes
-      };
-
-      // Save to database first if matchId exists
-      if (matchId) {
-        await saveAssignmentToDB(newAssignment);
-        // Send notification after successful DB save
-        const finalVideoUrl = assignmentVideoUrl.trim() || undefined;
-        await sendNotificationToTracker(selectedTracker, matchId, finalVideoUrl);
-      }
-
-      // Only update local state after successful database operations
-      const updatedAssignments = [...localAssignments, newAssignment];
-      safeSetState(setLocalAssignments, updatedAssignments);
-      
-      if (onAssignmentsChange && mountedRef.current) {
-        onAssignmentsChange(updatedAssignments);
-      }
-
-      // Reset form
-      resetForm();
-
-      toast({
-        title: "Success",
-        description: "Assignment created successfully"
-      });
-
-    } catch (error: any) {
-      console.error('Error creating assignment:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create assignment",
-        variant: "destructive"
-      });
-    } finally {
-      safeSetState(setCreatingAssignment, false);
-    }
-  };
 
   // Updated saveAssignmentToDB function with proper ID handling
 const saveAssignmentToDB = async (assignment: Assignment) => {
