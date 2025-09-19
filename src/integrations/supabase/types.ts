@@ -93,6 +93,39 @@ export type Database = {
           },
         ]
       }
+      code_analysis_jobs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          payload: Json
+          result: Json | null
+          status: Database["public"]["Enums"]["code_analysis_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          payload: Json
+          result?: Json | null
+          status?: Database["public"]["Enums"]["code_analysis_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          payload?: Json
+          result?: Json | null
+          status?: Database["public"]["Enums"]["code_analysis_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       error_logs: {
         Row: {
           component_name: string | null
@@ -198,6 +231,51 @@ export type Database = {
           name?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      gpu_nodes: {
+        Row: {
+          capabilities: Json | null
+          created_at: string | null
+          endpoint: string | null
+          gpu_info: Json | null
+          id: string
+          last_heartbeat: string | null
+          location: string | null
+          name: string | null
+          owner_id: string | null
+          performance: Json | null
+          priority: number | null
+          status: string | null
+        }
+        Insert: {
+          capabilities?: Json | null
+          created_at?: string | null
+          endpoint?: string | null
+          gpu_info?: Json | null
+          id?: string
+          last_heartbeat?: string | null
+          location?: string | null
+          name?: string | null
+          owner_id?: string | null
+          performance?: Json | null
+          priority?: number | null
+          status?: string | null
+        }
+        Update: {
+          capabilities?: Json | null
+          created_at?: string | null
+          endpoint?: string | null
+          gpu_info?: Json | null
+          id?: string
+          last_heartbeat?: string | null
+          location?: string | null
+          name?: string | null
+          owner_id?: string | null
+          performance?: Json | null
+          priority?: number | null
+          status?: string | null
         }
         Relationships: []
       }
@@ -1830,6 +1908,7 @@ export type Database = {
       }
     }
     Enums: {
+      code_analysis_status: "pending" | "processing" | "completed" | "failed"
       job_status: "pending" | "processing" | "completed" | "failed"
       tracker_type: "specialized" | "defence" | "midfield" | "attack"
       user_role:
@@ -1966,6 +2045,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      code_analysis_status: ["pending", "processing", "completed", "failed"],
       job_status: ["pending", "processing", "completed", "failed"],
       tracker_type: ["specialized", "defence", "midfield", "attack"],
       user_role: ["admin", "teacher", "user", "tracker", "manager", "special"],
