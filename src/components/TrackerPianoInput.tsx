@@ -87,8 +87,19 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
         .from('matches')
         .select('home_team_players, away_team_players')
         .eq('id', matchId)
-        .single();
-      if (matchError) throw matchError;
+        .maybeSingle();
+      
+      if (matchError) {
+        console.error("Error fetching match details:", matchError);
+        return;
+      }
+
+      if (!matchData) {
+        console.warn("Match not found or not accessible with ID:", matchId);
+        setFullMatchRoster({ home: [], away: [] });
+        return;
+      }
+
       const parsePlayerData = (data: any): PlayerForPianoInput[] => {
         if (typeof data === 'string') {
           try { return JSON.parse(data); } catch { return []; }
@@ -99,7 +110,10 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
         home: parsePlayerData(matchData.home_team_players),
         away: parsePlayerData(matchData.away_team_players)
       });
-    } catch (e: any) { console.error("Error fetching match details:", e); }
+    } catch (e: any) { 
+      console.error("Error fetching match details:", e); 
+      setFullMatchRoster({ home: [], away: [] });
+    }
   }, [matchId]);
 
   const fetchAssignments = useCallback(async () => {
