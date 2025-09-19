@@ -137,7 +137,9 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
       const homeP: PlayerForPianoInput[] = [], awayP: PlayerForPianoInput[] = [];
       data.forEach(assignment => {
         const teamList = assignment.player_team_id === 'home' ? fullMatchRoster?.home : fullMatchRoster?.away;
-        const player = teamList?.find(p => String(p.id) === String(assignment.player_id));
+        // Check both assigned_player_id and player_id fields for consistency
+        const playerId = assignment.assigned_player_id || assignment.player_id;
+        const player = teamList?.find(p => String(p.id) === String(playerId));
         if (player) {
           const targetList = assignment.player_team_id === 'home' ? homeP : awayP;
           if (!targetList.some(p => p.id === player.id)) targetList.push(player);

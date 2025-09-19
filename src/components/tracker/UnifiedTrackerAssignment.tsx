@@ -399,6 +399,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
 
   const handleDeleteAssignment = async (assignmentId: string) => {
     try {
+      const assignment = localAssignments.find(a => a.id === assignmentId);
       const updatedAssignments = localAssignments.filter(a => a.id !== assignmentId);
       setLocalAssignments(updatedAssignments);
       
@@ -406,14 +407,20 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
         onAssignmentsChange(updatedAssignments);
       }
 
-      if (matchId && !assignmentId.startsWith('temp-')) {
-        const assignment = localAssignments.find(a => a.id === assignmentId);
-        if (assignment) {
-          await supabase
-            .from('match_tracker_assignments')
-            .delete()
-            .eq('match_id', matchId)
-            .eq('tracker_user_id', assignment.tracker_user_id);
+      // Delete from database if it's not a temporary assignment
+      if (matchId && !assignmentId.startsWith('temp-') && assignment) {
+        // Delete all database records for this specific assignment
+        // Since we store one record per player, we need to delete all records for this tracker's assignment
+        const { error } = await supabase
+          .from('match_tracker_assignments')
+          .delete()
+          .eq('match_id', matchId)
+          .eq('tracker_user_id', assignment.tracker_user_id)
+          .in('assigned_player_id', assignment.player_ids);
+
+        if (error) {
+          console.error('Database delete error:', error);
+          throw error;
         }
       }
 
@@ -422,6 +429,13 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
         description: "Assignment deleted successfully"
       });
     } catch (error: any) {
+      console.error('Error deleting assignment:', error);
+      // Revert the local state if database deletion failed
+      setLocalAssignments(localAssignments);
+      if (onAssignmentsChange) {
+        onAssignmentsChange(localAssignments);
+      }
+      
       toast({
         title: "Error",
         description: "Failed to delete assignment",
