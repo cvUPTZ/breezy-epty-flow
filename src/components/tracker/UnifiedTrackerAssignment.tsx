@@ -141,29 +141,54 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // First fetch assignments
+      const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('match_tracker_assignments')
-        .select(`
-          *,
-          profiles:tracker_user_id (
-            full_name,
-            email
-          )
-        `)
+        .select('*')
         .eq('match_id', matchId);
 
-      if (error) throw error;
+      if (assignmentsError) throw assignmentsError;
 
-      const processedAssignments = processAssignments(data || []);
+      if (!assignmentsData || assignmentsData.length === 0) {
+        setLocalAssignments([]);
+        if (onAssignmentsChange) {
+          onAssignmentsChange([]);
+        }
+        return;
+      }
+
+      // Get unique tracker user IDs
+      const trackerUserIds = [...new Set(assignmentsData.map(a => a.tracker_user_id))];
+      
+      // Fetch tracker profiles separately to avoid RLS issues
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', trackerUserIds);
+
+      if (profilesError) {
+        console.warn('Failed to fetch profiles, using assignments without names:', profilesError);
+      }
+
+      // Merge the data
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+      const enrichedAssignments = assignmentsData.map(assignment => ({
+        ...assignment,
+        profiles: profilesMap.get(assignment.tracker_user_id) || null
+      }));
+
+      const processedAssignments = processAssignments(enrichedAssignments);
       setLocalAssignments(processedAssignments);
       
       if (onAssignmentsChange) {
         onAssignmentsChange(processedAssignments);
       }
     } catch (error: any) {
+      console.error('Error fetching assignments:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch assignments",
+        description: `Failed to fetch assignments: ${error.message}`,
         variant: "destructive"
       });
     } finally {
