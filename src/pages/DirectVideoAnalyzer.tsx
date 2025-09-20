@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { DirectAnalysisInterface } from '@/components/video/DirectAnalysisInterface';
 import { VideoJobService } from '@/services/videoJobService';
 import { VideoChunkingService } from '@/services/videoChunkingService';
-import { Upload, Link, X, FileVideo, Clock, Trash2 } from 'lucide-react';
+import { Upload, Link, X, FileVideo, Clock, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -16,6 +16,8 @@ interface CachedVideo {
   url: string;
   uploadDate: string;
   fileSize: number;
+  videoPath?: string; // Store original path for URL regeneration
+  expiresAt?: string; // Track URL expiration
 }
 
 const DirectVideoAnalyzer: React.FC = () => {
@@ -23,11 +25,14 @@ const DirectVideoAnalyzer: React.FC = () => {
   const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string>('');
   const [submittedUrl, setSubmittedUrl] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [videoError, setVideoError] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const [cachedVideos, setCachedVideos] = useState<CachedVideo[]>([]);
+  const [isRefreshingUrl, setIsRefreshingUrl] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Load cached videos on component mount
   useEffect(() => {
@@ -39,29 +44,79 @@ const DirectVideoAnalyzer: React.FC = () => {
       const cached = localStorage.getItem('cachedVideoUrls');
       if (cached) {
         const videos = JSON.parse(cached) as CachedVideo[];
-        setCachedVideos(videos);
+        // Clean up expired URLs
+        const validVideos = videos.filter(video => {
+          if (!video.expiresAt) return true;
+          return new Date(video.expiresAt) > new Date();
+        });
+        
+        if (validVideos.length !== videos.length) {
+          localStorage.setItem('cachedVideoUrls', JSON.stringify(validVideos));
+        }
+        setCachedVideos(validVideos);
       }
     } catch (error) {
       console.error('Error loading cached videos:', error);
     }
   };
 
-  const saveCachedVideo = (fileName: string, url: string, fileSize: number) => {
+  const saveCachedVideo = (fileName: string, url: string, fileSize: number, videoPath?: string) => {
     try {
+      // Set expiration time to 23 hours from now (assuming 24h signed URL validity)
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 23);
+
       const newVideo: CachedVideo = {
         fileName,
         url,
         uploadDate: new Date().toISOString(),
-        fileSize
+        fileSize,
+        videoPath,
+        expiresAt: expiresAt.toISOString()
       };
 
       const existingVideos = cachedVideos.filter(v => v.fileName !== fileName);
-      const updatedVideos = [newVideo, ...existingVideos].slice(0, 10); // Keep only last 10 videos
+      const updatedVideos = [newVideo, ...existingVideos].slice(0, 10);
       
       localStorage.setItem('cachedVideoUrls', JSON.stringify(updatedVideos));
       setCachedVideos(updatedVideos);
     } catch (error) {
       console.error('Error saving cached video:', error);
+    }
+  };
+
+  const refreshVideoUrl = async (video: CachedVideo) => {
+    if (!video.videoPath) {
+      toast.error('Cannot refresh URL - original video path not found');
+      return;
+    }
+
+    setIsRefreshingUrl(video.fileName);
+    try {
+      const newSignedUrl = await VideoJobService.getVideoDownloadUrl(video.videoPath);
+      
+      // Update the cached video with new URL
+      const updatedVideos = cachedVideos.map(v => 
+        v.fileName === video.fileName 
+          ? { ...v, url: newSignedUrl, expiresAt: new Date(Date.now() + 23 * 60 * 60 * 1000).toISOString() }
+          : v
+      );
+      
+      localStorage.setItem('cachedVideoUrls', JSON.stringify(updatedVideos));
+      setCachedVideos(updatedVideos);
+      
+      // If this is the currently selected video, update the URL
+      if (submittedUrl === video.url) {
+        setSubmittedUrl(newSignedUrl);
+        setUploadedVideoUrl(newSignedUrl);
+        setVideoError('');
+      }
+      
+      toast.success('Video URL refreshed successfully');
+    } catch (error: any) {
+      toast.error('Failed to refresh URL: ' + error.message);
+    } finally {
+      setIsRefreshingUrl('');
     }
   };
 
@@ -74,6 +129,23 @@ const DirectVideoAnalyzer: React.FC = () => {
     } catch (error) {
       console.error('Error deleting cached video:', error);
     }
+  };
+
+  const isUrlExpiringSoon = (video: CachedVideo): boolean => {
+    if (!video.expiresAt) return false;
+    const expiryTime = new Date(video.expiresAt);
+    const now = new Date();
+    const hoursTillExpiry = (expiryTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+    return hoursTillExpiry < 2; // Warn if less than 2 hours
+  };
+
+  const validateVideoUrl = (url: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.onloadedmetadata = () => resolve(true);
+      video.onerror = () => resolve(false);
+      video.src = url;
+    });
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -93,15 +165,27 @@ const DirectVideoAnalyzer: React.FC = () => {
     });
   };
 
-  const handleUrlSubmit = (e: React.FormEvent) => {
+  const handleUrlSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!videoUrl.trim()) {
       setError('Please enter a video URL.');
       return;
     }
+    
     try {
       new URL(videoUrl);
       setError('');
+      setVideoError('');
+      
+      // Validate the video URL
+      toast.info('Validating video URL...');
+      const isValid = await validateVideoUrl(videoUrl);
+      
+      if (!isValid) {
+        setError('The provided URL does not appear to be a valid video file or is not accessible.');
+        return;
+      }
+      
       setSubmittedUrl(videoUrl);
       toast.success('Video URL loaded successfully');
     } catch (_) {
@@ -114,24 +198,55 @@ const DirectVideoAnalyzer: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Check if this file is already cached
-    const existingVideo = cachedVideos.find(v => v.fileName === file.name && v.fileSize === file.size);
-    if (existingVideo) {
-      setUploadedVideoUrl(existingVideo.url);
-      setSubmittedUrl(existingVideo.url);
-      toast.success('Using cached video - no upload needed!');
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+    // Validate video file type
+    if (!file.type.startsWith('video/')) {
+      setError('Please select a valid video file.');
+      toast.error('Please select a valid video file.');
       return;
+    }
+
+    // Check supported video formats
+    const supportedFormats = ['video/mp4', 'video/webm', 'video/ogg', 'video/mov', 'video/avi'];
+    const isFormatSupported = supportedFormats.some(format => 
+      file.type === format || file.name.toLowerCase().includes(format.split('/')[1])
+    );
+
+    if (!isFormatSupported) {
+      toast.warn('Video format may not be supported by all browsers. MP4 is recommended for best compatibility.');
+    }
+
+    // Check if this file is already cached and URL is still valid
+    const existingVideo = cachedVideos.find(v => 
+      v.fileName === file.name && 
+      v.fileSize === file.size &&
+      (!v.expiresAt || new Date(v.expiresAt) > new Date())
+    );
+    
+    if (existingVideo) {
+      // Validate cached URL is still working
+      const isValid = await validateVideoUrl(existingVideo.url);
+      if (isValid) {
+        setUploadedVideoUrl(existingVideo.url);
+        setSubmittedUrl(existingVideo.url);
+        setVideoError('');
+        toast.success('Using cached video - no upload needed!');
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      } else {
+        // URL is expired, remove from cache
+        deleteCachedVideo(existingVideo.fileName);
+        toast.info('Cached video URL expired, uploading fresh copy...');
+      }
     }
 
     setIsUploading(true);
     setUploadProgress(0);
     setError('');
+    setVideoError('');
 
     try {
-      // Check file size and show appropriate message
       const fileSizeMB = file.size / 1024 / 1024;
       const needsChunking = VideoChunkingService.needsChunking(file);
       
@@ -160,16 +275,21 @@ const DirectVideoAnalyzer: React.FC = () => {
       
       const signedUrl = await VideoJobService.getVideoDownloadUrl(videoPath);
       
+      // Validate the uploaded video URL
+      const isValid = await validateVideoUrl(signedUrl);
+      if (!isValid) {
+        throw new Error('Uploaded video file appears to be corrupted or in an unsupported format');
+      }
+      
       setUploadProgress(100);
       setUploadedVideoUrl(signedUrl);
       setSubmittedUrl(signedUrl);
       setUploadStatus('Upload completed successfully!');
       
-      // Save to cache
-      saveCachedVideo(file.name, signedUrl, file.size);
+      // Save to cache with video path for future URL regeneration
+      saveCachedVideo(file.name, signedUrl, file.size, videoPath);
       toast.success('Video uploaded and cached successfully');
       
-      // Reset progress after a short delay
       setTimeout(() => {
         setUploadProgress(0);
         setUploadStatus('');
@@ -187,10 +307,42 @@ const DirectVideoAnalyzer: React.FC = () => {
     }
   };
 
-  const handleUseCachedVideo = (video: CachedVideo) => {
+  const handleUseCachedVideo = async (video: CachedVideo) => {
+    // Check if URL is expiring soon and needs refresh
+    if (isUrlExpiringSoon(video) && video.videoPath) {
+      toast.info('Video URL is expiring soon, refreshing...');
+      await refreshVideoUrl(video);
+      return;
+    }
+
+    // Validate URL is still working
+    const isValid = await validateVideoUrl(video.url);
+    if (!isValid) {
+      if (video.videoPath) {
+        toast.info('Cached URL is no longer valid, refreshing...');
+        await refreshVideoUrl(video);
+      } else {
+        toast.error('Cached video URL is no longer valid and cannot be refreshed');
+        deleteCachedVideo(video.fileName);
+      }
+      return;
+    }
+
     setUploadedVideoUrl(video.url);
     setSubmittedUrl(video.url);
+    setVideoError('');
     toast.success(`Using cached video: ${video.fileName}`);
+  };
+
+  const handleVideoError = (error: any) => {
+    console.error('Video error:', error);
+    setVideoError('Video failed to load. This may be due to an expired URL, unsupported format, or network issues.');
+    
+    // If it's a cached video with a path, offer to refresh
+    const currentVideo = cachedVideos.find(v => v.url === submittedUrl);
+    if (currentVideo && currentVideo.videoPath) {
+      toast.error('Video failed to load. Click the refresh button to get a new URL.');
+    }
   };
 
   const handleReset = () => {
@@ -198,6 +350,7 @@ const DirectVideoAnalyzer: React.FC = () => {
     setUploadedVideoUrl('');
     setSubmittedUrl('');
     setError('');
+    setVideoError('');
     setUploadStatus('');
     setUploadProgress(0);
     if (fileInputRef.current) {
@@ -216,7 +369,9 @@ const DirectVideoAnalyzer: React.FC = () => {
                 <CardTitle>Direct Video Analyzer</CardTitle>
                 {!submittedUrl && (
                   <CardDescription>
-                    Upload a video file or enter a video URL to start analyzing directly. Files larger than 40MB will be automatically split into chunks for optimal upload performance.
+                    Upload a video file or enter a video URL to start analyzing directly. 
+                    Supported formats: MP4, WebM, OGG (MP4 recommended for best compatibility).
+                    Files larger than 40MB will be automatically split into chunks for optimal upload performance.
                     {cachedVideos.length > 0 && " Previously uploaded videos are cached for quick access."}
                   </CardDescription>
                 )}
@@ -233,7 +388,7 @@ const DirectVideoAnalyzer: React.FC = () => {
                             Recently Uploaded Videos
                           </CardTitle>
                           <CardDescription className="text-sm">
-                            Click on any video to use it without re-uploading.
+                            Click on any video to use it without re-uploading. URLs are automatically refreshed when they expire.
                           </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -244,9 +399,17 @@ const DirectVideoAnalyzer: React.FC = () => {
                                   <div className="flex items-center gap-2">
                                     <FileVideo className="h-4 w-4 text-blue-600 flex-shrink-0" />
                                     <span className="font-medium text-sm truncate">{video.fileName}</span>
+                                    {isUrlExpiringSoon(video) && (
+                                      <AlertTriangle className="h-3 w-3 text-amber-500" title="URL expiring soon" />
+                                    )}
                                   </div>
                                   <div className="text-xs text-gray-500 mt-1">
                                     {formatFileSize(video.fileSize)} • {formatDate(video.uploadDate)}
+                                    {video.expiresAt && (
+                                      <span className="ml-2">
+                                        • Expires: {formatDate(video.expiresAt)}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2 ml-2">
@@ -255,14 +418,32 @@ const DirectVideoAnalyzer: React.FC = () => {
                                     size="sm"
                                     variant="outline"
                                     className="text-xs"
+                                    disabled={isRefreshingUrl === video.fileName}
                                   >
                                     Use Video
                                   </Button>
+                                  {video.videoPath && (
+                                    <Button
+                                      onClick={() => refreshVideoUrl(video)}
+                                      size="sm"
+                                      variant="ghost"
+                                      className="text-blue-600 hover:text-blue-700"
+                                      disabled={isRefreshingUrl === video.fileName}
+                                      title="Refresh URL"
+                                    >
+                                      {isRefreshingUrl === video.fileName ? (
+                                        <RefreshCw className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        <RefreshCw className="h-3 w-3" />
+                                      )}
+                                    </Button>
+                                  )}
                                   <Button
                                     onClick={() => deleteCachedVideo(video.fileName)}
                                     size="sm"
                                     variant="ghost"
                                     className="text-red-600 hover:text-red-700"
+                                    disabled={isRefreshingUrl === video.fileName}
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </Button>
@@ -281,6 +462,9 @@ const DirectVideoAnalyzer: React.FC = () => {
                           <Link className="h-5 w-5" />
                           Video URL
                         </CardTitle>
+                        <CardDescription className="text-sm">
+                          Enter a direct link to a video file. Ensure the URL is publicly accessible and points to a video file.
+                        </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <form onSubmit={handleUrlSubmit} className="space-y-4">
@@ -308,8 +492,8 @@ const DirectVideoAnalyzer: React.FC = () => {
                           Upload Video File
                         </CardTitle>
                         <CardDescription className="text-sm">
-                          Supports files up to several GB. Large files will be automatically chunked for reliable upload.
-                          Uploaded videos are cached to avoid re-uploading.
+                          Upload video files up to several GB. Supports MP4, WebM, MOV, AVI formats.
+                          Large files are automatically chunked for reliable upload. Videos are cached with automatic URL refresh.
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -357,12 +541,63 @@ const DirectVideoAnalyzer: React.FC = () => {
                           {uploadedVideoUrl ? 'Uploaded video file' : submittedUrl}
                         </p>
                       </div>
-                      <Button onClick={handleReset} variant="outline" size="sm">
-                        <X className="h-4 w-4 mr-2" />
-                        Load Different Video
-                      </Button>
+                      <div className="flex gap-2">
+                        {/* Show refresh button for cached videos */}
+                        {uploadedVideoUrl && cachedVideos.find(v => v.url === submittedUrl)?.videoPath && (
+                          <Button 
+                            onClick={() => {
+                              const video = cachedVideos.find(v => v.url === submittedUrl);
+                              if (video) refreshVideoUrl(video);
+                            }}
+                            variant="outline" 
+                            size="sm"
+                            disabled={isRefreshingUrl !== ''}
+                            title="Refresh video URL"
+                          >
+                            {isRefreshingUrl ? (
+                              <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4 mr-2" />
+                            )}
+                            Refresh URL
+                          </Button>
+                        )}
+                        <Button onClick={handleReset} variant="outline" size="sm">
+                          <X className="h-4 w-4 mr-2" />
+                          Load Different Video
+                        </Button>
+                      </div>
                     </div>
-                    <DirectAnalysisInterface videoUrl={submittedUrl} />
+                    
+                    {videoError && (
+                      <div className="mb-4 text-amber-600 text-sm bg-amber-50 p-3 rounded-md flex items-start gap-2">
+                        <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <div>
+                          {videoError}
+                          {uploadedVideoUrl && cachedVideos.find(v => v.url === submittedUrl)?.videoPath && (
+                            <div className="mt-2">
+                              <Button 
+                                onClick={() => {
+                                  const video = cachedVideos.find(v => v.url === submittedUrl);
+                                  if (video) refreshVideoUrl(video);
+                                }}
+                                size="sm"
+                                variant="outline"
+                                disabled={isRefreshingUrl !== ''}
+                              >
+                                <RefreshCw className="h-3 w-3 mr-1" />
+                                Try Refreshing URL
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <DirectAnalysisInterface 
+                      videoUrl={submittedUrl} 
+                      onVideoError={handleVideoError}
+                    />
                   </div>
                 )}
               </CardContent>
