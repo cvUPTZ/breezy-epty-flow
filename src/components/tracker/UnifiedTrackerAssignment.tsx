@@ -161,11 +161,9 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
 
     try {
       safeSetState(setLoading, true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, role')
-        .eq('role', 'tracker')
-        .abortSignal(abortControllerRef.current.signal);
+      const { data, error } = await supabase.functions.invoke('get-tracker-users', {
+        signal: abortControllerRef.current.signal
+      });
 
       if (error) throw error;
       
