@@ -91,9 +91,13 @@ self.addEventListener('fetch', (event) => {
       url.hostname.includes('supabase.co')) {
     event.respondWith(
       fetch(event.request).catch(error => {
-        console.error('Service Worker: External API request failed:', error);
+        console.error('Service Worker: External API request failed for URL:', event.request.url, error);
         return new Response(
-          JSON.stringify({ error: 'Service temporarily unavailable' }), 
+          JSON.stringify({
+            error: 'Service temporarily unavailable',
+            message: error.message,
+            stack: error.stack
+          }),
           { 
             status: 503, 
             statusText: 'Service Unavailable',
