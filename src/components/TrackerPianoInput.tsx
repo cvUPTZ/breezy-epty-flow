@@ -328,23 +328,42 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
 
         // Find and add assigned players with enhanced debugging
         playerIds.forEach(playerId => {
-          console.log(`Searching for player ${playerId} in ${team} team roster:`, 
-            teamList.map(p => ({ id: p.id, name: p.name })));
+          console.log(`🔍 Searching for player ${playerId} (type: ${typeof playerId}) in ${team} team roster:`);
+          console.log(`📋 Roster players:`, teamList.map(p => ({ 
+            id: p.id, 
+            idType: typeof p.id, 
+            name: p.name,
+            jersey_number: p.jersey_number 
+          })));
           
-          const player = teamList.find(p => String(p.id) === String(playerId));
+          // Try both exact match and string conversion
+          let player = teamList.find(p => p.id === playerId);
+          if (!player) {
+            player = teamList.find(p => String(p.id) === String(playerId));
+          }
+          if (!player) {
+            player = teamList.find(p => Number(p.id) === Number(playerId));
+          }
           
           if (player) {
             const targetList = team === 'home' ? homeP : awayP;
             // Avoid duplicates
             if (!targetList.some(p => p.id === player.id)) {
               targetList.push(player);
-              console.log(`✅ Successfully added player:`, { id: player.id, name: player.name, team });
+              console.log(`✅ Successfully added player:`, { 
+                id: player.id, 
+                name: player.name, 
+                team,
+                assignmentId: playerId,
+                matchType: `${playerId} -> ${player.id}`
+              });
             } else {
               console.log(`⚠️ Player already exists in list:`, { id: player.id, name: player.name });
             }
           } else {
-            console.log(`❌ Player ${playerId} NOT FOUND in ${team} team roster. Available players:`, 
-              teamList.map(p => `${p.id}:${p.name}`));
+            console.log(`❌ Player ${playerId} NOT FOUND in ${team} team roster.`);
+            console.log(`🔢 Available player IDs: [${teamList.map(p => p.id).join(', ')}]`);
+            console.log(`📝 Available players:`, teamList.map(p => `ID:${p.id} #${p.jersey_number || 'N/A'} ${p.name}`));
           }
         });
       });
