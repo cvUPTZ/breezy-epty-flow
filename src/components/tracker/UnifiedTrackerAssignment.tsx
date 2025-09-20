@@ -129,10 +129,11 @@ function assignmentReducer(state: TrackerAssignmentState, action: AssignmentActi
       return { ...state, selectedTrackerType: action.payload };
     case 'SET_TEAM':
       return { ...state, selectedTeam: action.payload, selectedPlayers: [] };
-    case 'TOGGLE_CATEGORY':
+    case 'TOGGLE_CATEGORY': {
       const newSet = new Set(state.expandedCategories);
       newSet.has(action.payload) ? newSet.delete(action.payload) : newSet.add(action.payload);
       return { ...state, expandedCategories: newSet };
+    }
     case 'SET_VIDEO_URL':
       return { ...state, assignmentVideoUrl: action.payload };
     case 'SET_CREATING':
@@ -264,7 +265,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   }, []);
 
   // Safe async operation wrapper
-  const safeAsync = useCallback(async <T>(
+  const safeAsync = useCallback(async <T,>(
     operation: () => Promise<T>,
     operationKey: string
   ): Promise<T | null> => {

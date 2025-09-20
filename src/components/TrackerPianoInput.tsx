@@ -270,7 +270,7 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
   }, []);
 
   // Safe async operation wrapper
-  const safeAsync = useCallback(async <T>(
+  const safeAsync = useCallback(async <T,>(
     operation: () => Promise<T>,
     operationKey: string
   ): Promise<T | null> => {
