@@ -12,7 +12,6 @@
     "db:seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
-    "12": "^1.0.2",
     "@capacitor/android": "^7.2.0",
     "@capacitor/cli": "^7.2.0",
     "@capacitor/core": "^7.2.0",
