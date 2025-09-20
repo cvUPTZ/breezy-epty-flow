@@ -241,6 +241,12 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
       return;
     }
 
+    // Add this check to ensure fullMatchRoster is available
+    if (!fullMatchRoster) {
+      console.log('TrackerPianoInput - fullMatchRoster not ready yet, skipping fetchAssignments');
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('match_tracker_assignments')
@@ -284,11 +290,22 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
       const homeP: PlayerForPianoInput[] = [];
       const awayP: PlayerForPianoInput[] = [];
 
+      console.log('TrackerPianoInput - Available fullMatchRoster:', fullMatchRoster);
+
       data.forEach(assignment => {
         const team = assignment.player_team_id;
-        const teamList = team === 'home' ? fullMatchRoster?.home : fullMatchRoster?.away;
+        const teamList = team === 'home' ? fullMatchRoster.home : fullMatchRoster.away;
         
-        if (!teamList || teamList.length === 0) return;
+        console.log(`TrackerPianoInput - Processing ${team} team assignment:`, {
+          assignment_id: assignment.id,
+          team,
+          teamListLength: teamList?.length || 0
+        });
+
+        if (!teamList || teamList.length === 0) {
+          console.warn(`TrackerPianoInput - No players found for ${team} team in roster`);
+          return;
+        }
 
         // Get player IDs from the new array fields, falling back to legacy fields
         let playerIds: number[] = [];
@@ -309,8 +326,11 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
           team_roster_count: teamList.length
         });
 
-        // Find and add assigned players
+        // Find and add assigned players with enhanced debugging
         playerIds.forEach(playerId => {
+          console.log(`Searching for player ${playerId} in ${team} team roster:`, 
+            teamList.map(p => ({ id: p.id, name: p.name })));
+          
           const player = teamList.find(p => String(p.id) === String(playerId));
           
           if (player) {
@@ -318,10 +338,13 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
             // Avoid duplicates
             if (!targetList.some(p => p.id === player.id)) {
               targetList.push(player);
-              console.log(`TrackerPianoInput - Added player to ${team}:`, player);
+              console.log(`✅ Successfully added player:`, { id: player.id, name: player.name, team });
+            } else {
+              console.log(`⚠️ Player already exists in list:`, { id: player.id, name: player.name });
             }
           } else {
-            console.warn(`TrackerPianoInput - Player with ID ${playerId} not found in ${team} team roster`);
+            console.log(`❌ Player ${playerId} NOT FOUND in ${team} team roster. Available players:`, 
+              teamList.map(p => `${p.id}:${p.name}`));
           }
         });
       });
