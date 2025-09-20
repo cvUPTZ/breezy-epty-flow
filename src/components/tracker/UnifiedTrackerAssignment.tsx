@@ -51,8 +51,8 @@ type TrackerType = 'specialized' | 'defence' | 'midfield' | 'attack';
 interface DatabaseAssignment {
   id: string;
   tracker_user_id: string;
-  assigned_player_id: number;
-  assigned_event_types: string[];
+  assigned_player_id: number | null;
+  assigned_event_types: string[] | null;
   profiles?: {
     id: string;
     full_name: string | null;
@@ -136,7 +136,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   }, []);
 
   // Safe state update helper
-  const safeSetState = useCallback(<T>(setter: React.Dispatch<React.SetStateAction<T>>, value: T | ((prev: T) => T)) => {
+  const safeSetState = useCallback((setter: React.Dispatch<React.SetStateAction<any>>, value: any) => {
     if (mountedRef.current) {
       setter(value);
     }
@@ -148,8 +148,8 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       typeof item === 'object' &&
       typeof item.id === 'string' &&
       typeof item.tracker_user_id === 'string' &&
-      typeof item.assigned_player_id === 'number' &&
-      Array.isArray(item.assigned_event_types)
+      (typeof item.assigned_player_id === 'number' || item.assigned_player_id === null) &&
+      (Array.isArray(item.assigned_event_types) || item.assigned_event_types === null)
     );
   };
 
@@ -285,7 +285,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
           };
         }
         
-        if (assignment.assigned_player_id && !acc[key].player_ids.includes(assignment.assigned_player_id)) {
+        if (assignment.assigned_player_id !== null && assignment.assigned_player_id !== undefined && !acc[key].player_ids.includes(assignment.assigned_player_id)) {
           acc[key].player_ids.push(assignment.assigned_player_id);
         }
         
@@ -358,6 +358,61 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     setAssignmentVideoUrl(videoUrl || '');
   }, [videoUrl]);
 
+  const saveAssignmentToDB = async (assignment: Assignment) => {
+    if (!matchId) return null;
+
+    const dbRecords = assignment.player_ids.map(playerId => {
+      const playerTeamId = homeTeamPlayers.some(p => p.id === playerId) ? 'home' : 'away';
+      
+      return {
+        match_id: matchId,
+        tracker_user_id: assignment.tracker_user_id,
+        assigned_player_id: playerId,
+        player_team_id: playerTeamId,
+        assigned_event_types: assignment.assigned_event_types,
+      };
+    });
+
+    const { data, error } = await supabase
+      .from('match_tracker_assignments')
+      .insert(dbRecords)
+      .select('id');
+
+    if (error) throw error;
+    
+    return data && data.length > 0 ? data[0].id : null;
+  };
+
+  const sendNotificationToTracker = async (trackerId: string, matchId: string, videoUrl?: string) => {
+    try {
+      const notificationType = videoUrl ? 'video_assignment' : 'match_assignment';
+      const notificationTitle = videoUrl ? 'New Video Tracking Assignment' : 'New Match Assignment';
+      const notificationMessage = videoUrl 
+        ? `You have been assigned to track video analysis.`
+        : `You have been assigned to track a new match.`;
+
+      const { error } = await supabase.from('notifications').insert({
+        user_id: trackerId,
+        match_id: matchId,
+        title: notificationTitle,
+        message: notificationMessage,
+        type: notificationType,
+        notification_data: { 
+          match_id: matchId,
+          assignment_type: videoUrl ? 'video_tracking' : 'match_tracking',
+          video_url: videoUrl || null
+        },
+        is_read: false,
+      });
+
+      if (error) {
+        console.warn('Failed to send notification:', error);
+      }
+    } catch (error) {
+      console.warn('Notification error:', error);
+    }
+  };
+
   const handleCreateAssignment = async () => {
     if (!selectedTracker || selectedEventTypes.length === 0) {
       toast({
@@ -389,7 +444,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
         throw new Error('Selected tracker not found');
       }
 
-      const newAssignment: Assignment = {
+      const tempAssignment: Assignment = {
         id: `temp-${Date.now()}`,
         tracker_user_id: selectedTracker,
         tracker_name: trackerUser.full_name || trackerUser.email || 'Unknown',
@@ -398,23 +453,26 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
         assigned_event_types: selectedEventTypes
       };
 
-      // Save to database first if matchId exists
+      let realAssignmentId: string | null = null;
+
       if (matchId) {
-        await saveAssignmentToDB(newAssignment);
-        // Send notification after successful DB save
+        realAssignmentId = await saveAssignmentToDB(tempAssignment);
         const finalVideoUrl = assignmentVideoUrl.trim() || undefined;
         await sendNotificationToTracker(selectedTracker, matchId, finalVideoUrl);
       }
 
-      // Only update local state after successful database operations
-      const updatedAssignments = [...localAssignments, newAssignment];
+      const finalAssignment: Assignment = {
+        ...tempAssignment,
+        id: realAssignmentId || tempAssignment.id
+      };
+
+      const updatedAssignments = [...localAssignments, finalAssignment];
       safeSetState(setLocalAssignments, updatedAssignments);
       
       if (onAssignmentsChange && mountedRef.current) {
         onAssignmentsChange(updatedAssignments);
       }
 
-      // Reset form
       resetForm();
 
       toast({
@@ -434,175 +492,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     }
   };
 
-  // Updated saveAssignmentToDB function with proper ID handling
-const saveAssignmentToDB = async (assignment: Assignment) => {
-  if (!matchId) return null;
-
-  const dbRecords = assignment.player_ids.map(playerId => {
-    const playerTeamId = homeTeamPlayers.some(p => p.id === playerId) ? 'home' : 'away';
-    
-    return {
-      match_id: matchId,
-      tracker_user_id: assignment.tracker_user_id,
-      assigned_player_id: playerId,
-      player_team_id: playerTeamId,
-      assigned_event_types: assignment.assigned_event_types,
-    };
-  });
-
-  const { data, error } = await supabase
-    .from('match_tracker_assignments')
-    .insert(dbRecords)
-    .select('id'); // Return the inserted IDs
-
-  if (error) throw error;
-  
-  // Return the first inserted record's ID to use as the real assignment ID
-  return data && data.length > 0 ? data[0].id : null;
-};
-
-// Updated handleCreateAssignment function
-const handleCreateAssignment = async () => {
-  if (!selectedTracker || selectedEventTypes.length === 0) {
-    toast({
-      title: "Validation Error",
-      description: "Please select a tracker and at least one event type",
-      variant: "destructive"
-    });
-    return;
-  }
-
-  const playersToAssign = selectedTrackerType === 'specialized' 
-    ? selectedPlayers 
-    : getLinePlayers(selectedTrackerType, selectedTeam).map(p => p.id);
-
-  if (playersToAssign.length === 0) {
-    toast({
-      title: "Validation Error",
-      description: "Please select at least one player",
-      variant: "destructive"
-    });
-    return;
-  }
-
-  setCreatingAssignment(true);
-
-  try {
-    const trackerUser = localTrackers.find(t => t.id === selectedTracker);
-    if (!trackerUser) {
-      throw new Error('Selected tracker not found');
-    }
-
-    // Create the assignment object with a temporary ID first
-    const tempAssignment: Assignment = {
-      id: `temp-${Date.now()}`,
-      tracker_user_id: selectedTracker,
-      tracker_name: trackerUser.full_name || trackerUser.email || 'Unknown',
-      tracker_email: trackerUser.email || 'Unknown',
-      player_ids: playersToAssign,
-      assigned_event_types: selectedEventTypes
-    };
-
-    let realAssignmentId: string | null = null;
-
-    // Save to database first if matchId exists
-    if (matchId) {
-      realAssignmentId = await saveAssignmentToDB(tempAssignment);
-      
-      // Send notification after successful DB save
-      const finalVideoUrl = assignmentVideoUrl.trim() || undefined;
-      await sendNotificationToTracker(selectedTracker, matchId, finalVideoUrl);
-    }
-
-    // Create the final assignment object with the real ID from database
-    const finalAssignment: Assignment = {
-      ...tempAssignment,
-      id: realAssignmentId || tempAssignment.id // Use real ID if available, fallback to temp
-    };
-
-    // Update local state with the final assignment
-    const updatedAssignments = [...localAssignments, finalAssignment];
-    safeSetState(setLocalAssignments, updatedAssignments);
-    
-    if (onAssignmentsChange && mountedRef.current) {
-      onAssignmentsChange(updatedAssignments);
-    }
-
-    // Reset form
-    resetForm();
-
-    toast({
-      title: "Success",
-      description: "Assignment created successfully"
-    });
-
-  } catch (error: any) {
-    console.error('Error creating assignment:', error);
-    toast({
-      title: "Error",
-      description: error.message || "Failed to create assignment",
-      variant: "destructive"
-    });
-  } finally {
-    safeSetState(setCreatingAssignment, false);
-  }
-};
-
-// Alternative approach: If you need to create a single assignment record instead of multiple
-const saveAssignmentToDBAlternative = async (assignment: Assignment) => {
-  if (!matchId) return null;
-
-  // Create a single record with arrays for player IDs
-  const dbRecord = {
-    match_id: matchId,
-    tracker_user_id: assignment.tracker_user_id,
-    assigned_player_ids: assignment.player_ids, // Use the array column
-    player_team_id: 'both', // Or determine logic for mixed teams
-    assigned_event_types: assignment.assigned_event_types,
-  };
-
-  const { data, error } = await supabase
-    .from('match_tracker_assignments')
-    .insert(dbRecord)
-    .select('id')
-    .single(); // Get single record
-
-  if (error) throw error;
-  
-  return data?.id || null;
-};
-  const sendNotificationToTracker = async (trackerId: string, matchId: string, videoUrl?: string) => {
-    try {
-      const notificationType = videoUrl ? 'video_assignment' : 'match_assignment';
-      const notificationTitle = videoUrl ? 'New Video Tracking Assignment' : 'New Match Assignment';
-      const notificationMessage = videoUrl 
-        ? `You have been assigned to track video analysis.`
-        : `You have been assigned to track a new match.`;
-
-      const { error } = await supabase.from('notifications').insert({
-        user_id: trackerId,
-        match_id: matchId,
-        title: notificationTitle,
-        message: notificationMessage,
-        type: notificationType,
-        notification_data: { 
-          match_id: matchId,
-          assignment_type: videoUrl ? 'video_tracking' : 'match_tracking',
-          video_url: videoUrl || null
-        },
-        is_read: false,
-      });
-
-      if (error) {
-        console.warn('Failed to send notification:', error);
-        // Don't throw - notification failure shouldn't break assignment
-      }
-    } catch (error) {
-      console.warn('Notification error:', error);
-      // Notification failure shouldn't break the assignment process
-    }
-  };
-
   const handleDeleteAssignment = async (assignmentId: string) => {
     setDeletingAssignment(assignmentId);
 
@@ -612,7 +501,6 @@ const saveAssignmentToDBAlternative = async (assignment: Assignment) => {
         throw new Error('Assignment not found');
       }
 
-      // Delete from database first if it's not a temporary assignment
       if (matchId && !assignmentId.startsWith('temp-')) {
         const { error } = await supabase
           .from('match_tracker_assignments')
@@ -626,7 +514,6 @@ const saveAssignmentToDBAlternative = async (assignment: Assignment) => {
         }
       }
 
-      // Only update local state after successful database operation
       const updatedAssignments = localAssignments.filter(a => a.id !== assignmentId);
       safeSetState(setLocalAssignments, updatedAssignments);
       
@@ -640,6 +527,10 @@ const saveAssignmentToDBAlternative = async (assignment: Assignment) => {
       });
     } catch (error: any) {
       console.error('Error deleting assignment:', error);
+      
+      // Revert local state on database deletion failure
+      safeSetState(setLocalAssignments, (prev: Assignment[]) => [...prev]);
+      
       toast({
         title: "Error",
         description: error.message || "Failed to delete assignment",
@@ -653,7 +544,7 @@ const saveAssignmentToDBAlternative = async (assignment: Assignment) => {
   const handleTeamChange = useCallback((value: string) => {
     const newTeam = value as 'home' | 'away';
     setSelectedTeam(newTeam);
-    setSelectedPlayers([]); // Clear selected players when switching teams
+    setSelectedPlayers([]);
   }, []);
 
   const renderEventTypeCategories = () => (
@@ -783,14 +674,12 @@ const saveAssignmentToDBAlternative = async (assignment: Assignment) => {
           <CardContent>
             <div className="space-y-4">
               {localAssignments.map(assignment => {
-                // Get player details for this assignment
                 const assignedPlayers = assignment.player_ids
                   .map(playerId => allPlayers.find(player => player.id === playerId))
                   .filter((player): player is Player => Boolean(player));
 
                 return (
                   <div key={assignment.id} className="p-4 bg-gray-50 rounded-lg space-y-3">
-                    {/* Tracker Info */}
                     <div className="flex items-start justify-between">
                       <div>
                         <span className="font-medium text-lg">{assignment.tracker_name}</span>
@@ -812,7 +701,6 @@ const saveAssignmentToDBAlternative = async (assignment: Assignment) => {
                       </Button>
                     </div>
 
-                    {/* Assigned Players */}
                     <div>
                       <label className="text-sm font-medium text-gray-700 block mb-2">
                         Assigned Players ({assignedPlayers.length})
@@ -840,7 +728,6 @@ const saveAssignmentToDBAlternative = async (assignment: Assignment) => {
                       </div>
                     </div>
 
-                    {/* Event Types */}
                     <div>
                       <label className="text-sm font-medium text-gray-700 block mb-2">
                         Event Types ({assignment.assigned_event_types.length})
@@ -882,7 +769,6 @@ const saveAssignmentToDBAlternative = async (assignment: Assignment) => {
             </TabsList>
 
             <TabsContent value="by-player" className="space-y-4">
-              {/* Video URL Input - Optional */}
               <div className="space-y-2">
                 <label htmlFor="videoUrl" className="text-sm font-medium text-gray-700">
                   YouTube Video URL (Optional)
@@ -901,7 +787,6 @@ const saveAssignmentToDBAlternative = async (assignment: Assignment) => {
                 </div>
               </div>
 
-              {/* Tracker Selection */}
               <div>
                 <label className="text-sm font-medium">Select Tracker</label>
                 <Select value={selectedTracker} onValueChange={setSelectedTracker}>
@@ -918,7 +803,6 @@ const saveAssignmentToDBAlternative = async (assignment: Assignment) => {
                 </Select>
               </div>
 
-              {/* Team Selection */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Select Team</label>
                 <Select value={selectedTeam} onValueChange={handleTeamChange}>
@@ -936,7 +820,6 @@ const saveAssignmentToDBAlternative = async (assignment: Assignment) => {
                 </Select>
               </div>
 
-              {/* Player Selection */}
               <div>
                 <label className="text-sm font-medium mb-2 block">
                   Players ({selectedPlayers.length} selected)
@@ -944,16 +827,18 @@ const saveAssignmentToDBAlternative = async (assignment: Assignment) => {
                 {renderPlayerGrid(selectedTeam === 'home' ? homeTeamPlayers : awayTeamPlayers)}
               </div>
 
-              {/* Event Types */}
               <div>
-                <label className="text-sm font-medium mb-2 block">Event Types</label>
+                <label className="text-sm font-medium mb-2 block">
+                  Event Types ({selectedEventTypes.length} selected)
+                </label>
                 {renderEventTypeCategories()}
               </div>
 
-              <Button 
-                onClick={handleCreateAssignment} 
+              <Button
+                onClick={handleCreateAssignment}
+                disabled={creatingAssignment || !selectedTracker || selectedEventTypes.length === 0 || selectedPlayers.length === 0}
                 className="w-full"
-                disabled={creatingAssignment}
+                aria-label="Create assignment"
               >
                 {creatingAssignment ? (
                   <>
@@ -967,26 +852,40 @@ const saveAssignmentToDBAlternative = async (assignment: Assignment) => {
             </TabsContent>
 
             <TabsContent value="by-line" className="space-y-4">
-              {/* Video URL Input - Optional */}
               <div className="space-y-2">
-                <label htmlFor="videoUrlLine" className="text-sm font-medium text-gray-700">
+                <label htmlFor="videoUrl-line" className="text-sm font-medium text-gray-700">
                   YouTube Video URL (Optional)
                 </label>
                 <input
-                  id="videoUrlLine"
+                  id="videoUrl-line"
                   type="text"
                   value={assignmentVideoUrl}
                   onChange={(e) => setAssignmentVideoUrl(e.target.value)}
                   placeholder="e.g., https://www.youtube.com/watch?v=dQw4w9WgXcQ"
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  aria-describedby="videoUrlLine-description"
+                  aria-describedby="videoUrl-line-description"
                 />
-                <div id="videoUrlLine-description" className="text-xs text-gray-500">
+                <div id="videoUrl-line-description" className="text-xs text-gray-500">
                   Leave empty for live match tracking
                 </div>
               </div>
 
-              {/* Team Selection */}
+              <div>
+                <label className="text-sm font-medium">Select Tracker</label>
+                <Select value={selectedTracker} onValueChange={setSelectedTracker}>
+                  <SelectTrigger aria-label="Select tracker">
+                    <SelectValue placeholder="Choose a tracker" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {localTrackers.map(tracker => (
+                      <SelectItem key={tracker.id} value={tracker.id}>
+                        {tracker.full_name || tracker.email || 'Unknown'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div>
                 <label className="text-sm font-medium mb-2 block">Select Team</label>
                 <Select value={selectedTeam} onValueChange={handleTeamChange}>
@@ -1004,94 +903,64 @@ const saveAssignmentToDBAlternative = async (assignment: Assignment) => {
                 </Select>
               </div>
 
-              {/* Tracker Type Selection */}
               <div>
-                <label className="text-sm font-medium mb-2 block">Tracker Type</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(trackerTypeConfig).map(([key, config]) => {
-                    const IconComponent = config.icon;
+                <label className="text-sm font-medium mb-2 block">Select Tracker Type</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {(Object.keys(trackerTypeConfig) as TrackerType[]).filter(type => type !== 'specialized').map(type => {
+                    const config = trackerTypeConfig[type];
+                    const Icon = config.icon;
+                    const linePlayers = getLinePlayers(type, selectedTeam);
+                    
                     return (
                       <div
-                        key={key}
-                        className={`p-3 border-2 rounded-lg cursor-pointer transition-colors ${
-                          selectedTrackerType === key
+                        key={type}
+                        className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                          selectedTrackerType === type
                             ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                            : 'border-gray-300 hover:border-gray-400'
                         }`}
-                        onClick={() => setSelectedTrackerType(key as TrackerType)}
+                        onClick={() => {
+                          setSelectedTrackerType(type);
+                          setSelectedPlayers(linePlayers.map(p => p.id));
+                        }}
                         role="button"
                         tabIndex={0}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            setSelectedTrackerType(key as TrackerType);
+                            setSelectedTrackerType(type);
+                            setSelectedPlayers(linePlayers.map(p => p.id));
                           }
                         }}
                         aria-label={`Select ${config.label}`}
-                        aria-pressed={selectedTrackerType === key}
+                        aria-pressed={selectedTrackerType === type}
                       >
-                        <div className="flex items-center gap-2">
-                          <IconComponent className="h-4 w-4" />
-                          <span className="text-sm font-medium">{config.label}</span>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Icon className="h-5 w-5" />
+                          <span className="font-medium">{config.label}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {linePlayers.length} players
+                          </Badge>
                         </div>
-                        <div className="text-xs text-gray-600 mt-1">{config.description}</div>
+                        <p className="text-sm text-gray-600">{config.description}</p>
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Show selected players for current type */}
-              {selectedTrackerType !== 'specialized' && (
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Players ({getLinePlayers(selectedTrackerType, selectedTeam).length} selected)
-                  </label>
-                  <div className="p-3 bg-gray-50 rounded-lg max-h-32 overflow-y-auto">
-                    {getLinePlayers(selectedTrackerType, selectedTeam).length > 0 ? (
-                      <div className="text-xs space-y-1">
-                        {getLinePlayers(selectedTrackerType, selectedTeam).map(player => (
-                          <div key={player.id}>
-                            #{player.jersey_number} {player.player_name} ({player.position || 'N/A'})
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-xs text-gray-500">
-                        No players found for this position type in the selected team
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Tracker Selection */}
               <div>
-                <label className="text-sm font-medium">Select Tracker</label>
-                <Select value={selectedTracker} onValueChange={setSelectedTracker}>
-                  <SelectTrigger aria-label="Select tracker">
-                    <SelectValue placeholder="Choose a tracker" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {localTrackers.map(tracker => (
-                      <SelectItem key={tracker.id} value={tracker.id}>
-                        {tracker.full_name || tracker.email || 'Unknown'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Event Types */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Event Types</label>
+                <label className="text-sm font-medium mb-2 block">
+                  Event Types ({selectedEventTypes.length} selected)
+                </label>
                 {renderEventTypeCategories()}
               </div>
 
-              <Button 
-                onClick={handleCreateAssignment} 
+              <Button
+                onClick={handleCreateAssignment}
+                disabled={creatingAssignment || !selectedTracker || selectedEventTypes.length === 0}
                 className="w-full"
-                disabled={creatingAssignment}
+                aria-label="Create line-based assignment"
               >
                 {creatingAssignment ? (
                   <>
@@ -1099,7 +968,7 @@ const saveAssignmentToDBAlternative = async (assignment: Assignment) => {
                     Creating Assignment...
                   </>
                 ) : (
-                  'Create Assignment'
+                  `Create ${trackerTypeConfig[selectedTrackerType].label}`
                 )}
               </Button>
             </TabsContent>

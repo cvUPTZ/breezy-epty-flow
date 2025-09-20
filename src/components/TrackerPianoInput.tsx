@@ -148,7 +148,7 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
   }, []);
 
   // Fixed realtime connection with proper destructuring
-  const { isConnected, connectionError } = useRealtimeMatch({
+  const { isConnected } = useRealtimeMatch({
     matchId,
     onEventReceived: (event) => {
       if (!mountedRef.current) return;
@@ -161,12 +161,6 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
           timestamp: Date.now()
         };
         setRecentEvents(prev => [eventInfo, ...prev.slice(0, MAX_RECENT_EVENTS - 1)]);
-      }
-    },
-    onError: (error) => {
-      console.error('Realtime connection error:', error);
-      if (mountedRef.current) {
-        setError('Connection error. Some features may not work properly.');
       }
     }
   });
@@ -485,7 +479,7 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
     ((fullMatchRoster.home?.length || 0) + (fullMatchRoster.away?.length || 0)) > 1;
 
   // Show connection status if there are issues
-  const showConnectionWarning = connectionError && !isConnected;
+  const showConnectionWarning = !isConnected;
 
   if (loading) {
     return (
@@ -580,7 +574,7 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
                     {recentEvents.map((event) => (
                       <CancelActionIndicator
                         key={event.id}
-                        eventType={event.eventType.key}
+                        eventType={event.eventType.key as any}
                         onCancel={() => handleCancelEvent(event.id, event.eventType.key)}
                         onExpire={() => handleEventExpire(event.id)}
                       />
