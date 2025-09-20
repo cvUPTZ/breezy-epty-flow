@@ -505,9 +505,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
         const { error } = await supabase
           .from('match_tracker_assignments')
           .delete()
-          .eq('match_id', matchId)
-          .eq('tracker_user_id', assignment.tracker_user_id)
-          .in('assigned_player_id', assignment.player_ids);
+          .eq('id', assignmentId);
 
         if (error) {
           throw error;
