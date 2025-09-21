@@ -49,6 +49,8 @@ interface TrackerPianoInputProps {
   ) => Promise<any | null>;
 }
 
+const MAX_RECENT_EVENTS = 5;
+
 // State management with reducer for better control
 interface TrackerState {
   assignedEventTypes: EnhancedEventType[];
@@ -118,7 +120,7 @@ function trackerReducer(state: TrackerState, action: TrackerAction): TrackerStat
     case 'ADD_RECENT_EVENT':
       return {
         ...state,
-        recentEvents: [action.payload, ...state.recentEvents.slice(0, 4)],
+        recentEvents: [action.payload, ...state.recentEvents.slice(0, MAX_RECENT_EVENTS - 1)],
       };
     case 'REMOVE_RECENT_EVENT':
       return {
@@ -185,7 +187,7 @@ const validateAssignmentData = (data: unknown): boolean => {
 
 // Error boundary component
 class ErrorBoundary extends React.Component<
-  { children: React.ReactNode; onError?: (error: Error) => void },
+  { children: React.ReactNode; onError?: (error: Error) => void; matchId?: string; userId?: string },
   { hasError: boolean; error?: Error }
 > {
   constructor(props: any) {
@@ -198,7 +200,15 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('TrackerPianoInput Error:', error, errorInfo);
+    const { matchId, userId } = this.props;
+    console.error('TrackerPianoInput Error:', {
+      error: error.message,
+      stack: error.stack,
+      errorInfo,
+      matchId,
+      userId,
+      timestamp: new Date().toISOString()
+    });
     this.props.onError?.(error);
   }
 
@@ -239,9 +249,9 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
 
   // Memoized values to prevent unnecessary re-renders
   const userIdForConnection = useMemo(() => user?.id || '', [user?.id]);
-  const totalAssignedPlayers = useMemo(() => 
+  const totalAssignedPlayers = useMemo(() =>
     (state.assignedPlayers?.home?.length || 0) + (state.assignedPlayers?.away?.length || 0),
-    [state.assignedPlayers]
+    [state.assignedPlayers?.home?.length, state.assignedPlayers?.away?.length]
   );
   const isEliteView = totalAssignedPlayers > 1;
   const showPlayerSelection = !isEliteView && 
@@ -428,18 +438,17 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
 
   // Auto-select single player
   useEffect(() => {
-    if (state.assignedPlayers && !state.selectedPlayer) {
-      const allAssigned = [...state.assignedPlayers.home, ...state.assignedPlayers.away];
-      if (allAssigned.length === 1) {
-        const player = allAssigned[0];
-        const team = state.assignedPlayers.home.includes(player) ? 'home' : 'away';
-        dispatch({ 
-          type: 'SET_SELECTED_PLAYER', 
-          payload: { player, team } 
-        });
+    if (totalAssignedPlayers === 1 && !state.selectedPlayer) {
+      const homePlayers = state.assignedPlayers?.home || [];
+      const awayPlayers = state.assignedPlayers?.away || [];
+
+      if (homePlayers.length === 1) {
+        dispatch({ type: 'SET_SELECTED_PLAYER', payload: { player: homePlayers[0], team: 'home' } });
+      } else if (awayPlayers.length === 1) {
+        dispatch({ type: 'SET_SELECTED_PLAYER', payload: { player: awayPlayers[0], team: 'away' } });
       }
     }
-  }, [state.assignedPlayers, state.selectedPlayer]);
+  }, [totalAssignedPlayers, state.selectedPlayer, state.assignedPlayers]);
 
   // Initialize data fetching
   useEffect(() => {
@@ -640,7 +649,11 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
   }
 
   return (
-    <ErrorBoundary onError={(error) => dispatch({ type: 'SET_ERROR', payload: `Component error: ${error.message}` })}>
+    <ErrorBoundary
+      onError={(error) => dispatch({ type: 'SET_ERROR', payload: `Component error: ${error.message}` })}
+      matchId={matchId}
+      userId={user?.id}
+    >
       <div className="space-y-2 p-1 sm:p-2">
         {/* Connection Warning */}
         {!isConnected && (

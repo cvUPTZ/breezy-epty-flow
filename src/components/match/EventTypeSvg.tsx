@@ -1,4 +1,5 @@
 import React from 'react';
+import { normalizeEventType } from '@/lib/events/normalization';
 
 interface EventTypeSvgProps {
   eventType: string;
@@ -36,17 +37,21 @@ const EventTypeSvg: React.FC<EventTypeSvgProps> = ({
       isRecording ? 'scale-110 animate-pulse' : hoverScale // isRecording scale-125 to scale-110
     } ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${shadow}`;
 
-    // Normalize eventType to lowercase for case-insensitivity
-    const lowerCaseEventType = eventType.toLowerCase();
+    const svgStyle: React.CSSProperties = {
+      willChange: isRecording ? 'transform, opacity, r, stroke-width' : 'auto',
+    };
+
+    // Normalize eventType
+    const normalizedEventType = normalizeEventType(eventType);
 
     // The viewBox is consistently 200x200 for detailed new icons
     const viewBox = "0 0 200 200";
 
-    switch (lowerCaseEventType) {
+    switch (normalizedEventType) {
       // --- EXISTING ---
       case 'goal':
         return (
-          <svg className={baseClasses} viewBox={viewBox} onClick={onClick}>
+          <svg className={baseClasses} viewBox={viewBox} onClick={onClick} style={svgStyle}>
             <defs>
               <radialGradient id="goalGradient" cx="50%" cy="30%">
                 <stop offset="0%" stopColor="#FFD700" />
@@ -92,7 +97,7 @@ const EventTypeSvg: React.FC<EventTypeSvgProps> = ({
 
       case 'pass':
         return (
-          <svg className={baseClasses} viewBox={viewBox} onClick={onClick}>
+          <svg className={baseClasses} viewBox={viewBox} onClick={onClick} style={svgStyle}>
             <defs>
               <linearGradient id="passGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#00E676" /> <stop offset="25%" stopColor="#4CAF50" /> <stop offset="75%" stopColor="#2E7D32" /> <stop offset="100%" stopColor="#1B5E20" />
@@ -133,7 +138,7 @@ const EventTypeSvg: React.FC<EventTypeSvgProps> = ({
 
       case 'shot':
         return (
-          <svg className={baseClasses} viewBox={viewBox} onClick={onClick}>
+          <svg className={baseClasses} viewBox={viewBox} onClick={onClick} style={svgStyle}>
             <defs>
               <radialGradient id="shotGradient" cx="50%" cy="30%">
                 <stop offset="0%" stopColor="#FF1744" /> <stop offset="40%" stopColor="#E91E63" /> <stop offset="80%" stopColor="#C2185B" /> <stop offset="100%" stopColor="#880E4F" />
@@ -173,7 +178,7 @@ const EventTypeSvg: React.FC<EventTypeSvgProps> = ({
 
       case 'foul':
         return (
-          <svg className={baseClasses} viewBox={viewBox} onClick={onClick}>
+          <svg className={baseClasses} viewBox={viewBox} onClick={onClick} style={svgStyle}>
             <defs>
               <linearGradient id="foulGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#FF3D00" /> <stop offset="30%" stopColor="#FF5722" /> <stop offset="70%" stopColor="#E64A19" /> <stop offset="100%" stopColor="#BF360C" />
@@ -209,9 +214,8 @@ const EventTypeSvg: React.FC<EventTypeSvgProps> = ({
         );
 
       case 'card':
-      case 'yellowcard':
         return (
-          <svg className={baseClasses} viewBox={viewBox} onClick={onClick}>
+          <svg className={baseClasses} viewBox={viewBox} onClick={onClick} style={svgStyle}>
             <defs>
               <linearGradient id="yellowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#FFEB3B" /> <stop offset="30%" stopColor="#FFF176" /> <stop offset="70%" stopColor="#FFD54F" /> <stop offset="100%" stopColor="#FF8F00" />
@@ -246,7 +250,7 @@ const EventTypeSvg: React.FC<EventTypeSvgProps> = ({
 
       case 'redcard':
         return (
-          <svg className={baseClasses} viewBox={viewBox} onClick={onClick}>
+          <svg className={baseClasses} viewBox={viewBox} onClick={onClick} style={svgStyle}>
             <defs>
               <linearGradient id="redGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#F44336" /> <stop offset="30%" stopColor="#E53935" /> <stop offset="70%" stopColor="#D32F2F" /> <stop offset="100%" stopColor="#B71C1C" />
@@ -278,7 +282,7 @@ const EventTypeSvg: React.FC<EventTypeSvgProps> = ({
 
       case 'corner':
         return (
-          <svg className={baseClasses} viewBox={viewBox} onClick={onClick}>
+          <svg className={baseClasses} viewBox={viewBox} onClick={onClick} style={svgStyle}>
             <defs>
               <linearGradient id="cornerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#9C27B0" /> <stop offset="50%" stopColor="#AB47BC" /> <stop offset="100%" stopColor="#6A1B9A" />
@@ -304,9 +308,8 @@ const EventTypeSvg: React.FC<EventTypeSvgProps> = ({
         );
       
       case 'freekick':
-      case 'free-kick':
         return (
-          <svg className={baseClasses} viewBox={viewBox} onClick={onClick}>
+          <svg className={baseClasses} viewBox={viewBox} onClick={onClick} style={svgStyle}>
             <defs>
               <linearGradient id="freeKickGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#00BCD4" /> <stop offset="50%" stopColor="#4DD0E1" /> <stop offset="100%" stopColor="#0097A7" />
@@ -337,7 +340,7 @@ const EventTypeSvg: React.FC<EventTypeSvgProps> = ({
       // --- NEWLY IMPLEMENTED ---
       case 'tackle':
         return (
-          <svg className={baseClasses} viewBox={viewBox} onClick={onClick}>
+          <svg className={baseClasses} viewBox={viewBox} onClick={onClick} style={svgStyle}>
             <defs>
               <radialGradient id="tackleGradient" cx="50%" cy="50%">
                 <stop offset="0%" stopColor="#2979FF" /> <stop offset="50%" stopColor="#2962FF" /> <stop offset="100%" stopColor="#1C3AA9" />
@@ -366,9 +369,8 @@ const EventTypeSvg: React.FC<EventTypeSvgProps> = ({
         );
 
       case 'substitution':
-      case 'sub':
         return (
-          <svg className={baseClasses} viewBox={viewBox} onClick={onClick}>
+          <svg className={baseClasses} viewBox={viewBox} onClick={onClick} style={svgStyle}>
             <defs>
               <linearGradient id="subGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#757575" /> <stop offset="50%" stopColor="#616161" /> <stop offset="100%" stopColor="#424242" />
@@ -404,7 +406,7 @@ const EventTypeSvg: React.FC<EventTypeSvgProps> = ({
       
       case 'offside':
         return (
-          <svg className={baseClasses} viewBox={viewBox} onClick={onClick}>
+          <svg className={baseClasses} viewBox={viewBox} onClick={onClick} style={svgStyle}>
             <defs>
               <linearGradient id="offsideGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#673AB7" /> <stop offset="50%" stopColor="#7E57C2" /> <stop offset="100%" stopColor="#512DA8" />
@@ -436,7 +438,7 @@ const EventTypeSvg: React.FC<EventTypeSvgProps> = ({
 
       case 'assist':
         return (
-          <svg className={baseClasses} viewBox={viewBox} onClick={onClick}>
+          <svg className={baseClasses} viewBox={viewBox} onClick={onClick} style={svgStyle}>
             <defs>
               <linearGradient id="assistGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#03A9F4" /> <stop offset="50%" stopColor="#29B6F6" /> <stop offset="100%" stopColor="#0288D1" />
@@ -462,7 +464,7 @@ const EventTypeSvg: React.FC<EventTypeSvgProps> = ({
 
       case 'penalty':
         return (
-          <svg className={baseClasses} viewBox={viewBox} onClick={onClick}>
+          <svg className={baseClasses} viewBox={viewBox} onClick={onClick} style={svgStyle}>
             <defs>
               <radialGradient id="penaltyGradient" cx="50%" cy="50%">
                 <stop offset="0%" stopColor="#D500F9" /> <stop offset="50%" stopColor="#AA00FF" /> <stop offset="100%" stopColor="#6200EA" />
@@ -492,7 +494,7 @@ const EventTypeSvg: React.FC<EventTypeSvgProps> = ({
 
       case 'save':
         return (
-          <svg className={baseClasses} viewBox={viewBox} onClick={onClick}>
+          <svg className={baseClasses} viewBox={viewBox} onClick={onClick} style={svgStyle}>
             <defs>
               <linearGradient id="saveGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#FFC107" /> <stop offset="50%" stopColor="#FFB300" /> <stop offset="100%" stopColor="#FFA000" />
@@ -526,7 +528,7 @@ const EventTypeSvg: React.FC<EventTypeSvgProps> = ({
       case 'block':
       case 'clearance':
         return (
-          <svg className={baseClasses} viewBox={viewBox} onClick={onClick}>
+          <svg className={baseClasses} viewBox={viewBox} onClick={onClick} style={svgStyle}>
             <defs>
               <linearGradient id="blockGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#455A64" /> <stop offset="50%" stopColor="#546E7A" /> <stop offset="100%" stopColor="#37474F" />
@@ -555,7 +557,7 @@ const EventTypeSvg: React.FC<EventTypeSvgProps> = ({
       // --- Default Case ---
       default:
         return (
-          <svg className={baseClasses} viewBox={viewBox} onClick={onClick}>
+          <svg className={baseClasses} viewBox={viewBox} onClick={onClick} style={svgStyle}>
             <defs>
               <linearGradient id="defaultGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#607D8B" /> <stop offset="50%" stopColor="#78909C" /> <stop offset="100%" stopColor="#455A64" />
