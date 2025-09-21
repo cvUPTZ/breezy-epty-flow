@@ -170,7 +170,8 @@ const validateAssignmentData = (data: unknown): boolean => {
     typeof item === 'object' &&
     typeof item.tracker_user_id === 'string' &&
     (typeof item.assigned_player_id === 'number' || item.assigned_player_id === null) &&
-    (Array.isArray(item.assigned_event_types) || item.assigned_event_types === null)
+    (Array.isArray(item.assigned_event_types) || item.assigned_event_types === null) &&
+    typeof item.player_team_id === 'string'
   );
 };
 
@@ -344,11 +345,15 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
 
       if (error) throw error;
       if (!data || data.length === 0) {
+        console.log('TrackerPianoInput: No assignments found for tracker:', user.id, 'match:', matchId);
         throw new Error('No assignments found for this tracker and match');
       }
       if (!validateAssignmentData(data)) {
+        console.error('TrackerPianoInput: Invalid assignment data:', data);
         throw new Error('Invalid assignment data received');
       }
+
+      console.log('TrackerPianoInput: Raw assignment data:', data);
 
       // Process event types
       const eventTypesSet = new Set<string>();
@@ -367,7 +372,7 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
         label: key
       }));
 
-      // Process assigned players with better ID resolution
+      // Process assigned players with proper ID resolution
       const assignedPlayers: AssignedPlayers = { home: [], away: [] };
       
       data.forEach(assignment => {
@@ -377,28 +382,36 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
         const teamRoster = state.fullMatchRoster[team];
         if (!teamRoster?.length) return;
 
-        // Extract player IDs with fallback logic
-        let playerIds: number[] = [];
-        if (Array.isArray(assignment.assigned_player_ids)) {
-          playerIds = assignment.assigned_player_ids.filter((id: any) => 
-            typeof id === 'number' && !isNaN(id)
-          );
-        } else if (typeof assignment.assigned_player_id === 'number') {
-          playerIds = [assignment.assigned_player_id];
+        // Get single player ID from assignment
+        let playerId: number | null = null;
+        
+        if (typeof assignment.assigned_player_id === 'number') {
+          playerId = assignment.assigned_player_id;
+        } else if (Array.isArray(assignment.assigned_player_ids) && assignment.assigned_player_ids.length > 0) {
+          // Fallback for legacy data structure
+          playerId = assignment.assigned_player_ids[0];
         }
 
-        // Find and add players
-        playerIds.forEach(playerId => {
+        // Find and add player
+        if (playerId !== null) {
           const player = teamRoster.find(p => p.id === playerId);
           if (player && !assignedPlayers[team].some(p => p.id === player.id)) {
             assignedPlayers[team].push(player);
           }
-        });
+        }
       });
 
       dispatch({ 
         type: 'SET_ASSIGNMENTS', 
         payload: { eventTypes, players: assignedPlayers } 
+      });
+      
+      console.log('TrackerPianoInput: Processed assignments:', {
+        eventTypes: eventTypes.map(et => et.key),
+        players: {
+          home: assignedPlayers.home.map(p => `${p.name} (#${p.jersey_number})`),
+          away: assignedPlayers.away.map(p => `${p.name} (#${p.jersey_number})`)
+        }
       });
       
       return { eventTypes, players: assignedPlayers };

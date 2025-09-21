@@ -212,7 +212,7 @@ const DirectVideoAnalyzer: React.FC = () => {
     );
 
     if (!isFormatSupported) {
-      toast.warn('Video format may not be supported by all browsers. MP4 is recommended for best compatibility.');
+      toast('Video format may not be supported by all browsers. MP4 is recommended for best compatibility.');
     }
 
     // Check if this file is already cached and URL is still valid
@@ -400,7 +400,7 @@ const DirectVideoAnalyzer: React.FC = () => {
                                     <FileVideo className="h-4 w-4 text-blue-600 flex-shrink-0" />
                                     <span className="font-medium text-sm truncate">{video.fileName}</span>
                                     {isUrlExpiringSoon(video) && (
-                                      <AlertTriangle className="h-3 w-3 text-amber-500" title="URL expiring soon" />
+                                      <AlertTriangle className="h-3 w-3 text-amber-500" />
                                     )}
                                   </div>
                                   <div className="text-xs text-gray-500 mt-1">
@@ -596,7 +596,6 @@ const DirectVideoAnalyzer: React.FC = () => {
                     
                     <DirectAnalysisInterface 
                       videoUrl={submittedUrl} 
-                      onVideoError={handleVideoError}
                     />
                   </div>
                 )}

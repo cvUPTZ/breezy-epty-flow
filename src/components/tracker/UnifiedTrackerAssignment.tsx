@@ -297,9 +297,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     return safeAsync(async () => {
       dispatch({ type: 'SET_LOADING', payload: true });
       
-      const { data, error } = await supabase.functions.invoke('get-tracker-users', {
-        signal: abortControllerRef.current!.signal
-      });
+      const { data, error } = await supabase.functions.invoke('get-tracker-users');
 
       if (error) throw error;
       
