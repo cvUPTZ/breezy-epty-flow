@@ -154,14 +154,22 @@ const validatePlayerData = (data: unknown): PlayerForPianoInput[] => {
   } else {
     return [];
   }
-  
-  return parsed.filter((item): item is PlayerForPianoInput => 
-    item &&
-    typeof item === 'object' &&
-    typeof item.id === 'number' &&
-    typeof item.name === 'string' &&
-    item.name.trim().length > 0
-  );
+
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed
+    .filter(item => 
+      item && 
+      typeof item === 'object' && 
+      (typeof item.name === 'string' || typeof item.player_name === 'string') &&
+      (typeof item.number === 'number' || typeof item.jersey_number === 'number')
+    )
+    .map((item: any) => ({
+      id: item.number || item.jersey_number || 0,
+      name: item.name || item.player_name || 'Unknown Player',
+      position: item.position,
+      jersey_number: item.number || item.jersey_number || 0
+    }));
 };
 
 const validateAssignmentData = (data: unknown): boolean => {
@@ -392,10 +400,10 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
           playerId = assignment.assigned_player_ids[0];
         }
 
-        // Find and add player
+        // Find and add player (match by jersey number since all IDs are 0)
         if (playerId !== null) {
-          const player = teamRoster.find(p => p.id === playerId);
-          if (player && !assignedPlayers[team].some(p => p.id === player.id)) {
+          const player = teamRoster.find(p => p.jersey_number === playerId);
+          if (player && !assignedPlayers[team].some(p => p.jersey_number === player.jersey_number)) {
             assignedPlayers[team].push(player);
           }
         }

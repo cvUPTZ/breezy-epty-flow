@@ -20,6 +20,7 @@ export interface TrackerAssignmentData {
 export const useTrackerAssignment = (matchId: string, userId?: string) => {
   const [assignment, setAssignment] = useState<TrackerAssignmentData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
     if (!userId || !matchId) {
@@ -66,18 +67,49 @@ export const useTrackerAssignment = (matchId: string, userId?: string) => {
 
         console.log('useTrackerAssignment: Match data fetched:', matchData);
 
+        // Fetch match roster data to get player details
+        const { data: matchRosterData, error: rosterError } = await supabase
+          .from('matches')
+          .select('home_team_players, away_team_players')
+          .eq('id', matchId)
+          .single();
+
+        if (rosterError) throw rosterError;
+
+        // Create player lookup map
+        const homeTeamPlayers = Array.isArray(matchRosterData.home_team_players) 
+          ? matchRosterData.home_team_players as any[]
+          : [];
+        const awayTeamPlayers = Array.isArray(matchRosterData.away_team_players) 
+          ? matchRosterData.away_team_players as any[]
+          : [];
+        
+        const allPlayers = [
+          ...homeTeamPlayers.map((p: any) => ({ ...p, teamId: 'home' })),
+          ...awayTeamPlayers.map((p: any) => ({ ...p, teamId: 'away' }))
+        ];
+
         // Process all assignments
-        const assignments = data.map((assignment: any) => ({
-          assignmentId: assignment.id,
-          assignedPlayer: {
-            id: typeof assignment.assigned_player_id === 'string' ? parseInt(assignment.assigned_player_id, 10) : assignment.assigned_player_id,
-            teamId: assignment.player_team_id as 'home' | 'away',
-            name: 'Player',
-            jerseyNumber: 0,
-            teamName: assignment.player_team_id === 'home' ? matchData.home_team_name : matchData.away_team_name,
-          },
-          assignedEventTypes: assignment.assigned_event_types,
-        }));
+        const assignments = data.map((assignment: any) => {
+          const playerId = typeof assignment.assigned_player_id === 'string' 
+            ? parseInt(assignment.assigned_player_id, 10) 
+            : assignment.assigned_player_id;
+          
+          // Find player in roster (using number field as ID since ID is 0 for all)
+          const playerData = allPlayers.find((p: any) => p.number === playerId);
+          
+          return {
+            assignmentId: assignment.id,
+            assignedPlayer: {
+              id: playerId,
+              teamId: assignment.player_team_id as 'home' | 'away',
+              name: playerData?.name || `Player ${playerId}`,
+              jerseyNumber: playerData?.number || playerId,
+              teamName: assignment.player_team_id === 'home' ? matchData.home_team_name : matchData.away_team_name,
+            },
+            assignedEventTypes: assignment.assigned_event_types,
+          };
+        });
 
         console.log('useTrackerAssignment: Processed assignments:', assignments);
 
@@ -91,7 +123,34 @@ export const useTrackerAssignment = (matchId: string, userId?: string) => {
     };
 
     fetchAssignment();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel(`tracker_assignments_${matchId}_${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'match_tracker_assignments',
+          filter: `match_id=eq.${matchId},tracker_user_id=eq.${userId}`
+        },
+        () => {
+          console.log('Real-time update received, refetching assignments');
+          fetchAssignment();
+        }
+      )
+      .subscribe((status) => {
+        setIsConnected(status === 'SUBSCRIBED');
+        if (status === 'SUBSCRIBED') {
+          console.log('Real-time connection established for tracker assignments');
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [matchId, userId]);
 
-  return { assignment, loading };
+  return { assignment, loading, isConnected };
 };
