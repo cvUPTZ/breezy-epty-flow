@@ -17,11 +17,14 @@ interface TrackerData {
   battery_level?: number;
 }
 
+import { useRef } from 'react';
+
 export const useRealtimeMatch = ({ matchId, onEventReceived }: UseRealtimeMatchOptions) => {
   const [events, setEvents] = useState<MatchEvent[]>([]);
   const [trackers, setTrackers] = useState<TrackerData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
+  const processedEventIds = useRef(new Set<string>());
 
   // Transform database event to our MatchEvent type
   const transformEvent = useCallback((dbEvent: any): MatchEvent => ({
@@ -48,6 +51,8 @@ export const useRealtimeMatch = ({ matchId, onEventReceived }: UseRealtimeMatchO
       if (error) throw error;
 
       const transformedEvents = (data || []).map(transformEvent);
+      processedEventIds.current.clear();
+      transformedEvents.forEach(event => processedEventIds.current.add(event.id));
       setEvents(transformedEvents);
       
     } catch (error) {
@@ -87,14 +92,35 @@ export const useRealtimeMatch = ({ matchId, onEventReceived }: UseRealtimeMatchO
     if (payload.eventType === 'INSERT') {
       const newEvent = transformEvent(payload.new);
       
+      if (processedEventIds.current.has(newEvent.id)) {
+        return; // Already processed, exit early
+      }
+
       setEvents(prev => {
-        if (prev.find(e => e.id === newEvent.id)) return prev;
-        const updated = [...prev, newEvent].sort((a, b) => a.timestamp - b.timestamp);
-        return updated;
+        // Double-check for race conditions, though the Set should prevent most cases
+        if (prev.some(e => e.id === newEvent.id)) return prev;
+
+        processedEventIds.current.add(newEvent.id);
+
+        // Insert into sorted array efficiently
+        const newEvents = [...prev];
+        const index = newEvents.findIndex(e => e.timestamp > newEvent.timestamp);
+
+        if (index === -1) {
+          newEvents.push(newEvent);
+        } else {
+          newEvents.splice(index, 0, newEvent);
+        }
+
+        return newEvents;
       });
       onEventReceived?.(newEvent);
+
     } else if (payload.eventType === 'DELETE') {
-      setEvents(prev => prev.filter(e => e.id !== payload.old.id));
+      const eventId = payload.old.id;
+      processedEventIds.current.delete(eventId);
+      setEvents(prev => prev.filter(e => e.id !== eventId));
+
     } else if (payload.eventType === 'UPDATE') {
       const updatedEvent = transformEvent(payload.new);
       setEvents(prev => prev.map(e => e.id === updatedEvent.id ? updatedEvent : e));
