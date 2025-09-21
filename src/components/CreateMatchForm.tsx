@@ -105,8 +105,8 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
           });
           
           const homeTeamPlayersData = Array.isArray(data.home_team_players) 
-            ? (data.home_team_players as any[]).map((player: any) => ({
-                id: player.id || 0,
+            ? (data.home_team_players as any[]).map((player: any, index: number) => ({
+                id: player.number || player.id || index + 1,
                 name: player.name || '',
                 number: player.number || null,
                 position: player.position || '',
@@ -114,8 +114,8 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
               }))
             : [];
           const awayTeamPlayersData = Array.isArray(data.away_team_players)
-            ? (data.away_team_players as any[]).map((player: any) => ({
-                id: player.id || 0,
+            ? (data.away_team_players as any[]).map((player: any, index: number) => ({
+                id: player.number || player.id || index + 100,
                 name: player.name || '',
                 number: player.number || null,
                 position: player.position || '',

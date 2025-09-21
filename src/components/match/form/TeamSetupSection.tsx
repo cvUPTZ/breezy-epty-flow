@@ -179,7 +179,6 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
         <div className="col-span-2">Position</div>
       </div>
       {players.map((player, index) => {
-        console.log(`Rendering player ${player.id} with position:`, player.position);
         return (
           <div key={`${team}-${player.id}-${index}`} className="grid grid-cols-5 gap-2 items-center text-sm">
             <Input
