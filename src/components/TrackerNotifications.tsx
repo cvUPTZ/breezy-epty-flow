@@ -167,7 +167,7 @@ const TrackerNotifications: React.FC = () => {
       }
       
       console.log('Notifications data:', notifications);
-      
+
       // Get match details separately for notifications that have match_id
       const matchIds = notifications
         ?.filter(n => n.match_id)
