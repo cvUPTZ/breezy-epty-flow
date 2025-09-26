@@ -3,8 +3,18 @@
 // Set this in your Supabase project's environment variables.
 // For multiple origins, provide a comma-separated list.
 // e.g., https://example.com,http://localhost:3000
-const allowedOriginsSetting = Deno.env.get('CORS_ALLOWED_ORIGINS') ?? '*';
-const allowedOrigins = allowedOriginsSetting.split(',').map(o => o.trim());
+const allowedOriginsSetting = Deno.env.get('CORS_ALLOWED_ORIGINS') ?? '';
+const baseAllowedOrigins = allowedOriginsSetting ? allowedOriginsSetting.split(',').map(o => o.trim()) : [];
+
+// Add development/preview origins here for convenience
+const devOrigins = [
+  'https://preview--sportsdataanalytics.lovable.app',
+  'http://localhost:3000',
+  'http://localhost:5173'
+];
+
+const allowedOrigins = [...new Set([...baseAllowedOrigins, ...devOrigins])];
+
 
 export const getCorsHeaders = (requestOrigin: string | null) => {
   let origin = '';
