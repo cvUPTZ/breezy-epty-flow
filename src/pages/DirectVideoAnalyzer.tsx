@@ -6,6 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { DirectAnalysisInterface } from '@/components/video/DirectAnalysisInterface';
 import { VideoJobService } from '@/services/videoJobService';
 import { VideoChunkingService } from '@/services/videoChunkingService';
+import { YouTubeUrlProcessor } from '@/services/youtubeUrlProcessor';
+import { YouTubeService } from '@/services/youtubeService';
 import { Upload, Link, X, FileVideo, Clock, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
@@ -27,6 +29,7 @@ const DirectVideoAnalyzer: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [videoError, setVideoError] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isUrlLoading, setIsUrlLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const [cachedVideos, setCachedVideos] = useState<CachedVideo[]>([]);
@@ -171,26 +174,54 @@ const DirectVideoAnalyzer: React.FC = () => {
       setError('Please enter a video URL.');
       return;
     }
-    
+
     try {
-      new URL(videoUrl);
-      setError('');
-      setVideoError('');
-      
-      // Validate the video URL
+      new URL(videoUrl); // Basic URL format validation
+    } catch (_) {
+      setError('Invalid URL format. Please enter a valid video URL.');
+      setSubmittedUrl('');
+      return;
+    }
+
+    setError('');
+    setVideoError('');
+    setIsUrlLoading(true);
+
+    if (YouTubeUrlProcessor.isYouTubeUrl(videoUrl)) {
+      toast.info('YouTube URL detected. Processing video, this may take a moment...');
+      try {
+        const directUrl = await YouTubeService.downloadVideo(videoUrl);
+
+        toast.info('Validating processed video...');
+        const isValid = await validateVideoUrl(directUrl);
+
+        if (!isValid) {
+          throw new Error('The processed YouTube video is not valid or accessible.');
+        }
+
+        setSubmittedUrl(directUrl);
+        toast.success('YouTube video loaded successfully!');
+      } catch (error: any) {
+        setError(`Failed to process YouTube video: ${error.message}`);
+        toast.error(`Failed to process YouTube video: ${error.message}`);
+        setSubmittedUrl('');
+      } finally {
+        setIsUrlLoading(false);
+      }
+    } else {
+      // Existing logic for direct video URLs
       toast.info('Validating video URL...');
       const isValid = await validateVideoUrl(videoUrl);
       
       if (!isValid) {
         setError('The provided URL does not appear to be a valid video file or is not accessible.');
+        setIsUrlLoading(false);
         return;
       }
       
       setSubmittedUrl(videoUrl);
       toast.success('Video URL loaded successfully');
-    } catch (_) {
-      setError('Invalid URL format. Please enter a valid video URL.');
-      setSubmittedUrl('');
+      setIsUrlLoading(false);
     }
   };
 
@@ -475,8 +506,15 @@ const DirectVideoAnalyzer: React.FC = () => {
                             placeholder="e.g., https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
                             className="w-full"
                           />
-                          <Button type="submit" disabled={!videoUrl.trim()}>
-                            Load Video
+                          <Button type="submit" disabled={!videoUrl.trim() || isUrlLoading}>
+                            {isUrlLoading ? (
+                              <>
+                                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                                Processing...
+                              </>
+                            ) : (
+                              'Load Video'
+                            )}
                           </Button>
                         </form>
                       </CardContent>
