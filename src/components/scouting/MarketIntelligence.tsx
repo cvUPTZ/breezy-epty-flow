@@ -124,7 +124,7 @@ const MarketIntelligence: React.FC = () => {
       <div className="text-center mb-10">
         <h1 className="text-3xl font-extrabold tracking-tight lg:text-4xl">Étude de Marché Fondée sur les Données (V12.0)</h1>
         <p className="mt-3 text-lg text-muted-foreground">
-          Analyse Rigoureuse du Marché Algérien des Solutions d'Analyse Sportive
+          Analyse Rigoureuse du Marché Algérien des Solutions d&apos;Analyse Sportive
         </p>
       </div>
 
@@ -142,7 +142,7 @@ const MarketIntelligence: React.FC = () => {
           <Card>
             <CardHeader><CardTitle>Vision Projet Recadrée</CardTitle></CardHeader>
             <CardContent>
-              <p>SportDataAnalytics vise à devenir le leader des solutions d'analyse sportive en Algérie en construisant un "moat communautaire" basé sur l'expertise locale, les relations institutionnelles, et la conformité réglementaire. Cette position dominante sur un marché de validation (Phase 1) constitue le tremplin pour une expansion géographique ciblée au Maghreb (Phase 2).</p>
+              <p>SportDataAnalytics vise à devenir le leader des solutions d&apos;analyse sportive en Algérie en construisant un &quot;moat communautaire&quot; basé sur l&apos;expertise locale, les relations institutionnelles, et la conformité réglementaire. Cette position dominante sur un marché de validation (Phase 1) constitue le tremplin pour une expansion géographique ciblée au Maghreb (Phase 2).</p>
               <Badge variant="destructive" className="mt-2">Correction Fondamentale: Abandon des estimations initiales irréalistes.</Badge>
             </CardContent>
           </Card>
@@ -162,7 +162,7 @@ const MarketIntelligence: React.FC = () => {
             <Card>
               <CardHeader><CardTitle>Positionnement Concurrentiel</CardTitle></CardHeader>
               <CardContent>
-                <p className="font-bold">"First-Mover Community Moat"</p>
+                <p className="font-bold">&quot;First-Mover Community Moat&quot;</p>
                 <p>Relations + Formation + Data Propriétaires</p>
                 <ul className="list-disc pl-5 mt-2 text-sm">
                   <li><strong>Phase 1 Moat:</strong> Réglementaire + Communautaire</li>
@@ -232,10 +232,10 @@ const MarketIntelligence: React.FC = () => {
 
         <TabsContent value="dynamics" className="space-y-4">
           <Card>
-            <CardHeader><CardTitle>Cycle d'Adoption Technologique</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Cycle d&apos;Adoption Technologique</CardTitle></CardHeader>
             <CardContent>
               <p>Positionnement Actuel du Marché: <strong>Early Adopters (13.5%)</strong></p>
-              <p>Stratégie de Franchissement du "Chasm": Cibler 4-6 clubs progressistes pour créer des références incontournables.</p>
+              <p>Stratégie de Franchissement du &quot;Chasm&quot;: Cibler 4-6 clubs progressistes pour créer des références incontournables.</p>
             </CardContent>
           </Card>
         </TabsContent>
@@ -246,7 +246,7 @@ const MarketIntelligence: React.FC = () => {
             <CardContent>
               <ul className="list-disc pl-5 space-y-2">
                 <li><strong>Approche Séquentielle Rigoureuse:</strong> Focus absolu sur validation Phase 1 avant toute expansion.</li>
-                <li><strong>Modèle Économique Hybride:</strong> SaaS + Formation + Consulting pour maximiser l'ARPU.</li>
+                <li><strong>Modèle Économique Hybride:</strong> SaaS + Formation + Consulting pour maximiser l&apos;ARPU.</li>
                 <li><strong>Construction Moat Défensif:</strong> Investissement massif dans les relations institutionnelles et les switching costs.</li>
                 <li><strong>Préparation Phase 2 Conditionnelle:</strong> Veille active sur les marchés Maghreb (Maroc prioritaire).</li>
               </ul>
@@ -517,6 +517,7 @@ const MarketIntelligence: React.FC = () => {
           </div>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 };
