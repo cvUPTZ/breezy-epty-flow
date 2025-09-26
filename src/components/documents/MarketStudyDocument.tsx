@@ -8,12 +8,23 @@ const MarketStudyDocument: React.FC = () => {
     window.print();
   };
 
+  const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode; className?: string }> = ({ title, icon, children, className }) => (
+    <Card className={`print:shadow-none print:border-0 print:break-before-page ${className}`}>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-xl">{icon} {title}</CardTitle>
+      </CardHeader>
+      <CardContent className="prose prose-sm max-w-none">
+        {children}
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="max-w-4xl mx-auto p-8 bg-background">
       <div className="flex justify-between items-center mb-8 print:hidden">
         <div>
-          <h1 className="text-3xl font-bold">Étude de Marché Réaliste</h1>
-          <p className="text-muted-foreground">Analyse du marché algérien du football (Version Révisée)</p>
+          <h1 className="text-3xl font-bold">Étude de Marché Fondée sur les Données (V12.0)</h1>
+          <p className="text-muted-foreground">Analyse Rigoureuse du Marché Algérien</p>
         </div>
         <Button onClick={handleExport} className="flex items-center gap-2">
           <Download className="w-4 h-4" />
@@ -22,171 +33,55 @@ const MarketStudyDocument: React.FC = () => {
       </div>
 
       <div className="space-y-8 print:space-y-6">
-        {/* Page de couverture */}
-        <Card className="print:shadow-none print:border-0">
-          <CardContent className="p-12 text-center">
-            <div className="space-y-6">
-              <FileText className="w-20 h-20 mx-auto text-primary" />
-              <h1 className="text-4xl font-bold">ANALYSE DE MARCHÉ RÉALISTE</h1>
-              <h2 className="text-2xl font-semibold text-muted-foreground">
-                Opportunités pour une Plateforme d'Analyse Conforme
-              </h2>
-              <h3 className="text-xl">Marché du Football Algérien</h3>
-            </div>
-          </CardContent>
-        </Card>
+        <Section title="1. Résumé Exécutif & Corrections Majeures" icon={<FileText className="w-5 h-5 text-primary" />}>
+          <h4>Vision Projet Recadrée</h4>
+          <p>SportDataAnalytics vise à devenir le leader incontesté des solutions d'analyse sportive en Algérie en construisant un "moat communautaire". Cette position dominante sur un marché de validation (Phase 1) constitue le tremplin pour une expansion géographique ciblée au Maghreb (Phase 2).</p>
+          <p className="font-bold text-red-600">Correction Fondamentale: Abandon des estimations initiales irréalistes ("85M DZD MENA") et présentation d'une analyse fondée sur des données vérifiables du marché algérien.</p>
+        </Section>
 
-        {/* 1. Résumé Exécutif */}
-        <Card className="print:break-before-page">
-          <CardHeader>
-            <CardTitle>1. Résumé Exécutif de l'Analyse de Marché</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p>
-              Cette analyse révisée présente une vue conservatrice et réaliste du marché algérien pour une plateforme d'analyse de football.
-              Elle identifie une niche de marché viable, protégée par des barrières réglementaires, mais limitée par des facteurs culturels et économiques.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
-                    <CardHeader><CardTitle className="text-base">Marché Accessible</CardTitle></CardHeader>
-                    <CardContent>
-                        <p className="font-bold text-2xl">18-22 Clubs</p>
-                        <p className="text-sm">sur 42 clubs professionnels, plus 3-5 académies FAF.</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader><CardTitle className="text-base">Avantage Clé</CardTitle></CardHeader>
-                    <CardContent>
-                        <p className="font-bold text-2xl">Conformité Loi 18-07</p>
-                        <p className="text-sm">Notre principal différenciateur face à une concurrence internationale non-conforme et coûteuse.</p>
-                    </CardContent>
-                </Card>
-            </div>
-            <p>La stratégie doit se concentrer sur un service premium personnalisé pour un nombre limité de clients plutôt qu'une adoption de masse, modèle économiquement intenable.</p>
-          </CardContent>
-        </Card>
+        <Section title="2. Analyse Bottom-Up du Marché Algérien" icon={<Globe className="w-5 h-5 text-primary" />}>
+          <h4>Calcul TAM/SAM/SOM Rigoureux</h4>
+          <table className="w-full">
+            <thead><tr><th>Catégorie</th><th>Valeur</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td>TAM (Total Addressable Market)</td><td>4,480k DZD</td><td>Scénario 100% Adoption</td></tr>
+              <tr><td>SAM (Serviceable Addressable Market)</td><td>2,092k DZD</td><td>Clubs Technologiquement Réceptifs</td></tr>
+              <tr className="font-bold text-primary"><td>SOM (Serviceable Obtainable Market)</td><td>2,040k DZD</td><td>Objectif Réaliste 5 ans</td></tr>
+            </tbody>
+          </table>
+        </Section>
 
-        {/* 2. Structure et Dynamiques du Marché */}
-        <Card className="print:break-before-page">
-          <CardHeader>
-            <CardTitle>2. Structure et Dynamiques du Marché</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <h3 className="text-lg font-semibold flex items-center gap-2"><CheckCircle className="text-green-500" /> Facteurs Favorables</h3>
-                    <ul className="list-disc pl-6 space-y-1 mt-2 text-sm">
-                        <li>Direction FAF favorable à la modernisation.</li>
-                        <li>Quelques clubs progressistes ouverts à l'innovation.</li>
-                        <li>Présence croissante d'analystes vidéo dans les clubs d'élite.</li>
-                        <li>Réformes imposant plus de professionnalisation.</li>
-                    </ul>
-                </div>
-                 <div>
-                    <h3 className="text-lg font-semibold flex items-center gap-2"><AlertTriangle className="text-red-500" /> Facteurs Limitants (Critique)</h3>
-                    <ul className="list-disc pl-6 space-y-1 mt-2 text-sm">
-                        <li><strong>Culture traditionnelle dominante</strong>, résistante au changement.</li>
-                        <li><strong>Budgets contraints</strong>, même pour les clubs professionnels.</li>
-                        <li><strong>Manque de formation</strong> des staffs techniques sur les outils digitaux.</li>
-                        <li><strong>Infrastructure technique limitée</strong> dans certains clubs.</li>
-                        <li><strong>Rotation fréquente</strong> du staff technique (instabilité des investissements).</li>
-                    </ul>
-                </div>
-            </div>
-          </CardContent>
-        </Card>
+        <Section title="3. Segmentation Client Validée" icon={<Users className="w-5 h-5 text-primary" />}>
+          <h4>Matrice de Priorisation des Segments</h4>
+          <ul className="list-disc pl-5">
+            <li><strong>Priorité 1:</strong> Ligue 1 Elite (6 clubs) & Centres FAF (8 centres) - Score 30/40</li>
+            <li><strong>Priorité 2:</strong> Ligue 1 Standard (10 clubs) - Score 23/40</li>
+            <li><strong>Priorité 3:</strong> Ligue 2 Ambitieux (12 clubs) - Score 16/40</li>
+          </ul>
+        </Section>
 
-        {/* 3. Segmentation Prioritaire */}
-        <Card className="print:break-before-page">
-          <CardHeader>
-            <CardTitle>3. Segmentation Prioritaire Réaliste</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p>Une approche ciblée est essentielle. Les efforts doivent être concentrés sur les segments les plus susceptibles d'adopter la solution.</p>
-            <div className="space-y-4">
-                <div className="p-4 border-l-4 border-primary bg-primary/10">
-                    <h4 className="font-semibold">Segment Primaire: Clubs Ligue 1 Progressistes (60% efforts)</h4>
-                    <ul className="text-sm list-disc pl-5 mt-1">
-                        <li><strong>Profil:</strong> 4-6 clubs identifiés (CRB, ESS, MCA, USMA).</li>
-                        <li><strong>Budget Analyse Possible:</strong> 100k-300k DZD.</li>
-                        <li><strong>Notre Tarif:</strong> 150k DZD/an.</li>
-                        <li><strong>Timeline Adoption:</strong> 6-12 mois.</li>
-                    </ul>
-                </div>
-                 <div className="p-4 border-l-4 border-secondary bg-secondary/10">
-                    <h4 className="font-semibold">Segment Secondaire: Académies FAF (25% efforts)</h4>
-                    <ul className="text-sm list-disc pl-5 mt-1">
-                        <li><strong>Profil:</strong> 3-5 académies officielles FAF.</li>
-                        <li><strong>Budget:</strong> Financement gouvernemental.</li>
-                        <li><strong>Notre Tarif:</strong> 75k DZD/an (préférentiel).</li>
-                        <li><strong>Timeline Adoption:</strong> 3-6 mois.</li>
-                    </ul>
-                </div>
-                 <div className="p-4 border-l-4 border-accent bg-accent/10">
-                    <h4 className="font-semibold">Segment Tertiaire: Ligue 2 Sélective (15% efforts)</h4>
-                    <ul className="text-sm list-disc pl-5 mt-1">
-                        <li><strong>Profil:</strong> 6-8 clubs ambitieux avec budgets suffisants.</li>
-                        <li><strong>Budget Analyse Max:</strong> 50k-100k DZD.</li>
-                        <li><strong>Notre Tarif:</strong> 100k DZD/an.</li>
-                        <li><strong>Timeline Adoption:</strong> 12-18 mois.</li>
-                    </ul>
-                </div>
-            </div>
-          </CardContent>
-        </Card>
+        <Section title="4. Analyse Concurrentielle Approfondie" icon={<Shield className="w-5 h-5 text-primary" />}>
+            <h4>Analyse des Forces de Porter</h4>
+            <ul className="list-disc pl-5">
+                <li>Menace Nouveaux Entrants: <strong>MODÉRÉE-ÉLEVÉE</strong></li>
+                <li>Pouvoir Négociation Clients: <strong>ÉLEVÉ</strong></li>
+                <li>Pouvoir Négociation Fournisseurs: <strong>FAIBLE</strong></li>
+                <li>Menace Produits Substituts: <strong>ÉLEVÉE</strong></li>
+                <li>Intensité Concurrentielle: <strong>FAIBLE-MODÉRÉE</strong></li>
+            </ul>
+        </Section>
 
-        {/* 4. Analyse Concurrentielle */}
-        <Card className="print:break-before-page">
-          <CardHeader>
-            <CardTitle>4. Analyse Concurrentielle</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <h3 className="text-lg font-semibold">Solutions Internationales (Menace Modérée)</h3>
-            <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                    <thead><tr className="border-b"><th className="text-left p-2">Solution</th><th className="text-left p-2">Prix EUR/an</th><th className="text-left p-2">Conformité Loi 18-07</th><th className="text-left p-2">Support Local</th><th className="text-left p-2">Status</th></tr></thead>
-                    <tbody>
-                        <tr className="border-b"><td>Wyscout</td><td>10,000-30,000</td><td className="text-red-600">❌ Non</td><td className="text-red-600">❌ Anglais</td><td className="text-red-600">Risque légal</td></tr>
-                        <tr className="border-b"><td>Hudl</td><td>3,000-15,000</td><td className="text-red-600">❌ Non</td><td className="text-red-600">❌ Anglais</td><td className="text-red-600">Risque légal</td></tr>
-                        <tr className="border-b"><td>InStat</td><td>5,000-25,000</td><td className="text-red-600">❌ Non</td><td className="text-red-600">❌ Anglais</td><td className="text-red-600">Risque légal</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <p className="text-sm mt-2"><strong>Réalité du terrain :</strong> Ces solutions perdent des clients en Algérie à cause des problèmes de conformité et de support.</p>
-
-            <h3 className="text-lg font-semibold mt-4">Notre Positionnement Défensif</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
-                    <CardContent className="p-4">
-                        <Shield className="text-primary mb-2" />
-                        <h4 className="font-semibold">Forteresse Réglementaire</h4>
-                        <p className="text-sm">Seule solution certifiée conforme, aujourd'hui et demain.</p>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardContent className="p-4">
-                        <Users className="text-primary mb-2" />
-                        <h4 className="font-semibold">Service Ultra-Personnalisé</h4>
-                        <p className="text-sm">Économiquement viable à petite échelle, ce que les géants ne peuvent pas offrir.</p>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardContent className="p-4">
-                        <Globe className="text-primary mb-2" />
-                        <h4 className="font-semibold">Intégration Culturelle</h4>
-                        <p className="text-sm">Langue, processus, relations. Nous faisons partie de l'écosystème.</p>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardContent className="p-4">
-                        <TrendingUp className="text-primary mb-2" />
-                        <h4 className="font-semibold">Partenariats Exclusifs</h4>
-                        <p className="text-sm">Relations privilégiées avec FAF, DTN, et les clubs.</p>
-                    </CardContent>
-                </Card>
-            </div>
-          </CardContent>
-        </Card>
+        <Section title="5. Recommandations Stratégiques" icon={<TrendingUp className="w-5 h-5 text-primary" />}>
+            <h4>Conclusions Clés</h4>
+            <p>Le marché algérien représente une opportunité de validation crédible mais limitée (TAM réaliste de 4.48M DZD). La profitabilité en Phase 1 seule est peu probable, rendant une stratégie d'expansion Phase 2 nécessaire pour la viabilité économique.</p>
+            <h4>Actions Recommandées</h4>
+            <ul className="list-disc pl-5">
+                <li><strong>Approche Séquentielle Rigoureuse:</strong> Focus absolu sur la validation du product-market fit en Phase 1.</li>
+                <li><strong>Modèle Économique Hybride:</strong> SaaS + Formation + Consulting pour maximiser l'ARPU.</li>
+                <li><strong>Construction d'un Moat Défensif:</strong> Investissement massif dans les relations institutionnelles et les switching costs.</li>
+                <li><strong>Préparation Phase 2 Conditionnelle:</strong> R&D sur une architecture scalable et veille active sur les marchés du Maghreb.</li>
+            </ul>
+        </Section>
       </div>
     </div>
   );
