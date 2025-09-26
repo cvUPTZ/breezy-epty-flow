@@ -120,10 +120,10 @@ const StartupPitchPresentation: React.FC = () => {
         <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-3">
                 <h3 className="font-semibold text-lg">Métriques de Validation Produit (Pilotes)</h3>
-                <p><strong>Taux d'Activation:</strong> >60% (Objectif)</p>
-                <p><strong>DAU/MAU Ratio:</strong> >20% (Objectif)</p>
+                  <p><strong>Taux d'Activation:</strong> &gt;60% (Objectif)</p>
+                  <p><strong>DAU/MAU Ratio:</strong> &gt;20% (Objectif)</p>
                 <p><strong>Time to Value:</strong> &lt;7 jours (Objectif)</p>
-                <p><strong>Feature Adoption:</strong> >50% (Objectif)</p>
+                  <p><strong>Feature Adoption:</strong> &gt;50% (Objectif)</p>
             </div>
              <div className="space-y-3">
                 <h3 className="font-semibold text-lg">Pipeline Commercial Validé</h3>
