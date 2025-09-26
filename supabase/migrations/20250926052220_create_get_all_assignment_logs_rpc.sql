@@ -45,7 +45,7 @@ BEGIN
                 'player_team_id', a.player_team_id,
                 'assigned_event_types', a.assigned_event_types,
                 'player_names', (
-                    SELECT array_agg(pd.player_name)
+                    SELECT COALESCE(jsonb_agg(pd.player_name), '[]'::jsonb)
                     FROM player_details pd
                     WHERE pd.match_id = a.match_id AND (pd.player_id = ANY(a.assigned_player_ids) OR pd.jersey_number = ANY(a.assigned_player_ids))
                 ),
@@ -78,7 +78,7 @@ BEGIN
             jsonb_build_object(
                 'assigned_event_types', la.assigned_event_types,
                 'player_names', (
-                    SELECT jsonb_agg(lp->>'player_name')
+                    SELECT COALESCE(jsonb_agg(lp->>'player_name'), '[]'::jsonb)
                     FROM jsonb_array_elements(la.line_players) as lp
                 ),
                 'team_name', (
