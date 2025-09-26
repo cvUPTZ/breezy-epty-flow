@@ -10,6 +10,7 @@ import { useUnifiedTrackerConnection } from '@/hooks/useUnifiedTrackerConnection
 import { motion, AnimatePresence } from 'framer-motion';
 import EventTypeSvg from '@/components/match/EventTypeSvg';
 import CancelActionIndicator from '@/components/match/CancelActionIndicator';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 // Strict type definitions
 export interface PlayerForPianoInput {
@@ -185,56 +186,6 @@ const validateAssignmentData = (data: unknown): boolean => {
   );
 };
 
-// Error boundary component
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode; onError?: (error: Error) => void; matchId?: string; userId?: string },
-  { hasError: boolean; error?: Error }
-> {
-  constructor(props: any) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    const { matchId, userId } = this.props;
-    console.error('TrackerPianoInput Error:', {
-      error: error.message,
-      stack: error.stack,
-      errorInfo,
-      matchId,
-      userId,
-      timestamp: new Date().toISOString()
-    });
-    this.props.onError?.(error);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex items-center justify-center p-8">
-          <div className="text-center">
-            <div className="text-lg font-semibold mb-2 text-red-600">Component Error</div>
-            <div className="text-sm text-gray-600 mb-4">
-              An unexpected error occurred. Please refresh the page.
-            </div>
-            <Button 
-              onClick={() => this.setState({ hasError: false })}
-              variant="outline"
-            >
-              Try Again
-            </Button>
-          </div>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
 
 const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecordEvent }) => {
   const [state, dispatch] = useReducer(trackerReducer, initialState);
@@ -649,11 +600,7 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
   }
 
   return (
-    <ErrorBoundary
-      onError={(error) => dispatch({ type: 'SET_ERROR', payload: `Component error: ${error.message}` })}
-      matchId={matchId}
-      userId={user?.id}
-    >
+    <ErrorBoundary componentName="TrackerPianoInput">
       <div className="space-y-2 p-1 sm:p-2">
         {/* Connection Warning */}
         {!isConnected && (
