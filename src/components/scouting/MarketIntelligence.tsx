@@ -121,32 +121,144 @@ const MarketIntelligence: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Market Study Report */}
-      <Card>
-        <CardHeader>
-          <CardTitle>تقرير دراسة السوق الجزائري لكرة القدم</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="prose prose-sm max-w-none text-right" dir="rtl">
-            <h2>تقرير جدوى وتحليل استراتيجي لتطبيق ويب لتحليل وإدارة مباريات كرة القدم في السوق الجزائري</h2>
-            
-            <h3>1. الملخص التنفيذي</h3>
-            <p>يقدم هذا التقرير تحليلاً شاملاً لخطط الأعمال المقترحة لتطبيق ويب مخصص لتحليل وإدارة مباريات كرة القدم، مع تركيز خاص على إطلاقه في السوق الجزائري. يهدف التطبيق إلى تقديم حل احترافي وفعال من حيث التكلفة يجمع بين تحليل الفيديو والبيانات لتحسين أداء الفرق واللاعبين.</p>
-            
-            <h3>2. الفرص والمخاطر</h3>
-            <p>تتمثل الفرص الرئيسية في الاستفادة من ميزة السبق في سوق لا يزال في مراحله المبكرة، مع وجود اهتمام متزايد بتحليل الأداء على المستوى المحلي. كما أن التطبيق يتوافق تمامًا مع استراتيجية التطوير الحالية للاتحاد الجزائري لكرة القدم (FAF)، مما يمهد الطريق لشراكات استراتيجية.</p>
-            
-            <h3>3. التحديات</h3>
-            <p>يشكل ضعف البنية التحتية للدفع الإلكتروني للأفراد تحديًا كبيرًا لنموذج الاشتراكات الموجهة للمستهلك مباشرةً (B2C)، كما أن القوانين الصارمة لسيادة البيانات في الجزائر (القانون رقم 18-07) تتطلب التزامًا صارمًا بالاستضافة المحلية.</p>
-            
-            <h3>4. التوصيات الاستراتيجية</h3>
-            <p>يوصى باتباع استراتيجية إطلاق مرحلية تركز في البداية على نموذج الأعمال الموجه للمؤسسات (B2B)، مع استهداف الأندية والأكاديميات. يجب أن يتم تنفيذ هذه الاستراتيجية بالتعاون مع الهيئات الرياضية الرئيسية مثل المديرية الفنية الوطنية التابعة للاتحاد الجزائري لكرة القدم (DTN).</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="text-center mb-10">
+        <h1 className="text-3xl font-extrabold tracking-tight lg:text-4xl">Étude de Marché Fondée sur les Données (V12.0)</h1>
+        <p className="mt-3 text-lg text-muted-foreground">
+          Analyse Rigoureuse du Marché Algérien des Solutions d'Analyse Sportive
+        </p>
+      </div>
 
-      {/* Market Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <Tabs defaultValue="summary" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="summary">Résumé Exécutif</TabsTrigger>
+          <TabsTrigger value="sizing">Taille du Marché (TAM/SAM/SOM)</TabsTrigger>
+          <TabsTrigger value="segmentation">Segmentation</TabsTrigger>
+          <TabsTrigger value="competition">Concurrence</TabsTrigger>
+          <TabsTrigger value="dynamics">Dynamiques</TabsTrigger>
+          <TabsTrigger value="strategy">Stratégie</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="summary" className="space-y-4">
+          <Card>
+            <CardHeader><CardTitle>Vision Projet Recadrée</CardTitle></CardHeader>
+            <CardContent>
+              <p>SportDataAnalytics vise à devenir le leader des solutions d'analyse sportive en Algérie en construisant un "moat communautaire" basé sur l'expertise locale, les relations institutionnelles, et la conformité réglementaire. Cette position dominante sur un marché de validation (Phase 1) constitue le tremplin pour une expansion géographique ciblée au Maghreb (Phase 2).</p>
+              <Badge variant="destructive" className="mt-2">Correction Fondamentale: Abandon des estimations initiales irréalistes.</Badge>
+            </CardContent>
+          </Card>
+          <div className="grid md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader><CardTitle>Marché Réaliste Identifié (Phase 1)</CardTitle></CardHeader>
+              <CardContent>
+                <ul className="list-disc pl-5">
+                  <li><strong>Clubs Ligue 1:</strong> 16</li>
+                  <li><strong>Clubs Ligue 2:</strong> 32</li>
+                  <li><strong>Centres FAF:</strong> 8</li>
+                  <li><strong>Total Addressable:</strong> 56 organisations</li>
+                  <li className="font-bold">Objectif 5 ans: 15 clients (27% pénétration)</li>
+                </ul>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Positionnement Concurrentiel</CardTitle></CardHeader>
+              <CardContent>
+                <p className="font-bold">"First-Mover Community Moat"</p>
+                <p>Relations + Formation + Data Propriétaires</p>
+                <ul className="list-disc pl-5 mt-2 text-sm">
+                  <li><strong>Phase 1 Moat:</strong> Réglementaire + Communautaire</li>
+                  <li><strong>Phase 2 Moat:</strong> Data + Effets de Réseau</li>
+                  <li><strong>Switching Costs Élevés:</strong> Formation obligatoire</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="sizing" className="space-y-4">
+          <Card>
+            <CardHeader><CardTitle>Calcul TAM/SAM/SOM Rigoureux</CardTitle></CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-4 text-center">
+                <div>
+                  <p className="text-2xl font-bold">{formatCurrency(4480000)}</p>
+                  <p className="font-semibold">TAM (Total Addressable Market)</p>
+                  <p className="text-xs text-muted-foreground">Scénario 100% Adoption</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{formatCurrency(2092000)}</p>
+                  <p className="font-semibold">SAM (Serviceable Addressable Market)</p>
+                  <p className="text-xs text-muted-foreground">Clubs Technologiquement Réceptifs</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-primary">{formatCurrency(2040000)}</p>
+                  <p className="font-semibold text-primary">SOM (Serviceable Obtainable Market)</p>
+                  <p className="text-xs text-muted-foreground">Objectif Réaliste 5 ans</p>
+                </div>
+              </div>
+              <Progress value={(2.04/4.48)*100} className="mt-4 h-3" />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="segmentation" className="space-y-4">
+          <Card>
+              <CardHeader><CardTitle>Matrice de Priorisation des Segments</CardTitle></CardHeader>
+              <CardContent>
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b"><th className="text-left">Segment</th><th className="text-center">Score</th><th className="text-center">Priorité</th></tr></thead>
+                  <tbody>
+                    <tr className="border-b"><td>Ligue 1 Elite</td><td className="text-center">30/40</td><td className="text-center"><Badge>1</Badge></td></tr>
+                    <tr className="border-b"><td>Centres FAF</td><td className="text-center">30/40</td><td className="text-center"><Badge>1</Badge></td></tr>
+                    <tr className="border-b"><td>Ligue 1 Standard</td><td className="text-center">23/40</td><td className="text-center"><Badge variant="secondary">2</Badge></td></tr>
+                    <tr><td>Ligue 2 Ambitieux</td><td className="text-center">16/40</td><td className="text-center"><Badge variant="outline">3</Badge></td></tr>
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+        </TabsContent>
+
+        <TabsContent value="competition" className="space-y-4">
+           <Card>
+              <CardHeader><CardTitle>Analyse des Forces de Porter</CardTitle></CardHeader>
+              <CardContent className="grid md:grid-cols-2 gap-4 text-sm">
+                <p><strong>Menace Nouveaux Entrants:</strong> <span className="font-bold text-orange-600">MODÉRÉE-ÉLEVÉE</span></p>
+                <p><strong>Pouvoir Négociation Clients:</strong> <span className="font-bold text-red-600">ÉLEVÉ</span></p>
+                <p><strong>Pouvoir Négociation Fournisseurs:</strong> <span className="font-bold text-green-600">FAIBLE</span></p>
+                <p><strong>Menace Produits Substituts:</strong> <span className="font-bold text-red-600">ÉLEVÉE</span></p>
+                <p><strong>Intensité Concurrentielle:</strong> <span className="font-bold text-yellow-600">FAIBLE-MODÉRÉE</span></p>
+              </CardContent>
+            </Card>
+        </TabsContent>
+
+        <TabsContent value="dynamics" className="space-y-4">
+          <Card>
+            <CardHeader><CardTitle>Cycle d'Adoption Technologique</CardTitle></CardHeader>
+            <CardContent>
+              <p>Positionnement Actuel du Marché: <strong>Early Adopters (13.5%)</strong></p>
+              <p>Stratégie de Franchissement du "Chasm": Cibler 4-6 clubs progressistes pour créer des références incontournables.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="strategy" className="space-y-4">
+          <Card>
+            <CardHeader><CardTitle>Recommandations Stratégiques Actionnables</CardTitle></CardHeader>
+            <CardContent>
+              <ul className="list-disc pl-5 space-y-2">
+                <li><strong>Approche Séquentielle Rigoureuse:</strong> Focus absolu sur validation Phase 1 avant toute expansion.</li>
+                <li><strong>Modèle Économique Hybride:</strong> SaaS + Formation + Consulting pour maximiser l'ARPU.</li>
+                <li><strong>Construction Moat Défensif:</strong> Investissement massif dans les relations institutionnelles et les switching costs.</li>
+                <li><strong>Préparation Phase 2 Conditionnelle:</strong> Veille active sur les marchés Maghreb (Maroc prioritaire).</li>
+              </ul>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Original dynamic content can be kept if needed, for now focusing on the static report */}
+      <div className="hidden">
+        {/* Market Overview Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Transfer Opportunities</CardTitle>

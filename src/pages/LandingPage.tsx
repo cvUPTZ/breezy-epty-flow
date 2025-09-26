@@ -32,41 +32,41 @@ const LandingPage: React.FC = () => {
 
   const features = [
     {
+      icon: <Shield className="h-8 w-8 text-green-500" />,
+      title: "Conformité Juridique Garantie (Loi 25-11)",
+      description: "Notre plateforme est 100% conforme à la loi algérienne sur la protection des données, avec un hébergement local et un audit trail complet pour une tranquillité d'esprit totale.",
+      gradient: "from-green-500/10 to-accent/10",
+    },
+    {
+      icon: <Globe className="h-8 w-8 text-blue-500" />,
+      title: "Expertise Football Local (Interface AR/FR)",
+      description: "Une solution conçue pour le football algérien, avec une interface bilingue (Arabe/Français), des métriques adaptées aux tactiques locales et un support sur site.",
+      gradient: "from-blue-500/10 to-secondary/10",
+    },
+    {
+      icon: <UserCheck className="h-8 w-8 text-orange-500" />,
+      title: "Formation Intégrée et Obligatoire",
+      description: "Nous garantissons l'adoption de l'outil grâce à une formation certifiante obligatoire pour tous les utilisateurs, assurant une utilisation efficace et homogène.",
+      gradient: "from-orange-500/10 to-muted/20",
+    },
+    {
+      icon: <Database className="h-8 w-8 text-purple-500" />,
+      title: "Données Propriétaires Uniques",
+      description: "Construisez un historique de données unique sur le football algérien, créant un avantage concurrentiel durable pour votre club ou organisation.",
+      gradient: "from-purple-500/10 to-primary/10",
+    },
+    {
       icon: <Target className="h-8 w-8 text-primary" />,
-      title: "Enregistrement d'Événements en Direct et Précis",
-      description: "Saisissez méticuleusement chaque événement de match en temps réel (buts, passes décisives, fautes, remplacements) avec notre interface 'piano' spécialisée. Suivez la position du ballon et des joueurs sur un terrain virtuel, et permettez à plusieurs opérateurs de collaborer sur le même match avec une synchronisation parfaite.",
+      title: "Enregistrement d'Événements en Direct",
+      description: "Saisissez méticuleusement chaque événement de match en temps réel avec notre interface 'piano' spécialisée et collaborative.",
       gradient: "from-primary/10 to-accent/10",
     },
     {
-      icon: <Video className="h-8 w-8 text-primary" />,
-      title: "Analyse Vidéo Intégrée et Synchronisée",
-      description: "Liez les événements enregistrés aux horodatages vidéo de multiples sources (y compris YouTube) pour une analyse post-match complète. Visualisez les actions dans leur contexte pour des revues tactiques approfondies.",
-      gradient: "from-accent/10 to-secondary/10",
+      icon: <Video className="h-8 w-8 text-red-500" />,
+      title: "Analyse Vidéo Intégrée",
+      description: "Liez les événements enregistrés aux horodatages vidéo de multiples sources pour une analyse post-match complète et des revues tactiques approfondies.",
+      gradient: "from-red-500/10 to-secondary/10",
     },
-    {
-      icon: <Users className="h-8 w-8 text-primary" />,
-      title: "Gestion Complète des Équipes et Joueurs",
-      description: "Administrez vos effectifs, les profils détaillés des joueurs et les schémas tactiques. Assignez les rôles et les positions avec des outils de gestion de formation avancés pour une préparation de match optimale.",
-      gradient: "from-secondary/10 to-muted/20",
-    },
-    {
-      icon: <BarChart3 className="h-8 w-8 text-primary" />,
-      title: "Analyses et Visualisations Puissantes",
-      description: "Accédez à des tableaux de bord interactifs avec des indicateurs de performance clés. Générez des cartes de chaleur, des graphiques radar, des chronologies d'événements et des tables statistiques complètes pour analyser les performances individuelles et collectives.",
-      gradient: "from-accent/10 to-primary/10",
-    },
-    {
-      icon: <Share2 className="h-8 w-8 text-primary" />,
-      title: "Collaboration d'Équipe Optimisée",
-      description: "Facilitez le travail simultané de plusieurs analystes sur un même match. Assignez des types d'événements spécifiques à chaque opérateur et utilisez la communication vocale intégrée pour une coordination parfaite.",
-      gradient: "from-muted/20 to-accent/10",
-    },
-    {
-      icon: <Shield className="h-8 w-8 text-primary" />,
-      title: "Administration et Contrôle Avancés",
-      description: "Gérez les accès avec des rôles d'utilisateurs définis (Admin, Manager, Tracker). Surveillez l'état des dispositifs des trackers (batterie, connexion), gérez les absences et consultez les journaux d'audit pour une sécurité et un contrôle total.",
-      gradient: "from-primary/10 to-secondary/10",
-    }
   ];
 
   const benefits = [
@@ -94,17 +94,16 @@ const LandingPage: React.FC = () => {
 
   const pricingPlans = [
     {
-      name: "Basique Algérie",
-      price: "15,000 DZD",
+      name: "Basic",
+      price: "6,000 DZD",
       period: "/mois",
-      description: "Idéal pour les clubs amateurs et les académies en développement.",
+      description: "Idéal pour les clubs de Ligue 2 et les académies.",
       icon: <Star className="h-6 w-6 text-primary" />,
       features: [
-        "Jusqu'à 5 matchs par mois",
-        "2 analystes",
-        "Suivi des événements et statistiques de base",
-        "Synchronisation vidéo limitée",
-        "Gestion d'équipe",
+        "5 matchs analysés / mois",
+        "2 comptes analystes",
+        "Statistiques de base",
+        "Analyse vidéo simple",
         "Support par email",
       ],
       popular: false,
@@ -112,18 +111,17 @@ const LandingPage: React.FC = () => {
       buttonStyle: "bg-primary hover:bg-primary/90 text-primary-foreground"
     },
     {
-      name: "Performance Algérie",
-      price: "45,000 DZD",
+      name: "Professional",
+      price: "12,000 DZD",
       period: "/mois",
-      description: "Pour les clubs de Ligue 2, les grands clubs amateurs et les académies.",
+      description: "Pour les clubs de Ligue 1 qui visent la performance.",
       icon: <Crown className="h-6 w-6 text-primary" />,
       features: [
-        "Jusqu'à 15 matchs par mois",
-        "Jusqu'à 8 analystes",
-        "Statistiques avancées (cartes de chaleur, radar)",
+        "20 matchs analysés / mois",
+        "5 comptes analystes",
+        "Statistiques avancées (heatmaps, etc.)",
         "Analyse vidéo complète",
         "Gestion des formations tactiques",
-        "Collaboration multi-utilisateurs",
         "Support prioritaire",
       ],
       popular: true,
@@ -131,18 +129,17 @@ const LandingPage: React.FC = () => {
       buttonStyle: "bg-primary hover:bg-primary/90 text-primary-foreground"
     },
     {
-      name: "Élite Algérie",
-      price: "Sur devis",
-      period: "",
-      description: "Solution complète pour les clubs de Ligue 1 et la Fédération (FAF).",
+      name: "Premium",
+      price: "18,000 DZD",
+      period: "/mois",
+      description: "La solution ultime pour les top clubs et les fédérations.",
       icon: <Shield className="h-6 w-8 text-primary" />,
       features: [
-        "Tout du plan Performance",
         "Matchs et analystes illimités",
-        "Collaboration vocale intégrée",
-        "Outils d'administration avancés",
+        "Tout du plan Professional",
+        "Consulting tactique inclus",
         "Accès API",
-        "Support et formation personnalisés",
+        "Support sur site et formation continue",
       ],
       popular: false,
       cardStyle: "bg-card/60 backdrop-blur-lg border-border hover:border-primary/30 hover:shadow-xl rounded-2xl",

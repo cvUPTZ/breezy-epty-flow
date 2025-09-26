@@ -2,12 +2,12 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.lovable.matchscribeanalytics',
-  appName: 'match-scribe-analytics',
+  appId: 'sarl.sportdataanalytics.app',
+  appName: 'SportDataAnalytics',
   webDir: 'dist',
   bundledWebRuntime: false,
   server: {
-    url: "https://74280347-ef15-4f4a-8bd7-8fa8910fd688.lovableproject.com?forceHideBadge=true",
+    url: "https://app.sportdataanalytics.dz",
     cleartext: true
   },
   plugins: {

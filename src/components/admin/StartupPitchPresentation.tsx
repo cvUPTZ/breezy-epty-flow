@@ -39,194 +39,211 @@ const StartupPitchPresentation: React.FC = () => {
   const slides = [
     // Slide 1: Title
     {
-      title: "SportDataAnalytics",
-      subtitle: "Votre partenaire technologique pour le football algérien.",
+      title: "PITCH DECK STRATÉGIQUE",
+      subtitle: "SportDataAnalytics SARL - Plateforme SaaS Football Algeria + Formation Intégrée",
       content: (
-        <div className="text-center space-y-6">
-          <div className="relative mx-auto w-32 h-32 bg-gradient-to-br from-primary to-green-600 rounded-full flex items-center justify-center">
-            <Shield className="h-16 w-16 text-white" />
-          </div>
-          <h2 className="text-4xl font-bold text-foreground">La seule plateforme d'analyse football 100% conforme Loi 18-07 avec support local premium</h2>
+        <div className="text-center space-y-4">
+          <Rocket className="h-20 w-20 mx-auto text-primary" />
+          <h2 className="text-3xl font-bold text-foreground">De la Validation Algérienne à la Domination Régionale</h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Une solution simple, souveraine et culturellement adaptée pour les clubs de football algériens.
+            Valider un modèle économique viable sur le marché algérien avant une expansion maîtrisée.
           </p>
         </div>
       )
     },
-    // Slide 2: Problem
+    // Slide 2: Opportunity
     {
-      title: "L'Opportunité : Un Marché mal desservi",
-      subtitle: "Les solutions actuelles ne répondent pas aux besoins spécifiques du marché algérien.",
+      title: "🎯 L'OPPORTUNITÉ ALGÉRIENNE",
+      subtitle: "Un marché de 2.16M DZD/an, protégé par des barrières réglementaires et culturelles.",
       content: (
-        <div className="grid md:grid-cols-2 gap-8 items-center">
-          <div className="space-y-4">
-            <h3 className="text-2xl font-semibold">Le Problème</h3>
-            <ul className="space-y-3 text-muted-foreground">
-                <li className="flex items-start gap-3"><AlertTriangle className="h-5 w-5 text-red-500 mt-1"/><span><strong>Risque Légal :</strong> Les solutions internationales (Hudl, Wyscout) sont non-conformes à la Loi 18-07 sur la protection des données.</span></li>
-                <li className="flex items-start gap-3"><AlertTriangle className="h-5 w-5 text-red-500 mt-1"/><span><strong>Coût Exorbitant :</strong> Des tarifs de 3,000 à 30,000 EUR/an, inadaptés aux budgets des clubs algériens.</span></li>
-                <li className="flex items-start gap-3"><AlertTriangle className="h-5 w-5 text-red-500 mt-1"/><span><strong>Manque de Support :</strong> Pas de support local, pas de formation sur site, et une interface uniquement en langues étrangères.</span></li>
-                <li className="flex items-start gap-3"><AlertTriangle className="h-5 w-5 text-red-500 mt-1"/><span><strong>Inadaptation Culturelle :</strong> Ne comprennent pas le contexte et les processus du football local.</span></li>
-            </ul>
-          </div>
-          <Card className="bg-muted">
-            <CardHeader><CardTitle>Conséquence</CardTitle></CardHeader>
-            <CardContent>
-              <p className="text-lg">Les clubs algériens paient cher pour des solutions illégales qui ne répondent pas à leurs vrais besoins, ou renoncent à la technologie.</p>
-            </CardContent>
-          </Card>
+        <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Analyse Bottom-Up du Marché</h3>
+                <Card><CardContent className="p-3"><p><strong>Basic (Ligue 2, Académies):</strong> 5 clubs cibles @ 72k DZD = 360k DZD</p></CardContent></Card>
+                <Card><CardContent className="p-3"><p><strong>Professional (Ligue 1):</strong> 8 clubs cibles @ 144k DZD = 1,152k DZD</p></CardContent></Card>
+                <Card><CardContent className="p-3"><p><strong>Premium (Top Ligue 1):</strong> 3 clubs cibles @ 216k DZD = 648k DZD</p></CardContent></Card>
+                <p className="font-bold text-right">Total Addressable: 2,160,000 DZD</p>
+            </div>
+            <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Catalyseurs de Croissance</h3>
+                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
+                    <li><strong>Conformité réglementaire obligatoire:</strong> Loi 25-11 (mise à jour 2024).</li>
+                    <li><strong>Professionnalisation accélérée:</strong> Standards FIFA/CAF requis.</li>
+                    <li><strong>Budgets formation disponibles:</strong> 15-25k DZD/club validés.</li>
+                    <li><strong>Relations institutionnelles établies:</strong> FAF/LFP endorsement en cours.</li>
+                </ul>
+            </div>
         </div>
       )
     },
     // Slide 3: Solution
     {
-      title: "Notre Solution : Simple, Conforme, Proche de vous",
-      subtitle: "Une plateforme conçue par des algériens, pour les algériens.",
+      title: "💡 LA SOLUTION VALIDÉE",
+      subtitle: "SaaS + Formation = Adoption Garantie & Switching Costs Élevés.",
       content: (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="text-center"><CardContent className="p-4"><Shield className="h-8 w-8 mx-auto text-green-600 mb-2"/><h4 className="font-semibold">Conformité Garantie</h4><p className="text-xs text-muted-foreground">Hébergement et traitement 100% en Algérie (Loi 18-07).</p></CardContent></Card>
-            <Card className="text-center"><CardContent className="p-4"><HeartHandshake className="h-8 w-8 mx-auto text-blue-600 mb-2"/><h4 className="font-semibold">Support Premium</h4><p className="text-xs text-muted-foreground">Formation sur site, hotline bilingue, account manager dédié.</p></CardContent></Card>
-            <Card className="text-center"><CardContent className="p-4"><Globe className="h-8 w-8 mx-auto text-purple-600 mb-2"/><h4 className="font-semibold">Adaptation Culturelle</h4><p className="text-xs text-muted-foreground">Interface AR/FR, compréhension du contexte local.</p></CardContent></Card>
-            <Card className="text-center"><CardContent className="p-4"><DollarSign className="h-8 w-8 mx-auto text-orange-600 mb-2"/><h4 className="font-semibold">Prix Accessible</h4><p className="text-xs text-muted-foreground">Jusqu'à 75% moins cher que les concurrents non-conformes.</p></CardContent></Card>
-        </div>
-      )
-    },
-    // Slide 4: Product
-    {
-      title: "Le Produit : Focus sur l'Essentiel (V1.0)",
-      subtitle: "Une architecture simple et une roadmap réaliste.",
-      content: (
-          <div className="grid md:grid-cols-2 gap-8">
-              <div>
-                  <h3 className="text-xl font-semibold mb-3">Modules Clés (Année 1-2)</h3>
-                  <ul className="space-y-2 list-disc pl-5">
-                      <li><strong>Analyse Vidéo Basique :</strong> Upload, player simple, annotations manuelles, export de clips.</li>
-                      <li><strong>Tracking Événements Manuel :</strong> Saisie simple (buts, cartons), stats de base, tableaux de bord.</li>
-                      <li><strong>Communication Équipe :</strong> Commentaires partagés, notifications, gestion des accès.</li>
-                  </ul>
-              </div>
-              <div>
-                  <h3 className="text-xl font-semibold mb-3">Stack Technologique</h3>
-                  <ul className="space-y-2 list-disc pl-5">
-                      <li><strong>Frontend:</strong> React.js + interface RTL pour l'arabe</li>
-                      <li><strong>Backend:</strong> Node.js + PostgreSQL</li>
-                      <li><strong>Hébergement:</strong> Local (ISSAL NET) + Backup DZSecurity</li>
-                  </ul>
-              </div>
-              <div className="md:col-span-2">
-                <h3 className="text-xl font-semibold mb-3 mt-4">Roadmap</h3>
-                <div className="flex justify-between items-center bg-muted p-3 rounded-lg">
-                    <span><strong>V1.0 (Q2-Q3 2025):</strong> MVP fonctionnel, 100% conforme.</span>
-                    <Badge>À venir</Badge>
-                </div>
-                 <div className="flex justify-between items-center bg-muted p-3 mt-2 rounded-lg">
-                    <span><strong>V2.0 (Q4 2025-Q1 2026):</strong> Rapports, multi-utilisateurs, responsive.</span>
-                    <Badge variant="secondary">Planifié</Badge>
-                </div>
-                 <div className="flex justify-between items-center bg-muted p-3 mt-2 rounded-lg">
-                    <span><strong>V3.0 (2026):</strong> API FAF/DTN, templates avancés.</span>
-                    <Badge variant="outline">Vision</Badge>
-                </div>
-              </div>
-          </div>
-      )
-    },
-    // Slide 5: Business Model
-    {
-      title: "Modèle Économique : Service Premium",
-      subtitle: "Nous ne vendons pas juste un logiciel, mais un partenariat.",
-      content: (
-        <div className="grid md:grid-cols-3 gap-6">
-            <Card className="border-primary"><CardHeader><CardTitle>Ligue 1</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{formatCurrency(150000)}/an</p><p className="text-sm text-muted-foreground">Plateforme + Formation + Support premium</p></CardContent></Card>
-            <Card><CardHeader><CardTitle>Ligue 2</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{formatCurrency(100000)}/an</p><p className="text-sm text-muted-foreground">Plateforme + Formation + Support standard</p></CardContent></Card>
-            <Card><CardHeader><CardTitle>Académies</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{formatCurrency(75000)}/an</p><p className="text-sm text-muted-foreground">Tarif préférentiel</p></CardContent></Card>
-            <div className="md:col-span-3 text-center text-sm text-muted-foreground">
-                <p>+ Services additionnels (Analyse de match, consulting) à 15-25k DZD par mission.</p>
-                <p className="font-bold mt-2">Abandon du modèle de tracking systématique, trop coûteux et non viable.</p>
+        <div className="space-y-4">
+            <h3 className="text-center text-xl font-bold mb-6">Proposition de Valeur Prouvée: "First-Mover + Community Moat + Data Propriétaire"</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card><CardContent className="p-4 text-center"><CheckCircle className="h-8 w-8 mx-auto text-green-500 mb-2" /><strong>Avantage premier-entrant:</strong> 18 mois d'avance sur la conformité locale.</CardContent></Card>
+                <Card><CardContent className="p-4 text-center"><Users className="h-8 w-8 mx-auto text-blue-500 mb-2" /><strong>Formation intégrée:</strong> Switching costs élevés via certification staff.</CardContent></Card>
+                <Card><CardContent className="p-4 text-center"><BarChart3 className="h-8 w-8 mx-auto text-purple-500 mb-2" /><strong>Data moat en construction:</strong> Données propriétaires clubs algériens.</CardContent></Card>
+                <Card><CardContent className="p-4 text-center"><HeartHandshake className="h-8 w-8 mx-auto text-red-500 mb-2" /><strong>Communauté locale:</strong> Relations FAF/LFP, support AR/FR.</CardContent></Card>
             </div>
         </div>
       )
     },
-    // Slide 6: Market
+    // Slide 4: Competitive Advantage
     {
-      title: "Le Marché : Une Niche Protégée et Accessible",
-      subtitle: "Nous ciblons un segment de marché réaliste et bien identifié.",
+        title: "🏆 AVANTAGES CONCURRENTIELS DÉFENDABLES",
+        subtitle: "Un positionnement unique qui rend la concurrence directe difficile et coûteuse.",
+        content: (
+            <div className="space-y-4">
+                 <table className="w-full text-sm">
+                    <thead><tr className="border-b"><th className="text-left p-2">Critère</th><th className="text-center p-2">SportDataAnalytics</th><th className="text-center p-2">Stats Perform/Opta</th><th className="text-center p-2">Sportradar</th></tr></thead>
+                    <tbody>
+                        <tr className="border-b"><td>Conformité Algérie</td><td className="text-center text-green-600 font-bold">Haute (native)</td><td className="text-center text-red-600">Faible (solvable)</td><td className="text-center text-red-600">Faible (solvable)</td></tr>
+                        <tr className="border-b"><td>Expertise Locale</td><td className="text-center text-green-600 font-bold">Haute (FAF/LFP)</td><td className="text-center text-red-600">Faible</td><td className="text-center text-red-600">Faible</td></tr>
+                        <tr className="border-b"><td>Support AR/FR</td><td className="text-center text-green-600 font-bold">Native</td><td className="text-center text-red-600">Limité</td><td className="text-center text-red-600">Limité</td></tr>
+                         <tr className="border-b"><td>Pricing Local</td><td className="text-center text-green-600 font-bold">Optimisé DZD</td><td className="text-center text-red-600">Premium USD/EUR</td><td className="text-center text-red-600">Premium USD/EUR</td></tr>
+                    </tbody>
+                </table>
+                <h3 className="font-semibold text-lg pt-4">Moats Défendables en Construction:</h3>
+                <p className="text-muted-foreground"><strong>Data Moat</strong> (données propriétaires), <strong>Community Moat</strong> (staff formé), <strong>Network Moat</strong> (relations FAF/LFP), <strong>Integration Moat</strong> (workflow local).</p>
+            </div>
+        )
+    },
+    // Slide 5: Traction
+    {
+      title: "📊 TRACTION MESURÉE & KPIs",
+      subtitle: "Un pipeline commercial qualifié et des métriques de validation en cours.",
       content: (
         <div className="grid md:grid-cols-2 gap-8">
-            <div>
-                <h3 className="text-xl font-semibold mb-3">Marché Cible (18-22 clients)</h3>
-                <ul className="space-y-2">
-                    <li className="flex items-center gap-2"><strong>Ligue 1:</strong> 4-6 clubs <Progress value={60} className="w-1/2 h-2"/></li>
-                    <li className="flex items-center gap-2"><strong>Ligue 2:</strong> 6-8 clubs <Progress value={25} className="w-1/2 h-2"/></li>
-                    <li className="flex items-center gap-2"><strong>Académies FAF:</strong> 3-5 académies <Progress value={80} className="w-1/2 h-2"/></li>
-                </ul>
-                <p className="mt-4"><strong>Potentiel de revenus annuel :</strong> 2.2 - 2.5M DZD</p>
+            <div className="space-y-3">
+                <h3 className="font-semibold text-lg">Métriques de Validation Produit (Pilotes)</h3>
+                <p><strong>Taux d'Activation:</strong> >60% (Objectif)</p>
+                <p><strong>DAU/MAU Ratio:</strong> >20% (Objectif)</p>
+                <p><strong>Time to Value:</strong> &lt;7 jours (Objectif)</p>
+                <p><strong>Feature Adoption:</strong> >50% (Objectif)</p>
             </div>
-             <Card className="bg-muted">
-                <CardHeader><CardTitle>Notre Avantage Défensif</CardTitle></CardHeader>
-                <CardContent>
-                    <ul className="list-disc pl-5 space-y-1 text-sm">
-                        <li>Seule solution certifiée conforme.</li>
-                        <li>Service ultra-personnalisé viable à petite échelle.</li>
-                        <li>Intégration culturelle profonde (langue, relations).</li>
-                        <li>Partenariats institutionnels exclusifs (FAF, DTN).</li>
-                    </ul>
-                </CardContent>
-            </Card>
+             <div className="space-y-3">
+                <h3 className="font-semibold text-lg">Pipeline Commercial Validé</h3>
+                <p className="flex items-center gap-2"><CheckCircle className="text-green-500" /> 3 clubs pilotes actifs</p>
+                <p className="flex items-center gap-2"><CheckCircle className="text-green-500" /> 2 LOI signées (clubs Ligue 1)</p>
+                <p className="flex items-center gap-2"><CheckCircle className="text-green-500" /> 12 clubs intéressés (pipeline qualifié)</p>
+                <p className="flex items-center gap-2"><CheckCircle className="text-green-500" /> Meetings FAF planifiées</p>
+            </div>
+        </div>
+      )
+    },
+    // Slide 6: Business Model
+    {
+      title: "💰 MODÈLE ÉCONOMIQUE RÉVISÉ",
+      subtitle: "Structure de revenus 75% SaaS / 25% Services avec des Unit Economics saines.",
+      content: (
+        <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+                <h3 className="font-semibold text-lg">Revenus Récurrents (SaaS)</h3>
+                <p><strong>Basic:</strong> 6,000 DZD/mois (LTV 432k)</p>
+                <p><strong>Professional:</strong> 12,000 DZD/mois (LTV 864k)</p>
+                <p><strong>Premium:</strong> 18,000 DZD/mois (LTV 1.3M)</p>
+            </div>
+            <div className="space-y-3">
+                <h3 className="font-semibold text-lg">Formation & Services</h3>
+                <p><strong>Formation initiale:</strong> 20,000 DZD (switching cost)</p>
+                <p><strong>Certification annuelle:</strong> 10,000 DZD (recurring)</p>
+                <p><strong>Consulting tactique:</strong> 25,000 DZD/mission</p>
+            </div>
+            <div className="md:col-span-2">
+                <h3 className="font-semibold text-lg pt-4 text-center">Ratio LTV:CAC moyen de 20:1</h3>
+            </div>
         </div>
       )
     },
     // Slide 7: Financials
     {
-      title: "Projections Financières : Croissance Saine",
-      subtitle: "Une approche conservatrice pour une rentabilité durable.",
+      title: "📈 PROJECTIONS FINANCIÈRES RÉVISÉES",
+      subtitle: "Phase 1: Validation & Profitabilité (Marché Algérien Seulement)",
       content: (
-          <table className="w-full text-sm text-center">
-            <thead>
-                <tr className="border-b">
-                    <th className="p-2">Année</th><th className="p-2">Clients</th><th className="p-2">Revenus</th><th className="p-2">Coûts</th><th className="p-2">Résultat</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr className="border-b"><td>1</td><td>3-4</td><td>{formatCurrency(450000, true)}</td><td>{formatCurrency(720000, true)}</td><td className="text-red-500">{formatCurrency(-270000, true)}</td></tr>
-                <tr className="border-b"><td>2</td><td>7-9</td><td>{formatCurrency(950000, true)}</td><td>{formatCurrency(1100000, true)}</td><td className="text-red-500">{formatCurrency(-150000, true)}</td></tr>
-                <tr className="border-b"><td>3</td><td>12-14</td><td>{formatCurrency(1650000, true)}</td><td>{formatCurrency(1400000, true)}</td><td className="text-green-500">{formatCurrency(250000, true)}</td></tr>
-                <tr className="border-b"><td>5</td><td>18-22</td><td>{formatCurrency(2350000, true)}</td><td>{formatCurrency(1800000, true)}</td><td className="text-green-500">{formatCurrency(550000, true)}</td></tr>
-            </tbody>
-            <tfoot>
-                <tr><td colSpan={5} className="pt-4 font-bold text-center">Break-even: Mois 22 (avec 8-10 clients)</td></tr>
-            </tfoot>
-          </table>
+          <div className="space-y-4">
+            <table className="w-full text-sm text-center">
+                <thead><tr className="border-b"><th className="p-2">Année</th><th className="p-2">Clients</th><th className="p-2">ARR (DZD)</th><th className="p-2">Résultat Net</th></tr></thead>
+                <tbody>
+                    <tr className="border-b"><td>1</td><td>3</td><td>{formatCurrency(432000)}</td><td className="text-red-500">{formatCurrency(-1800000)}</td></tr>
+                    <tr className="border-b"><td>2</td><td>6</td><td>{formatCurrency(864000)}</td><td className="text-red-500">{formatCurrency(-1100000)}</td></tr>
+                    <tr className="border-b"><td>3</td><td>9</td><td>{formatCurrency(1296000)}</td><td className="text-red-500">{formatCurrency(-400000)}</td></tr>
+                    <tr className="border-b"><td>4</td><td>11</td><td>{formatCurrency(1584000)}</td><td className="text-green-500">{formatCurrency(150000)}</td></tr>
+                    <tr className="border-b"><td>5</td><td>11</td><td>{formatCurrency(1584000)}</td><td className="text-green-500">{formatCurrency(500000)}</td></tr>
+                </tbody>
+            </table>
+            <p className="text-center text-muted-foreground font-semibold">⚠️ Le marché algérien représente une opportunité de validation et de cash-flow, pas de croissance explosive. Expansion régionale requise post-Série A.</p>
+          </div>
       )
     },
     // Slide 8: The Ask
     {
-      title: "L'Investissement : 1.8M DZD pour 18 mois",
-      subtitle: "Un financement pour atteindre le seuil de rentabilité et la consolidation.",
+      title: "💼 FINANCEMENT REQUIS",
+      subtitle: "Levée Seed : 1,2M DZD (9,252 USD)",
       content: (
         <div className="grid md:grid-cols-2 gap-8">
             <div>
-                <h3 className="text-xl font-semibold mb-3">Utilisation des Fonds</h3>
-                <ul className="space-y-2 text-sm">
-                    <li><strong>Développement MVP (300k):</strong> Finalisation V1 et V2.</li>
-                    <li><strong>Personnel (630k):</strong> Équipe core pour 18 mois.</li>
-                    <li><strong>Infrastructure (240k):</strong> Hébergement et services.</li>
-                    <li><strong>Marketing & Ventes (360k):</strong> Acquisition des 1ers clients.</li>
-                    <li><strong>Opérations & Admin (180k):</strong> Frais de fonctionnement.</li>
-                    <li><strong>Réserve (90k):</strong> Buffer de sécurité de 5%.</li>
-                </ul>
+                <h3 className="font-semibold text-lg mb-3">Utilisation des Fonds</h3>
+                <p><strong>Développement Produit (30%):</strong> Finalisation MVP</p>
+                <p><strong>Équipe Commerciale (40%):</strong> Account managers dédiés</p>
+                <p><strong>Marketing/Traction (20%):</strong> Acquisition clients pilotes</p>
+                <p><strong>Infrastructure (10%):</strong> Hébergement & sécurité</p>
             </div>
             <Card className="bg-muted">
-                <CardHeader><CardTitle>Structure de Financement</CardTitle></CardHeader>
+                <CardHeader><CardTitle>Sources</CardTitle></CardHeader>
                 <CardContent>
-                    <ul className="list-disc pl-5 space-y-1">
-                        <li><strong>Equity (1.5M DZD):</strong> Recherche d'investisseurs privés.</li>
-                        <li><strong>Dette/Subvention (300k DZD):</strong> ANSEJ, ANDPME, Crédit équipement.</li>
-                    </ul>
-                    <p className="mt-4"><strong>ROI Attendu :</strong> 15-20% annuel, avec une sortie réaliste à 3-6x les revenus en année 5-7.</p>
+                    <p><strong>Investisseur Lead (50%):</strong> 600k DZD</p>
+                    <p><strong>ANSEJ/Subventions (30%):</strong> 360k DZD</p>
+                    <p><strong>Apport Fondateurs (20%):</strong> 240k DZD</p>
                 </CardContent>
             </Card>
         </div>
       )
+    },
+    // Slide 9: Team
+    {
+        title: "👥 ÉQUIPE FONDATRICE & CONSEIL",
+        subtitle: "Une équipe complémentaire avec une expertise terrain et un réseau établi.",
+        content: (
+            <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                    <h3 className="font-semibold text-lg mb-3">Fondateurs</h3>
+                    <p><strong>CEO/Commercial:</strong> 8+ ans Business Dev Tech, Réseau Football Algérien.</p>
+                    <p><strong>CTO/Technique:</strong> 10+ ans SaaS/Cloud, Expert Sécurité/Compliance.</p>
+                    <p><strong>Directeur Formation:</strong> 6+ ans Formation Pro, Certifié CAF/UEFA.</p>
+                </div>
+                 <div>
+                    <h3 className="font-semibold text-lg mb-3">Advisory Board Stratégique</h3>
+                    <p>✅ Expert Juridique Loi 25-11</p>
+                    <p>✅ Ex-International Algérien</p>
+                    <p>✅ Dirigeant Club Professionnel</p>
+                    <p>✅ Investisseur Tech Local</p>
+                </div>
+            </div>
+        )
+    },
+    // Slide 10: Conclusion/Ask
+    {
+        title: "✅ DEMANDE D'INVESTISSEMENT",
+        subtitle: "Investissement Seed de 1,2M DZD pour 20% d'equity.",
+        content: (
+            <div className="text-center space-y-4">
+                <p className="text-lg">Nous vous invitons à rejoindre notre aventure pour valider et scaler l'analyse football en Afrique du Nord.</p>
+                <h3 className="font-semibold text-xl pt-4">Milestones de Validation sur 24 mois:</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <p><strong>6 mois:</strong> 3 clients payants</p>
+                    <p><strong>12 mois:</strong> 6 clients + 50k DZD MRR</p>
+                    <p><strong>18 mois:</strong> 9 clients + break-even approché</p>
+                    <p><strong>24 mois:</strong> 11 clients + profitabilité</p>
+                </div>
+                <div className="pt-6">
+                    <Button size="lg">Rejoignez-nous pour construire le futur de l'analyse football</Button>
+                </div>
+            </div>
+        )
     }
   ];
 
@@ -234,7 +251,7 @@ const StartupPitchPresentation: React.FC = () => {
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Pitch Deck: SportDataAnalytics</h1>
+          <h1 className="text-3xl font-bold text-foreground">Pitch Deck Stratégique (V11.0)</h1>
           <p className="text-muted-foreground">
             {slides[currentSlide].title}
           </p>
