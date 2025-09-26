@@ -16,12 +16,23 @@ const BusinessPlanDocument: React.FC = () => {
     }).format(amount);
   };
 
+  const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode; className?: string }> = ({ title, icon, children, className }) => (
+    <Card className={`print:shadow-none print:border-0 print:break-before-page ${className}`}>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-xl">{icon} {title}</CardTitle>
+      </CardHeader>
+      <CardContent className="prose prose-sm max-w-none">
+        {children}
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="max-w-4xl mx-auto p-8 bg-background">
       <div className="flex justify-between items-center mb-8 print:hidden">
         <div>
-          <h1 className="text-3xl font-bold">Plan d'Affaires Détaillé</h1>
-          <p className="text-muted-foreground">SportDataAnalytics - Stratégie Révisée</p>
+          <h1 className="text-3xl font-bold">PLAN D'AFFAIRES RÉVISÉ (V10.0)</h1>
+          <p className="text-muted-foreground">SportDataAnalytics SARL - Basé sur les Données</p>
         </div>
         <Button onClick={handleExport} className="flex items-center gap-2">
           <Download className="w-4 h-4" />
@@ -30,146 +41,79 @@ const BusinessPlanDocument: React.FC = () => {
       </div>
 
       <div className="space-y-8 print:space-y-6">
-        {/* Page de couverture */}
-        <Card className="print:shadow-none print:border-0">
-          <CardContent className="p-12 text-center">
-            <div className="space-y-8">
-              <Shield className="w-24 h-24 mx-auto text-primary" />
-              <div className="space-y-4">
-                <h1 className="text-5xl font-bold tracking-tight">PLAN D'AFFAIRES</h1>
-                <div className="w-32 h-1 bg-primary mx-auto"></div>
-                <h2 className="text-3xl font-semibold text-primary">
-                  SportDataAnalytics
-                </h2>
-                <h3 className="text-xl text-muted-foreground">
-                  La seule plateforme d'analyse football 100% conforme Loi 18-07
-                </h3>
-              </div>
-              <div className="mt-16 space-y-3 text-muted-foreground">
-                <p><strong>Version:</strong> 3.0 (Révisée)</p>
-                <p><strong>Date:</strong> {new Date('2025-09-18').toLocaleDateString('fr-FR')}</p>
-                <p><strong>Période couverte:</strong> 2025-2029</p>
-                <p><strong>Classification:</strong> Confidentiel</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <Section title="1. Résumé Exécutif" icon={<Target className="w-5 h-5 text-primary" />}>
+          <h4>Vision et Mission Affinées</h4>
+          <p><strong>Vision:</strong> Devenir le partenaire technologique de référence des clubs de football algériens en construisant un "moat communautaire" basé sur l'expertise locale, les relations institutionnelles et l'intégration profonde.</p>
+          <p><strong>Mission:</strong> Accompagner la professionnalisation du football algérien en fournissant une plateforme SaaS complète, conforme à la Loi 25-11, avec des services de formation intégrés.</p>
 
-        {/* 1. Résumé Exécutif */}
-        <Card className="print:break-before-page">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="w-5 h-5 text-primary" />
-              1. Résumé Exécutif
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-             <div className="prose prose-sm max-w-none">
-                <h3>Vision & Mission</h3>
-                <p><strong>Vision:</strong> Devenir le partenaire technologique de référence pour les clubs de football algériens cherchant une solution d'analyse conforme et culturellement adaptée.</p>
-                <p><strong>Mission:</strong> Fournir aux clubs et institutions footballistiques algériennes une plateforme d'analyse simple, conforme à la Loi 18-07, avec un support technique exceptionnel en langue locale.</p>
+          <h4>Proposition de Valeur Différenciante</h4>
+          <p><strong>"First-Mover Local + Deep Integration = Sustainable Community Moat"</strong></p>
 
-                <h3>Proposition de Valeur Unique</h3>
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <p className="font-medium text-blue-800">"La seule plateforme d'analyse football 100% conforme Loi 18-07 avec support local premium"</p>
-                </div>
+          <h4>Projections Financières Fondées sur les Données</h4>
+          <table className="w-full">
+            <thead><tr><th>Année</th><th>Clients</th><th>ARR (K DZD)</th><th>Résultat Net</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>6</td><td>900</td><td className="text-red-600">-2,136</td></tr>
+              <tr><td>3</td><td>12</td><td>1,800</td><td className="text-red-600">-1,236</td></tr>
+              <tr><td>5</td><td>15</td><td>2,363</td><td className="text-green-600">+127</td></tr>
+            </tbody>
+          </table>
+        </Section>
 
-                <h3>Opportunité de Marché</h3>
-                <p>Le marché est une niche protégée par des barrières réglementaires. Nous avons identifié un segment réaliste de <strong>18-22 clubs potentiels</strong> sur 42 professionnels, avec un potentiel de revenus maximum de <strong>2.2-2.5M DZD/an</strong>.</p>
+        <Section title="2. Analyse de Marché Rigoureuse" icon={<Globe className="w-5 h-5 text-primary" />}>
+          <h4>Correction Méthodologique</h4>
+          <p>Abandon des estimations "85M DZD MENA" non-fondées. Focus exclusif sur le marché algérien validable.</p>
+          <h4>Marché Adressable Total (TAM) - Algérie Football</h4>
+          <p><strong>Ligue 1 (16 clubs):</strong> 2,880k DZD Potentiel</p>
+          <p><strong>Ligue 2 (32 clubs):</strong> 2,880k DZD Potentiel</p>
+          <p className="font-bold">TOTAL TAM: 5,760k DZD</p>
+          <p><strong>SOM (Marché Obtenable) 5 ans:</strong> 2.25M DZD ARR (30% pénétration)</p>
+        </Section>
 
-                <h3>Projections Financières Corrigées</h3>
-                 <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead><tr className="border-b"><th className="text-left p-1">Année</th><th className="text-left p-1">Revenus (DZD)</th><th className="text-left p-1">Coûts (DZD)</th><th className="text-left p-1">Résultat (DZD)</th></tr></thead>
-                        <tbody>
-                            <tr><td>1</td><td>450,000</td><td>720,000</td><td className="text-red-600">-270,000</td></tr>
-                            <tr><td>3</td><td>1,650,000</td><td>1,400,000</td><td className="text-green-600">250,000</td></tr>
-                            <tr><td>5</td><td>2,350,000</td><td>1,800,000</td><td className="text-green-600">550,000</td></tr>
-                        </tbody>
-                    </table>
-                    <p className="text-xs text-center mt-1">Break-even: Mois 22 (8-10 clients)</p>
-                </div>
+        <Section title="3. Produit & Traction Vérifiable" icon={<TrendingUp className="w-5 h-5 text-primary" />}>
+          <h4>État Actuel du Produit (MVP)</h4>
+          <p>Fonctionnalités développées: Saisie match temps réel, Dashboard analytics, Exports PDF/Excel, Module conformité Loi 25-11.</p>
+          <h4>Métriques de Traction (Pilotes avec 3 clubs)</h4>
+          <ul>
+            <li><strong>Taux d'activation:</strong> 85%</li>
+            <li><strong>Usage hebdomadaire:</strong> 4.2 matches analysés/semaine</li>
+            <li><strong>NPS:</strong> +67</li>
+            <li><strong>Conversion:</strong> 3/3 LOIs signées</li>
+          </ul>
+        </Section>
 
-                <h3>Financement Requis</h3>
-                <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 text-center">
-                    <p className="text-lg font-bold text-amber-800">{formatCurrency(1800000)} sur 18 mois pour atteindre le break-even.</p>
-                </div>
-            </div>
-          </CardContent>
-        </Card>
+        <Section title="4. Stratégie d'Expansion Ciblée" icon={<Users className="w-5 h-5 text-primary" />}>
+          <h4>Phase 1 : Domination Algérie (2025-2027)</h4>
+          <p>Objectif: Valider le product-market fit et construire le moat communautaire. Atteindre 15 clients et la rentabilité opérationnelle.</p>
+          <h4>Phase 2 : Expansion Maghreb (Post-2027)</h4>
+          <p>Stratégie révisée: Focus sur des marchés similaires culturellement. Marché cible prioritaire: Maroc (Botola Pro).</p>
+        </Section>
 
-        {/* 2. Analyse de Marché */}
-        <Card className="print:break-before-page">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Globe className="w-5 h-5 text-primary" />2. Analyse de Marché Réaliste</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <h4 className="font-semibold">Facteurs Favorables</h4>
-                        <ul className="list-disc pl-5 text-sm">
-                            <li>Direction FAF favorable à la modernisation.</li>
-                            <li>Quelques clubs progressistes ouverts à l'innovation.</li>
-                            <li>Présence croissante d'analystes vidéo.</li>
-                        </ul>
-                    </div>
-                     <div>
-                        <h4 className="font-semibold">Facteurs Limitants (Critique)</h4>
-                        <ul className="list-disc pl-5 text-sm">
-                            <li>Culture traditionnelle résistante au changement.</li>
-                            <li>Budgets contraints.</li>
-                            <li>Manque de formation des staffs.</li>
-                            <li>Infrastructure technique limitée.</li>
-                        </ul>
-                    </div>
-                </div>
-                 <div>
-                    <h4 className="font-semibold">Segmentation Prioritaire</h4>
-                    <ul className="list-disc pl-5 text-sm">
-                        <li><strong>Segment Primaire (60% efforts):</strong> 4-6 clubs Ligue 1 progressistes.</li>
-                        <li><strong>Segment Secondaire (25% efforts):</strong> 3-5 académies FAF.</li>
-                        <li><strong>Segment Tertiaire (15% efforts):</strong> 6-8 clubs Ligue 2 sélectifs.</li>
-                    </ul>
-                </div>
-                 <div>
-                    <h4 className="font-semibold">Analyse Concurrentielle</h4>
-                    <p className="text-sm">Les solutions internationales (Wyscout, Hudl) perdent des clients en Algérie à cause des problèmes de conformité (Loi 18-07) et de support local. Notre positionnement est défensif et axé sur notre conformité certifiée et notre service ultra-personnalisé.</p>
-                </div>
-            </CardContent>
-        </Card>
+        <Section title="5. Équipe & Gouvernance" icon={<Users className="w-5 h-5 text-primary" />}>
+          <h4>Équipe Fondatrice</h4>
+          <ul>
+            <li><strong>Karim Benaissa - CEO/Commercial:</strong> Ex-Manager Systèmes FAF, réseau clubs.</li>
+            <li><strong>Yacine Brahimi - CTO:</strong> Senior Developer, spécialisation SaaS B2B, conformité GDPR.</li>
+            <li><strong>Sarah Mekhancha - Directrice Formation:</strong> Ex-Analyste Performance USMA, certification UEFA B.</li>
+          </ul>
+        </Section>
 
-        {/* 3. Stratégie Produit et Développement */}
-        <Card className="print:break-before-page">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><TrendingUp className="w-5 h-5 text-primary" />3. Stratégie Produit et Développement</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div>
-                    <h4 className="font-semibold">Architecture Produit Simplifiée (Modules Core Année 1-2)</h4>
-                    <ul className="list-disc pl-5 text-sm">
-                        <li><strong>Analyse Vidéo Basique:</strong> Upload, player HTML5, annotations manuelles, export clips.</li>
-                        <li><strong>Tracking Événements Manuel:</strong> Interface de saisie, statistiques de base, tableaux de bord simples.</li>
-                        <li><strong>Communication Équipe:</strong> Commentaires partagés, notifications, gestion des accès.</li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 className="font-semibold">Stack Technologique Simple</h4>
-                     <ul className="list-disc pl-5 text-sm">
-                        <li><strong>Frontend:</strong> React.js + interface RTL pour arabe</li>
-                        <li><strong>Backend:</strong> Node.js + PostgreSQL</li>
-                        <li><strong>Storage:</strong> Hébergement local ISSAL NET + backup DZSecurity</li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 className="font-semibold">Roadmap Réaliste</h4>
-                     <ul className="list-disc pl-5 text-sm">
-                        <li><strong>V1.0 (Q2-Q3 2025):</strong> MVP fonctionnel, 100% conforme.</li>
-                        <li><strong>V2.0 (Q4 2025-Q1 2026):</strong> Statistiques, rapports, multi-utilisateurs.</li>
-                        <li><strong>V3.0 (2026):</strong> API pour intégrations FAF/DTN.</li>
-                    </ul>
-                </div>
-            </CardContent>
-        </Card>
+        <Section title="6. Projections Financières Détaillées" icon={<DollarSign className="w-5 h-5 text-primary" />}>
+          <h4>Modèle Unit Economics</h4>
+            <p><strong>CAC (Coût Acquisition Client):</strong> 45k DZD</p>
+            <p><strong>LTV (Valeur Vie Client):</strong> 450k DZD</p>
+            <p className="font-bold"><strong>Ratio LTV/CAC:</strong> 10:1</p>
+        </Section>
+
+        <Section title="7. Gestion des Risques" icon={<Shield className="w-5 h-5 text-primary" />}>
+            <h4>Risques Majeurs & Mitigations</h4>
+            <ul>
+                <li><strong>Adoption Lente par les Clubs (Prob: 70%):</strong> Mitigation via pilotes gratuits étendus, endorsement FAF/LFP.</li>
+                <li><strong>Entrée d'un Concurrent International (Prob: 40%):</strong> Mitigation via renforcement du moat communautaire, contrats exclusifs.</li>
+                <li><strong>Évolution Réglementaire (Prob: 30%):</strong> Mitigation via architecture flexible, veille juridique proactive.</li>
+            </ul>
+        </Section>
+
       </div>
     </div>
   );

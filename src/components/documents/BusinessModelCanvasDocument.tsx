@@ -8,192 +8,147 @@ const BusinessModelCanvasDocument: React.FC = () => {
     window.print();
   };
 
+  const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode; className?: string }> = ({ title, icon, children, className }) => (
+    <div className={`border-2 rounded-lg p-2 canvas-section flex flex-col ${className}`}>
+      <div className="flex items-center gap-1 mb-1">
+        {icon}
+        <h3 className="font-bold text-xs">{title}</h3>
+      </div>
+      <div className="space-y-1 text-xs flex-grow">
+        {children}
+      </div>
+    </div>
+  );
+
+  const PhaseTitle: React.FC<{ title: string }> = ({ title }) => <h4 className="font-semibold text-xs mt-1 text-gray-700">{title}</h4>;
+
+
   return (
-    <div className="max-w-[210mm] mx-auto bg-white text-black">
+    <div className="max-w-[210mm] mx-auto bg-white text-black font-sans">
       {/* Print Styles */}
       <style>{`
         @media print {
-          @page { size: A4; margin: 10mm; }
-          body { font-size: 8pt !important; }
-          .print\\:break-after-page { page-break-after: always; }
-          .print\\:break-before-page { page-break-before: always; }
+          @page { size: A4 landscape; margin: 5mm; }
+          body { font-size: 7pt !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print\\:hidden { display: none !important; }
           .canvas-grid { height: 180mm !important; }
-          .canvas-section { font-size: 7pt !important; }
+          .canvas-section { border-width: 1px !important; }
         }
         @media screen {
-          .canvas-grid { height: 700px; }
+          .canvas-grid { height: 80vh; }
         }
       `}</style>
 
-      {/* Header - Hidden in print */}
-      <div className="flex justify-between items-center mb-4 p-4 print:hidden">
-        <div>
-          <h1 className="text-2xl font-bold">Business Model Canvas</h1>
-          <p className="text-gray-600">SportDataAnalytics - Stratégie Révisée</p>
+      <div className="p-4 print:hidden">
+        <div className="flex justify-between items-center mb-2">
+            <div>
+            <h1 className="text-2xl font-bold">Business Model Canvas Révisé (V11.0)</h1>
+            <p className="text-gray-600">SportDataAnalytics SARL - Approche Séquentielle Fondée sur les Données</p>
+            </div>
+            <Button onClick={handleExport} className="flex items-center gap-2">
+            <Download className="w-4 h-4" />
+            Imprimer A4
+            </Button>
         </div>
-        <Button onClick={handleExport} className="flex items-center gap-2">
-          <Download className="w-4 h-4" />
-          Imprimer A4
-        </Button>
+        <p className="text-xs text-gray-500">Révisions Stratégiques Clés: Abandon des projections "hockey stick", focus sur validation product-market fit, expansion géographique ciblée.</p>
       </div>
 
       {/* Main Canvas */}
-      <div className="canvas-grid grid grid-cols-5 gap-2 mb-8">
-        {/* Key Partners */}
-        <div className="border-2 border-blue-300 rounded-lg p-2 bg-blue-50 canvas-section">
-          <div className="flex items-center gap-1 mb-2">
-            <Briefcase className="w-3 h-3 text-blue-600" />
-            <h3 className="font-bold text-xs text-blue-800">PARTENAIRES CLÉS</h3>
-          </div>
-          <div className="space-y-2 text-xs">
-            <div className="bg-white p-2 rounded border">
-              <strong className="text-blue-700">Institutionnels</strong>
-              <ul className="mt-1 space-y-0.5 text-xs leading-tight">
-                <li>• FAF, DTN, LFP</li>
-                <li>• Académies FAF</li>
-              </ul>
-            </div>
-            <div className="bg-white p-2 rounded border">
-              <strong className="text-blue-700">Technologiques</strong>
-              <ul className="mt-1 space-y-0.5 text-xs leading-tight">
-                <li>• ISSAL NET (Hébergement)</li>
-                <li>• DZSecurity (Backup)</li>
-                <li>• ESSTS (Partenariats formation)</li>
-              </ul>
-            </div>
-            <div className="bg-white p-2 rounded border">
-              <strong className="text-blue-700">Clubs Pilotes</strong>
-              <ul className="mt-1 space-y-0.5 text-xs leading-tight">
-                <li>• CR Belouizdad, ES Sétif...</li>
-              </ul>
-            </div>
-          </div>
-        </div>
+      <div className="canvas-grid grid grid-cols-5 gap-1 p-2">
+        <Section title="PARTENAIRES CLÉS" icon={<Briefcase className="w-3 h-3" />} className="border-blue-300 bg-blue-50">
+          <PhaseTitle title="Phase 1: Validation Marché Algérien (2025-2027)" />
+          <ul className="list-disc pl-3">
+            <li><strong>Institutionnels:</strong> FAF, LFP, DTN</li>
+            <li><strong>Tech Local:</strong> ISSAL NET, Chargily Pay</li>
+            <li><strong>Réseau Formation:</strong> ESSTS, Ex-internationaux</li>
+          </ul>
+           <PhaseTitle title="Phase 2: Expansion Maghreb Ciblée (Post-2027)" />
+          <ul className="list-disc pl-3">
+            <li><strong>Fédérations Cibles:</strong> FRMF (Maroc), FTF (Tunisie)</li>
+          </ul>
+        </Section>
 
-        {/* Key Activities & Key Resources */}
-        <div className="space-y-2 col-span-1">
-            <div className="border-2 border-green-300 rounded-lg p-2 bg-green-50 canvas-section h-1/2">
-              <div className="flex items-center gap-1 mb-2">
-                <Zap className="w-3 h-3 text-green-600" />
-                <h3 className="font-bold text-xs text-green-800">ACTIVITÉS CLÉS</h3>
-              </div>
-              <div className="space-y-1 text-xs">
-                <p>• Développement plateforme SaaS B2B conforme</p>
-                <p>• Support local & consulting personnalisé</p>
-                <p>• Formation et compliance continue</p>
-                <p>• Ventes B2B relationnelles</p>
-              </div>
-            </div>
-            <div className="border-2 border-purple-300 rounded-lg p-2 bg-purple-50 canvas-section h-1/2">
-              <div className="flex items-center gap-1 mb-2">
-                <Key className="w-3 h-3 text-purple-600" />
-                <h3 className="font-bold text-xs text-purple-800">RESSOURCES CLÉS</h3>
-              </div>
-               <div className="space-y-1 text-xs">
-                <p>• Plateforme propriétaire conforme</p>
-                <p>• Équipe experte locale</p>
-                <p>• Conformité légale certifiée (Loi 18-07)</p>
-                <p>• Relations institutionnelles</p>
-              </div>
-            </div>
-        </div>
-
-        {/* Value Propositions */}
-        <div className="border-4 border-red-400 rounded-lg p-2 bg-red-50 canvas-section">
-          <div className="flex items-center gap-1 mb-2">
-            <Heart className="w-4 h-4 text-red-600" />
-            <h3 className="font-bold text-sm text-red-800">PROPOSITIONS DE VALEUR</h3>
-          </div>
-          <div className="space-y-1.5 text-xs text-center">
-            <div className="bg-white p-2 rounded border border-red-200">
-              <strong className="text-red-800 text-xs">"La seule plateforme d'analyse football 100% conforme Loi 18-07 avec support local premium"</strong>
-            </div>
-            <ul className="text-left list-disc pl-4 pt-2">
-                <li><strong>Conformité garantie</strong> - Hébergement et traitement données exclusivement en Algérie</li>
-                <li><strong>Support premium</strong> - Formation sur site, hotline bilingue, account management dédié</li>
-                <li><strong>Adaptation culturelle</strong> - Interface AR/FR, compréhension contexte football local</li>
-                <li><strong>Pricing accessible</strong> - 75% moins cher que solutions internationales</li>
-                <li><strong>Service personnalisé</strong> - Consulting et formation inclus</li>
+        <div className="flex flex-col gap-1">
+          <Section title="ACTIVITÉS CLÉS" icon={<Zap className="w-3 h-3" />} className="border-green-300 bg-green-50 flex-1">
+            <PhaseTitle title="Phase 1: Modèle 'High-Touch'" />
+            <ul className="list-disc pl-3">
+              <li>Développement Produit Focalisé</li>
+              <li>Vente Consultative Intensive</li>
+              <li>Formation Intégrée Obligatoire</li>
             </ul>
-          </div>
+          </Section>
+          <Section title="RESSOURCES CLÉS" icon={<Key className="w-3 h-3" />} className="border-purple-300 bg-purple-50 flex-1">
+            <PhaseTitle title="Phase 1: Assets Fondamentaux" />
+            <ul className="list-disc pl-3">
+              <li>Équipe Locale Experte (3p)</li>
+              <li>Infrastructure Technique Conforme</li>
+              <li>Relations Institutionnelles</li>
+            </ul>
+          </Section>
         </div>
 
-        {/* Customer Relationships & Channels */}
-        <div className="space-y-2 col-span-1">
-            <div className="border-2 border-orange-300 rounded-lg p-2 bg-orange-50 canvas-section h-1/2">
-              <div className="flex items-center gap-1 mb-2">
-                <MessageSquare className="w-3 h-3 text-orange-600" />
-                <h3 className="font-bold text-xs text-orange-800">RELATIONS CLIENTS</h3>
-              </div>
-              <div className="space-y-1 text-xs">
-                <p>• Support premium personnalisé</p>
-                <p>• Formation intensive sur site</p>
-                <p>• Account management dédié</p>
-                <p>• Feedback loops pour développement produit</p>
-              </div>
-            </div>
-            <div className="border-2 border-teal-300 rounded-lg p-2 bg-teal-50 canvas-section h-1/2">
-              <div className="flex items-center gap-1 mb-2">
-                <Truck className="w-3 h-3 text-teal-600" />
-                <h3 className="font-bold text-xs text-teal-800">CANAUX</h3>
-              </div>
-              <div className="space-y-1 text-xs">
-                <p>• Vente Directe Relationnelle (80%)</p>
-                <p>• Partenariats Institutionnels (15%)</p>
-                <p>• Marketing Digital Ciblé (5%)</p>
-              </div>
-            </div>
+        <Section title="PROPOSITIONS DE VALEUR" icon={<Heart className="w-4 h-4" />} className="border-red-400 bg-red-50">
+          <PhaseTitle title="Phase 1: Clubs Football Algériens" />
+          <p className="font-bold">"La seule solution d'analyse qui comprend le football algérien et garantit votre conformité légale"</p>
+          <ul className="list-disc pl-3">
+            <li>Conformité Juridique Garantie (Loi 25-11)</li>
+            <li>Formation Intégrée Obligatoire</li>
+            <li>Expertise Football Local (AR/FR)</li>
+          </ul>
+        </Section>
+
+        <div className="flex flex-col gap-1">
+          <Section title="RELATIONS CLIENTS" icon={<MessageSquare className="w-3 h-3" />} className="border-orange-300 bg-orange-50 flex-1">
+            <PhaseTitle title="Phase 1: Relations Intensives" />
+            <ul className="list-disc pl-3">
+              <li>Account Management Dédié</li>
+              <li>Formation Présentielle Obligatoire</li>
+              <li>Community Building</li>
+            </ul>
+          </Section>
+          <Section title="CANAUX" icon={<Truck className="w-3 h-3" />} className="border-teal-300 bg-teal-50 flex-1">
+            <PhaseTitle title="Phase 1: Distribution Directe" />
+            <ul className="list-disc pl-3">
+              <li>Vente Directe B2B (80%)</li>
+              <li>Partenariats Institutionnels (15%)</li>
+              <li>Références Inter-Clubs (5%)</li>
+            </ul>
+          </Section>
         </div>
 
-        {/* Customer Segments */}
-        <div className="border-2 border-indigo-300 rounded-lg p-2 bg-indigo-50 canvas-section">
-          <div className="flex items-center gap-1 mb-2">
-            <Users className="w-3 h-3 text-indigo-600" />
-            <h3 className="font-bold text-xs text-indigo-800">SEGMENTS CLIENTÈLE</h3>
-          </div>
-          <div className="space-y-1.5 text-xs">
-            <div className="bg-white p-2 rounded border border-green-300">
-              <strong className="text-indigo-800">Clubs Ligue 1 Progressistes</strong>
-              <p className="text-xs leading-tight">(4-6 clubs, 60% efforts)</p>
-            </div>
-            <div className="bg-white p-2 rounded border border-blue-300">
-              <strong className="text-indigo-800">Académies FAF</strong>
-              <p className="text-xs leading-tight">(3-5 académies, 25% efforts)</p>
-            </div>
-            <div className="bg-white p-2 rounded border border-purple-300">
-              <strong className="text-indigo-800">Ligue 2 Sélective</strong>
-              <p className="text-xs leading-tight">(6-8 clubs, 15% efforts)</p>
-            </div>
-          </div>
-        </div>
+        <Section title="SEGMENTS CLIENTÈLE" icon={<Users className="w-3 h-3" />} className="border-indigo-300 bg-indigo-50">
+           <PhaseTitle title="Phase 1: Marché Total Adressable Validé" />
+           <p><strong>Segmentation Bottom-Up:</strong></p>
+           <ul className="list-disc pl-3">
+               <li>Ligue 1: 16 clubs (ARPU 180k DZD)</li>
+               <li>Ligue 2: 32 clubs (ARPU 90k DZD)</li>
+               <li>Centres Formation FAF: 8 centres</li>
+           </ul>
+           <p className="font-bold">SOM réaliste: 15 clubs sur 5 ans</p>
+        </Section>
       </div>
 
-      {/* Cost Structure & Revenue Streams */}
-      <div className="grid grid-cols-2 gap-2">
-        {/* Cost Structure */}
-        <div className="border-2 border-red-300 rounded-lg p-2 bg-red-50">
-          <div className="flex items-center gap-2 mb-2">
-            <BarChart2 className="w-4 h-4 text-red-600" />
-            <h3 className="font-bold text-sm text-red-800">STRUCTURE DES COÛTS</h3>
-          </div>
-          <div className="space-y-1 text-xs">
-            <p><strong>Année 1 (720k DZD):</strong> Personnel (49%), Marketing (21%), Infrastructure (17%), Opérations (11%)</p>
-            <p><strong>Année 5 (1.8M DZD):</strong> Personnel (50%), Marketing (17%), Infrastructure (14%), Opérations (14%)</p>
-          </div>
-        </div>
-
-        {/* Revenue Streams */}
-        <div className="border-2 border-green-300 rounded-lg p-2 bg-green-50">
-          <div className="flex items-center gap-2 mb-2">
-            <DollarSign className="w-4 h-4 text-green-600" />
-            <h3 className="font-bold text-sm text-green-800">FLUX DE REVENUS</h3>
-          </div>
-           <div className="space-y-1 text-xs">
-            <p>• <strong>Abonnements:</strong> Ligue 1 (150k), Ligue 2 (100k), Académies (75k)</p>
-            <p>• <strong>Services:</strong> Analyse de matches, Consulting ponctuel (15-25k)</p>
-          </div>
-        </div>
+      <div className="grid grid-cols-2 gap-1 p-2">
+        <Section title="STRUCTURE DES COÛTS" icon={<BarChart2 className="w-4 h-4" />} className="border-gray-400 bg-gray-100">
+            <PhaseTitle title="Phase 1: Structure Coûts Fixes Dominante" />
+            <p><strong>Total:</strong> 253k DZD/mois (~3M DZD/an)</p>
+            <p><strong>Break-even projeté:</strong> Année 4-5 (17-18 clients)</p>
+            <ul className="list-disc pl-3">
+                <li>Salaires Équipe: 63%</li>
+                <li>Infrastructure Tech: 10%</li>
+                <li>Marketing & Ventes: 14%</li>
+            </ul>
+        </Section>
+        <Section title="FLUX DE REVENUS" icon={<DollarSign className="w-4 h-4" />} className="border-gray-400 bg-gray-100">
+            <PhaseTitle title="Phase 1: Mix Revenus Prévisible" />
+            <p><strong>ARR Objectif Année 5:</strong> 2.363M DZD</p>
+            <p><strong>Modèle de Pricing:</strong></p>
+            <ul className="list-disc pl-3">
+                <li>Basic: 6k DZD/mois</li>
+                <li>Professional: 12k DZD/mois</li>
+                <li>Premium: 18k DZD/mois</li>
+            </ul>
+        </Section>
       </div>
     </div>
   );
