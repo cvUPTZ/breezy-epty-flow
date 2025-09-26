@@ -12,6 +12,7 @@ import { Upload, Link, X, FileVideo, Clock, Trash2, AlertTriangle, RefreshCw } f
 import { toast } from 'sonner';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
+import { errorManager } from '@/services/errorManager';
 
 interface CachedVideo {
   fileName: string;
@@ -204,6 +205,7 @@ const DirectVideoAnalyzer: React.FC = () => {
       } catch (error: any) {
         setError(`Failed to process YouTube video: ${error.message}`);
         toast.error(`Failed to process YouTube video: ${error.message}`);
+        errorManager.logApiError(error, 'YouTubeService.downloadVideo', 'POST');
         setSubmittedUrl('');
       } finally {
         setIsUrlLoading(false);
