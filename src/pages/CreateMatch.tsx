@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import CreateMatchForm from '@/components/CreateMatchForm';
-import UnifiedTrackerAssignment from '@/components/tracker/UnifiedTrackerAssignment';
+import UnifiedTrackerAssignment from '@/components/tracker-assignment/UnifiedTrackerAssignment';
 import { useToast } from '@/hooks/use-toast';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import MatchAnalysisSidebar from '@/components/match/MatchAnalysisSidebar';
