@@ -145,7 +145,8 @@ const TrackerNotifications: React.FC = () => {
     console.log('Fetching notifications for user:', user.id);
 
     try {
-      // Fetch notifications directly from notifications table
+      // PERF: Fetch notifications and related match data in a single query
+      // to avoid the 1+N query problem.
       const { data: notifications, error } = await supabase
         .from('notifications')
         .select(`
@@ -156,7 +157,13 @@ const TrackerNotifications: React.FC = () => {
           type,
           notification_data,
           is_read,
-          created_at
+          created_at,
+          matches (
+            name,
+            home_team_name,
+            away_team_name,
+            match_date
+          )
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -166,27 +173,17 @@ const TrackerNotifications: React.FC = () => {
         throw error;
       }
       
-      console.log('Notifications data:', notifications);
-      
-      // Get match details separately for notifications that have match_id
-      const matchIds = notifications
-        ?.filter(n => n.match_id)
-        .map(n => n.match_id)
-        .filter((id): id is string => id !== null) // Type guard to filter out nulls
-        .filter((id, index, self) => self.indexOf(id) === index); // unique match IDs
+      console.log('Notifications data with joined matches:', notifications);
 
-      let matchesData: Array<{id: string; name: string | null; home_team_name: string; away_team_name: string; match_date: string | null}> = [];
-      if (matchIds && matchIds.length > 0) {
-        const { data: matches } = await supabase
-          .from('matches')
-          .select('id, name, home_team_name, away_team_name, match_date')
-          .in('id', matchIds);
-        matchesData = matches || [];
-      }
+      // Transform the data to match the existing NotificationWithMatch structure
+      const notificationsWithMatches: NotificationWithMatch[] = (notifications || []).map((notification: any) => {
+        // Supabase returns the joined table as a property. It could be an object or null.
+        // If the foreign key relationship is not one-to-one, it could be an array.
+        // We defensively handle the case where it might be an array.
+        const matchData = Array.isArray(notification.matches)
+          ? notification.matches[0]
+          : notification.matches;
 
-      // Combine notifications with match data
-      const notificationsWithMatches: NotificationWithMatch[] = (notifications || []).map(notification => {
-        const matchData = matchesData.find(m => m.id === notification.match_id);
         return {
           id: notification.id || '',
           match_id: notification.match_id,
