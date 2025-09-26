@@ -180,17 +180,17 @@ const MarketIntelligence: React.FC = () => {
             <CardContent>
               <div className="grid md:grid-cols-3 gap-4 text-center">
                 <div>
-                  <p className="text-2xl font-bold">{formatCurrency(4480000)}</p>
+                  <p className="text-2xl font-bold">{new Intl.NumberFormat('fr-FR').format(4480000)} DZD</p>
                   <p className="font-semibold">TAM (Total Addressable Market)</p>
                   <p className="text-xs text-muted-foreground">Scénario 100% Adoption</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{formatCurrency(2092000)}</p>
+                  <p className="text-2xl font-bold">{new Intl.NumberFormat('fr-FR').format(2092000)} DZD</p>
                   <p className="font-semibold">SAM (Serviceable Addressable Market)</p>
                   <p className="text-xs text-muted-foreground">Clubs Technologiquement Réceptifs</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-primary">{formatCurrency(2040000)}</p>
+                  <p className="text-2xl font-bold text-primary">{new Intl.NumberFormat('fr-FR').format(2040000)} DZD</p>
                   <p className="font-semibold text-primary">SOM (Serviceable Obtainable Market)</p>
                   <p className="text-xs text-muted-foreground">Objectif Réaliste 5 ans</p>
                 </div>
@@ -255,8 +255,8 @@ const MarketIntelligence: React.FC = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Original dynamic content can be kept if needed, for now focusing on the static report */}
-      <div className="hidden">
+      <div className="mt-8 border-t pt-8">
+        <h2 className="text-2xl font-bold text-center mb-6">Live Market Intelligence</h2>
         {/* Market Overview Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
