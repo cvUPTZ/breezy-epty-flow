@@ -90,28 +90,28 @@ const BusinessPlanManagement: React.FC = () => {
   const [goals, setGoals] = useState<BusinessGoal[]>([
     {
       id: '1',
-      title: 'Phase 1: Validation (Mois 1-18)',
-      description: 'Valider le product-market fit, développer des références et sécuriser un partenariat avec la FAF.',
-      target: '3-4 clients pilotes, Endorsement FAF',
-      deadline: '2026-12-31',
+      title: 'Phase 1: Domination Algérie (2025-2027)',
+      description: 'Valider le product-market fit, construire le moat communautaire et atteindre la rentabilité opérationnelle.',
+      target: '15 clients, 2.3M+ DZD ARR, Partenariat FAF officiel',
+      deadline: '2027-12-31',
       status: 'in-progress',
       priority: 'high'
     },
     {
       id: '2',
-      title: 'Phase 2: Expansion (Mois 19-42)',
-      description: 'Atteindre la rentabilité et optimiser les opérations.',
-      target: '8-12 clients payants, Cash flow positif',
-      deadline: '2028-06-30',
+      title: 'Phase 2: Expansion Maghreb (Post-2027)',
+      description: 'Expansion géographique ciblée (Maroc/Tunisie) conditionnée par le succès de la Phase 1.',
+      target: 'Validation product-market fit Maroc/Tunisie',
+      deadline: '2029-12-31',
       status: 'pending',
       priority: 'medium'
     },
     {
         id: '3',
-        title: 'Phase 3: Consolidation (Mois 43-60)',
-        description: 'Saturer les segments accessibles et optimiser la profitabilité.',
-        target: '15-18 clients, Optimisation des marges',
-        deadline: '2029-12-31',
+        title: 'Phase 2B: Diversification (Post-2028)',
+        description: 'Lancement API B2B et expansion multi-sports (Handball, Basketball).',
+        target: '5+ partenaires API, 3 sports couverts',
+        deadline: '2030-12-31',
         status: 'pending',
         priority: 'low'
     }
@@ -120,33 +120,33 @@ const BusinessPlanManagement: React.FC = () => {
   const [revenueStreams, setRevenueStreams] = useState<RevenueStream[]>([
     {
       id: '1',
-      name: 'Abonnement Ligue 1',
-      description: 'Plateforme + Formation + Support premium',
-      annualRevenue: 150000,
+      name: 'Abonnement Basic',
+      description: 'Pour clubs Ligue 2 et académies.',
+      annualRevenue: 72000,
       status: 'active',
-      marketSegment: 'Clubs Ligue 1 Progressistes'
+      marketSegment: 'Ligue 2, académies'
     },
     {
       id: '2',
-      name: 'Abonnement Ligue 2',
-      description: 'Plateforme + Formation + Support standard',
-      annualRevenue: 100000,
+      name: 'Abonnement Professional',
+      description: 'Pour clubs de Ligue 1 moyens.',
+      annualRevenue: 144000,
       status: 'active',
-      marketSegment: 'Ligue 2 Sélective'
+      marketSegment: 'Ligue 1 Standard'
     },
     {
         id: '3',
-        name: 'Abonnement Académies FAF',
-        description: 'Plateforme + Formation + Tarif préférentiel',
-        annualRevenue: 75000,
+        name: 'Abonnement Premium',
+        description: 'Pour top clubs avec consulting inclus.',
+        annualRevenue: 216000,
         status: 'active',
-        marketSegment: 'Académies FAF'
+        marketSegment: 'Ligue 1 Top'
     },
     {
         id: '4',
-        name: 'Services Ponctuels',
-        description: 'Analyse de matches + Consulting ponctuel',
-        annualRevenue: 20000,
+        name: 'Formation & Certification',
+        description: 'Formation initiale et recertification annuelle.',
+        annualRevenue: 25000,
         status: 'active',
         marketSegment: 'Tous segments'
     }
@@ -155,68 +155,68 @@ const BusinessPlanManagement: React.FC = () => {
   const [regulations] = useState<AlgerianRegulation[]>([
     {
       id: '1',
-      name: 'Loi 18-07',
-      description: 'Conformité sur la protection des données personnelles. Hébergement et traitement des données exclusivement en Algérie.',
+      name: 'Loi 25-11',
+      description: 'Conformité sur la protection des données personnelles. Hébergement et traitement des données en Algérie.',
       compliance: 'compliant'
     },
     {
       id: '2',
-      name: 'Enregistrement Commercial',
-      description: 'Inscription au Registre du Commerce Algérien',
-      compliance: 'compliant'
+      name: 'Endorsement FAF/LFP',
+      description: 'Endorsement officiel de la Fédération et de la Ligue.',
+      compliance: 'pending',
+      deadline: '2026-06-30'
     },
     {
       id: '3',
-      name: 'Partenariat FAF',
-      description: 'Endorsement officiel de la Fédération Algérienne de Football',
-      compliance: 'pending',
-      deadline: '2025-12-31'
+      name: 'Statut SARL',
+      description: 'Société à Responsabilité Limitée enregistrée en Algérie.',
+      compliance: 'compliant'
     }
   ]);
 
   const [founders] = useState<Founder[]>([
     {
       id: '1',
-      name: 'Fondateurs',
-      role: 'CEO & CTO',
-      equityPercentage: 55,
-      responsibilities: ['Stratégie & Ventes', 'Développement Technique', 'Vision Produit', 'Réseau Football']
+      name: 'Karim Benaissa',
+      role: 'CEO / Commercial',
+      equityPercentage: 30,
+      responsibilities: ['Stratégie & Ventes', 'Réseau FAF/LFP', 'Partenariats']
     },
     {
       id: '2',
-      name: 'Équipe',
-      role: 'Opérations & Support',
-      equityPercentage: 12,
-      responsibilities: ['Customer Success', 'Support Bilingue', 'Formation', 'Qualité des Données']
+      name: 'Yacine Brahimi',
+      role: 'CTO',
+      equityPercentage: 30,
+      responsibilities: ['Architecture Technique', 'Sécurité & Conformité', 'Équipe Produit']
     },
     {
         id: '3',
-        name: 'Investisseurs',
-        role: 'Capital & Conseil',
-        equityPercentage: 25,
-        responsibilities: ['Financement', 'Conseil Stratégique', 'Réseau']
+        name: 'Sarah Mekhancha',
+        role: 'Directrice Formation',
+        equityPercentage: 15,
+        responsibilities: ['Pédagogie & Certification', 'Support Client', 'Adoption Produit']
     },
     {
         id: '4',
-        name: 'Pool d\'options',
-        role: 'Futurs Talents',
-        equityPercentage: 8,
-        responsibilities: ['Incitation pour futurs employés clés']
+        name: 'Investisseurs (Seed)',
+        role: 'Capital & Conseil',
+        equityPercentage: 25,
+        responsibilities: ['Financement', 'Conseil Stratégique']
     }
   ]);
 
   const [financialProjections] = useState<FinancialProjection[]>([
-    { year: 2025, clients: 4, revenue: 450000, expenses: 720000, profit: -270000 },
-    { year: 2026, clients: 8, revenue: 950000, expenses: 1100000, profit: -150000 },
-    { year: 2027, clients: 12, revenue: 1650000, expenses: 1400000, profit: 250000 },
-    { year: 2028, clients: 15, revenue: 2100000, expenses: 1600000, profit: 500000 },
-    { year: 2029, clients: 18, revenue: 2350000, expenses: 1800000, profit: 550000 }
+    { year: 2025, clients: 6, revenue: 900000, expenses: 3036000, profit: -2136000 },
+    { year: 2026, clients: 10, revenue: 1500000, expenses: 3036000, profit: -1536000 },
+    { year: 2027, clients: 12, revenue: 1800000, expenses: 3036000, profit: -1236000 },
+    { year: 2028, clients: 15, revenue: 2250000, expenses: 3036000, profit: -786000 },
+    { year: 2029, clients: 15, revenue: 2363000, expenses: 2236000, profit: 127000 }
   ]);
 
   const [costStructure] = useState<CostStructureItem[]>([
-      { year: 1, personnel: 350000, infrastructure: 120000, marketing: 150000, operations: 80000, admin: 20000, total: 720000 },
-      { year: 3, personnel: 700000, infrastructure: 200000, marketing: 250000, operations: 180000, admin: 70000, total: 1400000 },
-      { year: 5, personnel: 900000, infrastructure: 250000, marketing: 300000, operations: 250000, admin: 100000, total: 1800000 },
+      { year: 1, personnel: 1920000, infrastructure: 300000, marketing: 420000, operations: 276000, admin: 0, total: 2916000 },
+      { year: 3, personnel: 2640000, infrastructure: 420000, marketing: 360000, operations: 324000, admin: 0, total: 3744000 },
+      { year: 5, personnel: 3120000, infrastructure: 540000, marketing: 240000, operations: 372000, admin: 0, total: 4272000 },
   ]);
 
   // --- UTILS ---
@@ -239,15 +239,15 @@ const BusinessPlanManagement: React.FC = () => {
         <div>
           <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Building2 className="h-6 w-6 text-primary" />
-            Synthèse du Plan d'Affaires
+            Synthèse du Plan d'Affaires (Révisé V10.0)
           </h2>
           <p className="text-muted-foreground">
-            SportDataAnalytics - Stratégie pour le marché algérien
+            SportDataAnalytics SARL - Stratégie fondée sur les données pour le marché algérien
           </p>
         </div>
         <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
           <MapPin className="h-3 w-3 mr-1" />
-          Marché Algérien
+          Focus: Marché Algérien
         </Badge>
       </div>
 
@@ -273,7 +273,7 @@ const BusinessPlanManagement: React.FC = () => {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Revenus Annuels (An 1)</p>
+                    <p className="text-sm text-muted-foreground">ARR (An 1)</p>
                     <p className="text-2xl font-bold text-foreground">
                       {formatCurrency(totalProjectedRevenueY1)}
                     </p>
@@ -290,15 +290,15 @@ const BusinessPlanManagement: React.FC = () => {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Break-Even</p>
+                    <p className="text-sm text-muted-foreground">Point Mort (Break-Even)</p>
                     <p className="text-2xl font-bold text-foreground">
-                      Mois 22
+                      Année 4-5
                     </p>
                   </div>
                   <Calendar className="h-8 w-8 text-blue-600" />
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  8-10 clients actifs requis
+                  ~15 clients actifs requis
                 </p>
               </CardContent>
             </Card>
@@ -307,13 +307,13 @@ const BusinessPlanManagement: React.FC = () => {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Marché Potentiel</p>
-                    <p className="text-2xl font-bold text-foreground">18-22 Clubs</p>
+                    <p className="text-sm text-muted-foreground">Marché Adressable</p>
+                    <p className="text-2xl font-bold text-foreground">48 Clubs</p>
                   </div>
                   <Users className="h-8 w-8 text-purple-600" />
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Ligue 1, Ligue 2 & Académies FAF
+                  Ligue 1 & Ligue 2
                 </p>
               </CardContent>
             </Card>
@@ -322,15 +322,15 @@ const BusinessPlanManagement: React.FC = () => {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Financement Requis</p>
+                    <p className="text-sm text-muted-foreground">Financement (Seed)</p>
                     <p className="text-2xl font-bold text-foreground">
-                      {formatCurrency(1800000)}
+                      {formatCurrency(1000000)}
                     </p>
                   </div>
                   <DollarSign className="h-8 w-8 text-orange-600" />
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Pour 18 mois de runway
+                  Pour valider le product-market fit
                 </p>
               </CardContent>
             </Card>
@@ -341,30 +341,30 @@ const BusinessPlanManagement: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Briefcase className="h-5 w-5" />
-                Business Model Canvas - Synthèse
+                Business Model Canvas - Synthèse (V11.0)
               </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <h4 className="font-semibold text-foreground flex items-center gap-2"><Lightbulb className="text-primary"/> Proposition de Valeur</h4>
                   <p className="text-sm text-muted-foreground">
-                    "La seule plateforme d'analyse football 100% conforme Loi 18-07 avec support local premium"
+                    "La seule solution d'analyse qui comprend le football algérien et garantit votre conformité légale (Loi 25-11)."
                   </p>
                 </div>
                 <div className="space-y-2">
                   <h4 className="font-semibold text-foreground flex items-center gap-2"><Users className="text-primary"/> Segments Clients</h4>
                   <ul className="text-sm text-muted-foreground list-disc pl-4">
-                    <li>Clubs Ligue 1 progressistes</li>
-                    <li>Académies FAF</li>
-                    <li>Clubs Ligue 2 ambitieux</li>
+                    <li>Ligue 1 (16 clubs)</li>
+                    <li>Ligue 2 (32 clubs)</li>
+                    <li>Centres de Formation FAF</li>
                   </ul>
                 </div>
                 <div className="space-y-2">
                   <h4 className="font-semibold text-foreground flex items-center gap-2"><Banknote className="text-primary"/> Sources de Revenus</h4>
                    <ul className="text-sm text-muted-foreground list-disc pl-4">
-                    <li>Abonnements annuels (SaaS)</li>
-                    <li>Services premium (analyse à la demande)</li>
-                    <li>Consulting et formation</li>
+                    <li>Abonnements SaaS (70%)</li>
+                    <li>Formation & Certification (25%)</li>
+                    <li>Services Professionnels (5%)</li>
                   </ul>
                 </div>
             </CardContent>
