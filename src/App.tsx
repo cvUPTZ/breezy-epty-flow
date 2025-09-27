@@ -30,7 +30,6 @@ import GPUNetworkManagerPage from './pages/GPUNetworkManager';
 import ErrorManagerPage from './pages/ErrorManager';
 import ErrorBoundary from './components/ErrorBoundary';
 import TrackerInterface from './pages/TrackerInterface';
-import SimpleTrackerPage from './pages/SimpleTrackerPage';
 import Matches from './pages/Matches';
 import Statistics from './pages/Statistics';
 import Admin from './pages/Admin';
@@ -179,12 +178,6 @@ const AppContent = () => {
           <TrackerAccess>
             <TrackerInterface />
           </TrackerAccess>
-        } />
-
-        <Route path="/simple-tracker" element={
-          <RequireAuth>
-            <SimpleTrackerPage />
-          </RequireAuth>
         } />
         
         <Route path="/tracker-interface" element={

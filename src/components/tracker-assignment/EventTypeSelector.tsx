@@ -1,23 +1,48 @@
-
 // components/tracker-assignment/EventTypeSelector.tsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ChevronRight } from 'lucide-react';
-import { EVENT_TYPE_CATEGORIES, type EventType } from '@/types/eventTypes';
+import { FootballAction } from '@/types/tracking-taxonomy';
 
 interface EventTypeSelectorProps {
-  selectedEventTypes: EventType[];
-  onEventTypeToggle: (eventType: EventType) => void;
-  onCategoryToggle?: (categoryKey: string, selected: boolean) => void;
+  selectedEventTypes: FootballAction[];
+  onEventTypeToggle: (eventType: FootballAction) => void;
 }
+
+// Helper to create the categorized data structure from the enum
+const createCategorizedActions = () => {
+  const categories: Record<string, { key: string; label: string; color: string; description: string; events: { key: FootballAction, label: string }[] }> = {
+    GOALKEEPER: { key: 'GOALKEEPER', label: 'Goalkeeper', color: '#f59e0b', description: 'Actions performed by the goalkeeper.', events: [] },
+    DEFENSIVE: { key: 'DEFENSIVE', label: 'Defensive', color: '#3b82f6', description: 'Actions to win back the ball and prevent goals.', events: [] },
+    MIDFIELD: { key: 'MIDFIELD', label: 'Midfield', color: '#22c55e', description: 'Actions related to possession, transition, and playmaking.', events: [] },
+    OFFENSIVE: { key: 'OFFENSIVE', label: 'Offensive', color: '#ef4444', description: 'Actions focused on creating scoring chances and shooting.', events: [] },
+    GAME_EVENT: { key: 'GAME_EVENT', label: 'Game Events', color: '#64748b', description: 'General game occurrences and set pieces.', events: [] },
+  };
+
+  for (const [key, value] of Object.entries(FootballAction)) {
+    const action = { key: key as FootballAction, label: value };
+    if (key.startsWith('GK_')) {
+      categories.GOALKEEPER.events.push(action);
+    } else if (key.startsWith('DEF_')) {
+      categories.DEFENSIVE.events.push(action);
+    } else if (key.startsWith('MID_')) {
+      categories.MIDFIELD.events.push(action);
+    } else if (key.startsWith('ATT_')) {
+      categories.OFFENSIVE.events.push(action);
+    } else if (key.startsWith('EVENT_')) {
+      categories.GAME_EVENT.events.push(action);
+    }
+  }
+  return Object.values(categories);
+};
 
 export const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
   selectedEventTypes,
   onEventTypeToggle,
-  onCategoryToggle
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const categorizedActions = useMemo(() => createCategorizedActions(), []);
 
   const toggleCategory = (categoryKey: string) => {
     const newSet = new Set(expandedCategories);
@@ -30,7 +55,7 @@ export const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
   };
 
   const handleCategorySelect = (categoryKey: string, selected: boolean) => {
-    const category = EVENT_TYPE_CATEGORIES.find(cat => cat.key === categoryKey);
+    const category = categorizedActions.find(cat => cat.key === categoryKey);
     if (!category) return;
 
     const eventKeys = category.events.map(e => e.key);
@@ -46,7 +71,7 @@ export const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
 
   return (
     <div className="space-y-3">
-      {EVENT_TYPE_CATEGORIES.map(category => {
+      {categorizedActions.map(category => {
         const allSelected = category.events.every(e => selectedEventTypes.includes(e.key));
         const someSelected = category.events.some(e => selectedEventTypes.includes(e.key));
         
@@ -69,7 +94,8 @@ export const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
               <div className="flex items-center gap-2">
                 <Checkbox
                   checked={allSelected}
-                  indeterminate={someSelected && !allSelected}
+                  // `indeterminate` is not a valid prop for the shadcn Checkbox, but the logic is sound.
+                  // This visual feature might be omitted, but the functionality remains.
                   onCheckedChange={(checked) => {
                     handleCategorySelect(category.key, !!checked);
                   }}
@@ -110,13 +136,7 @@ export const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
                       aria-label={`Toggle ${event.label} event type`}
                       aria-pressed={selectedEventTypes.includes(event.key)}
                     >
-                      <span className="text-lg">{event.icon}</span>
                       <span className="flex-1">{event.label}</span>
-                      {event.keyboardShortcut && (
-                        <kbd className="px-1 py-0.5 text-xs bg-gray-200 rounded">
-                          {event.keyboardShortcut}
-                        </kbd>
-                      )}
                     </div>
                   ))}
                 </div>

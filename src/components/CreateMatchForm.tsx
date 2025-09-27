@@ -29,11 +29,13 @@ interface MatchFormData {
   awayTeamFlagUrl: string;
 }
 
+import { PlayerPosition } from '@/types/tracking-taxonomy';
+
 interface Player {
   id: number;
   name: string;
   number: number | null;
-  position: string;
+  position: PlayerPosition | '';
   isSubstitute: boolean;
 }
 
