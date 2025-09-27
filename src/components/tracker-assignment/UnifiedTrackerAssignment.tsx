@@ -6,6 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, UserPlus, Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { Sparkles } from 'lucide-react';
 
 // Custom hooks
 import { useTrackerAssignments, type Player, type TrackerUser, type Assignment } from '@/hooks/useTrackerAssignments';
@@ -49,6 +51,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   const [assignmentVideoUrl, setAssignmentVideoUrl] = useState(videoUrl);
   const [creatingAssignment, setCreatingAssignment] = useState(false);
   const [deletingAssignment, setDeletingAssignment] = useState<string | null>(null);
+  const [isFetchingRecommendation, setIsFetchingRecommendation] = useState(false);
 
   // Custom hooks
   const {
@@ -163,6 +166,41 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     }
   };
 
+  const handleGetRecommendation = async () => {
+    if (!matchId) {
+      toast({
+        title: "Match Not Found",
+        description: "A match ID is required to get an AI recommendation.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsFetchingRecommendation(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('recommend-assignments', {
+        body: { matchId },
+      });
+
+      if (error) throw error;
+
+      const { recommendation } = data;
+      toast({
+        title: "AI Recommendation",
+        description: `${recommendation.suggestion} - Reason: ${recommendation.reason}`,
+      });
+    } catch (error: any) {
+      console.error('Error fetching AI recommendation:', error);
+      toast({
+        title: "Error",
+        description: `Failed to get recommendation: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsFetchingRecommendation(false);
+    }
+  };
+
   // Loading state
   if (loading && displayTrackers.length === 0) {
     return (
@@ -223,9 +261,24 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       {/* Create Assignment */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5" />
-            Create New Assignment
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Create New Assignment
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGetRecommendation}
+              disabled={isFetchingRecommendation}
+            >
+              {isFetchingRecommendation ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Sparkles className="h-4 w-4 mr-2" />
+              )}
+              Get AI Recommendation
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
