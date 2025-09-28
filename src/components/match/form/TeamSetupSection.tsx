@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, Target } from 'lucide-react';
 import { AIProcessingService } from '@/services/aiProcessingService';
 import { useToast } from '@/hooks/use-toast';
-import { PlayerPosition } from '@/types/tracking-taxonomy';
 
 type Formation = '4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '5-3-2' | '3-4-3';
 
@@ -16,7 +15,7 @@ interface Player {
   id: number;
   name: string;
   number: number | null;
-  position: PlayerPosition | '';
+  position: string;
   isSubstitute: boolean;
 }
 
@@ -37,26 +36,25 @@ interface TeamSetupSectionProps {
 const FORMATIONS: Formation[] = ['4-4-2', '4-3-3', '3-5-2', '4-2-3-1', '5-3-2', '3-4-3'];
 const STARTERS_COUNT = 11;
 
-const GROUPED_PLAYER_POSITIONS: Record<string, PlayerPosition[]> = {
-  Goalkeeper: [PlayerPosition.GK],
-  Defence: [PlayerPosition.CB, PlayerPosition.RB, PlayerPosition.LB, PlayerPosition.RWB, PlayerPosition.LWB, PlayerPosition.SW],
-  Midfield: [PlayerPosition.CDM, PlayerPosition.CM, PlayerPosition.CAM, PlayerPosition.RM, PlayerPosition.LM],
-  Attack: [PlayerPosition.ST, PlayerPosition.CF, PlayerPosition.RW, PlayerPosition.LW, PlayerPosition.SS],
+const FOOTBALL_POSITIONS = {
+  Defense: ['GK', 'CB', 'LB', 'RB', 'LWB', 'RWB', 'SW'],
+  Midfield: ['DM', 'CM', 'AM', 'LM', 'RM', 'CDM', 'CAM'],
+  Attack: ['CF', 'ST', 'LW', 'RW', 'LF', 'RF', 'SS']
 };
 
 // Position assignment based on formation and order
-const getPositionByFormationAndOrder = (formation: Formation, playerIndex: number): PlayerPosition | '' => {
-  const positionMaps: Record<Formation, PlayerPosition[]> = {
-    '4-4-2': [PlayerPosition.GK, PlayerPosition.RB, PlayerPosition.CB, PlayerPosition.CB, PlayerPosition.LB, PlayerPosition.RM, PlayerPosition.CM, PlayerPosition.CM, PlayerPosition.LM, PlayerPosition.ST, PlayerPosition.ST],
-    '4-3-3': [PlayerPosition.GK, PlayerPosition.RB, PlayerPosition.CB, PlayerPosition.CB, PlayerPosition.LB, PlayerPosition.CM, PlayerPosition.CM, PlayerPosition.CM, PlayerPosition.RW, PlayerPosition.ST, PlayerPosition.LW],
-    '3-5-2': [PlayerPosition.GK, PlayerPosition.CB, PlayerPosition.CB, PlayerPosition.CB, PlayerPosition.RWB, PlayerPosition.CM, PlayerPosition.CM, PlayerPosition.CM, PlayerPosition.LWB, PlayerPosition.ST, PlayerPosition.ST],
-    '4-2-3-1': [PlayerPosition.GK, PlayerPosition.RB, PlayerPosition.CB, PlayerPosition.CB, PlayerPosition.LB, PlayerPosition.CDM, PlayerPosition.CDM, PlayerPosition.CAM, PlayerPosition.CAM, PlayerPosition.CAM, PlayerPosition.ST],
-    '5-3-2': [PlayerPosition.GK, PlayerPosition.RB, PlayerPosition.CB, PlayerPosition.CB, PlayerPosition.CB, PlayerPosition.LB, PlayerPosition.CM, PlayerPosition.CM, PlayerPosition.CM, PlayerPosition.ST, PlayerPosition.ST],
-    '3-4-3': [PlayerPosition.GK, PlayerPosition.CB, PlayerPosition.CB, PlayerPosition.CB, PlayerPosition.RM, PlayerPosition.CM, PlayerPosition.CM, PlayerPosition.LM, PlayerPosition.RW, PlayerPosition.ST, PlayerPosition.LW]
+const getPositionByFormationAndOrder = (formation: Formation, playerIndex: number): string => {
+  const positionMaps: Record<Formation, string[]> = {
+    '4-4-2': ['GK', 'RB', 'CB', 'CB', 'LB', 'RM', 'CM', 'CM', 'LM', 'ST', 'ST'],
+    '4-3-3': ['GK', 'RB', 'CB', 'CB', 'LB', 'CM', 'CM', 'CM', 'RW', 'ST', 'LW'],
+    '3-5-2': ['GK', 'CB', 'CB', 'CB', 'RWB', 'CM', 'CM', 'CM', 'LWB', 'ST', 'ST'],
+    '4-2-3-1': ['GK', 'RB', 'CB', 'CB', 'LB', 'CDM', 'CDM', 'CAM', 'CAM', 'CAM', 'ST'],
+    '5-3-2': ['GK', 'RB', 'CB', 'CB', 'CB', 'LB', 'CM', 'CM', 'CM', 'ST', 'ST'],
+    '3-4-3': ['GK', 'CB', 'CB', 'CB', 'RM', 'CM', 'CM', 'LM', 'RW', 'ST', 'LW']
   };
   
   const positions = positionMaps[formation] || positionMaps['4-4-2'];
-  return positions[playerIndex] || '';
+  return positions[playerIndex] || (playerIndex === 0 ? 'GK' : 'SUB');
 };
 
 const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
@@ -152,7 +150,7 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
               ...newPlayers[playerIndex],
               name: aiPlayer.player_name || newPlayers[playerIndex].name,
               number: aiPlayer.jersey_number !== null ? aiPlayer.jersey_number : newPlayers[playerIndex].number,
-              position: '', // Substitutes have no specific position from the enum
+              position: 'SUB', // Substitutes get 'SUB' position
             };
           }
         });
@@ -201,26 +199,30 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
             <Select
               value={player.position || 'none'}
               onValueChange={(value) => {
-                const newPosition = value === 'none' ? '' : value as PlayerPosition;
+                console.log(`Position change for player ${player.id}:`, value);
+                const newPosition = value === 'none' ? '' : value;
                 updatePlayer(team, player.id, 'position', newPosition);
               }}
-              disabled={player.isSubstitute}
             >
               <SelectTrigger className="h-8 col-span-2">
                 <SelectValue placeholder={player.isSubstitute ? 'Substitute' : 'Select position'} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No Position</SelectItem>
-                {Object.entries(GROUPED_PLAYER_POSITIONS).map(([groupName, positions]) => (
-                  <div key={groupName}>
-                    <div className="px-2 py-1 text-xs font-semibold text-muted-foreground bg-muted">{groupName}</div>
-                    {positions.map(pos => (
-                      <SelectItem key={pos} value={pos}>
-                        {pos}
-                      </SelectItem>
-                    ))}
-                  </div>
-                ))}
+                {player.isSubstitute ? (
+                  <SelectItem value="SUB">Substitute</SelectItem>
+                ) : (
+                  Object.entries(FOOTBALL_POSITIONS).map(([line, positions]) => (
+                    <div key={`${line}-group`}>
+                      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground bg-muted">{line}</div>
+                      {positions.map(position => (
+                        <SelectItem key={position} value={position}>
+                          {position}
+                        </SelectItem>
+                      ))}
+                    </div>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
