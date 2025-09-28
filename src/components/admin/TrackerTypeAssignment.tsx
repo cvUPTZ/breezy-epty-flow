@@ -9,7 +9,6 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Shield, Zap, Target, Users, Trash2, Plus, PersonStanding, ChevronRight } from 'lucide-react';
 import { EVENT_TYPE_CATEGORIES } from '@/constants/eventTypes';
-import { TrackerSpecialty } from '@/types/tracking-taxonomy';
 
 interface TrackerTypeAssignmentProps {
   matchId: string;
@@ -17,9 +16,11 @@ interface TrackerTypeAssignmentProps {
   awayTeamPlayers: any[];
 }
 
+type TrackerType = 'specialized' | 'defence' | 'midfield' | 'attack';
+
 interface TrackerAssignment {
   id: string;
-  tracker_type: TrackerSpecialty;
+  tracker_type: TrackerType;
   tracker_user_id: string;
   assigned_event_types: string[];
   line_players: any[];
@@ -42,7 +43,7 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
   const [assignments, setAssignments] = useState<TrackerAssignment[]>([]);
   const [trackerUsers, setTrackerUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTrackerType, setSelectedTrackerType] = useState<TrackerSpecialty>(TrackerSpecialty.SPECIALIZED);
+  const [selectedTrackerType, setSelectedTrackerType] = useState<TrackerType>('specialized');
   const [selectedTracker, setSelectedTracker] = useState<string>('');
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -53,42 +54,30 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
   const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
   const [selectedLine, setSelectedLine] = useState<string>('auto');
 
-  const trackerTypeConfig: Record<TrackerSpecialty, { icon: React.ElementType; label: string; color: string; description: string }> = {
-    [TrackerSpecialty.SPECIALIZED]: {
+  const trackerTypeConfig = {
+    specialized: {
       icon: Users,
       label: 'Specialized Tracker',
       color: 'bg-purple-100 border-purple-300 text-purple-800',
       description: 'Tracks specific events across selected players'
     },
-    [TrackerSpecialty.DEFENCE]: {
+    defence: {
       icon: Shield,
-      label: 'Defence Specialist',
+      label: 'Defence Tracker',
       color: 'bg-blue-100 border-blue-300 text-blue-800',
       description: 'Tracks defensive players and related events'
     },
-    [TrackerSpecialty.MIDFIELD]: {
+    midfield: {
       icon: Zap,
-      label: 'Midfield Specialist',
+      label: 'Midfield Tracker',
       color: 'bg-green-100 border-green-300 text-green-800',
       description: 'Tracks midfield players and related events'
     },
-    [TrackerSpecialty.ATTACK]: {
+    attack: {
       icon: Target,
-      label: 'Attack Specialist',
+      label: 'Attack Tracker',
       color: 'bg-red-100 border-red-300 text-red-800',
       description: 'Tracks attacking players and related events'
-    },
-    [TrackerSpecialty.GOALKEEPER]: {
-      icon: PersonStanding,
-      label: 'Goalkeeper Specialist',
-      color: 'bg-yellow-100 border-yellow-300 text-yellow-800',
-      description: 'Tracks all goalkeeper-specific actions'
-    },
-    [TrackerSpecialty.GENERALIST]: {
-      icon: PersonStanding,
-      label: 'Generalist / Full Match Tracker',
-      color: 'bg-gray-100 border-gray-300 text-gray-800',
-      description: 'Tracks a broad range of events across the entire pitch'
     }
   };
 
@@ -191,8 +180,8 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
     }).length;
   };
 
-  const getLinePlayers = (trackerType: TrackerSpecialty) => {
-    if (trackerType === TrackerSpecialty.SPECIALIZED) {
+  const getLinePlayers = (trackerType: TrackerType) => {
+    if (trackerType === 'specialized') {
       // For specialized tracker, return selected players
       const allPlayers = [...homeTeamPlayers, ...awayTeamPlayers];
       return allPlayers.filter(player => selectedPlayers.includes(player.id));
@@ -222,15 +211,14 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
     return playersToFilter.filter(player => {
       const position = player.position?.toLowerCase() || '';
       switch (trackerType) {
-        case TrackerSpecialty.DEFENCE:
-        case TrackerSpecialty.GOALKEEPER:
-          return LINE_DEFINITIONS.Defense.some(p => position.includes(p.toLowerCase()));
-        case TrackerSpecialty.MIDFIELD:
-          return LINE_DEFINITIONS.Midfield.some(p => position.includes(p.toLowerCase()));
-        case TrackerSpecialty.ATTACK:
-          return LINE_DEFINITIONS.Attack.some(p => position.includes(p.toLowerCase()));
+        case 'defence':
+          return position.includes('def') || position.includes('cb') || position.includes('lb') || position.includes('rb') || position.includes('gk');
+        case 'midfield':
+          return position.includes('mid') || position.includes('cm') || position.includes('dm') || position.includes('am') || position.includes('rm') || position.includes('lm');
+        case 'attack':
+          return position.includes('att') || position.includes('fw') || position.includes('st') || position.includes('lw') || position.includes('rw') || position.includes('cf');
         default:
-          return true; // Generalist sees all players if no line is selected
+          return false;
       }
     });
   };
@@ -269,7 +257,7 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
       return;
     }
 
-    if (selectedTrackerType === TrackerSpecialty.SPECIALIZED && selectedPlayers.length === 0) {
+    if (selectedTrackerType === 'specialized' && selectedPlayers.length === 0) {
       toast({
         title: "Validation Error",
         description: "Please select at least one player for specialized tracking",
@@ -290,7 +278,7 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
       const linePlayers = getLinePlayers(selectedTrackerType);
       console.log('Line players computed:', linePlayers);
       
-      if (linePlayers.length === 0 && selectedTrackerType !== TrackerSpecialty.SPECIALIZED) {
+      if (linePlayers.length === 0 && selectedTrackerType !== 'specialized') {
         toast({
           title: "Validation Error",
           description: `No players found for ${selectedTrackerType} in the selected team(s)`,
@@ -571,7 +559,7 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
           </div>
 
           {/* Team Selection and Line Selection for non-specialized trackers */}
-          {selectedTrackerType !== TrackerSpecialty.SPECIALIZED && (
+          {selectedTrackerType !== 'specialized' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">2. Select Team</label>
@@ -614,7 +602,7 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
           )}
 
           {/* Show which players will be assigned for line trackers */}
-          {selectedTrackerType !== TrackerSpecialty.SPECIALIZED && (
+          {selectedTrackerType !== 'specialized' && (
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm font-medium text-blue-900 mb-2">
                 Players that will be assigned:
@@ -635,7 +623,7 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
           )}
 
           {/* Player Selection for specialized tracker */}
-          {selectedTrackerType === TrackerSpecialty.SPECIALIZED && (
+          {selectedTrackerType === 'specialized' && (
             <div>
               <label className="block text-sm font-medium mb-2">Select Players</label>
               <Tabs value={selectedTeam === 'both' ? 'both' : selectedTeam} onValueChange={(value) => setSelectedTeam(value as 'home' | 'away' | 'both')}>
@@ -680,7 +668,7 @@ const TrackerTypeAssignment: React.FC<TrackerTypeAssignmentProps> = ({
             disabled={
               !selectedTracker || 
               selectedEventTypes.length === 0 || 
-              (selectedTrackerType === TrackerSpecialty.SPECIALIZED && selectedPlayers.length === 0)
+              (selectedTrackerType === 'specialized' && selectedPlayers.length === 0)
             }
             className="w-full"
           >
