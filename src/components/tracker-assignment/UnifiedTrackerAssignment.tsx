@@ -4,10 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, UserPlus, Loader2, AlertTriangle } from 'lucide-react';
+import { Users, UserPlus, Loader2, AlertTriangle, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles } from 'lucide-react';
 
 // Custom hooks
 import { useTrackerAssignments, type Player, type TrackerUser, type Assignment } from '@/hooks/useTrackerAssignments';
@@ -200,6 +199,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       setIsFetchingRecommendation(false);
     }
   };
+
 
   // Loading state
   if (loading && displayTrackers.length === 0) {
