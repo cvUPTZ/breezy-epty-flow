@@ -40,17 +40,17 @@ const FourTrackerSystem: React.FC = () => {
       setError(null);
       try {
         // 1. Determine tracker type based on assignment
-        const { data: assignmentData, error: assignmentError } = await supabase
+        const { data: assignments, error: assignmentError } = await supabase
           .from('match_tracker_assignments')
           .select('tracker_type')
           .eq('match_id', matchId)
-          .eq('tracker_user_id', user.id)
-          .single();
+          .eq('tracker_user_id', user.id);
 
-        if (assignmentError) throw new Error(`Failed to fetch your assignment. Make sure you are assigned to this match. (Error: ${assignmentError.message})`);
-        if (!assignmentData) throw new Error('No assignment found for this user for this match.');
+        if (assignmentError) throw new Error(`Failed to fetch your assignment. (Error: ${assignmentError.message})`);
+        if (!assignments || assignments.length === 0) throw new Error('No assignment found for this user for this match.');
 
-        setTrackerType(assignmentData.tracker_type);
+        // Use the first assignment found to be robust against duplicate entries
+        setTrackerType(assignments[0].tracker_type);
 
         // 2. Fetch players for both teams from the 'match_players' table
         const { data: playersData, error: playersError } = await supabase
