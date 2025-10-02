@@ -69,12 +69,12 @@ export const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
               <div className="flex items-center gap-2">
                 <Checkbox
                   checked={allSelected}
-                  indeterminate={someSelected && !allSelected}
                   onCheckedChange={(checked) => {
                     handleCategorySelect(category.key, !!checked);
                   }}
                   onClick={(e) => e.stopPropagation()}
                   aria-label={`Select all ${category.label} events`}
+                  className={someSelected && !allSelected ? 'opacity-50' : ''}
                 />
                 <Badge style={{ backgroundColor: category.color }} className="text-white">
                   {category.label}

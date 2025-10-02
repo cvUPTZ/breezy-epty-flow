@@ -276,8 +276,7 @@ export const ProductionVideoAnalysisInterface: React.FC = () => {
               playerCount={playerCount}
               avgConfidence={avgConfidence}
               onStartAnalysis={handleStartAnalysis}
-              onStartTracking={handleStartTracking}
-              onSaveAnnotations={handleSaveAnnotations}
+              onSaveAnalysis={handleSaveAnnotations}
               onExportData={handleExportData}
               trackingEnabled={trackingEnabled}
               heatmapEnabled={heatmapEnabled}

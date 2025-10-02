@@ -150,7 +150,8 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
   const handleAddSetPiece = (setPiece: Omit<SetPiece, 'id'>) => {
     const newSetPiece = { ...setPiece, id: `sp-${Date.now()}` };
     setSetPieces(prev => [...prev, newSetPiece].sort((a, b) => a.timestamp - b.timestamp));
-    toast.success(`${newSetPiece.type} at ${formatTime(newSetPiece.timestamp)} added.`);
+    const timeStr = new Date(newSetPiece.timestamp * 1000).toISOString().substr(11, 8);
+    toast.success(`${newSetPiece.type} at ${timeStr} added.`);
   };
   const handleDeleteSetPiece = (id: string) => {
     setSetPieces(prev => prev.filter(sp => sp.id !== id));

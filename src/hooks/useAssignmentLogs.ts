@@ -35,6 +35,7 @@ export const useAssignmentLogs = (matchId?: string) => {
   const fetchLogs = async () => {
     setLoading(true);
     try {
+      // @ts-ignore - RPC function type not in generated types yet
       const { data, error } = await supabase.rpc('get_all_assignment_logs', {
         p_match_id: matchId,
       });
@@ -44,7 +45,7 @@ export const useAssignmentLogs = (matchId?: string) => {
         throw error;
       }
 
-      setLogs(data as AssignmentLog[]);
+      setLogs((data || []) as unknown as AssignmentLog[]);
     } catch (error) {
       console.error('Error in fetchLogs:', error);
       setLogs([]); // Clear logs on error

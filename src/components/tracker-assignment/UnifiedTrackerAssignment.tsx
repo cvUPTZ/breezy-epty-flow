@@ -140,8 +140,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
         tracker_name: trackerUser.full_name || trackerUser.email || 'Unknown',
         tracker_email: trackerUser.email || 'Unknown',
         player_ids: playersToAssign,
-        assigned_event_types: selectedEventTypes,
-        videoUrl: assignmentVideoUrl.trim() || undefined
+        assigned_event_types: selectedEventTypes
       });
 
       resetForm();
