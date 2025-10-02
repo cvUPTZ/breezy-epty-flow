@@ -242,6 +242,8 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   const mountedRef = useRef(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const operationsRef = useRef<Set<string>>(new Set());
+  const hasFetchedTrackers = useRef(false);
+  const hasFetchedAssignments = useRef(false);
 
   // Memoized values
   const allPlayers = useMemo(() => [...homeTeamPlayers, ...awayTeamPlayers], [homeTeamPlayers, awayTeamPlayers]);
@@ -250,9 +252,11 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   useEffect(() => {
     if (trackerUsers.length > 0) {
       dispatch({ type: 'SET_TRACKERS', payload: trackerUsers });
+      hasFetchedTrackers.current = true;
     }
     if (assignments.length > 0) {
       dispatch({ type: 'SET_ASSIGNMENTS', payload: assignments });
+      hasFetchedAssignments.current = true;
     }
   }, [trackerUsers, assignments]);
 
@@ -290,83 +294,91 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       return null;
     } finally {
       operationsRef.current.delete(operationKey);
+      if (mountedRef.current) {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
     }
   }, []);
 
   const fetchTrackers = useCallback(async () => {
-    return safeAsync(async () => {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      
-      const { data, error } = await supabase.functions.invoke('get-tracker-users');
+    dispatch({ type: 'SET_LOADING', payload: true });
+    
+    const { data, error } = await supabase.functions.invoke('get-tracker-users');
 
-      if (error) throw error;
-      
-      dispatch({ type: 'SET_TRACKERS', payload: data || [] });
-      return data;
-    }, 'fetchTrackers');
-  }, [safeAsync]);
+    if (error) throw error;
+    
+    dispatch({ type: 'SET_TRACKERS', payload: data || [] });
+    dispatch({ type: 'SET_LOADING', payload: false });
+    return data;
+  }, []);
 
   const fetchAssignments = useCallback(async () => {
     if (!matchId) return null;
 
-    return safeAsync(async () => {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      
-      const { data: assignmentsData, error: assignmentsError } = await supabase
-        .from('match_tracker_assignments')
-        .select('*')
-        .eq('match_id', matchId)
-        .abortSignal(abortControllerRef.current!.signal);
+    dispatch({ type: 'SET_LOADING', payload: true });
+    
+    const { data: assignmentsData, error: assignmentsError } = await supabase
+      .from('match_tracker_assignments')
+      .select('*')
+      .eq('match_id', matchId);
 
-      if (assignmentsError) throw assignmentsError;
-      if (!assignmentsData || assignmentsData.length === 0) {
-        dispatch({ type: 'SET_ASSIGNMENTS', payload: [] });
-        onAssignmentsChange?.([]);
-        return [];
-      }
-
-      if (!validateAssignmentData(assignmentsData)) {
-        throw new Error('Invalid assignment data structure received');
-      }
-
-      const trackerUserIds = [...new Set(assignmentsData.map(a => a.tracker_user_id))];
-      
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .in('id', trackerUserIds)
-        .abortSignal(abortControllerRef.current!.signal);
-
-      if (profilesError) {
-        console.warn('Failed to fetch profiles:', profilesError);
-      }
-
-      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
-      const enrichedAssignments = assignmentsData.map(assignment => ({
-        ...assignment,
-        profiles: profilesMap.get(assignment.tracker_user_id) || null
-      }));
-
-      const processedAssignments = processAssignments(enrichedAssignments);
-      dispatch({ type: 'SET_ASSIGNMENTS', payload: processedAssignments });
-      onAssignmentsChange?.(processedAssignments);
-      
-      return processedAssignments;
-    }, 'fetchAssignments');
-  }, [matchId, safeAsync, onAssignmentsChange]);
-
-  // Initialize data
-  useEffect(() => {
-    if (trackerUsers.length === 0) {
-      fetchTrackers();
+    if (assignmentsError) throw assignmentsError;
+    if (!assignmentsData || assignmentsData.length === 0) {
+      dispatch({ type: 'SET_ASSIGNMENTS', payload: [] });
+      dispatch({ type: 'SET_LOADING', payload: false });
+      onAssignmentsChange?.([]);
+      return [];
     }
-  }, [fetchTrackers, trackerUsers.length]);
+
+    if (!validateAssignmentData(assignmentsData)) {
+      throw new Error('Invalid assignment data structure received');
+    }
+
+    const trackerUserIds = [...new Set(assignmentsData.map(a => a.tracker_user_id))];
+    
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .in('id', trackerUserIds);
+
+    if (profilesError) {
+      console.warn('Failed to fetch profiles:', profilesError);
+    }
+
+    const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+    const enrichedAssignments = assignmentsData.map(assignment => ({
+      ...assignment,
+      profiles: profilesMap.get(assignment.tracker_user_id) || null
+    }));
+
+    const processedAssignments = processAssignments(enrichedAssignments);
+    dispatch({ type: 'SET_ASSIGNMENTS', payload: processedAssignments });
+    dispatch({ type: 'SET_LOADING', payload: false });
+    onAssignmentsChange?.(processedAssignments);
+    
+    return processedAssignments;
+  }, [matchId, onAssignmentsChange]);
+
+  // Initialize data - use refs to track if we've already fetched
+  useEffect(() => {
+    if (trackerUsers.length === 0 && !hasFetchedTrackers.current) {
+      hasFetchedTrackers.current = true;
+      fetchTrackers().catch(err => {
+        console.error('Failed to fetch trackers:', err);
+        hasFetchedTrackers.current = false;
+      });
+    }
+  }, [trackerUsers.length]);
 
   useEffect(() => {
-    if (matchId && assignments.length === 0) {
-      fetchAssignments();
+    if (matchId && assignments.length === 0 && !hasFetchedAssignments.current) {
+      hasFetchedAssignments.current = true;
+      fetchAssignments().catch(err => {
+        console.error('Failed to fetch assignments:', err);
+        hasFetchedAssignments.current = false;
+      });
     }
-  }, [fetchAssignments, matchId, assignments.length]);
+  }, [matchId, assignments.length]);
 
   const getLinePlayers = useCallback((trackerType: TrackerType, team?: 'home' | 'away') => {
     if (trackerType === 'specialized') {
@@ -521,6 +533,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       dispatch({ type: 'SET_ASSIGNMENTS', payload: updatedAssignments });
       onAssignmentsChange?.(updatedAssignments);
       dispatch({ type: 'RESET_FORM' });
+      dispatch({ type: 'SET_CREATING', payload: false });
 
       toast({
         title: "Success",
@@ -560,14 +573,14 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
         const { error } = await supabase
           .from('match_tracker_assignments')
           .delete()
-          .eq('id', assignmentId)
-          .abortSignal(abortControllerRef.current!.signal);
+          .eq('id', assignmentId);
 
         if (error) throw error;
       }
 
       const updatedAssignments = state.assignments.filter(a => a.id !== assignmentId);
       dispatch({ type: 'SET_ASSIGNMENTS', payload: updatedAssignments });
+      dispatch({ type: 'SET_DELETING', payload: null });
       onAssignmentsChange?.(updatedAssignments);
 
       toast({
@@ -706,6 +719,8 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
         <Button 
           onClick={() => {
             dispatch({ type: 'SET_ERROR', payload: null });
+            hasFetchedTrackers.current = false;
+            hasFetchedAssignments.current = false;
             if (trackerUsers.length === 0) fetchTrackers();
             if (matchId && assignments.length === 0) fetchAssignments();
           }}
@@ -916,7 +931,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
             </TabsContent>
 
             <TabsContent value="by-line" className="space-y-4">
-              <div className="space-y-2">
+               <div className="space-y-2">
                 <label htmlFor="videoUrl-line" className="text-sm font-medium text-gray-700">
                   YouTube Video URL (Optional)
                 </label>
@@ -933,7 +948,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   Leave empty for live match tracking
                 </div>
               </div>
-
+              
               <div>
                 <label className="text-sm font-medium">Select Tracker</label>
                 <Select 
@@ -952,7 +967,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   </SelectContent>
                 </Select>
               </div>
-
+              
               <div>
                 <label className="text-sm font-medium mb-2 block">Select Team</label>
                 <Select 
@@ -1018,7 +1033,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   })}
                 </div>
               </div>
-
+              
               <div>
                 <label className="text-sm font-medium mb-2 block">
                   Event Types ({state.selectedEventTypes.length} selected)
