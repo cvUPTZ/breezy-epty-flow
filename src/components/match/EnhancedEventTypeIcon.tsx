@@ -1,6 +1,6 @@
 
 import React, { memo, useMemo, useEffect, useRef, useState, CSSProperties } from 'react';
-import * as AllTypes from 'src/types/index';
+import * as AllTypes from '@/types';
 import { getEventTypeIcon } from './getEventTypeIcon';
 
 // --- Helper: Intersection Observer Hook ---
