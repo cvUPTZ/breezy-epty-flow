@@ -507,9 +507,12 @@ const MatchAnalysisV2: React.FC = () => {
                     />
                   )}
 
-                  {activeView === 'piano' && (
+                  {activeView === 'piano' && fullMatchRoster && (
                     <>
-                      <FourTrackerSystem />
+                      <FourTrackerSystem
+                        homeTeamPlayers={fullMatchRoster.home.map(p => ({ ...p, id: Number(p.id), team: 'home' }))}
+                        awayTeamPlayers={fullMatchRoster.away.map(p => ({ ...p, id: Number(p.id), team: 'away' }))}
+                      />
                       <VoiceCollaborationOverlay />
                     </>
                   )}

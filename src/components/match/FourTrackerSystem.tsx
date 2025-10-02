@@ -7,12 +7,18 @@ import { useParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Loader2, AlertTriangle } from 'lucide-react';
 
-const FourTrackerSystem: React.FC = () => {
+interface FourTrackerSystemProps {
+  homeTeamPlayers: Player[];
+  awayTeamPlayers: Player[];
+}
+
+const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
+  homeTeamPlayers,
+  awayTeamPlayers,
+}) => {
   const { matchId } = useParams<{ matchId: string }>();
   const { user } = useAuth();
   const [trackerType, setTrackerType] = useState<'ball' | 'player' | null>(null);
-  const [homeTeam, setHomeTeam] = useState<Player[]>([]);
-  const [awayTeam, setAwayTeam] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,11 +41,10 @@ const FourTrackerSystem: React.FC = () => {
       return;
     }
 
-    const fetchInitialData = async () => {
+    const fetchAssignment = async () => {
       setLoading(true);
       setError(null);
       try {
-        // 1. Determine tracker type based on assignment
         const { data: assignments, error: assignmentError } = await supabase
           .from('match_tracker_assignments')
           .select('tracker_type')
@@ -49,36 +54,7 @@ const FourTrackerSystem: React.FC = () => {
         if (assignmentError) throw new Error(`Failed to fetch your assignment. (Error: ${assignmentError.message})`);
         if (!assignments || assignments.length === 0) throw new Error('No assignment found for this user for this match.');
 
-        // Use the first assignment found to be robust against duplicate entries
         setTrackerType(assignments[0].tracker_type);
-
-        // 2. Fetch players in a more robust, two-step process
-        const { data: matchPlayers, error: matchPlayersError } = await supabase
-          .from('match_players')
-          .select('player_id, team')
-          .eq('match_id', matchId);
-
-        if (matchPlayersError) throw new Error(`Error fetching match players: ${matchPlayersError.message}`);
-
-        const playerIds = matchPlayers.map(p => p.player_id);
-        const teamMap = new Map(matchPlayers.map(p => [p.player_id, p.team]));
-
-        const { data: playerDetails, error: playerDetailsError } = await supabase
-          .from('players')
-          .select('id, player_name, jersey_number')
-          .in('id', playerIds);
-
-        if (playerDetailsError) throw new Error(`Error fetching player details: ${playerDetailsError.message}`);
-
-        const formattedPlayers: Player[] = playerDetails.map(player => ({
-          id: player.id,
-          jersey_number: player.jersey_number,
-          player_name: player.player_name,
-          team: teamMap.get(player.id) as 'home' | 'away',
-        }));
-
-        setHomeTeam(formattedPlayers.filter(p => p.team === 'home'));
-        setAwayTeam(formattedPlayers.filter(p => p.team === 'away'));
       } catch (e: any) {
         setError(e.message);
         console.error(e);
@@ -87,7 +63,7 @@ const FourTrackerSystem: React.FC = () => {
       }
     };
 
-    fetchInitialData();
+    fetchAssignment();
   }, [matchId, user?.id]);
 
   if (loading) {
@@ -132,8 +108,8 @@ const FourTrackerSystem: React.FC = () => {
     <div>
       {trackerType === 'ball' ? (
         <BallTrackerInterface
-          homeTeamPlayers={homeTeam}
-          awayTeamPlayers={awayTeam}
+          homeTeamPlayers={homeTeamPlayers}
+          awayTeamPlayers={awayTeamPlayers}
           homeTeamName="Home Team"
           awayTeamName="Away Team"
           currentBallHolder={currentBallHolder}
