@@ -31,8 +31,9 @@ interface Assignment {
   tracker_user_id: string;
   tracker_name: string;
   tracker_email: string;
-  player_ids: number[];
-  assigned_event_types: string[];
+  tracker_type: 'player' | 'ball';
+  player_ids: number[] | null;
+  assigned_event_types: string[] | null;
 }
 
 interface UnifiedTrackerAssignmentProps {
@@ -48,18 +49,6 @@ interface UnifiedTrackerAssignmentProps {
 
 type TrackerType = 'specialized' | 'defence' | 'midfield' | 'attack';
 
-interface DatabaseAssignment {
-  id: string;
-  tracker_user_id: string;
-  assigned_player_id: number | null;
-  assigned_event_types: string[] | null;
-  profiles?: {
-    id: string;
-    full_name: string | null;
-    email: string | null;
-  } | null;
-}
-
 // State management with reducer
 interface TrackerAssignmentState {
   trackers: TrackerUser[];
@@ -68,6 +57,7 @@ interface TrackerAssignmentState {
   selectedPlayers: number[];
   selectedEventTypes: string[];
   selectedTrackerType: TrackerType;
+  assignmentRole: 'player' | 'ball'; // New role for assignment
   selectedTeam: 'home' | 'away';
   expandedCategories: Set<string>;
   assignmentVideoUrl: string;
@@ -86,6 +76,7 @@ type AssignmentAction =
   | { type: 'SET_SELECTED_PLAYERS'; payload: number[] }
   | { type: 'SET_SELECTED_EVENT_TYPES'; payload: string[] }
   | { type: 'SET_TRACKER_TYPE'; payload: TrackerType }
+  | { type: 'SET_ASSIGNMENT_ROLE'; payload: 'player' | 'ball' }
   | { type: 'SET_TEAM'; payload: 'home' | 'away' }
   | { type: 'TOGGLE_CATEGORY'; payload: string }
   | { type: 'SET_VIDEO_URL'; payload: string }
@@ -100,6 +91,7 @@ const initialState = (videoUrl: string = ''): TrackerAssignmentState => ({
   selectedPlayers: [],
   selectedEventTypes: [],
   selectedTrackerType: 'specialized',
+  assignmentRole: 'player',
   selectedTeam: 'home',
   expandedCategories: new Set(),
   assignmentVideoUrl: videoUrl,
@@ -127,6 +119,8 @@ function assignmentReducer(state: TrackerAssignmentState, action: AssignmentActi
       return { ...state, selectedEventTypes: action.payload };
     case 'SET_TRACKER_TYPE':
       return { ...state, selectedTrackerType: action.payload };
+    case 'SET_ASSIGNMENT_ROLE':
+      return { ...state, assignmentRole: action.payload };
     case 'SET_TEAM':
       return { ...state, selectedTeam: action.payload, selectedPlayers: [] };
     case 'TOGGLE_CATEGORY': {
@@ -148,6 +142,7 @@ function assignmentReducer(state: TrackerAssignmentState, action: AssignmentActi
         selectedPlayers: [],
         expandedCategories: new Set(),
         selectedTrackerType: 'specialized',
+        assignmentRole: 'player',
       };
     default:
       return state;
@@ -182,43 +177,17 @@ const trackerTypeConfig = {
   }
 };
 
-// Validation utilities
-const validateAssignmentData = (data: any[]): data is DatabaseAssignment[] => {
-  return Array.isArray(data) && data.every(item => 
-    typeof item === 'object' &&
-    typeof item.id === 'string' &&
-    typeof item.tracker_user_id === 'string' &&
-    (typeof item.assigned_player_id === 'number' || item.assigned_player_id === null) &&
-    (Array.isArray(item.assigned_event_types) || item.assigned_event_types === null)
-  );
-};
-
-const processAssignments = (rawAssignments: DatabaseAssignment[]): Assignment[] => {
+const processAssignments = (rawAssignments: any[]): Assignment[] => {
   try {
-    const grouped = rawAssignments.reduce((acc, assignment) => {
-      const key = assignment.tracker_user_id;
-      
-      if (!acc[key]) {
-        acc[key] = {
-          id: assignment.id,
-          tracker_user_id: assignment.tracker_user_id,
-          tracker_name: assignment.profiles?.full_name || 'Unknown',
-          tracker_email: assignment.profiles?.email || 'Unknown',
-          player_ids: [],
-          assigned_event_types: [...(assignment.assigned_event_types || [])]
-        };
-      }
-      
-      if (assignment.assigned_player_id !== null && 
-          assignment.assigned_player_id !== undefined && 
-          !acc[key].player_ids.includes(assignment.assigned_player_id)) {
-        acc[key].player_ids.push(assignment.assigned_player_id);
-      }
-      
-      return acc;
-    }, {} as Record<string, Assignment>);
-
-    return Object.values(grouped);
+    return rawAssignments.map(assignment => ({
+      id: assignment.id,
+      tracker_user_id: assignment.tracker_user_id,
+      tracker_name: assignment.profiles?.full_name || 'Unknown',
+      tracker_email: assignment.profiles?.email || 'Unknown',
+      tracker_type: assignment.tracker_type,
+      player_ids: assignment.assigned_player_ids,
+      assigned_event_types: null, // Column no longer exists
+    }));
   } catch (error) {
     console.error('Error processing assignments:', error);
     return [];
@@ -317,46 +286,26 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
 
     dispatch({ type: 'SET_LOADING', payload: true });
     
-    const { data: assignmentsData, error: assignmentsError } = await supabase
+    const { data, error } = await supabase
       .from('match_tracker_assignments')
-      .select('*')
+      .select('*, profiles(id, full_name, email)')
       .eq('match_id', matchId);
 
-    if (assignmentsError) throw assignmentsError;
-    if (!assignmentsData || assignmentsData.length === 0) {
-      dispatch({ type: 'SET_ASSIGNMENTS', payload: [] });
+    if (error) {
       dispatch({ type: 'SET_LOADING', payload: false });
-      onAssignmentsChange?.([]);
-      return [];
+      throw error;
     }
-
-    if (!validateAssignmentData(assignmentsData)) {
-      throw new Error('Invalid assignment data structure received');
-    }
-
-    const trackerUserIds = [...new Set(assignmentsData.map(a => a.tracker_user_id))];
     
-    const { data: profilesData, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, full_name, email')
-      .in('id', trackerUserIds);
-
-    if (profilesError) {
-      console.warn('Failed to fetch profiles:', profilesError);
+    if (!data) {
+      dispatch({ type: 'SET_ASSIGNMENTS', payload: [] });
+    } else {
+      const processed = processAssignments(data);
+      dispatch({ type: 'SET_ASSIGNMENTS', payload: processed });
+      onAssignmentsChange?.(processed);
     }
 
-    const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
-    const enrichedAssignments = assignmentsData.map(assignment => ({
-      ...assignment,
-      profiles: profilesMap.get(assignment.tracker_user_id) || null
-    }));
-
-    const processedAssignments = processAssignments(enrichedAssignments);
-    dispatch({ type: 'SET_ASSIGNMENTS', payload: processedAssignments });
     dispatch({ type: 'SET_LOADING', payload: false });
-    onAssignmentsChange?.(processedAssignments);
-    
-    return processedAssignments;
+    return data;
   }, [matchId, onAssignmentsChange]);
 
   // Initialize data - use refs to track if we've already fetched
@@ -407,29 +356,25 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     });
   }, [allPlayers, homeTeamPlayers, awayTeamPlayers, state.selectedPlayers]);
 
-  const saveAssignmentToDB = useCallback(async (assignment: Assignment) => {
+  const saveAssignmentToDB = useCallback(async (assignment: Omit<Assignment, 'id' | 'tracker_name' | 'tracker_email'>) => {
     if (!matchId) return null;
 
-    const dbRecords = assignment.player_ids.map(playerId => {
-      const playerTeamId = homeTeamPlayers.some(p => p.id === playerId) ? 'home' : 'away';
-      
-      return {
-        match_id: matchId,
-        tracker_user_id: assignment.tracker_user_id,
-        assigned_player_id: playerId,
-        player_team_id: playerTeamId,
-        assigned_event_types: assignment.assigned_event_types,
-      };
-    });
+    const recordToInsert = {
+      match_id: matchId,
+      tracker_user_id: assignment.tracker_user_id,
+      tracker_type: assignment.tracker_type,
+      assigned_player_ids: assignment.player_ids,
+    };
 
     const { data, error } = await supabase
       .from('match_tracker_assignments')
-      .insert(dbRecords)
-      .select('id');
+      .insert([recordToInsert])
+      .select('id')
+      .single();
 
     if (error) throw error;
-    return data?.[0]?.id || null;
-  }, [matchId, homeTeamPlayers]);
+    return data?.id || null;
+  }, [matchId]);
 
   const sendNotificationToTracker = useCallback(async (trackerId: string, matchId: string, videoUrl?: string) => {
     try {
@@ -477,23 +422,19 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   }, [state.selectedPlayers]);
 
   const handleCreateAssignment = useCallback(async () => {
-    if (!state.selectedTracker || state.selectedEventTypes.length === 0) {
+    if (!state.selectedTracker) {
       toast({
         title: "Validation Error",
-        description: "Please select a tracker and at least one event type",
+        description: "Please select a tracker.",
         variant: "destructive"
       });
       return;
     }
 
-    const playersToAssign = state.selectedTrackerType === 'specialized' 
-      ? state.selectedPlayers 
-      : getLinePlayers(state.selectedTrackerType, state.selectedTeam).map(p => p.id);
-
-    if (playersToAssign.length === 0) {
+    if (state.assignmentRole === 'player' && state.selectedPlayers.length === 0) {
       toast({
         title: "Validation Error",
-        description: "Please select at least one player",
+        description: "Please select at least one player for a Player Tracker role.",
         variant: "destructive"
       });
       return;
@@ -507,26 +448,26 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
         throw new Error('Selected tracker not found');
       }
 
-      const tempAssignment: Assignment = {
-        id: `temp-${Date.now()}`,
+      const assignmentToSave = {
         tracker_user_id: state.selectedTracker,
-        tracker_name: trackerUser.full_name || trackerUser.email || 'Unknown',
-        tracker_email: trackerUser.email || 'Unknown',
-        player_ids: playersToAssign,
-        assigned_event_types: state.selectedEventTypes
+        tracker_type: state.assignmentRole,
+        player_ids: state.assignmentRole === 'player' ? state.selectedPlayers : null,
       };
 
-      let realAssignmentId: string | null = null;
-
-      if (matchId) {
-        realAssignmentId = await saveAssignmentToDB(tempAssignment);
-        const finalVideoUrl = state.assignmentVideoUrl.trim() || undefined;
-        await sendNotificationToTracker(state.selectedTracker, matchId, finalVideoUrl);
+      const realAssignmentId = matchId ? await saveAssignmentToDB(assignmentToSave) : `temp-${Date.now()}`;
+      if (realAssignmentId && matchId) {
+         const finalVideoUrl = state.assignmentVideoUrl.trim() || undefined;
+         await sendNotificationToTracker(state.selectedTracker, matchId, finalVideoUrl);
       }
 
       const finalAssignment: Assignment = {
-        ...tempAssignment,
-        id: realAssignmentId || tempAssignment.id
+        id: realAssignmentId || `temp-${Date.now()}`,
+        tracker_user_id: state.selectedTracker,
+        tracker_name: trackerUser.full_name || trackerUser.email || 'Unknown',
+        tracker_email: trackerUser.email || 'Unknown',
+        tracker_type: state.assignmentRole,
+        player_ids: assignmentToSave.player_ids,
+        assigned_event_types: null,
       };
 
       const updatedAssignments = [...state.assignments, finalAssignment];
@@ -543,20 +484,17 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       return finalAssignment;
     }, 'createAssignment');
   }, [
-    state.selectedTracker, 
-    state.selectedEventTypes, 
-    state.selectedPlayers, 
-    state.selectedTrackerType, 
-    state.selectedTeam, 
-    state.trackers, 
-    state.assignments, 
+    state.selectedTracker,
+    state.assignmentRole,
+    state.selectedPlayers,
+    state.trackers,
+    state.assignments,
     state.assignmentVideoUrl,
-    getLinePlayers, 
-    saveAssignmentToDB, 
-    sendNotificationToTracker, 
-    matchId, 
-    onAssignmentsChange, 
-    safeAsync, 
+    saveAssignmentToDB,
+    sendNotificationToTracker,
+    matchId,
+    onAssignmentsChange,
+    safeAsync,
     toast
   ]);
 
@@ -860,58 +798,79 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="text-sm font-medium">Select Tracker</label>
-                <Select 
-                  value={state.selectedTracker} 
-                  onValueChange={(value) => dispatch({ type: 'SET_SELECTED_TRACKER', payload: value })}
-                >
-                  <SelectTrigger aria-label="Select tracker">
-                    <SelectValue placeholder="Choose a tracker" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {state.trackers.map(tracker => (
-                      <SelectItem key={tracker.id} value={tracker.id}>
-                        {tracker.full_name || tracker.email || 'Unknown'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Select Tracker</label>
+                  <Select
+                    value={state.selectedTracker}
+                    onValueChange={(value) => dispatch({ type: 'SET_SELECTED_TRACKER', payload: value })}
+                  >
+                    <SelectTrigger aria-label="Select tracker">
+                      <SelectValue placeholder="Choose a tracker" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {state.trackers.map(tracker => (
+                        <SelectItem key={tracker.id} value={tracker.id}>
+                          {tracker.full_name || tracker.email || 'Unknown'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Assignment Role</label>
+                  <Select
+                    value={state.assignmentRole}
+                    onValueChange={(value: 'player' | 'ball') => dispatch({ type: 'SET_ASSIGNMENT_ROLE', payload: value })}
+                  >
+                    <SelectTrigger aria-label="Select assignment role">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="player">Player Tracker</SelectItem>
+                      <SelectItem value="ball">Ball Tracker</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div>
-                <label className="text-sm font-medium mb-2 block">Select Team</label>
-                <Select 
-                  value={state.selectedTeam} 
-                  onValueChange={(value: 'home' | 'away') => dispatch({ type: 'SET_TEAM', payload: value })}
-                >
-                  <SelectTrigger aria-label="Select team">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="home">
-                      Home Team ({homeTeamPlayers.length} players)
-                    </SelectItem>
-                    <SelectItem value="away">
-                      Away Team ({awayTeamPlayers.length} players)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {state.assignmentRole === 'player' && (
+                <>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Select Team</label>
+                    <Select
+                      value={state.selectedTeam}
+                      onValueChange={(value: 'home' | 'away') => dispatch({ type: 'SET_TEAM', payload: value })}
+                    >
+                      <SelectTrigger aria-label="Select team">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="home">
+                          Home Team ({homeTeamPlayers.length} players)
+                        </SelectItem>
+                        <SelectItem value="away">
+                          Away Team ({awayTeamPlayers.length} players)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div>
-                <label className="text-sm font-medium mb-2 block">
-                  Players ({state.selectedPlayers.length} selected)
-                </label>
-                {renderPlayerGrid(state.selectedTeam === 'home' ? homeTeamPlayers : awayTeamPlayers)}
-              </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Players ({state.selectedPlayers.length} selected)
+                    </label>
+                    {renderPlayerGrid(state.selectedTeam === 'home' ? homeTeamPlayers : awayTeamPlayers)}
+                  </div>
 
-              <div>
-                <label className="text-sm font-medium mb-2 block">
-                  Event Types ({state.selectedEventTypes.length} selected)
-                </label>
-                {renderEventTypeCategories()}
-              </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Event Types ({state.selectedEventTypes.length} selected)
+                    </label>
+                    {renderEventTypeCategories()}
+                  </div>
+                </>
+              )}
 
               <Button
                 onClick={handleCreateAssignment}
