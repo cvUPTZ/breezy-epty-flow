@@ -52,19 +52,29 @@ const FourTrackerSystem: React.FC = () => {
         // Use the first assignment found to be robust against duplicate entries
         setTrackerType(assignments[0].tracker_type);
 
-        // 2. Fetch players for both teams from the 'match_players' table
-        const { data: playersData, error: playersError } = await supabase
+        // 2. Fetch players in a more robust, two-step process
+        const { data: matchPlayers, error: matchPlayersError } = await supabase
           .from('match_players')
-          .select('team, players(id, player_name, jersey_number)')
+          .select('player_id, team')
           .eq('match_id', matchId);
 
-        if (playersError) throw new Error(`Error fetching players: ${playersError.message}`);
+        if (matchPlayersError) throw new Error(`Error fetching match players: ${matchPlayersError.message}`);
 
-        const formattedPlayers: Player[] = playersData.map((p: any) => ({
-          id: p.players.id,
-          jersey_number: p.players.jersey_number,
-          player_name: p.players.player_name,
-          team: p.team,
+        const playerIds = matchPlayers.map(p => p.player_id);
+        const teamMap = new Map(matchPlayers.map(p => [p.player_id, p.team]));
+
+        const { data: playerDetails, error: playerDetailsError } = await supabase
+          .from('players')
+          .select('id, player_name, jersey_number')
+          .in('id', playerIds);
+
+        if (playerDetailsError) throw new Error(`Error fetching player details: ${playerDetailsError.message}`);
+
+        const formattedPlayers: Player[] = playerDetails.map(player => ({
+          id: player.id,
+          jersey_number: player.jersey_number,
+          player_name: player.player_name,
+          team: teamMap.get(player.id) as 'home' | 'away',
         }));
 
         setHomeTeam(formattedPlayers.filter(p => p.team === 'home'));
