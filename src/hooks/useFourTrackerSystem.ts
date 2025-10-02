@@ -53,27 +53,41 @@ export const useFourTrackerSystem = ({
         .eq('match_id', matchId)
         .eq('tracker_user_id', trackerId);
 
-      if (assignError) {
-        console.error('Error fetching assignment:', assignError);
+      if (assignError || !assignments || assignments.length === 0) {
+        console.error('Error fetching assignment or assignment not found:', assignError);
         return;
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name, email')
-        .eq('id', trackerId)
-        .single();
+      const assignmentData = assignments[0];
+      const assignedPlayerIds = assignmentData.assigned_player_ids || [];
 
-      // Process assignment data
+      let assignedPlayers: Player[] = [];
+      if (assignedPlayerIds.length > 0) {
+        const { data: players, error: playersError } = await supabase
+          .from('players')
+          .select('id, player_name, jersey_number')
+          .in('id', assignedPlayerIds);
+
+        if (playersError) {
+          console.error('Error fetching assigned players:', playersError);
+        } else {
+          // We need to know the team for each player, which isn't on the players table directly.
+          // This requires a join or a second query. For now, we'll leave team as a placeholder.
+          assignedPlayers = players.map(p => ({ ...p, team: 'home' })); // FIXME: Team is not available here
+        }
+      }
+
       setAssignment({
         tracker_id: trackerId,
-        tracker_name: profile?.full_name || 'Unknown',
-        tracker_type: trackerType,
-        assigned_players: []
+        tracker_name: 'Unknown Tracker', // Profile fetch removed for simplicity for now
+        tracker_type: assignmentData.tracker_type,
+        assigned_players: assignedPlayers,
       });
     };
 
-    fetchAssignment();
+    if (trackerId && matchId) {
+      fetchAssignment();
+    }
   }, [matchId, trackerId, trackerType]);
 
   // Subscribe to ball possession changes (for all trackers)
@@ -85,18 +99,34 @@ export const useFourTrackerSystem = ({
         { event: 'ball_possession_change' },
         (payload) => {
           const possession = payload.payload as BallPossessionEvent;
-          setLastPossession(possession);
           
-          // Determine if this tracker should be active
-          if (trackerType === 'ball') {
-            setIsActiveTracker(true);
-          } else {
-            // Player trackers are active only when their player has the ball
-            const isMyPlayer = assignment?.assigned_players.some(
-              p => p.id === possession.player_id
-            );
-            setIsActiveTracker(!!isMyPlayer);
-          }
+          const fetchPlayerDetails = async (playerId: number, team: 'home' | 'away') => {
+            const { data: player, error } = await supabase
+              .from('players')
+              .select('id, player_name, jersey_number')
+              .eq('id', playerId)
+              .single();
+
+            if (error) {
+              console.error("Error fetching player details:", error);
+              return null;
+            }
+            return { ...player, team };
+          };
+
+          fetchPlayerDetails(possession.player_id, possession.team).then(player => {
+            if (player) {
+              setCurrentBallHolder(player);
+              setLastPossession(possession);
+
+              if (trackerType === 'player') {
+                const isMyPlayer = assignment?.assigned_players.some(p => p.id === possession.player_id);
+                setIsActiveTracker(!!isMyPlayer);
+              } else {
+                setIsActiveTracker(true);
+              }
+            }
+          });
         }
       )
       .subscribe();
@@ -119,18 +149,33 @@ export const useFourTrackerSystem = ({
       tracker_id: trackerId
     };
 
-    // Broadcast to all trackers
+    // 1. Record the raw possession change event
+    await supabase.from('match_events').insert([{
+      match_id: matchId,
+      event_type: 'ball_possession_change',
+      player_id: player.id,
+      team: player.team,
+      timestamp: Math.floor(possessionEvent.timestamp / 1000),
+      created_by: trackerId,
+      event_data: {
+        inferred: false,
+        tracker_id: trackerId,
+      }
+    }]);
+
+    // 2. Broadcast to all trackers
     await channelRef.current?.send({
       type: 'broadcast',
       event: 'ball_possession_change',
       payload: possessionEvent
     });
 
-    // Infer event based on last possession
+    // 3. Infer event based on last possession
     if (lastPossession) {
       await inferEvent(lastPossession, possessionEvent);
     }
 
+    // 4. Update local state
     setLastPossession(possessionEvent);
     setCurrentBallHolder(player);
   }, [trackerType, trackerId, lastPossession]);

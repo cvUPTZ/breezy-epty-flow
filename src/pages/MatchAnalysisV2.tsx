@@ -12,6 +12,7 @@ import MatchPlanningNetwork from '@/components/match/MatchPlanningNetwork';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import MatchAnalysisSidebar from '@/components/match/MatchAnalysisSidebar';
 import TrackerPianoInput from '@/components/TrackerPianoInput';
+import FourTrackerSystem from '@/components/match/FourTrackerSystem';
 import { TrackerVoiceInput } from '@/components/TrackerVoiceInput';
 import { EventType as LocalEventType } from '@/types/matchForm';
 import { EventType as AppEventType } from '@/types';
@@ -508,10 +509,7 @@ const MatchAnalysisV2: React.FC = () => {
 
                   {activeView === 'piano' && (
                     <>
-                      <TrackerPianoInput 
-                        matchId={matchId} 
-                        onRecordEvent={handleRecordEvent}
-                      />
+                      <FourTrackerSystem />
                       <VoiceCollaborationOverlay />
                     </>
                   )}
