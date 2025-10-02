@@ -90,19 +90,30 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
             {isActive ? 'Record Event Now' : 'Event Buttons (Inactive)'}
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {assignedEventTypes.map(eventType => (
-            <Button
-              key={eventType}
-              onClick={() => onRecordEvent(eventType as EventType)}
-              disabled={!isActive}
-              size="lg"
-              className="w-full h-20 text-lg font-semibold"
-              variant={isActive ? 'default' : 'outline'}
-            >
-              {eventTypeDisplay(eventType)}
-            </Button>
-          ))}
+        <CardContent>
+          {isActive && currentBallHolder ? (
+            <div className="text-center">
+              <h3 className="text-lg font-semibold mb-4">
+                Recording for: #{currentBallHolder.jersey_number} {currentBallHolder.player_name}
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {assignedEventTypes.map(eventType => (
+                  <Button
+                    key={eventType}
+                    onClick={() => onRecordEvent(eventType as EventType)}
+                    size="lg"
+                    className="w-full h-20 text-lg font-semibold"
+                  >
+                    {eventTypeDisplay(eventType)}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center text-gray-500 py-8">
+              <p>Event buttons will appear here when one of your players has the ball.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
