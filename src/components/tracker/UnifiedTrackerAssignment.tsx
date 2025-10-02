@@ -286,26 +286,49 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
 
     dispatch({ type: 'SET_LOADING', payload: true });
     
-    const { data, error } = await supabase
+    // Step 1: Fetch assignments
+    const { data: assignmentsData, error: assignmentsError } = await supabase
       .from('match_tracker_assignments')
-      .select('*, profiles(id, full_name, email)')
+      .select('*')
       .eq('match_id', matchId);
 
-    if (error) {
+    if (assignmentsError) {
       dispatch({ type: 'SET_LOADING', payload: false });
-      throw error;
-    }
-    
-    if (!data) {
-      dispatch({ type: 'SET_ASSIGNMENTS', payload: [] });
-    } else {
-      const processed = processAssignments(data);
-      dispatch({ type: 'SET_ASSIGNMENTS', payload: processed });
-      onAssignmentsChange?.(processed);
+      throw assignmentsError;
     }
 
+    if (!assignmentsData || assignmentsData.length === 0) {
+      dispatch({ type: 'SET_ASSIGNMENTS', payload: [] });
+      dispatch({ type: 'SET_LOADING', payload: false });
+      onAssignmentsChange?.([]);
+      return [];
+    }
+
+    // Step 2: Fetch profiles for the assigned trackers
+    const trackerUserIds = [...new Set(assignmentsData.map(a => a.tracker_user_id))];
+
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .in('id', trackerUserIds);
+
+    if (profilesError) {
+      console.warn('Failed to fetch profiles:', profilesError);
+    }
+
+    // Step 3: Combine and process the data
+    const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+    const enrichedAssignments = assignmentsData.map(assignment => ({
+      ...assignment,
+      profiles: profilesMap.get(assignment.tracker_user_id) || null
+    }));
+
+    const processedAssignments = processAssignments(enrichedAssignments);
+    dispatch({ type: 'SET_ASSIGNMENTS', payload: processedAssignments });
     dispatch({ type: 'SET_LOADING', payload: false });
-    return data;
+    onAssignmentsChange?.(processedAssignments);
+
+    return processedAssignments;
   }, [matchId, onAssignmentsChange]);
 
   // Initialize data - use refs to track if we've already fetched
