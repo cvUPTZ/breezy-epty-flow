@@ -45,15 +45,22 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
       setLoading(true);
       setError(null);
       try {
+        // Fetch a list of assignments instead of a single one to be robust.
         const { data: assignments, error: assignmentError } = await supabase
           .from('match_tracker_assignments')
           .select('tracker_type')
           .eq('match_id', matchId)
           .eq('tracker_user_id', user.id);
 
-        if (assignmentError) throw new Error(`Failed to fetch your assignment. (Error: ${assignmentError.message})`);
-        if (!assignments || assignments.length === 0) throw new Error('No assignment found for this user for this match.');
+        if (assignmentError) {
+          throw new Error(`Failed to fetch your assignment from the database.`);
+        }
 
+        if (!assignments || assignments.length === 0) {
+          throw new Error('No assignment was found for your user for this match. Please ask an admin to assign you.');
+        }
+
+        // Safely use the first assignment found to prevent crashes.
         setTrackerType(assignments[0].tracker_type);
       } catch (e: any) {
         setError(e.message);
