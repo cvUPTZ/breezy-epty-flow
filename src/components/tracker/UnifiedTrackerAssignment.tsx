@@ -928,7 +928,11 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
 
               <Button
                 onClick={handleCreateAssignment}
-                disabled={state.creatingAssignment || !state.selectedTracker || state.selectedEventTypes.length === 0 || state.selectedPlayers.length === 0}
+                disabled={
+                  state.creatingAssignment ||
+                  !state.selectedTracker ||
+                  (state.assignmentRole === 'player' && (state.selectedEventTypes.length === 0 || state.selectedPlayers.length === 0))
+                }
                 className="w-full"
                 aria-label="Create assignment"
               >
