@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { EventType } from '@/types';
+import { parsePlayerIds } from '@/utils/parsing';
 
 export interface Player {
   id: number;
@@ -61,7 +62,7 @@ export const useFourTrackerSystem = ({
       }
 
       const assignmentData: any = assignments[0];
-      const assignedPlayerIds = assignmentData.assigned_player_ids || [];
+      const assignedPlayerIds = parsePlayerIds(assignmentData.assigned_player_ids);
 
       // Map assigned player IDs to actual player objects from the match data
       const assignedPlayers: Player[] = assignedPlayerIds

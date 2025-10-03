@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { parsePlayerIds } from '@/utils/parsing';
 
 export interface Player {
   id: number;
@@ -30,7 +31,8 @@ export interface Assignment {
 interface DatabaseAssignment {
   id: string;
   tracker_user_id: string;
-  assigned_player_id: number | null;
+  assigned_player_id?: number | null;
+  assigned_player_ids?: unknown;
   assigned_event_types: string[] | null;
   profiles?: {
     id: string;
@@ -57,12 +59,10 @@ interface UseTrackerAssignmentsReturn {
 }
 
 const validateAssignmentData = (data: any[]): data is DatabaseAssignment[] => {
-  return Array.isArray(data) && data.every(item => 
-    typeof item === 'object' &&
+  return Array.isArray(data) && data.every(item =>
+    typeof item === 'object' && item != null &&
     typeof item.id === 'string' &&
-    typeof item.tracker_user_id === 'string' &&
-    (typeof item.assigned_player_id === 'number' || item.assigned_player_id === null) &&
-    (Array.isArray(item.assigned_event_types) || item.assigned_event_types === null)
+    typeof item.tracker_user_id === 'string'
   );
 };
 
@@ -82,12 +82,20 @@ const processAssignments = (rawAssignments: DatabaseAssignment[]): Assignment[] 
         };
       }
       
-      if (assignment.assigned_player_id !== null && 
-          assignment.assigned_player_id !== undefined && 
-          !acc[key].player_ids.includes(assignment.assigned_player_id)) {
-        acc[key].player_ids.push(assignment.assigned_player_id);
+      const playerIds = new Set(acc[key].player_ids);
+
+      // Handle single player ID for backwards compatibility
+      if (assignment.assigned_player_id != null) {
+        playerIds.add(assignment.assigned_player_id);
+      }
+
+      // Handle plural player IDs (string or array)
+      if (assignment.assigned_player_ids) {
+        parsePlayerIds(assignment.assigned_player_ids).forEach(id => playerIds.add(id));
       }
       
+      acc[key].player_ids = Array.from(playerIds);
+
       return acc;
     }, {} as Record<string, Assignment>);
 
