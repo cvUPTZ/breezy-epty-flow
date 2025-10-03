@@ -600,7 +600,6 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
   }
 
   return (
-    <ErrorBoundary componentName="TrackerPianoInput">
       <div className="space-y-2 p-1 sm:p-2">
         {/* Connection Warning */}
         {!isConnected && (
@@ -759,7 +758,6 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
           </motion.div>
         )}
       </div>
-    </ErrorBoundary>
   );
 };
 
