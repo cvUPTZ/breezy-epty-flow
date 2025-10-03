@@ -61,7 +61,6 @@ export const useFourTrackerSystem = ({
       }
 
       const assignmentData: any = assignments[0];
-      
       // Robustly parse assigned_player_ids
       let playerIds: number[] = [];
       const rawPlayerIds = assignmentData.assigned_player_ids;
