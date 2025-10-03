@@ -9,7 +9,23 @@ export type EventType =
   | 'offensivePass' | 'contact' | 'sixMeterViolation' | 'postHit'
   | 'aerialDuelWon' | 'aerialDuelLost' | 'decisivePass' | 'successfulCross'
   | 'successfulDribble' | 'longPass' | 'forwardPass' | 'backwardPass'
-  | 'lateralPass';
+  | 'lateralPass'
+  // New goalkeeper events
+  | 'punch' | 'claim' | 'sweeperAction'
+  // New shot variations
+  | 'shotOnTarget' | 'shotOffTarget' | 'shotBlocked' | 'header'
+  // New defensive actions
+  | 'slidingTackle' | 'standingTackle'
+  // New game flow events
+  | 'kickOff' | 'halfTime' | 'fullTime' | 'extraTimeStart' | 'extraTimeEnd'
+  | 'penaltyShootout' | 'penaltyShootoutGoal' | 'penaltyShootoutMiss'
+  // New modern football events
+  | 'varReview' | 'varDecision' | 'injuryStoppage' | 'timeWasting'
+  | 'encroachment' | 'handball'
+  // New advanced metrics
+  | 'progressivePass' | 'progressiveCarry' | 'passIntoFinalThird'
+  | 'passIntoPenaltyArea' | 'shotCreatingAction' | 'goalKickShort'
+  | 'goalKickLong' | 'offsideTrap';
 
 export interface EventTypeDefinition {
   key: EventType;
@@ -53,6 +69,7 @@ export const EVENT_TYPE_DEFINITIONS: Record<EventType, EventTypeDefinition> = {
   yellowCard: { key: 'yellowCard', label: 'Yellow Card', color: '#F59E0B', description: 'Yellow card', icon: '🟨', keyboardShortcut: 'y' },
   redCard: { key: 'redCard', label: 'Red Card', color: '#EF4444', description: 'Red card', icon: '🟥', keyboardShortcut: 'r' },
   offside: { key: 'offside', label: 'Offside', color: '#F59E0B', description: 'Offside violation', icon: '🚩', keyboardShortcut: 'o' },
+  handball: { key: 'handball', label: 'Handball', color: '#DC2626', description: 'Handball violation', icon: '🖐️' },
 
   // Goals & Assists
   goal: { key: 'goal', label: 'Goal', color: '#10B981', description: 'Goal scored', icon: '⚽', keyboardShortcut: 'g' },
@@ -93,6 +110,48 @@ export const EVENT_TYPE_DEFINITIONS: Record<EventType, EventTypeDefinition> = {
   contact: { key: 'contact', label: 'Contact', color: '#F5A623', description: 'Player contact event', icon: '💥' },
   sixMeterViolation: { key: 'sixMeterViolation', label: '6 Meter Violation', color: '#BD10E0', description: '6 Meter Violation', icon: '📏' },
   postHit: { key: 'postHit', label: 'Post Hit', color: '#9013FE', description: 'Ball hit the post', icon: '🥅' },
+
+  // NEW: Goalkeeper Specific
+  punch: { key: 'punch', label: 'Punch', color: '#059669', description: 'Goalkeeper punches ball away', icon: '👊' },
+  claim: { key: 'claim', label: 'Claim', color: '#10B981', description: 'Goalkeeper claims/catches ball', icon: '🧤' },
+  sweeperAction: { key: 'sweeperAction', label: 'Sweeper Action', color: '#14B8A6', description: 'Goalkeeper sweeps outside box', icon: '🏃‍♂️' },
+
+  // NEW: Shot Variations
+  shotOnTarget: { key: 'shotOnTarget', label: 'Shot On Target', color: '#DC2626', description: 'Shot on target', icon: '🎯✅' },
+  shotOffTarget: { key: 'shotOffTarget', label: 'Shot Off Target', color: '#F87171', description: 'Shot off target', icon: '🎯❌' },
+  shotBlocked: { key: 'shotBlocked', label: 'Shot Blocked', color: '#FB923C', description: 'Shot blocked by defender', icon: '🛡️⚽' },
+  header: { key: 'header', label: 'Header', color: '#C026D3', description: 'Header attempt', icon: '🗣️' },
+
+  // NEW: Defensive Actions
+  slidingTackle: { key: 'slidingTackle', label: 'Sliding Tackle', color: '#EA580C', description: 'Sliding tackle', icon: '🦵' },
+  standingTackle: { key: 'standingTackle', label: 'Standing Tackle', color: '#F59E0B', description: 'Standing tackle', icon: '🧍⚔️' },
+
+  // NEW: Game Flow
+  kickOff: { key: 'kickOff', label: 'Kick Off', color: '#6366F1', description: 'Match kick off', icon: '🏁' },
+  halfTime: { key: 'halfTime', label: 'Half Time', color: '#6B7280', description: 'Half time break', icon: '⏸️' },
+  fullTime: { key: 'fullTime', label: 'Full Time', color: '#6B7280', description: 'Match end', icon: '🏁' },
+  extraTimeStart: { key: 'extraTimeStart', label: 'Extra Time Start', color: '#8B5CF6', description: 'Extra time begins', icon: '⏱️' },
+  extraTimeEnd: { key: 'extraTimeEnd', label: 'Extra Time End', color: '#8B5CF6', description: 'Extra time ends', icon: '⏹️' },
+  penaltyShootout: { key: 'penaltyShootout', label: 'Penalty Shootout', color: '#DB2777', description: 'Penalty shootout begins', icon: '🎯🔫' },
+  penaltyShootoutGoal: { key: 'penaltyShootoutGoal', label: 'Shootout Goal', color: '#10B981', description: 'Penalty shootout goal', icon: '✅⚽' },
+  penaltyShootoutMiss: { key: 'penaltyShootoutMiss', label: 'Shootout Miss', color: '#EF4444', description: 'Penalty shootout miss', icon: '❌⚽' },
+
+  // NEW: Modern Football
+  varReview: { key: 'varReview', label: 'VAR Review', color: '#7C3AED', description: 'VAR review in progress', icon: '📹' },
+  varDecision: { key: 'varDecision', label: 'VAR Decision', color: '#6D28D9', description: 'VAR decision made', icon: '✓📹' },
+  injuryStoppage: { key: 'injuryStoppage', label: 'Injury Stoppage', color: '#DC2626', description: 'Injury stoppage', icon: '🚑' },
+  timeWasting: { key: 'timeWasting', label: 'Time Wasting', color: '#F59E0B', description: 'Time wasting behavior', icon: '🐌' },
+  encroachment: { key: 'encroachment', label: 'Encroachment', color: '#F97316', description: 'Player encroachment', icon: '🚫👟' },
+
+  // NEW: Advanced Metrics
+  progressivePass: { key: 'progressivePass', label: 'Progressive Pass', color: '#16A34A', description: 'Pass that advances ball significantly', icon: '⬆️⚡' },
+  progressiveCarry: { key: 'progressiveCarry', label: 'Progressive Carry', color: '#15803D', description: 'Carrying ball forward significantly', icon: '🏃⬆️' },
+  passIntoFinalThird: { key: 'passIntoFinalThird', label: 'Pass Into Final Third', color: '#65A30D', description: 'Pass into attacking third', icon: '🎯🔝' },
+  passIntoPenaltyArea: { key: 'passIntoPenaltyArea', label: 'Pass Into Penalty Area', color: '#84CC16', description: 'Pass into penalty box', icon: '📦⚽' },
+  shotCreatingAction: { key: 'shotCreatingAction', label: 'Shot Creating Action', color: '#EAB308', description: 'Action leading to shot', icon: '🔑🎯' },
+  goalKickShort: { key: 'goalKickShort', label: 'Goal Kick Short', color: '#0EA5E9', description: 'Short goal kick', icon: '👢📏' },
+  goalKickLong: { key: 'goalKickLong', label: 'Goal Kick Long', color: '#0284C7', description: 'Long goal kick', icon: '👢🚀' },
+  offsideTrap: { key: 'offsideTrap', label: 'Offside Trap', color: '#F97316', description: 'Deliberate offside trap', icon: '🪤' },
 };
 
 export const EVENT_TYPE_CATEGORIES: EventCategory[] = [
@@ -136,6 +195,7 @@ export const EVENT_TYPE_CATEGORIES: EventCategory[] = [
       EVENT_TYPE_DEFINITIONS.yellowCard,
       EVENT_TYPE_DEFINITIONS.redCard,
       EVENT_TYPE_DEFINITIONS.offside,
+      EVENT_TYPE_DEFINITIONS.handball,
     ]
   },
   {
@@ -218,6 +278,84 @@ export const EVENT_TYPE_CATEGORIES: EventCategory[] = [
       EVENT_TYPE_DEFINITIONS.contact,
       EVENT_TYPE_DEFINITIONS.sixMeterViolation,
       EVENT_TYPE_DEFINITIONS.postHit,
+    ]
+  },
+  {
+    key: 'goalkeeperActions',
+    label: 'Goalkeeper Actions',
+    color: '#059669',
+    description: 'Goalkeeper-specific events',
+    events: [
+      EVENT_TYPE_DEFINITIONS.punch,
+      EVENT_TYPE_DEFINITIONS.claim,
+      EVENT_TYPE_DEFINITIONS.sweeperAction,
+    ]
+  },
+  {
+    key: 'shotVariations',
+    label: 'Shot Variations',
+    color: '#DC2626',
+    description: 'Different types of shots',
+    events: [
+      EVENT_TYPE_DEFINITIONS.shotOnTarget,
+      EVENT_TYPE_DEFINITIONS.shotOffTarget,
+      EVENT_TYPE_DEFINITIONS.shotBlocked,
+      EVENT_TYPE_DEFINITIONS.header,
+    ]
+  },
+  {
+    key: 'defensiveActions',
+    label: 'Defensive Actions',
+    color: '#EA580C',
+    description: 'Defensive tackle variations',
+    events: [
+      EVENT_TYPE_DEFINITIONS.slidingTackle,
+      EVENT_TYPE_DEFINITIONS.standingTackle,
+    ]
+  },
+  {
+    key: 'gameFlow',
+    label: 'Game Flow',
+    color: '#6366F1',
+    description: 'Match timeline events',
+    events: [
+      EVENT_TYPE_DEFINITIONS.kickOff,
+      EVENT_TYPE_DEFINITIONS.halfTime,
+      EVENT_TYPE_DEFINITIONS.fullTime,
+      EVENT_TYPE_DEFINITIONS.extraTimeStart,
+      EVENT_TYPE_DEFINITIONS.extraTimeEnd,
+      EVENT_TYPE_DEFINITIONS.penaltyShootout,
+      EVENT_TYPE_DEFINITIONS.penaltyShootoutGoal,
+      EVENT_TYPE_DEFINITIONS.penaltyShootoutMiss,
+    ]
+  },
+  {
+    key: 'modernFootball',
+    label: 'Modern Football',
+    color: '#7C3AED',
+    description: 'VAR and contemporary match events',
+    events: [
+      EVENT_TYPE_DEFINITIONS.varReview,
+      EVENT_TYPE_DEFINITIONS.varDecision,
+      EVENT_TYPE_DEFINITIONS.injuryStoppage,
+      EVENT_TYPE_DEFINITIONS.timeWasting,
+      EVENT_TYPE_DEFINITIONS.encroachment,
+    ]
+  },
+  {
+    key: 'advancedMetrics',
+    label: 'Advanced Metrics',
+    color: '#16A34A',
+    description: 'Advanced statistical tracking',
+    events: [
+      EVENT_TYPE_DEFINITIONS.progressivePass,
+      EVENT_TYPE_DEFINITIONS.progressiveCarry,
+      EVENT_TYPE_DEFINITIONS.passIntoFinalThird,
+      EVENT_TYPE_DEFINITIONS.passIntoPenaltyArea,
+      EVENT_TYPE_DEFINITIONS.shotCreatingAction,
+      EVENT_TYPE_DEFINITIONS.goalKickShort,
+      EVENT_TYPE_DEFINITIONS.goalKickLong,
+      EVENT_TYPE_DEFINITIONS.offsideTrap,
     ]
   },
 ];
