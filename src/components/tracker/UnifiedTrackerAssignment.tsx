@@ -384,29 +384,40 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     const midfield: Player[] = [];
     const attack: Player[] = [];
 
+    // Refined position categorization
     teamPlayers.forEach(player => {
       const pos = player.position?.toLowerCase() || '';
-      if (pos.includes('def') || pos.includes('cb') || pos.includes('lb') || pos.includes('rb') || pos.includes('gk')) {
+      if (['gk', 'def', 'cb', 'lb', 'rb', 'rwb', 'lwb'].some(p => pos.includes(p))) {
         defense.push(player);
-      } else if (pos.includes('mid') || pos.includes('cm') || pos.includes('dm') || pos.includes('am')) {
+      } else if (['mid', 'cm', 'dm', 'am'].some(p => pos.includes(p))) {
         midfield.push(player);
-      } else if (pos.includes('att') || pos.includes('fw') || pos.includes('st') || pos.includes('lw') || pos.includes('rw')) {
+      } else if (['att', 'fw', 'st', 'lw', 'rw'].some(p => pos.includes(p))) {
         attack.push(player);
+      } else {
+        // Fallback for uncategorized players, distribute them based on a simple modulo
+        const fallbackIndex = (defense.length + midfield.length + attack.length) % 3;
+        if (fallbackIndex === 0) defense.push(player);
+        else if (fallbackIndex === 1) midfield.push(player);
+        else attack.push(player);
       }
     });
 
+    if (numTrackers === 3) {
+      // When 3 trackers, it's one for each line
+      return [
+        defense.map(p => p.id),
+        midfield.map(p => p.id),
+        attack.map(p => p.id)
+      ];
+    }
+
+    // Logic for other numbers of trackers, ensuring all players are included.
     const assignments: number[][] = Array(numTrackers).fill(null).map(() => []);
-
-    const distributeByLine = (line: Player[]) => {
-      line.forEach((player, index) => {
-        const trackerIndex = index % numTrackers;
-        assignments[trackerIndex].push(player.id);
-      });
-    };
-
-    distributeByLine(defense);
-    distributeByLine(midfield);
-    distributeByLine(attack);
+    const allPlayersInTeam = [...defense, ...midfield, ...attack];
+    allPlayersInTeam.forEach((player, index) => {
+      const trackerIndex = index % numTrackers;
+      assignments[trackerIndex].push(player.id);
+    });
 
     return assignments;
   }, [homeTeamPlayers, awayTeamPlayers]);
@@ -986,20 +997,26 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                     return distributions.map((playerIds, index) => {
                       const tracker = selectedTrackers[index];
                       const players = allPlayers.filter(p => playerIds.includes(p.id));
-                      const positions = players.map(p => {
-                        const pos = p.position?.toLowerCase() || '';
-                        if (pos.includes('def') || pos.includes('gk')) return 'D';
-                        if (pos.includes('mid')) return 'M';
-                        if (pos.includes('att') || pos.includes('fw')) return 'A';
-                        return '?';
-                      });
+                      const positionCounts = players.reduce((acc, player) => {
+                        const pos = player.position?.toLowerCase() || '';
+                        if (pos.includes('def') || pos.includes('gk')) acc.D = (acc.D || 0) + 1;
+                        else if (pos.includes('mid')) acc.M = (acc.M || 0) + 1;
+                        else if (pos.includes('att') || pos.includes('fw')) acc.A = (acc.A || 0) + 1;
+                        else acc['?'] = (acc['?'] || 0) + 1;
+                        return acc;
+                      }, {} as Record<string, number>);
+
+                      const positionSummary = Object.entries(positionCounts)
+                        .map(([pos, count]) => `${count}${pos}`)
+                        .join(', ');
+
                       return (
                         <div key={index} className="text-xs mb-1">
                           <span className="font-medium">
                             {tracker?.full_name || tracker?.email || `Tracker ${index + 1}`}:
                           </span>
                           <span className="ml-2 text-gray-700">
-                            {players.length} players ({positions.join(', ')})
+                            {players.length} players ({positionSummary})
                           </span>
                         </div>
                       );
