@@ -61,10 +61,24 @@ export const useFourTrackerSystem = ({
       }
 
       const assignmentData: any = assignments[0];
-      const assignedPlayerIds = assignmentData.assigned_player_ids || [];
+
+      // Robustly parse assigned_player_ids
+      let playerIds: number[] = [];
+      const rawPlayerIds = assignmentData.assigned_player_ids;
+
+      if (typeof rawPlayerIds === 'string') {
+        // Handle PostgreSQL-style array string "{1,2,3}" or just "1,2,3"
+        playerIds = rawPlayerIds
+          .replace(/[{}]/g, '')
+          .split(',')
+          .map((id: string) => parseInt(id.trim(), 10))
+          .filter((id: number) => !isNaN(id));
+      } else if (Array.isArray(rawPlayerIds)) {
+        playerIds = rawPlayerIds;
+      }
 
       // Map assigned player IDs to actual player objects from the match data
-      const assignedPlayers: Player[] = assignedPlayerIds
+      const assignedPlayers: Player[] = playerIds
         .map((playerId: number) => allPlayers.find((p: Player) => p.id === playerId))
         .filter((p: Player | undefined): p is Player => p !== undefined);
 
