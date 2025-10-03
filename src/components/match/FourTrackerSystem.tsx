@@ -132,7 +132,7 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
           assignedPlayers={assignment?.assigned_players || []}
           currentBallHolder={currentBallHolder}
           isActive={isActiveTracker}
-          assignedEventTypes={['shot', 'foul', 'tackle', 'dribble', 'clearance']}
+          assignedEventTypes={assignment?.assigned_event_types || []}
           onRecordEvent={recordEvent}
         />
       )}

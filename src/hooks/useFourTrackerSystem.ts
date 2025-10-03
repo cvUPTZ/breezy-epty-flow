@@ -18,6 +18,7 @@ export interface TrackerAssignment {
   tracker_name: string;
   tracker_type: 'ball' | 'player';
   assigned_players: Player[];
+  assigned_event_types: string[];
 }
 
 export interface BallPossessionEvent {
@@ -74,6 +75,7 @@ export const useFourTrackerSystem = ({
         tracker_name: 'Unknown Tracker', // Profile fetch removed for simplicity for now
         tracker_type: (assignmentData.tracker_type || 'player') as 'ball' | 'player',
         assigned_players: assignedPlayers,
+        assigned_event_types: assignmentData.assigned_event_types || [],
       });
     };
 
