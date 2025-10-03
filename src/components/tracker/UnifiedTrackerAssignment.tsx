@@ -34,7 +34,7 @@ interface Assignment {
   tracker_email: string;
   tracker_type: 'player' | 'ball';
   player_ids: number[] | null;
-  assigned_event_types: string[] | null;
+  assigned_event_types: string[]; // ✅ never null
 }
 
 interface UnifiedTrackerAssignmentProps {
@@ -66,7 +66,7 @@ interface TrackerAssignmentState {
   creatingAssignment: boolean;
   deletingAssignment: string | null;
   error: string | null;
-  autoSelectedTrackers: string[]; // 👈 NEW: for auto-assign
+  autoSelectedTrackers: string[]; // For auto-assign
 }
 
 type AssignmentAction =
@@ -85,7 +85,7 @@ type AssignmentAction =
   | { type: 'SET_CREATING'; payload: boolean }
   | { type: 'SET_DELETING'; payload: string | null }
   | { type: 'RESET_FORM' }
-  | { type: 'SET_AUTO_SELECTED_TRACKERS'; payload: string[] }; // 👈 NEW
+  | { type: 'SET_AUTO_SELECTED_TRACKERS'; payload: string[] };
 
 const initialState = (videoUrl: string = ''): TrackerAssignmentState => ({
   trackers: [],
@@ -102,7 +102,7 @@ const initialState = (videoUrl: string = ''): TrackerAssignmentState => ({
   creatingAssignment: false,
   deletingAssignment: null,
   error: null,
-  autoSelectedTrackers: [], // 👈 NEW
+  autoSelectedTrackers: [],
 });
 
 function assignmentReducer(state: TrackerAssignmentState, action: AssignmentAction): TrackerAssignmentState {
@@ -149,13 +149,12 @@ function assignmentReducer(state: TrackerAssignmentState, action: AssignmentActi
         assignmentRole: 'player',
       };
     case 'SET_AUTO_SELECTED_TRACKERS':
-      return { ...state, autoSelectedTrackers: action.payload.slice(0, 3) }; // Enforce max 3
+      return { ...state, autoSelectedTrackers: action.payload.slice(0, 3) };
     default:
       return state;
   }
 }
 
-// Configuration for tracker types
 const trackerTypeConfig = {
   specialized: {
     icon: Users,
@@ -192,7 +191,7 @@ const processAssignments = (rawAssignments: any[]): Assignment[] => {
       tracker_email: assignment.profiles?.email || 'Unknown',
       tracker_type: assignment.tracker_type,
       player_ids: assignment.assigned_player_ids,
-      assigned_event_types: null,
+      assigned_event_types: assignment.assigned_event_types || [], // ✅ never null
     }));
   } catch (error) {
     console.error('Error processing assignments:', error);
@@ -273,7 +272,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       const { data, error } = await supabase.functions.invoke('get-tracker-users');
       if (error) {
         console.error('Edge function error:', error);
-        throw new Error('Failed to load tracker users. Please check your connection and try again.');
+        throw new Error('Failed to load tracker users.');
       }
       dispatch({ type: 'SET_TRACKERS', payload: data || [] });
       dispatch({ type: 'SET_ERROR', payload: null });
@@ -285,7 +284,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       dispatch({ type: 'SET_LOADING', payload: false });
       toast({
         title: "Error Loading Trackers",
-        description: "Could not load tracker users. Please refresh the page or contact support.",
+        description: "Could not load tracker users.",
         variant: "destructive"
       });
       return null;
@@ -420,7 +419,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       tracker_type: assignment.tracker_type,
       assigned_player_ids: assignment.player_ids,
       player_team_id: 'home',
-      assigned_event_types: []
+      assigned_event_types: assignment.assigned_event_types // ✅ now includes event types
     };
     const { data, error } = await supabase
       .from('match_tracker_assignments')
@@ -459,7 +458,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     }
   }, []);
 
-  // 🔥 AUTO-ASSIGN HANDLER (uses user-selected trackers)
+  // 🔥 AUTO-ASSIGN HANDLER (with event types + user-selected trackers)
   const handleAutoAssignTrackers = useCallback(async () => {
     const selectedTrackers = state.autoSelectedTrackers
       .map(id => state.trackers.find(t => t.id === id))
@@ -473,6 +472,9 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       });
       return;
     }
+
+    // ✅ Get ALL event types for auto-assignment
+    const allEventTypes = EVENT_TYPE_CATEGORIES.flatMap(cat => cat.events.map(e => e.key));
 
     return safeAsync(async () => {
       dispatch({ type: 'SET_CREATING', payload: true });
@@ -488,7 +490,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
           tracker_user_id: tracker.id,
           tracker_type: 'player' as const,
           player_ids: playerIds,
-          assigned_event_types: []
+          assigned_event_types: allEventTypes // ✅ fixed: now includes all event types
         };
 
         const assignmentId = matchId
@@ -507,7 +509,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
           tracker_email: tracker.email || 'Unknown',
           tracker_type: 'player',
           player_ids: playerIds,
-          assigned_event_types: null,
+          assigned_event_types: allEventTypes,
         });
       }
 
@@ -515,7 +517,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       dispatch({ type: 'SET_ASSIGNMENTS', payload: updatedAssignments });
       onAssignmentsChange?.(updatedAssignments);
       dispatch({ type: 'SET_CREATING', payload: false });
-      dispatch({ type: 'SET_AUTO_SELECTED_TRACKERS', payload: [] }); // reset selection
+      dispatch({ type: 'SET_AUTO_SELECTED_TRACKERS', payload: [] });
 
       toast({
         title: "Success",
@@ -571,50 +573,72 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       });
       return;
     }
+
+    // ✅ Determine player_ids based on role
+    let playerIds: number[] | null = null;
+    if (state.assignmentRole === 'ball') {
+      // Ball tracker gets ALL players from selected team
+      playerIds = (state.selectedTeam === 'home' ? homeTeamPlayers : awayTeamPlayers).map(p => p.id);
+    } else if (state.assignmentRole === 'player') {
+      playerIds = state.selectedPlayers;
+    }
+
     return safeAsync(async () => {
       dispatch({ type: 'SET_CREATING', payload: true });
       const trackerUser = state.trackers.find(t => t.id === state.selectedTracker);
       if (!trackerUser) {
         throw new Error('Selected tracker not found');
       }
+
       const assignmentToSave = {
         tracker_user_id: state.selectedTracker,
         tracker_type: state.assignmentRole,
-        player_ids: state.assignmentRole === 'player' ? state.selectedPlayers : null,
-        assigned_event_types: []
+        player_ids: playerIds,
+        assigned_event_types: state.selectedEventTypes.length > 0 
+          ? state.selectedEventTypes 
+          : EVENT_TYPE_CATEGORIES.flatMap(cat => cat.events.map(e => e.key)) // fallback to all
       };
+
       const realAssignmentId = matchId ? await saveAssignmentToDB(assignmentToSave) : `temp-${Date.now()}`;
       if (realAssignmentId && matchId) {
          const finalVideoUrl = state.assignmentVideoUrl.trim() || undefined;
          await sendNotificationToTracker(state.selectedTracker, matchId, finalVideoUrl);
       }
+
       const finalAssignment: Assignment = {
         id: realAssignmentId || `temp-${Date.now()}`,
         tracker_user_id: state.selectedTracker,
         tracker_name: trackerUser.full_name || trackerUser.email || 'Unknown',
         tracker_email: trackerUser.email || 'Unknown',
         tracker_type: state.assignmentRole,
-        player_ids: assignmentToSave.player_ids,
-        assigned_event_types: null,
+        player_ids: playerIds,
+        assigned_event_types: assignmentToSave.assigned_event_types,
       };
+
       const updatedAssignments = [...state.assignments, finalAssignment];
       dispatch({ type: 'SET_ASSIGNMENTS', payload: updatedAssignments });
       onAssignmentsChange?.(updatedAssignments);
       dispatch({ type: 'RESET_FORM' });
       dispatch({ type: 'SET_CREATING', payload: false });
+
       toast({
         title: "Success",
         description: "Assignment created successfully"
       });
+
       return finalAssignment;
     }, 'createAssignment');
   }, [
     state.selectedTracker,
     state.assignmentRole,
     state.selectedPlayers,
+    state.selectedTeam,
+    state.selectedEventTypes,
     state.trackers,
     state.assignments,
     state.assignmentVideoUrl,
+    homeTeamPlayers,
+    awayTeamPlayers,
     saveAssignmentToDB,
     sendNotificationToTracker,
     matchId,
@@ -789,7 +813,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     );
   }
 
-  // Get available (unassigned) trackers
   const availableTrackers = state.trackers.filter(
     t => !state.assignments.some(a => a.tracker_user_id === t.id)
   );
@@ -861,17 +884,17 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-700 block mb-2">
-                        Event Types ({(assignment.assigned_event_types || []).length})
+                        Event Types ({assignment.assigned_event_types.length})
                       </label>
                       <div className="flex flex-wrap gap-1">
-                        {(assignment.assigned_event_types || []).slice(0, 6).map((eventType: string) => (
+                        {assignment.assigned_event_types.slice(0, 6).map((eventType) => (
                           <Badge key={eventType} variant="outline" className="text-xs">
                             {eventType}
                           </Badge>
                         ))}
-                        {((assignment.assigned_event_types || []).length > 6) && (
+                        {assignment.assigned_event_types.length > 6 && (
                           <Badge variant="outline" className="text-xs bg-gray-100">
-                            +{(assignment.assigned_event_types || []).length - 6} more
+                            +{assignment.assigned_event_types.length - 6} more
                           </Badge>
                         )}
                       </div>
@@ -1117,7 +1140,8 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                 disabled={
                   state.creatingAssignment ||
                   !state.selectedTracker ||
-                  (state.assignmentRole === 'player' && (state.selectedEventTypes.length === 0 || state.selectedPlayers.length === 0))
+                  (state.assignmentRole === 'player' && state.selectedPlayers.length === 0)
+                  // ✅ Ball tracker no longer requires player selection
                 }
                 className="w-full"
                 aria-label="Create assignment"
