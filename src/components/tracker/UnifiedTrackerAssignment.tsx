@@ -272,14 +272,30 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   const fetchTrackers = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
     
-    const { data, error } = await supabase.functions.invoke('get-tracker-users');
+    try {
+      const { data, error } = await supabase.functions.invoke('get-tracker-users');
 
-    if (error) throw error;
-    
-    dispatch({ type: 'SET_TRACKERS', payload: data || [] });
-    dispatch({ type: 'SET_LOADING', payload: false });
-    return data;
-  }, []);
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error('Failed to load tracker users. Please check your connection and try again.');
+      }
+      
+      dispatch({ type: 'SET_TRACKERS', payload: data || [] });
+      dispatch({ type: 'SET_ERROR', payload: null });
+      dispatch({ type: 'SET_LOADING', payload: false });
+      return data;
+    } catch (err: any) {
+      console.error('Failed to fetch trackers:', err);
+      dispatch({ type: 'SET_ERROR', payload: err.message || 'Failed to load trackers' });
+      dispatch({ type: 'SET_LOADING', payload: false });
+      toast({
+        title: "Error Loading Trackers",
+        description: "Could not load tracker users. Please refresh the page or contact support.",
+        variant: "destructive"
+      });
+      return null;
+    }
+  }, [toast]);
 
   const fetchAssignments = useCallback(async () => {
     if (!matchId) return null;
@@ -830,18 +846,30 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   <Select
                     value={state.selectedTracker}
                     onValueChange={(value) => dispatch({ type: 'SET_SELECTED_TRACKER', payload: value })}
+                    disabled={state.trackers.length === 0}
                   >
-                    <SelectTrigger aria-label="Select tracker">
-                      <SelectValue placeholder="Choose a tracker" />
+                    <SelectTrigger aria-label="Select tracker" className="bg-background">
+                      <SelectValue placeholder={state.trackers.length === 0 ? "No trackers available" : "Choose a tracker"} />
                     </SelectTrigger>
-                    <SelectContent>
-                      {state.trackers.map(tracker => (
-                        <SelectItem key={tracker.id} value={tracker.id}>
-                          {tracker.full_name || tracker.email || 'Unknown'}
-                        </SelectItem>
-                      ))}
+                    <SelectContent className="bg-popover z-[100]">
+                      {state.trackers.length === 0 ? (
+                        <div className="p-2 text-sm text-muted-foreground text-center">
+                          No tracker users found
+                        </div>
+                      ) : (
+                        state.trackers.map(tracker => (
+                          <SelectItem key={tracker.id} value={tracker.id}>
+                            {tracker.full_name || tracker.email || 'Unknown'}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
+                  {state.trackers.length === 0 && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      No tracker users available. Please contact an admin.
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="text-sm font-medium">Assignment Role</label>
