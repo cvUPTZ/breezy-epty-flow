@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback, useMemo, useReducer } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -57,7 +58,7 @@ interface TrackerAssignmentState {
   selectedPlayers: number[];
   selectedEventTypes: string[];
   selectedTrackerType: TrackerType;
-  assignmentRole: 'player' | 'ball'; // New role for assignment
+  assignmentRole: 'player' | 'ball';
   selectedTeam: 'home' | 'away';
   expandedCategories: Set<string>;
   assignmentVideoUrl: string;
@@ -206,7 +207,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
 }) => {
   const { toast } = useToast();
   const [state, dispatch] = useReducer(assignmentReducer, initialState(videoUrl));
-  
+
   // Refs for cleanup and abort control
   const mountedRef = useRef(true);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -216,7 +217,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
 
   // Memoized values
   const allPlayers = useMemo(() => [...homeTeamPlayers, ...awayTeamPlayers], [homeTeamPlayers, awayTeamPlayers]);
-  
+
   // Initialize state from props
   useEffect(() => {
     if (trackerUsers.length > 0) {
@@ -246,13 +247,10 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       console.warn(`Operation ${operationKey} already in progress`);
       return null;
     }
-
     operationsRef.current.add(operationKey);
-    
     try {
       abortControllerRef.current?.abort();
       abortControllerRef.current = new AbortController();
-      
       const result = await operation();
       return mountedRef.current ? result : null;
     } catch (error: any) {
@@ -271,15 +269,12 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
 
   const fetchTrackers = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
-    
     try {
       const { data, error } = await supabase.functions.invoke('get-tracker-users');
-
       if (error) {
         console.error('Edge function error:', error);
         throw new Error('Failed to load tracker users. Please check your connection and try again.');
       }
-      
       dispatch({ type: 'SET_TRACKERS', payload: data || [] });
       dispatch({ type: 'SET_ERROR', payload: null });
       dispatch({ type: 'SET_LOADING', payload: false });
@@ -299,51 +294,41 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
 
   const fetchAssignments = useCallback(async () => {
     if (!matchId) return null;
-
     dispatch({ type: 'SET_LOADING', payload: true });
-    
     // Step 1: Fetch assignments
     const { data: assignmentsData, error: assignmentsError } = await supabase
       .from('match_tracker_assignments')
       .select('*')
       .eq('match_id', matchId);
-
     if (assignmentsError) {
       dispatch({ type: 'SET_LOADING', payload: false });
       throw assignmentsError;
     }
-
     if (!assignmentsData || assignmentsData.length === 0) {
       dispatch({ type: 'SET_ASSIGNMENTS', payload: [] });
       dispatch({ type: 'SET_LOADING', payload: false });
       onAssignmentsChange?.([]);
       return [];
     }
-
     // Step 2: Fetch profiles for the assigned trackers
     const trackerUserIds = [...new Set(assignmentsData.map(a => a.tracker_user_id))];
-
     const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
       .select('id, full_name, email')
       .in('id', trackerUserIds);
-
     if (profilesError) {
       console.warn('Failed to fetch profiles:', profilesError);
     }
-
     // Step 3: Combine and process the data
     const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
     const enrichedAssignments = assignmentsData.map(assignment => ({
       ...assignment,
       profiles: profilesMap.get(assignment.tracker_user_id) || null
     }));
-
     const processedAssignments = processAssignments(enrichedAssignments);
     dispatch({ type: 'SET_ASSIGNMENTS', payload: processedAssignments });
     dispatch({ type: 'SET_LOADING', payload: false });
     onAssignmentsChange?.(processedAssignments);
-
     return processedAssignments;
   }, [matchId, onAssignmentsChange]);
 
@@ -372,11 +357,9 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     if (trackerType === 'specialized') {
       return allPlayers.filter(player => state.selectedPlayers.includes(player.id));
     }
-
     const playersToFilter = team ? 
       (team === 'home' ? homeTeamPlayers : awayTeamPlayers) : 
       allPlayers;
-
     return playersToFilter.filter(player => {
       const position = player.position?.toLowerCase() || '';
       switch (trackerType) {
@@ -395,9 +378,63 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     });
   }, [allPlayers, homeTeamPlayers, awayTeamPlayers, state.selectedPlayers]);
 
+  // 🔥 AUTO-DISTRIBUTE PLAYERS FUNCTION
+  const autoDistributePlayers = useCallback((
+    team: 'home' | 'away',
+    numTrackers: number = 3
+  ): number[][] => {
+    const teamPlayers = team === 'home' ? homeTeamPlayers : awayTeamPlayers;
+
+    const defense: Player[] = [];
+    const midfield: Player[] = [];
+    const attack: Player[] = [];
+
+    teamPlayers.forEach(player => {
+      const pos = player.position?.toLowerCase() || '';
+      if (
+        pos.includes('def') ||
+        pos.includes('cb') ||
+        pos.includes('lb') ||
+        pos.includes('rb') ||
+        pos.includes('gk')
+      ) {
+        defense.push(player);
+      } else if (
+        pos.includes('mid') ||
+        pos.includes('cm') ||
+        pos.includes('dm') ||
+        pos.includes('am')
+      ) {
+        midfield.push(player);
+      } else if (
+        pos.includes('att') ||
+        pos.includes('fw') ||
+        pos.includes('st') ||
+        pos.includes('lw') ||
+        pos.includes('rw')
+      ) {
+        attack.push(player);
+      }
+    });
+
+    const assignments: number[][] = Array(numTrackers).fill(null).map(() => []);
+
+    const distributeByLine = (line: Player[]) => {
+      line.forEach((player, index) => {
+        const trackerIndex = index % numTrackers;
+        assignments[trackerIndex].push(player.id);
+      });
+    };
+
+    distributeByLine(defense);
+    distributeByLine(midfield);
+    distributeByLine(attack);
+
+    return assignments;
+  }, [homeTeamPlayers, awayTeamPlayers]);
+
   const saveAssignmentToDB = useCallback(async (assignment: Omit<Assignment, 'id' | 'tracker_name' | 'tracker_email'>) => {
     if (!matchId) return null;
-
     const recordToInsert = {
       match_id: matchId,
       tracker_user_id: assignment.tracker_user_id,
@@ -406,13 +443,11 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       player_team_id: 'home', // Default value, adjust as needed
       assigned_event_types: [] // Default empty array
     };
-
     const { data, error } = await supabase
       .from('match_tracker_assignments')
       .insert([recordToInsert])
       .select('id')
       .single();
-
     if (error) throw error;
     return data?.id || null;
   }, [matchId]);
@@ -424,7 +459,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       const notificationMessage = videoUrl 
         ? 'You have been assigned to track video analysis.'
         : 'You have been assigned to track a new match.';
-
       const { error } = await supabase.from('notifications').insert({
         user_id: trackerId,
         match_id: matchId,
@@ -438,7 +472,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
         },
         is_read: false,
       });
-
       if (error) {
         console.warn('Failed to send notification:', error);
       }
@@ -446,6 +479,85 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       console.warn('Notification error:', error);
     }
   }, []);
+
+  // 🔥 AUTO-ASSIGN HANDLER
+  const handleAutoAssignTrackers = useCallback(async () => {
+    const availableTrackers = state.trackers
+      .filter(t => !state.assignments.some(a => a.tracker_user_id === t.id))
+      .slice(0, 3);
+
+    if (availableTrackers.length < 3) {
+      toast({
+        title: "Not Enough Trackers",
+        description: "Need at least 3 available tracker users",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    return safeAsync(async () => {
+      dispatch({ type: 'SET_CREATING', payload: true });
+
+      const distributions = autoDistributePlayers(state.selectedTeam, 3);
+      const newAssignments: Assignment[] = [];
+
+      for (let i = 0; i < 3; i++) {
+        const tracker = availableTrackers[i];
+        const playerIds = distributions[i];
+
+        const assignmentToSave = {
+          tracker_user_id: tracker.id,
+          tracker_type: 'player' as const,
+          player_ids: playerIds,
+          assigned_event_types: []
+        };
+
+        const assignmentId = matchId
+          ? await saveAssignmentToDB(assignmentToSave)
+          : `temp-${Date.now()}-${i}`;
+
+        if (assignmentId && matchId) {
+          const finalVideoUrl = state.assignmentVideoUrl.trim() || undefined;
+          await sendNotificationToTracker(tracker.id, matchId, finalVideoUrl);
+        }
+
+        newAssignments.push({
+          id: assignmentId || `temp-${Date.now()}-${i}`,
+          tracker_user_id: tracker.id,
+          tracker_name: tracker.full_name || tracker.email || 'Unknown',
+          tracker_email: tracker.email || 'Unknown',
+          tracker_type: 'player',
+          player_ids: playerIds,
+          assigned_event_types: null,
+        });
+      }
+
+      const updatedAssignments = [...state.assignments, ...newAssignments];
+      dispatch({ type: 'SET_ASSIGNMENTS', payload: updatedAssignments });
+      onAssignmentsChange?.(updatedAssignments);
+      dispatch({ type: 'SET_CREATING', payload: false });
+
+      toast({
+        title: "Success",
+        description: `Created ${newAssignments.length} player tracker assignments`,
+      });
+
+      return newAssignments;
+    }, 'autoAssignTrackers');
+  }, [
+    state.trackers,
+    state.assignments,
+    state.selectedTeam,
+    state.assignmentVideoUrl,
+    autoDistributePlayers,
+    saveAssignmentToDB,
+    sendNotificationToTracker,
+    matchId,
+    onAssignmentsChange,
+    safeAsync,
+    toast,
+    dispatch
+  ]);
 
   // Event handlers
   const handleEventTypeToggle = useCallback((eventType: string) => {
@@ -471,7 +583,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       });
       return;
     }
-
     if (state.assignmentRole === 'player' && state.selectedPlayers.length === 0) {
       toast({
         title: "Validation Error",
@@ -480,28 +591,23 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       });
       return;
     }
-
     return safeAsync(async () => {
       dispatch({ type: 'SET_CREATING', payload: true });
-
       const trackerUser = state.trackers.find(t => t.id === state.selectedTracker);
       if (!trackerUser) {
         throw new Error('Selected tracker not found');
       }
-
       const assignmentToSave = {
         tracker_user_id: state.selectedTracker,
         tracker_type: state.assignmentRole,
         player_ids: state.assignmentRole === 'player' ? state.selectedPlayers : null,
-        assigned_event_types: [] // Add default empty array
+        assigned_event_types: []
       };
-
       const realAssignmentId = matchId ? await saveAssignmentToDB(assignmentToSave) : `temp-${Date.now()}`;
       if (realAssignmentId && matchId) {
          const finalVideoUrl = state.assignmentVideoUrl.trim() || undefined;
          await sendNotificationToTracker(state.selectedTracker, matchId, finalVideoUrl);
       }
-
       const finalAssignment: Assignment = {
         id: realAssignmentId || `temp-${Date.now()}`,
         tracker_user_id: state.selectedTracker,
@@ -511,18 +617,15 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
         player_ids: assignmentToSave.player_ids,
         assigned_event_types: null,
       };
-
       const updatedAssignments = [...state.assignments, finalAssignment];
       dispatch({ type: 'SET_ASSIGNMENTS', payload: updatedAssignments });
       onAssignmentsChange?.(updatedAssignments);
       dispatch({ type: 'RESET_FORM' });
       dispatch({ type: 'SET_CREATING', payload: false });
-
       toast({
         title: "Success",
         description: "Assignment created successfully"
       });
-
       return finalAssignment;
     }, 'createAssignment');
   }, [
@@ -543,31 +646,25 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   const handleDeleteAssignment = useCallback(async (assignmentId: string) => {
     return safeAsync(async () => {
       dispatch({ type: 'SET_DELETING', payload: assignmentId });
-
       const assignment = state.assignments.find(a => a.id === assignmentId);
       if (!assignment) {
         throw new Error('Assignment not found');
       }
-
       if (matchId && !assignmentId.startsWith('temp-')) {
         const { error } = await supabase
           .from('match_tracker_assignments')
           .delete()
           .eq('id', assignmentId);
-
         if (error) throw error;
       }
-
       const updatedAssignments = state.assignments.filter(a => a.id !== assignmentId);
       dispatch({ type: 'SET_ASSIGNMENTS', payload: updatedAssignments });
       dispatch({ type: 'SET_DELETING', payload: null });
       onAssignmentsChange?.(updatedAssignments);
-
       toast({
         title: "Success",
         description: "Assignment deleted successfully"
       });
-
       return true;
     }, 'deleteAssignment');
   }, [state.assignments, matchId, onAssignmentsChange, safeAsync, toast]);
@@ -730,7 +827,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                 const assignedPlayers = (assignment.player_ids || [])
                   .map(playerId => allPlayers.find(player => player.id === playerId))
                   .filter((player): player is Player => Boolean(player));
-
                 return (
                   <div key={assignment.id} className="p-4 bg-gray-50 rounded-lg space-y-3">
                     <div className="flex items-start justify-between">
@@ -753,7 +849,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                         )}
                       </Button>
                     </div>
-
                     <div>
                       <label className="text-sm font-medium text-gray-700 block mb-2">
                         Assigned Players ({assignedPlayers.length})
@@ -780,7 +875,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                         ))}
                       </div>
                     </div>
-
                     <div>
                       <label className="text-sm font-medium text-gray-700 block mb-2">
                         Event Types ({(assignment.assigned_event_types || []).length})
@@ -815,12 +909,91 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Auto-Assign Quick Setup */}
+          <div className="pt-2 border-t">
+            <h3 className="text-sm font-medium mb-3">Quick Setup: Auto-Assign 3 Trackers</h3>
+
+            <div className="mb-3">
+              <label className="text-sm font-medium mb-2 block">
+                Available Trackers
+              </label>
+              <div className="space-y-2">
+                {state.trackers
+                  .filter(t => !state.assignments.some(a => a.tracker_user_id === t.id))
+                  .slice(0, 3)
+                  .map((tracker, index) => (
+                    <div key={tracker.id} className="p-2 bg-gray-50 border rounded text-sm">
+                      Tracker {index + 1}: {tracker.full_name || tracker.email}
+                    </div>
+                  ))}
+              </div>
+              {state.trackers.filter(t => !state.assignments.some(a => a.tracker_user_id === t.id)).length < 3 && (
+                <p className="text-xs text-amber-600 mt-1">
+                  Need at least 3 unassigned trackers to use auto-assignment.
+                </p>
+              )}
+            </div>
+
+            {state.trackers.filter(t => !state.assignments.some(a => a.tracker_user_id === t.id)).length >= 3 && (
+              <Card className="bg-blue-50 border-blue-200 mb-3">
+                <CardContent className="p-3">
+                  <h4 className="font-medium text-xs mb-2">Preview (by position):</h4>
+                  {(() => {
+                    const distributions = autoDistributePlayers(state.selectedTeam, 3);
+                    const availableTrackers = state.trackers
+                      .filter(t => !state.assignments.some(a => a.tracker_user_id === t.id))
+                      .slice(0, 3);
+                    return distributions.map((playerIds, index) => {
+                      const players = allPlayers.filter(p => playerIds.includes(p.id));
+                      const positions = players.map(p => {
+                        const pos = p.position?.toLowerCase() || '';
+                        if (pos.includes('def') || pos.includes('gk')) return 'D';
+                        if (pos.includes('mid')) return 'M';
+                        if (pos.includes('att') || pos.includes('fw')) return 'A';
+                        return '?';
+                      });
+                      return (
+                        <div key={index} className="text-xs mb-1">
+                          <span className="font-medium">
+                            {availableTrackers[index]?.full_name || availableTrackers[index]?.email || `Tracker ${index + 1}`}:
+                          </span>
+                          <span className="ml-2 text-gray-700">
+                            {players.length} players ({positions.join(', ')})
+                          </span>
+                        </div>
+                      );
+                    });
+                  })()}
+                </CardContent>
+              </Card>
+            )}
+
+            <Button
+              onClick={handleAutoAssignTrackers}
+              disabled={
+                state.creatingAssignment ||
+                state.trackers.filter(t => !state.assignments.some(a => a.tracker_user_id === t.id)).length < 3
+              }
+              className="w-full"
+              size="sm"
+            >
+              {state.creatingAssignment ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Creating...
+                </>
+              ) : (
+                'Auto-Assign 3 Player Trackers'
+              )}
+            </Button>
+          </div>
+
+          {/* Manual Assignment Tabs */}
           <Tabs defaultValue="by-player" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="by-player">By Player</TabsTrigger>
               <TabsTrigger value="by-line">By Line</TabsTrigger>
             </TabsList>
-
             <TabsContent value="by-player" className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="videoUrl" className="text-sm font-medium text-gray-700">
@@ -839,7 +1012,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   Leave empty for live match tracking
                 </div>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Select Tracker</label>
@@ -887,7 +1059,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   </Select>
                 </div>
               </div>
-
               {state.assignmentRole === 'player' && (
                 <>
                   <div>
@@ -909,14 +1080,12 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                       </SelectContent>
                     </Select>
                   </div>
-
                   <div>
                     <label className="text-sm font-medium mb-2 block">
                       Players ({state.selectedPlayers.length} selected)
                     </label>
                     {renderPlayerGrid(state.selectedTeam === 'home' ? homeTeamPlayers : awayTeamPlayers)}
                   </div>
-
                   <div>
                     <label className="text-sm font-medium mb-2 block">
                       Event Types ({state.selectedEventTypes.length} selected)
@@ -925,7 +1094,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   </div>
                 </>
               )}
-
               <Button
                 onClick={handleCreateAssignment}
                 disabled={
@@ -946,7 +1114,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                 )}
               </Button>
             </TabsContent>
-
             <TabsContent value="by-line" className="space-y-4">
                <div className="space-y-2">
                 <label htmlFor="videoUrl-line" className="text-sm font-medium text-gray-700">
@@ -965,7 +1132,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   Leave empty for live match tracking
                 </div>
               </div>
-              
               <div>
                 <label className="text-sm font-medium">Select Tracker</label>
                 <Select 
@@ -984,7 +1150,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   </SelectContent>
                 </Select>
               </div>
-              
               <div>
                 <label className="text-sm font-medium mb-2 block">Select Team</label>
                 <Select 
@@ -1004,7 +1169,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   </SelectContent>
                 </Select>
               </div>
-
               <div>
                 <label className="text-sm font-medium mb-2 block">Select Tracker Type</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1012,7 +1176,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                     const config = trackerTypeConfig[type];
                     const Icon = config.icon;
                     const linePlayers = getLinePlayers(type, state.selectedTeam);
-                    
                     return (
                       <div
                         key={type}
@@ -1050,14 +1213,12 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   })}
                 </div>
               </div>
-              
               <div>
                 <label className="text-sm font-medium mb-2 block">
                   Event Types ({state.selectedEventTypes.length} selected)
                 </label>
                 {renderEventTypeCategories()}
               </div>
-
               <Button
                 onClick={handleCreateAssignment}
                 disabled={state.creatingAssignment || !state.selectedTracker || state.selectedEventTypes.length === 0}
