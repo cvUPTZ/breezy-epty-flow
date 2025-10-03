@@ -66,6 +66,7 @@ interface TrackerAssignmentState {
   creatingAssignment: boolean;
   deletingAssignment: string | null;
   error: string | null;
+  autoSelectedTrackers: string[]; // 👈 NEW: for auto-assign
 }
 
 type AssignmentAction =
@@ -83,7 +84,8 @@ type AssignmentAction =
   | { type: 'SET_VIDEO_URL'; payload: string }
   | { type: 'SET_CREATING'; payload: boolean }
   | { type: 'SET_DELETING'; payload: string | null }
-  | { type: 'RESET_FORM' };
+  | { type: 'RESET_FORM' }
+  | { type: 'SET_AUTO_SELECTED_TRACKERS'; payload: string[] }; // 👈 NEW
 
 const initialState = (videoUrl: string = ''): TrackerAssignmentState => ({
   trackers: [],
@@ -100,6 +102,7 @@ const initialState = (videoUrl: string = ''): TrackerAssignmentState => ({
   creatingAssignment: false,
   deletingAssignment: null,
   error: null,
+  autoSelectedTrackers: [], // 👈 NEW
 });
 
 function assignmentReducer(state: TrackerAssignmentState, action: AssignmentAction): TrackerAssignmentState {
@@ -145,6 +148,8 @@ function assignmentReducer(state: TrackerAssignmentState, action: AssignmentActi
         selectedTrackerType: 'specialized',
         assignmentRole: 'player',
       };
+    case 'SET_AUTO_SELECTED_TRACKERS':
+      return { ...state, autoSelectedTrackers: action.payload.slice(0, 3) }; // Enforce max 3
     default:
       return state;
   }
@@ -187,7 +192,7 @@ const processAssignments = (rawAssignments: any[]): Assignment[] => {
       tracker_email: assignment.profiles?.email || 'Unknown',
       tracker_type: assignment.tracker_type,
       player_ids: assignment.assigned_player_ids,
-      assigned_event_types: null, // Column no longer exists
+      assigned_event_types: null,
     }));
   } catch (error) {
     console.error('Error processing assignments:', error);
@@ -208,17 +213,14 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   const { toast } = useToast();
   const [state, dispatch] = useReducer(assignmentReducer, initialState(videoUrl));
 
-  // Refs for cleanup and abort control
   const mountedRef = useRef(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const operationsRef = useRef<Set<string>>(new Set());
   const hasFetchedTrackers = useRef(false);
   const hasFetchedAssignments = useRef(false);
 
-  // Memoized values
   const allPlayers = useMemo(() => [...homeTeamPlayers, ...awayTeamPlayers], [homeTeamPlayers, awayTeamPlayers]);
 
-  // Initialize state from props
   useEffect(() => {
     if (trackerUsers.length > 0) {
       dispatch({ type: 'SET_TRACKERS', payload: trackerUsers });
@@ -230,7 +232,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     }
   }, [trackerUsers, assignments]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       mountedRef.current = false;
@@ -238,7 +239,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     };
   }, []);
 
-  // Safe async operation wrapper
   const safeAsync = useCallback(async <T,>(
     operation: () => Promise<T>,
     operationKey: string
@@ -295,7 +295,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   const fetchAssignments = useCallback(async () => {
     if (!matchId) return null;
     dispatch({ type: 'SET_LOADING', payload: true });
-    // Step 1: Fetch assignments
     const { data: assignmentsData, error: assignmentsError } = await supabase
       .from('match_tracker_assignments')
       .select('*')
@@ -310,7 +309,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       onAssignmentsChange?.([]);
       return [];
     }
-    // Step 2: Fetch profiles for the assigned trackers
     const trackerUserIds = [...new Set(assignmentsData.map(a => a.tracker_user_id))];
     const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
@@ -319,7 +317,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     if (profilesError) {
       console.warn('Failed to fetch profiles:', profilesError);
     }
-    // Step 3: Combine and process the data
     const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
     const enrichedAssignments = assignmentsData.map(assignment => ({
       ...assignment,
@@ -332,7 +329,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     return processedAssignments;
   }, [matchId, onAssignmentsChange]);
 
-  // Initialize data - use refs to track if we've already fetched
   useEffect(() => {
     if (trackerUsers.length === 0 && !hasFetchedTrackers.current) {
       hasFetchedTrackers.current = true;
@@ -378,7 +374,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     });
   }, [allPlayers, homeTeamPlayers, awayTeamPlayers, state.selectedPlayers]);
 
-  // 🔥 AUTO-DISTRIBUTE PLAYERS FUNCTION
+  // 🔥 AUTO-DISTRIBUTE PLAYERS BY POSITION
   const autoDistributePlayers = useCallback((
     team: 'home' | 'away',
     numTrackers: number = 3
@@ -391,28 +387,11 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
 
     teamPlayers.forEach(player => {
       const pos = player.position?.toLowerCase() || '';
-      if (
-        pos.includes('def') ||
-        pos.includes('cb') ||
-        pos.includes('lb') ||
-        pos.includes('rb') ||
-        pos.includes('gk')
-      ) {
+      if (pos.includes('def') || pos.includes('cb') || pos.includes('lb') || pos.includes('rb') || pos.includes('gk')) {
         defense.push(player);
-      } else if (
-        pos.includes('mid') ||
-        pos.includes('cm') ||
-        pos.includes('dm') ||
-        pos.includes('am')
-      ) {
+      } else if (pos.includes('mid') || pos.includes('cm') || pos.includes('dm') || pos.includes('am')) {
         midfield.push(player);
-      } else if (
-        pos.includes('att') ||
-        pos.includes('fw') ||
-        pos.includes('st') ||
-        pos.includes('lw') ||
-        pos.includes('rw')
-      ) {
+      } else if (pos.includes('att') || pos.includes('fw') || pos.includes('st') || pos.includes('lw') || pos.includes('rw')) {
         attack.push(player);
       }
     });
@@ -440,8 +419,8 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       tracker_user_id: assignment.tracker_user_id,
       tracker_type: assignment.tracker_type,
       assigned_player_ids: assignment.player_ids,
-      player_team_id: 'home', // Default value, adjust as needed
-      assigned_event_types: [] // Default empty array
+      player_team_id: 'home',
+      assigned_event_types: []
     };
     const { data, error } = await supabase
       .from('match_tracker_assignments')
@@ -480,16 +459,16 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     }
   }, []);
 
-  // 🔥 AUTO-ASSIGN HANDLER
+  // 🔥 AUTO-ASSIGN HANDLER (uses user-selected trackers)
   const handleAutoAssignTrackers = useCallback(async () => {
-    const availableTrackers = state.trackers
-      .filter(t => !state.assignments.some(a => a.tracker_user_id === t.id))
-      .slice(0, 3);
+    const selectedTrackers = state.autoSelectedTrackers
+      .map(id => state.trackers.find(t => t.id === id))
+      .filter((t): t is TrackerUser => !!t);
 
-    if (availableTrackers.length < 3) {
+    if (selectedTrackers.length !== 3) {
       toast({
-        title: "Not Enough Trackers",
-        description: "Need at least 3 available tracker users",
+        title: "Invalid Selection",
+        description: "Please select exactly 3 trackers.",
         variant: "destructive"
       });
       return;
@@ -502,7 +481,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       const newAssignments: Assignment[] = [];
 
       for (let i = 0; i < 3; i++) {
-        const tracker = availableTrackers[i];
+        const tracker = selectedTrackers[i];
         const playerIds = distributions[i];
 
         const assignmentToSave = {
@@ -536,6 +515,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       dispatch({ type: 'SET_ASSIGNMENTS', payload: updatedAssignments });
       onAssignmentsChange?.(updatedAssignments);
       dispatch({ type: 'SET_CREATING', payload: false });
+      dispatch({ type: 'SET_AUTO_SELECTED_TRACKERS', payload: [] }); // reset selection
 
       toast({
         title: "Success",
@@ -545,9 +525,10 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       return newAssignments;
     }, 'autoAssignTrackers');
   }, [
+    state.autoSelectedTrackers,
     state.trackers,
-    state.assignments,
     state.selectedTeam,
+    state.assignments,
     state.assignmentVideoUrl,
     autoDistributePlayers,
     saveAssignmentToDB,
@@ -559,7 +540,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     dispatch
   ]);
 
-  // Event handlers
   const handleEventTypeToggle = useCallback((eventType: string) => {
     const newEventTypes = state.selectedEventTypes.includes(eventType)
       ? state.selectedEventTypes.filter(type => type !== eventType)
@@ -669,7 +649,6 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     }, 'deleteAssignment');
   }, [state.assignments, matchId, onAssignmentsChange, safeAsync, toast]);
 
-  // Render functions
   const renderEventTypeCategories = useCallback(() => (
     <div className="space-y-3">
       {EVENT_TYPE_CATEGORIES.map(category => (
@@ -810,6 +789,11 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     );
   }
 
+  // Get available (unassigned) trackers
+  const availableTrackers = state.trackers.filter(
+    t => !state.assignments.some(a => a.tracker_user_id === t.id)
+  );
+
   return (
     <div className="space-y-6">
       {/* Current Assignments */}
@@ -909,41 +893,75 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Auto-Assign Quick Setup */}
+          {/* 🔥 AUTO-ASSIGN SECTION */}
           <div className="pt-2 border-t">
             <h3 className="text-sm font-medium mb-3">Quick Setup: Auto-Assign 3 Trackers</h3>
 
-            <div className="mb-3">
+            <div className="mb-4">
               <label className="text-sm font-medium mb-2 block">
-                Available Trackers
+                Select 3 Trackers for Auto-Assignment
               </label>
-              <div className="space-y-2">
-                {state.trackers
-                  .filter(t => !state.assignments.some(a => a.tracker_user_id === t.id))
-                  .slice(0, 3)
-                  .map((tracker, index) => (
-                    <div key={tracker.id} className="p-2 bg-gray-50 border rounded text-sm">
-                      Tracker {index + 1}: {tracker.full_name || tracker.email}
+              <div className="space-y-2 max-h-40 overflow-y-auto p-2 border rounded">
+                {availableTrackers.map(tracker => {
+                  const isSelected = state.autoSelectedTrackers.includes(tracker.id);
+                  const isDisabled = !isSelected && state.autoSelectedTrackers.length >= 3;
+                  return (
+                    <div
+                      key={tracker.id}
+                      className={`flex items-center p-2 rounded cursor-pointer ${
+                        isSelected
+                          ? 'bg-blue-100 border-blue-300'
+                          : isDisabled
+                          ? 'opacity-50'
+                          : 'hover:bg-gray-100'
+                      }`}
+                      onClick={() => {
+                        if (isDisabled && !isSelected) return;
+                        let newSelection = state.autoSelectedTrackers;
+                        if (isSelected) {
+                          newSelection = newSelection.filter(id => id !== tracker.id);
+                        } else {
+                          newSelection = [...newSelection, tracker.id].slice(0, 3);
+                        }
+                        dispatch({ type: 'SET_AUTO_SELECTED_TRACKERS', payload: newSelection });
+                      }}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        disabled={isDisabled && !isSelected}
+                        className="mr-2"
+                      />
+                      <span className="text-sm">
+                        {tracker.full_name || tracker.email}
+                      </span>
                     </div>
-                  ))}
+                  );
+                })}
               </div>
-              {state.trackers.filter(t => !state.assignments.some(a => a.tracker_user_id === t.id)).length < 3 && (
+              {availableTrackers.length === 0 && (
                 <p className="text-xs text-amber-600 mt-1">
-                  Need at least 3 unassigned trackers to use auto-assignment.
+                  No available trackers. All are already assigned.
+                </p>
+              )}
+              {state.autoSelectedTrackers.length < 3 && availableTrackers.length > 0 && (
+                <p className="text-xs text-amber-600 mt-1">
+                  Please select exactly 3 trackers to enable auto-assignment.
                 </p>
               )}
             </div>
 
-            {state.trackers.filter(t => !state.assignments.some(a => a.tracker_user_id === t.id)).length >= 3 && (
+            {state.autoSelectedTrackers.length === 3 && (
               <Card className="bg-blue-50 border-blue-200 mb-3">
                 <CardContent className="p-3">
                   <h4 className="font-medium text-xs mb-2">Preview (by position):</h4>
                   {(() => {
                     const distributions = autoDistributePlayers(state.selectedTeam, 3);
-                    const availableTrackers = state.trackers
-                      .filter(t => !state.assignments.some(a => a.tracker_user_id === t.id))
-                      .slice(0, 3);
+                    const selectedTrackers = state.autoSelectedTrackers.map(id =>
+                      state.trackers.find(t => t.id === id)
+                    ).filter((t): t is TrackerUser => !!t);
+
                     return distributions.map((playerIds, index) => {
+                      const tracker = selectedTrackers[index];
                       const players = allPlayers.filter(p => playerIds.includes(p.id));
                       const positions = players.map(p => {
                         const pos = p.position?.toLowerCase() || '';
@@ -955,7 +973,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                       return (
                         <div key={index} className="text-xs mb-1">
                           <span className="font-medium">
-                            {availableTrackers[index]?.full_name || availableTrackers[index]?.email || `Tracker ${index + 1}`}:
+                            {tracker?.full_name || tracker?.email || `Tracker ${index + 1}`}:
                           </span>
                           <span className="ml-2 text-gray-700">
                             {players.length} players ({positions.join(', ')})
@@ -972,7 +990,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
               onClick={handleAutoAssignTrackers}
               disabled={
                 state.creatingAssignment ||
-                state.trackers.filter(t => !state.assignments.some(a => a.tracker_user_id === t.id)).length < 3
+                state.autoSelectedTrackers.length !== 3
               }
               className="w-full"
               size="sm"
