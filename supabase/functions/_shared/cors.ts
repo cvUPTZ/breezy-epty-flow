@@ -23,8 +23,8 @@ export const getCorsHeaders = (requestOrigin: string | null) => {
     origin = '*';
   } else if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
     origin = requestOrigin;
-  } else if (requestOrigin && requestOrigin.endsWith('.lovable.app')) {
-    // Allow all Lovable preview domains
+  } else if (requestOrigin && (requestOrigin.endsWith('.lovable.app') || requestOrigin.endsWith('.lovableproject.com'))) {
+    // Allow all Lovable preview and project domains
     origin = requestOrigin;
   }
   // If there's no match, the 'Access-Control-Allow-Origin' header will not be sent,
