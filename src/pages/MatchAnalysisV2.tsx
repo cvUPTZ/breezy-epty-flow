@@ -157,14 +157,25 @@ const MatchAnalysisV2: React.FC = () => {
 
       // Parse player data safely
       const parsePlayerData = (data: any): PlayerForPianoInput[] => {
+        let players: any[] = [];
         if (typeof data === 'string') {
           try {
-            return JSON.parse(data);
+            const parsedData = JSON.parse(data);
+            if (Array.isArray(parsedData)) {
+              players = parsedData;
+            }
           } catch {
+            // Silently fail for invalid JSON
             return [];
           }
+        } else if (Array.isArray(data)) {
+          players = data;
         }
-        return Array.isArray(data) ? data : [];
+
+        // Filter out players with no name or an empty name
+        return players.filter(player =>
+          player && typeof player.player_name === 'string' && player.player_name.trim() !== ''
+        );
       };
 
       const homePlayers = parsePlayerData(matchData.home_team_players);
