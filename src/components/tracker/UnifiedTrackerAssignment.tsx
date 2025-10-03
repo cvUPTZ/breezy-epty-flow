@@ -387,6 +387,8 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       tracker_user_id: assignment.tracker_user_id,
       tracker_type: assignment.tracker_type,
       assigned_player_ids: assignment.player_ids,
+      player_team_id: 'home', // Default value, adjust as needed
+      assigned_event_types: [] // Default empty array
     };
 
     const { data, error } = await supabase
@@ -475,6 +477,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
         tracker_user_id: state.selectedTracker,
         tracker_type: state.assignmentRole,
         player_ids: state.assignmentRole === 'player' ? state.selectedPlayers : null,
+        assigned_event_types: [] // Add default empty array
       };
 
       const realAssignmentId = matchId ? await saveAssignmentToDB(assignmentToSave) : `temp-${Date.now()}`;
@@ -708,7 +711,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
           <CardContent>
             <div className="space-y-4">
               {state.assignments.map(assignment => {
-                const assignedPlayers = assignment.player_ids
+                const assignedPlayers = (assignment.player_ids || [])
                   .map(playerId => allPlayers.find(player => player.id === playerId))
                   .filter((player): player is Player => Boolean(player));
 
@@ -764,17 +767,17 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
 
                     <div>
                       <label className="text-sm font-medium text-gray-700 block mb-2">
-                        Event Types ({assignment.assigned_event_types.length})
+                        Event Types ({(assignment.assigned_event_types || []).length})
                       </label>
                       <div className="flex flex-wrap gap-1">
-                        {assignment.assigned_event_types.slice(0, 6).map(eventType => (
+                        {(assignment.assigned_event_types || []).slice(0, 6).map((eventType: string) => (
                           <Badge key={eventType} variant="outline" className="text-xs">
                             {eventType}
                           </Badge>
                         ))}
-                        {assignment.assigned_event_types.length > 6 && (
+                        {((assignment.assigned_event_types || []).length > 6) && (
                           <Badge variant="outline" className="text-xs bg-gray-100">
-                            +{assignment.assigned_event_types.length - 6} more
+                            +{(assignment.assigned_event_types || []).length - 6} more
                           </Badge>
                         )}
                       </div>

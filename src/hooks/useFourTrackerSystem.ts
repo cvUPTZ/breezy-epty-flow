@@ -30,12 +30,14 @@ interface UseFourTrackerSystemProps {
   matchId: string;
   trackerId: string;
   trackerType: 'ball' | 'player';
+  allPlayers: Player[]; // All players from the match
 }
 
 export const useFourTrackerSystem = ({
   matchId,
   trackerId,
-  trackerType
+  trackerType,
+  allPlayers
 }: UseFourTrackerSystemProps) => {
   const { toast } = useToast();
   const [assignment, setAssignment] = useState<TrackerAssignment | null>(null);
@@ -58,37 +60,26 @@ export const useFourTrackerSystem = ({
         return;
       }
 
-      const assignmentData = assignments[0];
+      const assignmentData: any = assignments[0];
       const assignedPlayerIds = assignmentData.assigned_player_ids || [];
 
-      let assignedPlayers: Player[] = [];
-      if (assignedPlayerIds.length > 0) {
-        const { data: players, error: playersError } = await supabase
-          .from('players')
-          .select('id, player_name, jersey_number')
-          .in('id', assignedPlayerIds);
-
-        if (playersError) {
-          console.error('Error fetching assigned players:', playersError);
-        } else {
-          // We need to know the team for each player, which isn't on the players table directly.
-          // This requires a join or a second query. For now, we'll leave team as a placeholder.
-          assignedPlayers = players.map(p => ({ ...p, team: 'home' })); // FIXME: Team is not available here
-        }
-      }
+      // Map assigned player IDs to actual player objects from the match data
+      const assignedPlayers: Player[] = assignedPlayerIds
+        .map((playerId: number) => allPlayers.find((p: Player) => p.id === playerId))
+        .filter((p: Player | undefined): p is Player => p !== undefined);
 
       setAssignment({
         tracker_id: trackerId,
         tracker_name: 'Unknown Tracker', // Profile fetch removed for simplicity for now
-        tracker_type: assignmentData.tracker_type,
+        tracker_type: (assignmentData.tracker_type || 'player') as 'ball' | 'player',
         assigned_players: assignedPlayers,
       });
     };
 
-    if (trackerId && matchId) {
+    if (trackerId && matchId && allPlayers.length > 0) {
       fetchAssignment();
     }
-  }, [matchId, trackerId, trackerType]);
+  }, [matchId, trackerId, trackerType, allPlayers]);
 
   // Subscribe to ball possession changes (for all trackers)
   useEffect(() => {
@@ -100,33 +91,20 @@ export const useFourTrackerSystem = ({
         (payload) => {
           const possession = payload.payload as BallPossessionEvent;
           
-          const fetchPlayerDetails = async (playerId: number, team: 'home' | 'away') => {
-            const { data: player, error } = await supabase
-              .from('players')
-              .select('id, player_name, jersey_number')
-              .eq('id', playerId)
-              .single();
+          // Find player from allPlayers
+          const player = allPlayers.find(p => p.id === possession.player_id);
+          
+          if (player) {
+            setCurrentBallHolder(player);
+            setLastPossession(possession);
 
-            if (error) {
-              console.error("Error fetching player details:", error);
-              return null;
+            if (trackerType === 'player') {
+              const isMyPlayer = assignment?.assigned_players?.some(p => p.id === possession.player_id) || false;
+              setIsActiveTracker(isMyPlayer);
+            } else {
+              setIsActiveTracker(true);
             }
-            return { ...player, team };
-          };
-
-          fetchPlayerDetails(possession.player_id, possession.team).then(player => {
-            if (player) {
-              setCurrentBallHolder(player);
-              setLastPossession(possession);
-
-              if (trackerType === 'player') {
-                const isMyPlayer = assignment?.assigned_players.some(p => p.id === possession.player_id);
-                setIsActiveTracker(!!isMyPlayer);
-              } else {
-                setIsActiveTracker(true);
-              }
-            }
-          });
+          }
         }
       )
       .subscribe();

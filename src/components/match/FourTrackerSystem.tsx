@@ -22,6 +22,9 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Combine all players
+  const allPlayers = [...(homeTeamPlayers || []), ...(awayTeamPlayers || [])];
+
   const {
     assignment,
     currentBallHolder,
@@ -32,6 +35,7 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
     matchId: matchId!,
     trackerId: user?.id!,
     trackerType: trackerType || 'player',
+    allPlayers
   });
 
   useEffect(() => {
@@ -48,7 +52,7 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
         // Fetch a list of assignments instead of a single one to be robust.
         const { data: assignments, error: assignmentError } = await supabase
           .from('match_tracker_assignments')
-          .select('tracker_type')
+          .select('*')
           .eq('match_id', matchId)
           .eq('tracker_user_id', user.id);
 
@@ -61,7 +65,8 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
         }
 
         // Safely use the first assignment found to prevent crashes.
-        setTrackerType(assignments[0].tracker_type);
+        const dbAssignment: any = assignments[0];
+        setTrackerType(dbAssignment.tracker_type as 'ball' | 'player');
       } catch (e: any) {
         setError(e.message);
         console.error(e);
