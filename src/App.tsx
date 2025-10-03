@@ -28,7 +28,6 @@ import VideoAnalysis from './pages/VideoAnalysis';
 import DirectVideoAnalyzer from './pages/DirectVideoAnalyzer';
 import GPUNetworkManagerPage from './pages/GPUNetworkManager';
 import ErrorManagerPage from './pages/ErrorManager';
-import ErrorBoundary from './components/ErrorBoundary';
 import TrackerInterface from './pages/TrackerInterface';
 import Matches from './pages/Matches';
 import Statistics from './pages/Statistics';
@@ -92,7 +91,7 @@ const AppContent = () => {
 
 
   return (
-    <ErrorBoundary componentName="AppRoot">
+    <>
       <Header />
       <Routes>
         {/* Public routes */}
@@ -356,7 +355,7 @@ const AppContent = () => {
         
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </ErrorBoundary>
+    </>
   );
 };
 
