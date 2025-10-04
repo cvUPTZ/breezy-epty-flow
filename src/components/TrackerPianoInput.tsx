@@ -4,20 +4,19 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { EventType } from '@/types';
 import { useRealtimeMatch } from '@/hooks/useRealtimeMatch';
 import { useUnifiedTrackerConnection } from '@/hooks/useUnifiedTrackerConnection';
 import { motion, AnimatePresence } from 'framer-motion';
 import EventTypeSvg from '@/components/match/EventTypeSvg';
 import CancelActionIndicator from '@/components/match/CancelActionIndicator';
-import ErrorBoundary from '@/components/ErrorBoundary';
 
-// Strict type definitions
+// Consistent player interface matching other components
 export interface PlayerForPianoInput {
   id: number;
-  name: string;
+  player_name: string;
   position?: string;
-  jersey_number?: number;
+  jersey_number: number;
+  team?: 'home' | 'away';
 }
 
 interface AssignedPlayers {
@@ -52,7 +51,6 @@ interface TrackerPianoInputProps {
 
 const MAX_RECENT_EVENTS = 5;
 
-// State management with reducer for better control
 interface TrackerState {
   assignedEventTypes: EnhancedEventType[];
   assignedPlayers: AssignedPlayers | null;
@@ -140,7 +138,7 @@ function trackerReducer(state: TrackerState, action: TrackerAction): TrackerStat
   }
 }
 
-// Data validation utilities
+// FIXED: Consistent player data validation
 const validatePlayerData = (data: unknown): PlayerForPianoInput[] => {
   if (!data) return [];
   
@@ -164,41 +162,38 @@ const validatePlayerData = (data: unknown): PlayerForPianoInput[] => {
     .filter(item => 
       item && 
       typeof item === 'object' && 
-      (typeof item.name === 'string' || typeof item.player_name === 'string') &&
-      (typeof item.number === 'number' || typeof item.jersey_number === 'number')
+      (item.player_name?.trim() || item.name?.trim())
     )
-    .map((item: any) => ({
-      id: item.number || item.jersey_number || 0,
-      name: item.name || item.player_name || 'Unknown Player',
-      position: item.position,
-      jersey_number: item.number || item.jersey_number || 0
+    .map((item: any, index: number) => ({
+      id: Number(item.id) || index,  // ✅ Use actual ID, fallback to index
+      player_name: (item.player_name || item.name || '').trim(),
+      position: item.position?.trim() || undefined,
+      jersey_number: Number(item.jersey_number || item.number) || index + 1
     }));
 };
 
+// FIXED: Validate actual database structure
 const validateAssignmentData = (data: unknown): boolean => {
   return Array.isArray(data) && data.every(item =>
     item &&
     typeof item === 'object' &&
     typeof item.tracker_user_id === 'string' &&
-    (typeof item.assigned_player_id === 'number' || item.assigned_player_id === null) &&
+    (Array.isArray(item.assigned_player_ids) || item.assigned_player_ids === null) &&  // ✅ Check array
     (Array.isArray(item.assigned_event_types) || item.assigned_event_types === null) &&
     typeof item.player_team_id === 'string'
   );
 };
-
 
 const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecordEvent }) => {
   const [state, dispatch] = useReducer(trackerReducer, initialState);
   const { toast } = useToast();
   const { user } = useAuth();
   
-  // Refs for cleanup and abort control
   const mountedRef = useRef(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const cleanupIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const fetchingRef = useRef<Set<string>>(new Set());
+  const hasLoadedRoster = useRef(false);
 
-  // Memoized values to prevent unnecessary re-renders
   const userIdForConnection = useMemo(() => user?.id || '', [user?.id]);
   const totalAssignedPlayers = useMemo(() =>
     (state.assignedPlayers?.home?.length || 0) + (state.assignedPlayers?.away?.length || 0),
@@ -239,52 +234,27 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
     };
   }, []);
 
-  // Safe async operation wrapper
-  const safeAsync = useCallback(async <T,>(
-    operation: () => Promise<T>,
-    operationKey: string
-  ): Promise<T | null> => {
-    if (fetchingRef.current.has(operationKey)) {
-      console.warn(`Operation ${operationKey} already in progress`);
-      return null;
-    }
-
-    fetchingRef.current.add(operationKey);
-    
-    try {
-      abortControllerRef.current?.abort();
-      abortControllerRef.current = new AbortController();
-      
-      const result = await operation();
-      return mountedRef.current ? result : null;
-    } catch (error: any) {
-      if (error.name !== 'AbortError' && mountedRef.current) {
-        console.error(`Error in ${operationKey}:`, error);
-        dispatch({ type: 'SET_ERROR', payload: error.message || 'Operation failed' });
-      }
-      return null;
-    } finally {
-      fetchingRef.current.delete(operationKey);
-    }
-  }, []);
-
-  // Fetch match roster
+  // FIXED: Fetch match roster
   const fetchMatchDetails = useCallback(async () => {
-    if (!matchId) {
+    if (!matchId || !mountedRef.current) {
       dispatch({ type: 'SET_ERROR', payload: 'Match ID is required' });
       return;
     }
 
-    return safeAsync(async () => {
+    try {
       dispatch({ type: 'SET_LOADING', payload: true });
+
+      abortControllerRef.current = new AbortController();
 
       const { data: matchData, error: matchError } = await supabase
         .from('matches')
         .select('home_team_players, away_team_players')
         .eq('id', matchId)
-        .abortSignal(abortControllerRef.current!.signal)
+        .abortSignal(abortControllerRef.current.signal)
         .single();
       
+      if (!mountedRef.current) return;
+
       if (matchError) throw matchError;
       if (!matchData) throw new Error('Match not found');
 
@@ -293,33 +263,57 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
         away: validatePlayerData(matchData.away_team_players)
       };
 
-      dispatch({ type: 'SET_ROSTER', payload: roster });
-      return roster;
-    }, 'fetchMatchDetails');
-  }, [matchId, safeAsync]);
+      console.log('TrackerPianoInput: Loaded roster:', {
+        home: roster.home.length,
+        away: roster.away.length
+      });
 
-  // Fetch assignments with improved error handling
+      dispatch({ type: 'SET_ROSTER', payload: roster });
+      hasLoadedRoster.current = true;
+    } catch (error: any) {
+      if (error.name !== 'AbortError' && mountedRef.current) {
+        console.error('Error fetching match details:', error);
+        dispatch({ type: 'SET_ERROR', payload: error.message || 'Failed to load match details' });
+        toast({
+          title: "Error",
+          description: "Failed to load match details",
+          variant: "destructive"
+        });
+      }
+    }
+  }, [matchId, toast]);
+
+  // FIXED: Fetch assignments with proper player ID handling
   const fetchAssignments = useCallback(async () => {
-    if (!matchId || !user?.id || !state.fullMatchRoster) {
+    if (!matchId || !user?.id || !state.fullMatchRoster || !mountedRef.current) {
       return;
     }
 
-    return safeAsync(async () => {
+    try {
+      abortControllerRef.current = new AbortController();
+
       const { data, error } = await supabase
         .from('match_tracker_assignments')
         .select('*')
         .eq('match_id', matchId)
         .eq('tracker_user_id', user.id)
-        .abortSignal(abortControllerRef.current!.signal);
+        .abortSignal(abortControllerRef.current.signal);
+
+      if (!mountedRef.current) return;
 
       if (error) throw error;
+      
       if (!data || data.length === 0) {
-        console.log('TrackerPianoInput: No assignments found for tracker:', user.id, 'match:', matchId);
-        throw new Error('No assignments found for this tracker and match');
+        console.log('TrackerPianoInput: No assignments found');
+        dispatch({ 
+          type: 'SET_ASSIGNMENTS', 
+          payload: { eventTypes: [], players: { home: [], away: [] } } 
+        });
+        return;
       }
+
       if (!validateAssignmentData(data)) {
-        console.error('TrackerPianoInput: Invalid assignment data:', data);
-        throw new Error('Invalid assignment data received');
+        throw new Error('Invalid assignment data structure');
       }
 
       console.log('TrackerPianoInput: Raw assignment data:', data);
@@ -341,8 +335,9 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
         label: key
       }));
 
-      // Process assigned players with proper ID resolution
+      // FIXED: Process ALL assigned players correctly
       const assignedPlayers: AssignedPlayers = { home: [], away: [] };
+      const processedPlayerIds = new Set<number>();
       
       data.forEach(assignment => {
         const team = assignment.player_team_id as 'home' | 'away';
@@ -351,23 +346,22 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
         const teamRoster = state.fullMatchRoster[team];
         if (!teamRoster?.length) return;
 
-        // Get single player ID from assignment
-        let playerId: number | null = null;
+        // ✅ Get ALL player IDs from array
+        const playerIds = assignment.assigned_player_ids || [];
         
-        if (typeof assignment.assigned_player_id === 'number') {
-          playerId = assignment.assigned_player_id;
-        } else if (Array.isArray(assignment.assigned_player_ids) && assignment.assigned_player_ids.length > 0) {
-          // Fallback for legacy data structure
-          playerId = assignment.assigned_player_ids[0];
-        }
-
-        // Find and add player (match by jersey number since all IDs are 0)
-        if (playerId !== null) {
-          const player = teamRoster.find(p => p.jersey_number === playerId);
-          if (player && !assignedPlayers[team].some(p => p.jersey_number === player.jersey_number)) {
-            assignedPlayers[team].push(player);
+        playerIds.forEach((playerId: number) => {
+          if (processedPlayerIds.has(playerId)) return;
+          
+          // ✅ Match by ID, not jersey number
+          const player = teamRoster.find(p => Number(p.id) === Number(playerId));
+          
+          if (player) {
+            assignedPlayers[team].push({ ...player, team });
+            processedPlayerIds.add(playerId);
+          } else {
+            console.warn(`TrackerPianoInput: Player ID ${playerId} not found in ${team} roster`);
           }
-        }
+        });
       });
 
       dispatch({ 
@@ -378,14 +372,22 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
       console.log('TrackerPianoInput: Processed assignments:', {
         eventTypes: eventTypes.map(et => et.key),
         players: {
-          home: assignedPlayers.home.map(p => `${p.name} (#${p.jersey_number})`),
-          away: assignedPlayers.away.map(p => `${p.name} (#${p.jersey_number})`)
+          home: assignedPlayers.home.map(p => `${p.player_name} (#${p.jersey_number}, ID:${p.id})`),
+          away: assignedPlayers.away.map(p => `${p.player_name} (#${p.jersey_number}, ID:${p.id})`)
         }
       });
-      
-      return { eventTypes, players: assignedPlayers };
-    }, 'fetchAssignments');
-  }, [matchId, user?.id, state.fullMatchRoster, safeAsync]);
+    } catch (error: any) {
+      if (error.name !== 'AbortError' && mountedRef.current) {
+        console.error('Error fetching assignments:', error);
+        dispatch({ type: 'SET_ERROR', payload: error.message || 'Failed to load assignments' });
+        toast({
+          title: "Error",
+          description: error.message || "Failed to load tracker assignments",
+          variant: "destructive"
+        });
+      }
+    }
+  }, [matchId, user?.id, state.fullMatchRoster, toast]);
 
   // Auto-select single player
   useEffect(() => {
@@ -406,11 +408,12 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
     fetchMatchDetails();
   }, [fetchMatchDetails]);
 
+  // FIXED: Fetch assignments only after roster is loaded
   useEffect(() => {
-    if (state.fullMatchRoster) {
+    if (state.fullMatchRoster && hasLoadedRoster.current) {
       fetchAssignments();
     }
-  }, [fetchAssignments, state.fullMatchRoster]);
+  }, [state.fullMatchRoster, fetchAssignments]);
 
   // Real-time connection
   const { isConnected } = useRealtimeMatch({
@@ -432,12 +435,13 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
 
   // Event handlers
   const handleCancelEvent = useCallback(async (eventId: string, eventTypeKey: string) => {
-    return safeAsync(async () => {
+    if (!mountedRef.current) return;
+
+    try {
       const { error } = await supabase
         .from('match_events')
         .delete()
-        .eq('id', eventId)
-        .abortSignal(abortControllerRef.current!.signal);
+        .eq('id', eventId);
       
       if (error) throw error;
 
@@ -447,8 +451,15 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
         title: "Event Cancelled",
         description: `${eventTypeKey} event has been cancelled.`,
       });
-    }, 'cancelEvent');
-  }, [safeAsync, toast]);
+    } catch (error: any) {
+      console.error('Error cancelling event:', error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel event",
+        variant: "destructive"
+      });
+    }
+  }, [toast]);
 
   const handleEventExpire = useCallback((eventId: string) => {
     if (mountedRef.current) {
@@ -559,7 +570,8 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
           <Button 
             onClick={() => {
               dispatch({ type: 'SET_ERROR', payload: null });
-              fetchAssignments();
+              hasLoadedRoster.current = false;
+              fetchMatchDetails();
             }} 
             variant="outline" 
             size="sm"
@@ -600,168 +612,168 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({ matchId, onRecord
   }
 
   return (
-      <div className="space-y-2 p-1 sm:p-2">
-        {/* Connection Warning */}
-        {!isConnected && (
+    <div className="space-y-2 p-1 sm:p-2">
+      {/* Connection Warning */}
+      {!isConnected && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-2"
+        >
+          <div className="text-sm text-yellow-800">
+            <span className="font-medium">Connection Warning:</span> Real-time updates may be delayed.
+          </div>
+        </motion.div>
+      )}
+
+      {/* Recent Events */}
+      <AnimatePresence>
+        {state.recentEvents.length > 0 && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-2"
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
           >
-            <div className="text-sm text-yellow-800">
-              <span className="font-medium">Connection Warning:</span> Real-time updates may be delayed.
-            </div>
+            <Card className="my-2 bg-white/60 backdrop-blur-xl border-slate-200/80 shadow-lg rounded-xl overflow-hidden">
+              <CardHeader className="pb-3 border-b border-slate-200/80 bg-slate-80/50">
+                <CardTitle className="text-base text-slate-800">
+                  Recent Events (Click to Cancel)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3">
+                <div className="flex flex-wrap gap-2 justify-start">
+                  {state.recentEvents.map((event) => (
+                    <CancelActionIndicator
+                      key={event.id}
+                      eventType={event.eventType.key as any}
+                      onCancel={() => handleCancelEvent(event.id, event.eventType.key)}
+                      onExpire={() => handleEventExpire(event.id)}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* Recent Events */}
-        <AnimatePresence>
-          {state.recentEvents.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Card className="my-2 bg-white/60 backdrop-blur-xl border-slate-200/80 shadow-lg rounded-xl overflow-hidden">
-                <CardHeader className="pb-3 border-b border-slate-200/80 bg-slate-80/50">
-                  <CardTitle className="text-base text-slate-800">
-                    Recent Events (Click to Cancel)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-3">
-                  <div className="flex flex-wrap gap-2 justify-start">
-                    {state.recentEvents.map((event) => (
-                      <CancelActionIndicator
-                        key={event.id}
-                        eventType={event.eventType.key as any}
-                        onCancel={() => handleCancelEvent(event.id, event.eventType.key)}
-                        onExpire={() => handleEventExpire(event.id)}
-                      />
+      {/* Player Selection */}
+      {showPlayerSelection && state.assignedPlayers && (
+        <Card>
+          <CardHeader className="pb-1">
+            <CardTitle className="text-base font-semibold">
+              Select Player from Your Assignments
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1 pt-0">
+            {(['home', 'away'] as const).map(team => {
+              const players = state.assignedPlayers?.[team];
+              if (!players?.length) return null;
+              
+              return (
+                <div key={team}>
+                  <h4 className="text-sm font-semibold mb-1.5 capitalize">
+                    {team} Team
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                    {players.map(player => (
+                      <Button 
+                        key={player.id} 
+                        onClick={() => handlePlayerSelect(player, team)} 
+                        variant={state.selectedPlayer?.id === player.id ? "default" : "outline"} 
+                        size="sm" 
+                        className="justify-start text-sm"
+                        aria-pressed={state.selectedPlayer?.id === player.id}
+                      >
+                        {player.jersey_number && `#${player.jersey_number} `}
+                        {player.player_name}
+                      </Button>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
 
-        {/* Player Selection */}
-        {showPlayerSelection && state.assignedPlayers && (
-          <Card>
-            <CardHeader className="pb-1">
-              <CardTitle className="text-base font-semibold">
-                Select Player from Your Assignments
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1 pt-0">
-              {(['home', 'away'] as const).map(team => {
-                const players = state.assignedPlayers?.[team];
-                if (!players?.length) return null;
-                
-                return (
-                  <div key={team}>
-                    <h4 className="text-sm font-semibold mb-1.5 capitalize">
-                      {team} Team
-                    </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
-                      {players.map(player => (
-                        <Button 
-                          key={player.id} 
-                          onClick={() => handlePlayerSelect(player, team)} 
-                          variant={state.selectedPlayer?.id === player.id ? "default" : "outline"} 
-                          size="sm" 
-                          className="justify-start text-sm"
-                          aria-pressed={state.selectedPlayer?.id === player.id}
-                        >
-                          {player.jersey_number && `#${player.jersey_number} `}
-                          {player.name}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Event Type Selection */}
-        {state.assignedEventTypes.length > 0 && (
-          <motion.div 
-            initial={{ opacity: 0, y: 12 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            transition={{ duration: 0.33, delay: 0.13 }}
-          >
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900 dark:to-pink-900 rounded-xl p-3 sm:p-4 shadow-lg border border-purple-200">
-              <div className="text-center mb-3">
-                <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  Record Events
-                </h2>
-                <p className="text-sm text-purple-600 dark:text-purple-300 mt-1">
-                  {!isEliteView 
-                    ? (state.selectedPlayer 
-                        ? `Recording for ${state.selectedPlayer.name}` 
-                        : "Select a player, then tap event type"
-                      )
-                    : "Select a player and record an event"
-                  }
-                </p>
-              </div>
-
-              {!isEliteView && (
-                <EventGrid 
-                  eventTypes={state.assignedEventTypes}
-                  selectedPlayer={state.selectedPlayer}
-                  isRecording={state.isRecording}
-                  recordingEventType={state.recordingEventType}
-                  onEventClick={handleEventTypeClick}
-                  onValidationError={() => {
-                    toast({ 
-                      title: "No Player Selected", 
-                      description: "Please select a player before recording an event.", 
-                      variant: "destructive"
-                    });
-                  }}
-                />
-              )}
-
-              {isEliteView && state.assignedPlayers && (
-                <EliteView 
-                  assignedPlayers={state.assignedPlayers}
-                  eventTypes={state.assignedEventTypes}
-                  selectedPlayer={state.selectedPlayer}
-                  isRecording={state.isRecording}
-                  recordingEventType={state.recordingEventType}
-                  onPlayerSelect={handlePlayerSelect}
-                  onEventClick={handleEventTypeClick}
-                />
-              )}
-
-              {state.isRecording && (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.88 }} 
-                  animate={{ opacity: 1, scale: 1 }} 
-                  className="mt-3 text-center"
-                >
-                  <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full text-sm font-bold shadow">
-                    <motion.div 
-                      className="w-2.5 h-2.5 bg-white rounded-full" 
-                      animate={{ scale: [1, 1.35, 1] }} 
-                      transition={{ duration: 0.5, repeat: Infinity }} 
-                    />
-                    Recording Event...
-                  </div>
-                </motion.div>
-              )}
+      {/* Event Type Selection */}
+      {state.assignedEventTypes.length > 0 && (
+        <motion.div 
+          initial={{ opacity: 0, y: 12 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ duration: 0.33, delay: 0.13 }}
+        >
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900 dark:to-pink-900 rounded-xl p-3 sm:p-4 shadow-lg border border-purple-200">
+            <div className="text-center mb-3">
+              <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Record Events
+              </h2>
+              <p className="text-sm text-purple-600 dark:text-purple-300 mt-1">
+                {!isEliteView 
+                  ? (state.selectedPlayer 
+                      ? `Recording for ${state.selectedPlayer.player_name}` 
+                      : "Select a player, then tap event type"
+                    )
+                  : "Select a player and record an event"
+                }
+              </p>
             </div>
-          </motion.div>
-        )}
-      </div>
+
+            {!isEliteView && (
+              <EventGrid 
+                eventTypes={state.assignedEventTypes}
+                selectedPlayer={state.selectedPlayer}
+                isRecording={state.isRecording}
+                recordingEventType={state.recordingEventType}
+                onEventClick={handleEventTypeClick}
+                onValidationError={() => {
+                  toast({ 
+                    title: "No Player Selected", 
+                    description: "Please select a player before recording an event.", 
+                    variant: "destructive"
+                  });
+                }}
+              />
+            )}
+
+            {isEliteView && state.assignedPlayers && (
+              <EliteView 
+                assignedPlayers={state.assignedPlayers}
+                eventTypes={state.assignedEventTypes}
+                selectedPlayer={state.selectedPlayer}
+                isRecording={state.isRecording}
+                recordingEventType={state.recordingEventType}
+                onPlayerSelect={handlePlayerSelect}
+                onEventClick={handleEventTypeClick}
+              />
+            )}
+
+            {state.isRecording && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.88 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                className="mt-3 text-center"
+              >
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full text-sm font-bold shadow">
+                  <motion.div 
+                    className="w-2.5 h-2.5 bg-white rounded-full" 
+                    animate={{ scale: [1, 1.35, 1] }} 
+                    transition={{ duration: 0.5, repeat: Infinity }} 
+                  />
+                  Recording Event...
+                </div>
+              </motion.div>
+            )}
+          </div>
+        </motion.div>
+      )}
+    </div>
   );
 };
 
-// Event Grid Component (unchanged but with better props)
+// Event Grid Component
 interface EventGridProps {
   eventTypes: EnhancedEventType[];
   selectedPlayer: PlayerForPianoInput | null;
@@ -818,7 +830,9 @@ const EventGrid: React.FC<EventGridProps> = React.memo(({
   </div>
 ));
 
-// Elite View Component with better performance
+EventGrid.displayName = 'EventGrid';
+
+// Elite View Component
 interface EliteViewProps {
   assignedPlayers: AssignedPlayers;
   eventTypes: EnhancedEventType[];
@@ -839,15 +853,16 @@ const EliteView: React.FC<EliteViewProps> = React.memo(({
   onEventClick
 }) => {
   const allPlayersList = useMemo(
-    () => [...assignedPlayers.home, ...assignedPlayers.away],
+    () => [
+      ...assignedPlayers.home.map(p => ({ ...p, team: 'home' as const })),
+      ...assignedPlayers.away.map(p => ({ ...p, team: 'away' as const }))
+    ],
     [assignedPlayers.home, assignedPlayers.away]
   );
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {allPlayersList.map(player => {
-        const isHome = assignedPlayers.home.includes(player);
-        const team = isHome ? 'home' : 'away';
         const isSelected = selectedPlayer?.id === player.id;
         
         return (
@@ -865,13 +880,13 @@ const EliteView: React.FC<EliteViewProps> = React.memo(({
                   ? 'text-green-600 dark:text-green-200 bg-green-100 dark:bg-green-800' 
                   : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
               }`}
-              onClick={() => onPlayerSelect(player, team)}
+              onClick={() => onPlayerSelect(player, player.team)}
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  onPlayerSelect(player, team);
+                  onPlayerSelect(player, player.team);
                 }
               }}
             >
@@ -879,13 +894,13 @@ const EliteView: React.FC<EliteViewProps> = React.memo(({
                 {player.jersey_number && (
                   <span className="font-semibold">#{player.jersey_number} </span>
                 )}
-                <span className="font-medium">{player.name}</span>
+                <span className="font-medium">{player.player_name}</span>
                 <span className={`text-xs ml-1 px-1 rounded-full ${
-                  isHome 
+                  player.team === 'home'
                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-700 dark:text-blue-200' 
                     : 'bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-200'
                 }`}>
-                  {isHome ? 'H' : 'A'}
+                  {player.team === 'home' ? 'H' : 'A'}
                 </span>
               </div>
               {isSelected && (
@@ -906,11 +921,11 @@ const EliteView: React.FC<EliteViewProps> = React.memo(({
                     <div key={`${player.id}-${eventType.key}`} className="flex flex-col items-center justify-start gap-2">
                       <button
                         onClick={() => {
-                          onPlayerSelect(player, team);
+                          onPlayerSelect(player, player.team);
                           onEventClick(eventType);
                         }}
                         disabled={isRecording}
-                        aria-label={`Record ${eventType.label} event for ${player.name}`}
+                        aria-label={`Record ${eventType.label} event for ${player.player_name}`}
                         aria-pressed={isRecordingThis}
                         className="relative flex items-center justify-center rounded-full border bg-gradient-to-br from-white/70 to-slate-100/70 backdrop-blur-sm transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-70 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none w-14 h-14 sm:w-16 sm:h-16"
                       >
@@ -937,5 +952,7 @@ const EliteView: React.FC<EliteViewProps> = React.memo(({
     </div>
   );
 });
+
+EliteView.displayName = 'EliteView';
 
 export default TrackerPianoInput;
