@@ -106,57 +106,100 @@ const VoiceCollaborationManager: React.FC = () => {
   };
 
   const fetchParticipants = async (roomId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('voice_room_participants')
-        .select(`
-          *,
-          profiles:user_id (
-            full_name,
-            email
-          )
-        `)
-        .eq('room_id', roomId);
+  try {
+    // Use service role or adjust query to avoid recursion
+    const { data, error } = await supabase
+      .from('voice_room_participants')
+      .select('id, user_id, room_id, user_role, is_muted, is_speaking, connection_quality, joined_at, last_activity')
+      .eq('room_id', roomId);
 
-      if (error) throw error;
+    if (error) throw error;
 
-      // Handle null data case
-      if (!data) {
-        setParticipants([]);
-        toast({
-          title: "Info",
-          description: "No participants in this room",
-        });
-        return;
-      }
-
-      // Transform the data to match our Participant interface
-      const transformedData: Participant[] = data.map(participant => ({
-        id: participant.id,
-        user_id: participant.user_id,
-        room_id: participant.room_id,
-        user_role: participant.user_role || 'viewer',
-        is_muted: participant.is_muted ?? false,
-        is_speaking: participant.is_speaking ?? false,
-        connection_quality: participant.connection_quality || 'unknown',
-        joined_at: participant.joined_at,
-        last_activity: participant.last_activity,
-        user_name: participant.profiles?.full_name,
-        user_email: participant.profiles?.email,
-        profiles: participant.profiles
-      }));
-
-      setParticipants(transformedData);
-    } catch (error: any) {
-      console.error('Error fetching participants:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to fetch participants",
-        variant: "destructive"
-      });
+    if (!data || data.length === 0) {
+      setParticipants([]);
+      return;
     }
-  };
 
+    // Fetch profiles separately to avoid recursion
+    const userIds = data.map(p => p.user_id);
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .in('id', userIds);
+
+    const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+
+    const transformedData: Participant[] = data.map(participant => ({
+      id: participant.id,
+      user_id: participant.user_id,
+      room_id: participant.room_id,
+      user_role: participant.user_role || 'viewer',
+      is_muted: participant.is_muted ?? false,
+      is_speaking: participant.is_speaking ?? false,
+      connection_quality: participant.connection_quality || 'unknown',
+      joined_at: participant.joined_at,
+      last_activity: participant.last_activity,
+      user_name: profilesMap.get(participant.user_id)?.full_name,
+      user_email: profilesMap.get(participant.user_id)?.email,
+    }));
+
+    setParticipants(transformedData);
+  } catch (error: any) {
+    console.error('Error fetching participants:', error);
+    toast({
+      title: "Error",
+      description: error.message || "Failed to fetch participants",
+      variant: "destructive"
+    });
+  }
+};const fetchParticipants = async (roomId: string) => {
+  try {
+    // Use service role or adjust query to avoid recursion
+    const { data, error } = await supabase
+      .from('voice_room_participants')
+      .select('id, user_id, room_id, user_role, is_muted, is_speaking, connection_quality, joined_at, last_activity')
+      .eq('room_id', roomId);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      setParticipants([]);
+      return;
+    }
+
+    // Fetch profiles separately to avoid recursion
+    const userIds = data.map(p => p.user_id);
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .in('id', userIds);
+
+    const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+
+    const transformedData: Participant[] = data.map(participant => ({
+      id: participant.id,
+      user_id: participant.user_id,
+      room_id: participant.room_id,
+      user_role: participant.user_role || 'viewer',
+      is_muted: participant.is_muted ?? false,
+      is_speaking: participant.is_speaking ?? false,
+      connection_quality: participant.connection_quality || 'unknown',
+      joined_at: participant.joined_at,
+      last_activity: participant.last_activity,
+      user_name: profilesMap.get(participant.user_id)?.full_name,
+      user_email: profilesMap.get(participant.user_id)?.email,
+    }));
+
+    setParticipants(transformedData);
+  } catch (error: any) {
+    console.error('Error fetching participants:', error);
+    toast({
+      title: "Error",
+      description: error.message || "Failed to fetch participants",
+      variant: "destructive"
+    });
+  }
+};
   const fetchMatches = async () => {
     try {
       const { data, error } = await supabase
