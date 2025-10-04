@@ -47,6 +47,7 @@ export const useFourTrackerSystem = ({
   const [isActiveTracker, setIsActiveTracker] = useState(false);
   const [lastPossession, setLastPossession] = useState<BallPossessionEvent | null>(null);
   const channelRef = useRef<any>(null);
+  const processingRef = useRef(false); // Prevent race conditions
 
   // Fetch tracker assignment
   useEffect(() => {
@@ -72,7 +73,7 @@ export const useFourTrackerSystem = ({
 
       setAssignment({
         tracker_id: trackerId,
-        tracker_name: 'Unknown Tracker', // Profile fetch removed for simplicity for now
+        tracker_name: 'Unknown Tracker',
         tracker_type: (assignmentData.tracker_type || 'player') as 'ball' | 'player',
         assigned_players: assignedPlayers,
         assigned_event_types: assignmentData.assigned_event_types || [],
@@ -94,19 +95,22 @@ export const useFourTrackerSystem = ({
         (payload) => {
           const possession = payload.payload as BallPossessionEvent;
           
-          // Find player from allPlayers
+          // Validate player exists in current teams
           const player = allPlayers.find(p => p.id === possession.player_id);
           
-          if (player) {
-            setCurrentBallHolder(player);
-            setLastPossession(possession);
+          if (!player) {
+            console.warn('Received possession for unknown player:', possession.player_id);
+            return;
+          }
+          
+          setCurrentBallHolder(player);
+          setLastPossession(possession);
 
-            if (trackerType === 'player') {
-              const isMyPlayer = assignment?.assigned_players?.some(p => p.id === possession.player_id) || false;
-              setIsActiveTracker(isMyPlayer);
-            } else {
-              setIsActiveTracker(true);
-            }
+          if (trackerType === 'player') {
+            const isMyPlayer = assignment?.assigned_players?.some(p => p.id === possession.player_id) || false;
+            setIsActiveTracker(isMyPlayer);
+          } else {
+            setIsActiveTracker(true);
           }
         }
       )
@@ -117,63 +121,87 @@ export const useFourTrackerSystem = ({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [matchId, trackerType, assignment]);
+  }, [matchId, trackerType, assignment, allPlayers]);
 
   // Ball tracker: update ball possession
   const updateBallPossession = useCallback(async (player: Player) => {
     if (trackerType !== 'ball') return;
+    if (processingRef.current) return; // Prevent duplicate processing
 
-    const possessionEvent: BallPossessionEvent = {
-      player_id: player.id,
-      team: player.team,
-      timestamp: Date.now(),
-      tracker_id: trackerId
-    };
+    processingRef.current = true;
 
-    // 1. Record the raw possession change event
-    await supabase.from('match_events').insert([{
-      match_id: matchId,
-      event_type: 'ball_possession_change',
-      player_id: player.id,
-      team: player.team,
-      timestamp: Math.floor(possessionEvent.timestamp / 1000),
-      created_by: trackerId,
-      event_data: {
-        inferred: false,
-        tracker_id: trackerId,
+    try {
+      const possessionEvent: BallPossessionEvent = {
+        player_id: player.id,
+        team: player.team,
+        timestamp: Date.now(),
+        tracker_id: trackerId
+      };
+
+      // 1. Infer event FIRST based on last possession (before broadcasting)
+      if (lastPossession) {
+        await inferEvent(lastPossession, possessionEvent);
       }
-    }]);
 
-    // 2. Broadcast to all trackers
-    await channelRef.current?.send({
-      type: 'broadcast',
-      event: 'ball_possession_change',
-      payload: possessionEvent
-    });
+      // 2. Record the raw possession change event
+      const { error: insertError } = await supabase.from('match_events').insert([{
+        match_id: matchId,
+        event_type: 'ball_possession_change',
+        player_id: player.id,
+        team: player.team,
+        timestamp: Math.floor(possessionEvent.timestamp / 1000),
+        created_by: trackerId,
+        event_data: {
+          inferred: false,
+          tracker_id: trackerId,
+        }
+      }]);
 
-    // 3. Infer event based on last possession
-    if (lastPossession) {
-      await inferEvent(lastPossession, possessionEvent);
+      if (insertError) {
+        console.error('Error recording possession change:', insertError);
+        throw insertError;
+      }
+
+      // 3. Broadcast to all trackers AFTER events are recorded
+      if (channelRef.current) {
+        await channelRef.current.send({
+          type: 'broadcast',
+          event: 'ball_possession_change',
+          payload: possessionEvent
+        });
+      }
+
+      // 4. Update local state
+      setLastPossession(possessionEvent);
+      setCurrentBallHolder(player);
+    } catch (error) {
+      console.error('Error in updateBallPossession:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update ball possession',
+        variant: 'destructive'
+      });
+    } finally {
+      processingRef.current = false;
     }
+  }, [trackerType, trackerId, lastPossession, matchId, toast]);
 
-    // 4. Update local state
-    setLastPossession(possessionEvent);
-    setCurrentBallHolder(player);
-  }, [trackerType, trackerId, lastPossession]);
-
-  // Event inference logic
+  // Event inference logic with expanded cases
   const inferEvent = useCallback(async (
     prev: BallPossessionEvent,
     current: BallPossessionEvent
   ) => {
     try {
-      // Same player = dribble/keep
+      // Same player = dribble/keep (only if more than 2 seconds apart)
       if (prev.player_id === current.player_id) {
-        await recordInferredEvent('dribble', current);
+        const timeDiff = current.timestamp - prev.timestamp;
+        if (timeDiff > 2000) { // Only record if > 2 seconds
+          await recordInferredEvent('dribble', current);
+        }
         return;
       }
 
-      // Same team = pass
+      // Same team = pass (successful)
       if (prev.team === current.team) {
         await recordInferredEvent('pass', prev, current);
         return;
@@ -192,33 +220,40 @@ export const useFourTrackerSystem = ({
     current: BallPossessionEvent,
     previous?: BallPossessionEvent
   ) => {
-    const eventData: any = {
-      match_id: matchId,
-      event_type: eventType,
-      player_id: current.player_id,
-      team: current.team,
-      timestamp: Math.floor(current.timestamp / 1000),
-      created_by: trackerId,
-      event_data: {
-        inferred: true,
-        inference_type: eventType,
-        from_player_id: previous?.player_id,
-        recorded_at: new Date().toISOString()
+    try {
+      const eventData: any = {
+        match_id: matchId,
+        event_type: eventType,
+        player_id: current.player_id,
+        team: current.team,
+        timestamp: Math.floor(current.timestamp / 1000),
+        created_by: trackerId,
+        event_data: {
+          inferred: true,
+          inference_type: eventType,
+          from_player_id: previous?.player_id,
+          to_player_id: eventType === 'pass' ? current.player_id : undefined,
+          recorded_at: new Date().toISOString()
+        }
+      };
+
+      const { error } = await supabase
+        .from('match_events')
+        .insert([eventData]);
+
+      if (error) {
+        console.error('Error recording inferred event:', error);
+        throw error;
       }
-    };
 
-    const { error } = await supabase
-      .from('match_events')
-      .insert([eventData]);
-
-    if (error) {
-      console.error('Error recording inferred event:', error);
-    } else {
       toast({
         title: 'Event Recorded',
         description: `${eventType} detected automatically`,
         duration: 2000
       });
+    } catch (error) {
+      console.error('Error in recordInferredEvent:', error);
+      // Don't throw - log but continue
     }
   }, [matchId, trackerId, toast]);
 
@@ -236,35 +271,40 @@ export const useFourTrackerSystem = ({
       return;
     }
 
-    const eventData = {
-      match_id: matchId,
-      event_type: eventType,
-      player_id: currentBallHolder.id,
-      team: currentBallHolder.team,
-      timestamp: Math.floor(Date.now() / 1000),
-      created_by: trackerId,
-      event_data: {
-        ...details,
-        tracker_type: 'player',
-        recorded_at: new Date().toISOString()
+    try {
+      const eventData = {
+        match_id: matchId,
+        event_type: eventType,
+        player_id: currentBallHolder.id,
+        team: currentBallHolder.team,
+        timestamp: Math.floor(Date.now() / 1000),
+        created_by: trackerId,
+        event_data: {
+          ...details,
+          tracker_type: 'player',
+          recorded_at: new Date().toISOString()
+        }
+      };
+
+      const { error } = await supabase
+        .from('match_events')
+        .insert([eventData]);
+
+      if (error) {
+        throw error;
       }
-    };
 
-    const { error } = await supabase
-      .from('match_events')
-      .insert([eventData]);
-
-    if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to record event',
-        variant: 'destructive'
-      });
-    } else {
       toast({
         title: 'Event Recorded',
         description: `${eventType} recorded successfully`,
         duration: 2000
+      });
+    } catch (error) {
+      console.error('Error recording event:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to record event',
+        variant: 'destructive'
       });
     }
   }, [isActiveTracker, currentBallHolder, matchId, trackerId, toast]);
