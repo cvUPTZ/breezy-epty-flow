@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, MicOff, Users, Settings, Phone, PhoneOff, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Users, Settings, Phone, PhoneOff, Loader2, AlertTriangle } from 'lucide-react';
 
 interface VoiceRoom {
   id: string;
@@ -34,7 +34,6 @@ interface Participant {
   last_activity?: string;
   user_name?: string;
   user_email?: string;
-  profiles?: any;
 }
 
 interface Match {
@@ -51,9 +50,11 @@ const VoiceCollaborationManager: React.FC = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<string>('');
+  const [selectedRoomId, setSelectedRoomId] = useState<string>('');
   const [newRoomName, setNewRoomName] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetchingRooms, setFetchingRooms] = useState(true);
+  const [fetchingParticipants, setFetchingParticipants] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -71,13 +72,11 @@ const VoiceCollaborationManager: React.FC = () => {
 
       if (error) throw error;
 
-      // Handle null data case
       if (!data) {
         setVoiceRooms([]);
         return;
       }
 
-      // Transform the data to match our VoiceRoom interface
       const transformedData: VoiceRoom[] = data.map(room => ({
         id: room.id,
         name: room.name || 'Unnamed Room',
@@ -106,100 +105,75 @@ const VoiceCollaborationManager: React.FC = () => {
   };
 
   const fetchParticipants = async (roomId: string) => {
-  try {
-    // Use service role or adjust query to avoid recursion
-    const { data, error } = await supabase
-      .from('voice_room_participants')
-      .select('id, user_id, room_id, user_role, is_muted, is_speaking, connection_quality, joined_at, last_activity')
-      .eq('room_id', roomId);
+    setFetchingParticipants(true);
+    setSelectedRoomId(roomId);
+    
+    try {
+      // Fetch participants without nested join to avoid RLS recursion
+      const { data: participantsData, error: participantsError } = await supabase
+        .from('voice_room_participants')
+        .select('id, user_id, room_id, user_role, is_muted, is_speaking, connection_quality, joined_at, last_activity')
+        .eq('room_id', roomId);
 
-    if (error) throw error;
+      if (participantsError) throw participantsError;
 
-    if (!data || data.length === 0) {
+      if (!participantsData || participantsData.length === 0) {
+        setParticipants([]);
+        toast({
+          title: "Info",
+          description: "No participants in this room",
+        });
+        return;
+      }
+
+      // Fetch profiles separately to avoid recursion issues
+      const userIds = participantsData.map(p => p.user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.warn('Error fetching profiles:', profilesError);
+      }
+
+      // Create a map of profiles for easy lookup
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+
+      // Transform the data
+      const transformedData: Participant[] = participantsData.map(participant => ({
+        id: participant.id,
+        user_id: participant.user_id,
+        room_id: participant.room_id,
+        user_role: participant.user_role || 'viewer',
+        is_muted: participant.is_muted ?? false,
+        is_speaking: participant.is_speaking ?? false,
+        connection_quality: participant.connection_quality || 'unknown',
+        joined_at: participant.joined_at,
+        last_activity: participant.last_activity,
+        user_name: profilesMap.get(participant.user_id)?.full_name,
+        user_email: profilesMap.get(participant.user_id)?.email,
+      }));
+
+      setParticipants(transformedData);
+      
+      toast({
+        title: "Success",
+        description: `Loaded ${transformedData.length} participant(s)`,
+      });
+    } catch (error: any) {
+      console.error('Error fetching participants:', error);
       setParticipants([]);
-      return;
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch participants",
+        variant: "destructive"
+      });
+    } finally {
+      setFetchingParticipants(false);
     }
+  };
 
-    // Fetch profiles separately to avoid recursion
-    const userIds = data.map(p => p.user_id);
-    const { data: profilesData } = await supabase
-      .from('profiles')
-      .select('id, full_name, email')
-      .in('id', userIds);
-
-    const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
-
-    const transformedData: Participant[] = data.map(participant => ({
-      id: participant.id,
-      user_id: participant.user_id,
-      room_id: participant.room_id,
-      user_role: participant.user_role || 'viewer',
-      is_muted: participant.is_muted ?? false,
-      is_speaking: participant.is_speaking ?? false,
-      connection_quality: participant.connection_quality || 'unknown',
-      joined_at: participant.joined_at,
-      last_activity: participant.last_activity,
-      user_name: profilesMap.get(participant.user_id)?.full_name,
-      user_email: profilesMap.get(participant.user_id)?.email,
-    }));
-
-    setParticipants(transformedData);
-  } catch (error: any) {
-    console.error('Error fetching participants:', error);
-    toast({
-      title: "Error",
-      description: error.message || "Failed to fetch participants",
-      variant: "destructive"
-    });
-  }
-};const fetchParticipants = async (roomId: string) => {
-  try {
-    // Use service role or adjust query to avoid recursion
-    const { data, error } = await supabase
-      .from('voice_room_participants')
-      .select('id, user_id, room_id, user_role, is_muted, is_speaking, connection_quality, joined_at, last_activity')
-      .eq('room_id', roomId);
-
-    if (error) throw error;
-
-    if (!data || data.length === 0) {
-      setParticipants([]);
-      return;
-    }
-
-    // Fetch profiles separately to avoid recursion
-    const userIds = data.map(p => p.user_id);
-    const { data: profilesData } = await supabase
-      .from('profiles')
-      .select('id, full_name, email')
-      .in('id', userIds);
-
-    const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
-
-    const transformedData: Participant[] = data.map(participant => ({
-      id: participant.id,
-      user_id: participant.user_id,
-      room_id: participant.room_id,
-      user_role: participant.user_role || 'viewer',
-      is_muted: participant.is_muted ?? false,
-      is_speaking: participant.is_speaking ?? false,
-      connection_quality: participant.connection_quality || 'unknown',
-      joined_at: participant.joined_at,
-      last_activity: participant.last_activity,
-      user_name: profilesMap.get(participant.user_id)?.full_name,
-      user_email: profilesMap.get(participant.user_id)?.email,
-    }));
-
-    setParticipants(transformedData);
-  } catch (error: any) {
-    console.error('Error fetching participants:', error);
-    toast({
-      title: "Error",
-      description: error.message || "Failed to fetch participants",
-      variant: "destructive"
-    });
-  }
-};
   const fetchMatches = async () => {
     try {
       const { data, error } = await supabase
@@ -209,13 +183,11 @@ const VoiceCollaborationManager: React.FC = () => {
 
       if (error) throw error;
 
-      // Handle null data case
       if (!data) {
         setMatches([]);
         return;
       }
 
-      // Transform the data to match our Match interface
       const transformedData: Match[] = data.map(match => ({
         id: match.id,
         name: match.name,
@@ -255,7 +227,6 @@ const VoiceCollaborationManager: React.FC = () => {
         max_participants: 25
       };
 
-      // Only add match_id if a match is selected
       if (selectedMatch) {
         roomData.match_id = selectedMatch;
       }
@@ -287,7 +258,7 @@ const VoiceCollaborationManager: React.FC = () => {
   };
 
   const deleteVoiceRoom = async (roomId: string) => {
-    if (!confirm('Are you sure you want to delete this voice room?')) {
+    if (!confirm('Are you sure you want to delete this voice room? All participants will be removed.')) {
       return;
     }
 
@@ -304,6 +275,11 @@ const VoiceCollaborationManager: React.FC = () => {
         title: "Success",
         description: "Voice room deleted successfully"
       });
+
+      if (selectedRoomId === roomId) {
+        setParticipants([]);
+        setSelectedRoomId('');
+      }
 
       fetchVoiceRooms();
     } catch (error: any) {
@@ -376,7 +352,14 @@ const VoiceCollaborationManager: React.FC = () => {
           <Tabs defaultValue="rooms" className="w-full">
             <TabsList>
               <TabsTrigger value="rooms">Voice Rooms</TabsTrigger>
-              <TabsTrigger value="participants">Participants</TabsTrigger>
+              <TabsTrigger value="participants">
+                Participants
+                {participants.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {participants.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
 
@@ -432,10 +415,10 @@ const VoiceCollaborationManager: React.FC = () => {
                   </Card>
                 ) : (
                   voiceRooms.map((room) => (
-                    <Card key={room.id}>
+                    <Card key={room.id} className={selectedRoomId === room.id ? 'border-blue-500 border-2' : ''}>
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
-                          <div className="space-y-2">
+                          <div className="space-y-2 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <h3 className="font-semibold">{room.name}</h3>
                               <Badge variant={room.is_active ? "default" : "secondary"}>
@@ -444,6 +427,11 @@ const VoiceCollaborationManager: React.FC = () => {
                               {room.match_id && (
                                 <Badge variant="outline">
                                   Match: {getMatchDisplay(room.match_id)}
+                                </Badge>
+                              )}
+                              {selectedRoomId === room.id && (
+                                <Badge variant="outline" className="bg-blue-50">
+                                  Viewing Participants
                                 </Badge>
                               )}
                             </div>
@@ -463,10 +451,14 @@ const VoiceCollaborationManager: React.FC = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => fetchParticipants(room.id)}
-                              disabled={loading}
+                              disabled={loading || fetchingParticipants}
                               title="View participants"
                             >
-                              <Users className="h-4 w-4" />
+                              {fetchingParticipants && selectedRoomId === room.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Users className="h-4 w-4" />
+                              )}
                             </Button>
                             <Button
                               variant="outline"
@@ -498,13 +490,29 @@ const VoiceCollaborationManager: React.FC = () => {
             <TabsContent value="participants" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Active Participants</CardTitle>
+                  <CardTitle>
+                    {selectedRoomId ? (
+                      <>
+                        Participants in {voiceRooms.find(r => r.id === selectedRoomId)?.name || 'Room'}
+                      </>
+                    ) : (
+                      'Active Participants'
+                    )}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {participants.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-4">
-                      Select a room to view participants
-                    </p>
+                  {fetchingParticipants ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                      <span>Loading participants...</span>
+                    </div>
+                  ) : participants.length === 0 ? (
+                    <div className="text-center py-8">
+                      <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-muted-foreground">
+                        {selectedRoomId ? 'No participants in this room' : 'Select a room to view participants'}
+                      </p>
+                    </div>
                   ) : (
                     <div className="space-y-2">
                       {participants.map((participant) => (
