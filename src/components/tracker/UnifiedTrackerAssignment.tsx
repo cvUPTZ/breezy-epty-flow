@@ -616,15 +616,14 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       return;
     }
 
-    // FIX: Determine player_ids and team based on role
+    // Determine player_ids and team based on role
     let playerIds: number[] | null = null;
     let teamId: 'home' | 'away' = state.selectedTeam;
     
     if (state.assignmentRole === 'ball') {
-      // Ball tracker gets ALL players from BOTH teams
-      playerIds = allPlayers.map(p => p.id);
-      // For ball tracker, use 'home' as default (could be either since it tracks both)
-      teamId = 'home';
+      // Ball tracker gets ALL players from the SELECTED team only
+      playerIds = (state.selectedTeam === 'home' ? homeTeamPlayers : awayTeamPlayers).map(p => p.id);
+      teamId = state.selectedTeam;
     } else if (state.assignmentRole === 'player') {
       playerIds = state.selectedPlayers;
       teamId = state.selectedTeam;
@@ -647,7 +646,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       };
 
       const realAssignmentId = matchId 
-        ? await saveAssignmentToDB(assignmentToSave, teamId) // FIX: Pass team ID
+        ? await saveAssignmentToDB(assignmentToSave, teamId)
         : `temp-${Date.now()}`;
         
       if (realAssignmentId && matchId) {
@@ -687,7 +686,8 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     state.trackers,
     state.assignments,
     state.assignmentVideoUrl,
-    allPlayers,
+    homeTeamPlayers,
+    awayTeamPlayers,
     saveAssignmentToDB,
     sendNotificationToTracker,
     matchId,
@@ -1212,7 +1212,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
               {state.assignmentRole === 'ball' && (
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
                   <p className="text-sm text-amber-800">
-                    <strong>Ball Tracker Mode:</strong> This tracker will monitor all players from both teams. 
+                    <strong>Ball Tracker Mode:</strong> This tracker will monitor all players from the selected team. 
                     Click the player with the ball to trigger events.
                   </p>
                 </div>
