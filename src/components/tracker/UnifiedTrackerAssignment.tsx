@@ -269,7 +269,18 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   const fetchTrackers = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      const { data, error } = await supabase.functions.invoke('get-tracker-users');
+      // Get current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No active session. Please sign in.');
+      }
+
+      const { data, error } = await supabase.functions.invoke('get-tracker-users', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+      
       if (error) {
         console.error('Edge function error:', error);
         throw new Error('Failed to load tracker users.');

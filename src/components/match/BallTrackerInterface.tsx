@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Activity, Target } from 'lucide-react';
+import { Activity, Target, AlertTriangle } from 'lucide-react';
 import { Player } from '@/hooks/useFourTrackerSystem';
 
 interface BallTrackerInterfaceProps {
@@ -69,6 +69,26 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
   currentBallHolder,
   onSelectPlayer
 }) => {
+  // Debug logging
+  console.log('BallTrackerInterface - Home players:', homeTeamPlayers);
+  console.log('BallTrackerInterface - Away players:', awayTeamPlayers);
+
+  const hasPlayers = (homeTeamPlayers?.length > 0) || (awayTeamPlayers?.length > 0);
+
+  if (!hasPlayers) {
+    return (
+      <Card>
+        <CardContent className="pt-6 text-center">
+          <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-amber-500" />
+          <p className="font-medium text-lg mb-2">No Players Available</p>
+          <p className="text-sm text-muted-foreground">
+            Please ensure match teams are set up with players before using the ball tracker.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Header */}

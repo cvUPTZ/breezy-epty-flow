@@ -150,7 +150,17 @@ export const useTrackerAssignments = ({
     setError(null);
     
     const result = await safeAsync(async () => {
-      const { data, error } = await supabase.functions.invoke('get-tracker-users');
+      // Get current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No active session');
+      }
+
+      const { data, error } = await supabase.functions.invoke('get-tracker-users', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
       if (error) throw error;
       return data || [];
     });
