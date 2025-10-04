@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import NewVoiceChatManager from '@/services/NewVoiceChatManager';
 import { Participant, ConnectionState } from 'livekit-client';
@@ -39,6 +38,9 @@ export const useNewVoiceCollaboration = (): UseNewVoiceCollaborationReturn => {
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [audioLevels, setAudioLevels] = useState<Map<string, number>>(new Map());
+
+  // Calculate isConnected early, before any callbacks that use it
+  const isConnected = connectionState === ConnectionState.Connected;
 
   useEffect(() => {
     manager.onParticipantsChanged = (newParticipants: Participant[]) => {
@@ -110,15 +112,18 @@ export const useNewVoiceCollaboration = (): UseNewVoiceCollaborationReturn => {
   }, [manager]);
 
   const joinRoom = useCallback(async (roomId: string, userId: string, userRole: string, userName: string) => {
+    // Check connection state directly from state instead of derived variable
+    const currentlyConnected = connectionState === ConnectionState.Connected;
+    
     // Prevent joining if already connected or in the process of connecting
-    if (isConnecting || isConnected) {
+    if (isConnecting || currentlyConnected) {
       console.warn('[useNewVoiceCollaboration] Attempted to join room while already connecting or connected.');
       return;
     }
 
     setIsConnecting(true);
     setError(null);
-
+    
     try {
       console.log('[useNewVoiceCollaboration] Delegating join room call to manager for room:', roomId);
       await manager.joinRoom(roomId, userId, userRole, userName);
@@ -131,7 +136,7 @@ export const useNewVoiceCollaboration = (): UseNewVoiceCollaborationReturn => {
       setError(err as Error);
       setIsConnecting(false); // Reset on failure
     }
-  }, [manager, isConnecting, isConnected]);
+  }, [manager, isConnecting, connectionState]);
 
   const leaveRoom = useCallback(async () => {
     console.log('[useNewVoiceCollaboration] Leaving room');
@@ -155,8 +160,6 @@ export const useNewVoiceCollaboration = (): UseNewVoiceCollaborationReturn => {
   const getAudioLevel = useCallback((participantId: string): number => {
     return manager.getAudioLevel(participantId);
   }, [manager]);
-
-  const isConnected = connectionState === ConnectionState.Connected;
 
   return {
     availableRooms,
