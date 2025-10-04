@@ -435,13 +435,21 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
 
   const saveAssignmentToDB = useCallback(async (assignment: Omit<Assignment, 'id' | 'tracker_name' | 'tracker_email'>) => {
     if (!matchId) return null;
+    
+    // Delete existing assignments for this tracker and match to avoid duplicates
+    await supabase
+      .from('match_tracker_assignments')
+      .delete()
+      .eq('match_id', matchId)
+      .eq('tracker_user_id', assignment.tracker_user_id);
+    
     const recordToInsert = {
       match_id: matchId,
       tracker_user_id: assignment.tracker_user_id,
       tracker_type: assignment.tracker_type,
       assigned_player_ids: assignment.player_ids,
-      player_team_id: 'home',
-      assigned_event_types: assignment.assigned_event_types // ✅ now includes event types
+      player_team_id: state.selectedTeam,
+      assigned_event_types: assignment.assigned_event_types
     };
     const { data, error } = await supabase
       .from('match_tracker_assignments')
@@ -1000,10 +1008,21 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                 <CardContent className="p-3">
                   <h4 className="font-medium text-xs mb-2">Preview (by position):</h4>
                   {(() => {
+                    const allEventTypes = EVENT_TYPE_CATEGORIES.flatMap(cat => cat.events.map(e => e.key));
                     const distributions = autoDistributePlayers(state.selectedTeam, 3);
                     const selectedTrackers = state.autoSelectedTrackers.map(id =>
                       state.trackers.find(t => t.id === id)
                     ).filter((t): t is TrackerUser => !!t);
+
+                    const totalPlayers = distributions.reduce((sum, players) => sum + players.length, 0);
+                    
+                    if (totalPlayers === 0) {
+                      return (
+                        <div className="text-xs text-amber-600">
+                          No players available for team "{state.selectedTeam}". Please ensure team players are configured.
+                        </div>
+                      );
+                    }
 
                     return distributions.map((playerIds, index) => {
                       const tracker = selectedTrackers[index];
@@ -1022,13 +1041,18 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                         .join(', ');
 
                       return (
-                        <div key={index} className="text-xs mb-1">
-                          <span className="font-medium">
-                            {tracker?.full_name || tracker?.email || `Tracker ${index + 1}`}:
-                          </span>
-                          <span className="ml-2 text-gray-700">
-                            {players.length} players ({positionSummary})
-                          </span>
+                        <div key={index} className="text-xs mb-2 pb-2 border-b last:border-0">
+                          <div className="flex items-start justify-between">
+                            <span className="font-medium">
+                              {tracker?.full_name || tracker?.email || `Tracker ${index + 1}`}:
+                            </span>
+                          </div>
+                          <div className="mt-1 text-gray-700">
+                            {players.length} players ({positionSummary || 'no positions'})
+                          </div>
+                          <div className="mt-1 text-gray-600 text-[10px]">
+                            Events: {allEventTypes.length} types (all events)
+                          </div>
                         </div>
                       );
                     });
