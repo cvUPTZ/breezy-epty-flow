@@ -43,22 +43,41 @@ const CreateMatch: React.FC = () => {
         .single();
 
       if (matchError) {
-        // Error fetching match - handled silently
+        console.error('Error fetching match:', matchError);
         return;
       }
 
       setMatchData(match);
       
-      // Extract players from the match data - ensure they're arrays
-      if (match?.home_team_players && Array.isArray(match.home_team_players)) {
-        setHomeTeamPlayers(match.home_team_players);
-      }
+      // Parse player data safely - handle both string and array formats
+      const parsePlayerData = (data: any): any[] => {
+        if (!data) return [];
+        
+        let players: any[] = [];
+        if (typeof data === 'string') {
+          try {
+            players = JSON.parse(data);
+          } catch (e) {
+            console.error('Error parsing player data:', e);
+            return [];
+          }
+        } else if (Array.isArray(data)) {
+          players = data;
+        }
+        
+        // Filter out invalid players
+        return players.filter(p => p && p.player_name?.trim());
+      };
       
-      if (match?.away_team_players && Array.isArray(match.away_team_players)) {
-        setAwayTeamPlayers(match.away_team_players);
-      }
+      const homePlayers = parsePlayerData(match?.home_team_players);
+      const awayPlayers = parsePlayerData(match?.away_team_players);
+      
+      console.log('Parsed players:', { homePlayers, awayPlayers });
+      
+      setHomeTeamPlayers(homePlayers);
+      setAwayTeamPlayers(awayPlayers);
     } catch (error) {
-      // Error handled silently
+      console.error('Error in fetchMatchData:', error);
     } finally {
       setLoading(false);
     }
@@ -201,20 +220,28 @@ const CreateMatch: React.FC = () => {
                         </div>
                       ) : (
                         <div className="space-y-6">
+                          {/* Debug info */}
+                          {homeTeamPlayers.length === 0 && awayTeamPlayers.length === 0 && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
+                              <p className="font-medium">No players found for this match.</p>
+                              <p className="mt-1">Please ensure team rosters are configured in the Match Configuration section above.</p>
+                            </div>
+                          )}
+                          
                           {/* Unified Tracker Assignment System */}
                           <UnifiedTrackerAssignment
                             matchId={matchId}
                             homeTeamPlayers={homeTeamPlayers.map((player, index) => ({
-                              id: player.id || index,
-                              jersey_number: player.number || index + 1,
-                              player_name: player.name || `Player ${index + 1}`,
+                              id: Number(player.id) || index,
+                              jersey_number: player.jersey_number || player.number || index + 1,
+                              player_name: player.player_name || player.name || `Player ${index + 1}`,
                               team: 'home' as const,
                               position: player.position
                             }))}
                             awayTeamPlayers={awayTeamPlayers.map((player, index) => ({
-                              id: player.id || index + 100,
-                              jersey_number: player.number || index + 1,
-                              player_name: player.name || `Player ${index + 1}`,
+                              id: Number(player.id) || index + 100,
+                              jersey_number: player.jersey_number || player.number || index + 1,
+                              player_name: player.player_name || player.name || `Player ${index + 1}`,
                               team: 'away' as const,
                               position: player.position
                             }))}
