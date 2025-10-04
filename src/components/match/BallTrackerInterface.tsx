@@ -72,8 +72,15 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
   // Debug logging
   console.log('BallTrackerInterface - Home players:', homeTeamPlayers);
   console.log('BallTrackerInterface - Away players:', awayTeamPlayers);
+  console.log('BallTrackerInterface - Current ball holder:', currentBallHolder);
 
   const hasPlayers = (homeTeamPlayers?.length > 0) || (awayTeamPlayers?.length > 0);
+  const allPlayers = [...(homeTeamPlayers || []), ...(awayTeamPlayers || [])];
+
+  // Validate current ball holder exists in teams
+  const isValidBallHolder = currentBallHolder 
+    ? allPlayers.some(p => p.id === currentBallHolder.id) 
+    : false;
 
   if (!hasPlayers) {
     return (
@@ -103,12 +110,25 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
           <p className="text-sm text-muted-foreground">
             Click the player who currently has the ball to activate the appropriate player tracker.
           </p>
-          {currentBallHolder && (
+          {currentBallHolder && isValidBallHolder && (
             <div className="mt-3 p-3 bg-background rounded-lg border border-green-500">
               <div className="flex items-center gap-2">
                 <Target className="h-4 w-4 text-green-600" />
                 <span className="text-sm font-medium">
                   Current: #{currentBallHolder.jersey_number} {currentBallHolder.player_name}
+                </span>
+                <Badge variant="outline" className="text-xs">
+                  {currentBallHolder.team === 'home' ? homeTeamName : awayTeamName}
+                </Badge>
+              </div>
+            </div>
+          )}
+          {currentBallHolder && !isValidBallHolder && (
+            <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-500">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <span className="text-sm font-medium text-amber-700">
+                  Warning: Current ball holder not found in teams
                 </span>
               </div>
             </div>
@@ -149,7 +169,7 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
               </Badge>
               {homeTeamPlayers.map((player, index) => {
                 const pos = getPositionCoordinates(player.position || '', index, homeTeamPlayers.length, true);
-                const isActive = currentBallHolder?.id === player.id;
+                const isActive = isValidBallHolder && currentBallHolder?.id === player.id;
                 
                 return (
                   <button
@@ -160,6 +180,7 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
                     }`}
                     style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
                     title={`#${player.jersey_number} ${player.player_name} (${player.position || 'N/A'})`}
+                    aria-label={`Select player ${player.player_name}`}
                   >
                     <div className={`relative w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-lg transition-all ${
                       isActive 
@@ -183,7 +204,7 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
               </Badge>
               {awayTeamPlayers.map((player, index) => {
                 const pos = getPositionCoordinates(player.position || '', index, awayTeamPlayers.length, false);
-                const isActive = currentBallHolder?.id === player.id;
+                const isActive = isValidBallHolder && currentBallHolder?.id === player.id;
                 
                 return (
                   <button
@@ -194,6 +215,7 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
                     }`}
                     style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
                     title={`#${player.jersey_number} ${player.player_name} (${player.position || 'N/A'})`}
+                    aria-label={`Select player ${player.player_name}`}
                   >
                     <div className={`relative w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-lg transition-all ${
                       isActive 
@@ -222,6 +244,7 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
             <li>• The system will automatically infer passes, interceptions, and dribbles</li>
             <li>• The active player tracker will be notified to record specific events</li>
             <li>• Players are positioned according to their assigned positions</li>
+            <li>• Dribbles are only recorded if possession lasts more than 2 seconds</li>
           </ul>
         </CardContent>
       </Card>
