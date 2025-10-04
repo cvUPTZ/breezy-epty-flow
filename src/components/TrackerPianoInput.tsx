@@ -390,22 +390,24 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({
                 const isRecordingThis = isRecording && recordingEventType === eventType;
 
                 return (
-                  <div key={eventType} className="flex flex-col items-center gap-2">
+                  <div key={eventType} className="flex flex-col items-center justify-start gap-2">
                     <button
                       onClick={() => handleRecordEvent(eventType)}
                       disabled={isRecording || (trackerType === 'player' && !selectedPlayer)}
-                      className="relative flex items-center justify-center rounded-full border bg-gradient-to-br from-white/70 to-slate-100/70 backdrop-blur-sm transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed w-16 h-16 sm:w-20 sm:h-20"
+                      aria-label={`Record ${eventType} event`}
+                      aria-pressed={isRecordingThis}
+                      className="relative flex items-center justify-center rounded-full border bg-gradient-to-br from-white/70 to-slate-100/70 backdrop-blur-sm transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-70 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none w-16 h-16 sm:w-20 sm:h-20"
                     >
                       <EventTypeSvg eventType={eventType} size="sm" />
                       {isRecordingThis && (
                         <motion.div
-                          className="absolute inset-0 rounded-full border-2 border-green-500"
+                          className="absolute inset-0 rounded-full border-2 border-green-500 pointer-events-none"
                           animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
                           transition={{ duration: 0.8, repeat: Infinity }}
                         />
                       )}
                     </button>
-                    <span className="font-semibold text-slate-700 text-center text-xs sm:text-sm max-w-[80px] break-words">
+                    <span className="font-semibold text-slate-700 text-center leading-tight text-xs sm:text-sm max-w-[80px] break-words">
                       {eventType}
                     </span>
                   </div>
@@ -455,25 +457,27 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({
                           selectedPlayer?.id === player.id;
 
                         return (
-                          <div key={`${player.id}-${eventType}`} className="flex flex-col items-center gap-2">
+                          <div key={`${player.id}-${eventType}`} className="flex flex-col items-center justify-start gap-2">
                             <button
                               onClick={() => {
                                 setSelectedPlayer(player);
                                 handleRecordEvent(eventType, player);
                               }}
                               disabled={isRecording}
-                              className="relative flex items-center justify-center rounded-full border bg-gradient-to-br from-white/70 to-slate-100/70 backdrop-blur-sm transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed w-14 h-14 sm:w-16 sm:h-16"
+                              aria-label={`Record ${eventType} event for ${player.player_name}`}
+                              aria-pressed={isRecordingThis}
+                              className="relative flex items-center justify-center rounded-full border bg-gradient-to-br from-white/70 to-slate-100/70 backdrop-blur-sm transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-70 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none w-14 h-14 sm:w-16 sm:h-16"
                             >
                               <EventTypeSvg eventType={eventType} size="xs" />
                               {isRecordingThis && (
                                 <motion.div
-                                  className="absolute inset-0 rounded-full border-2 border-green-500"
+                                  className="absolute inset-0 rounded-full border-2 border-green-500 pointer-events-none"
                                   animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
                                   transition={{ duration: 0.8, repeat: Infinity }}
                                 />
                               )}
                             </button>
-                            <span className="font-semibold text-slate-700 text-center text-xs max-w-[64px] break-words">
+                            <span className="font-semibold text-slate-700 text-center leading-tight text-xs max-w-[64px] break-words">
                               {eventType}
                             </span>
                           </div>
