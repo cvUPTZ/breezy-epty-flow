@@ -437,7 +437,10 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     return assignments;
   }, [homeTeamPlayers, awayTeamPlayers]);
 
-  const saveAssignmentToDB = useCallback(async (assignment: Omit<Assignment, 'id' | 'tracker_name' | 'tracker_email'>) => {
+  const saveAssignmentToDB = useCallback(async (
+    assignment: Omit<Assignment, 'id' | 'tracker_name' | 'tracker_email'>,
+    teamId: 'home' | 'away'
+  ) => {
     if (!matchId) return null;
     
     // Check if assignment exists before deleting
@@ -460,7 +463,8 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       tracker_user_id: assignment.tracker_user_id,
       tracker_type: assignment.tracker_type,
       assigned_player_ids: assignment.player_ids,
-      assigned_event_types: assignment.assigned_event_types
+      assigned_event_types: assignment.assigned_event_types,
+      player_team_id: teamId // FIX: Add required field
     };
     const { data, error } = await supabase
       .from('match_tracker_assignments')
@@ -532,7 +536,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
         };
 
         const assignmentId = matchId
-          ? await saveAssignmentToDB(assignmentToSave)
+          ? await saveAssignmentToDB(assignmentToSave, state.selectedTeam) // FIX: Pass team ID
           : `temp-${Date.now()}-${i}`;
 
         if (assignmentId && matchId) {
@@ -612,13 +616,18 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       return;
     }
 
-    // FIX: Determine player_ids based on role
+    // FIX: Determine player_ids and team based on role
     let playerIds: number[] | null = null;
+    let teamId: 'home' | 'away' = state.selectedTeam;
+    
     if (state.assignmentRole === 'ball') {
       // Ball tracker gets ALL players from BOTH teams
       playerIds = allPlayers.map(p => p.id);
+      // For ball tracker, use 'home' as default (could be either since it tracks both)
+      teamId = 'home';
     } else if (state.assignmentRole === 'player') {
       playerIds = state.selectedPlayers;
+      teamId = state.selectedTeam;
     }
 
     return safeAsync(async () => {
@@ -637,7 +646,10 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
           : allEventTypes
       };
 
-      const realAssignmentId = matchId ? await saveAssignmentToDB(assignmentToSave) : `temp-${Date.now()}`;
+      const realAssignmentId = matchId 
+        ? await saveAssignmentToDB(assignmentToSave, teamId) // FIX: Pass team ID
+        : `temp-${Date.now()}`;
+        
       if (realAssignmentId && matchId) {
          const finalVideoUrl = state.assignmentVideoUrl.trim() || undefined;
          await sendNotificationToTracker(state.selectedTracker, matchId, finalVideoUrl);
@@ -670,6 +682,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     state.selectedTracker,
     state.assignmentRole,
     state.selectedPlayers,
+    state.selectedTeam,
     state.selectedEventTypes,
     state.trackers,
     state.assignments,
