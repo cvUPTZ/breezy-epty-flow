@@ -308,40 +308,64 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
 
   const fetchAssignments = useCallback(async () => {
     if (!matchId) return null;
-    dispatch({ type: 'SET_LOADING', payload: true });
-    const { data: assignmentsData, error: assignmentsError } = await supabase
-      .from('match_tracker_assignments')
-      .select('*')
-      .eq('match_id', matchId);
-    if (assignmentsError) {
+    
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      
+      const { data: assignmentsData, error: assignmentsError } = await supabase
+        .from('match_tracker_assignments')
+        .select('*')
+        .eq('match_id', matchId);
+        
+      if (assignmentsError) {
+        console.error('Error fetching assignments:', assignmentsError);
+        throw assignmentsError;
+      }
+      
+      if (!assignmentsData || assignmentsData.length === 0) {
+        dispatch({ type: 'SET_ASSIGNMENTS', payload: [] });
+        dispatch({ type: 'SET_LOADING', payload: false });
+        onAssignmentsChange?.([]);
+        return [];
+      }
+      
+      const trackerUserIds = [...new Set(assignmentsData.map(a => a.tracker_user_id))];
+      
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', trackerUserIds);
+        
+      if (profilesError) {
+        console.warn('Failed to fetch profiles:', profilesError);
+      }
+      
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+      
+      const enrichedAssignments = assignmentsData.map(assignment => ({
+        ...assignment,
+        profiles: profilesMap.get(assignment.tracker_user_id) || null
+      }));
+      
+      const processedAssignments = processAssignments(enrichedAssignments);
+      
+      dispatch({ type: 'SET_ASSIGNMENTS', payload: processedAssignments });
       dispatch({ type: 'SET_LOADING', payload: false });
-      throw assignmentsError;
-    }
-    if (!assignmentsData || assignmentsData.length === 0) {
-      dispatch({ type: 'SET_ASSIGNMENTS', payload: [] });
+      onAssignmentsChange?.(processedAssignments);
+      
+      return processedAssignments;
+    } catch (error: any) {
+      console.error('Error in fetchAssignments:', error);
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Failed to fetch assignments' });
       dispatch({ type: 'SET_LOADING', payload: false });
-      onAssignmentsChange?.([]);
-      return [];
+      toast({
+        title: "Error Loading Assignments",
+        description: error.message || "Could not load assignments.",
+        variant: "destructive"
+      });
+      return null;
     }
-    const trackerUserIds = [...new Set(assignmentsData.map(a => a.tracker_user_id))];
-    const { data: profilesData, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, full_name, email')
-      .in('id', trackerUserIds);
-    if (profilesError) {
-      console.warn('Failed to fetch profiles:', profilesError);
-    }
-    const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
-    const enrichedAssignments = assignmentsData.map(assignment => ({
-      ...assignment,
-      profiles: profilesMap.get(assignment.tracker_user_id) || null
-    }));
-    const processedAssignments = processAssignments(enrichedAssignments);
-    dispatch({ type: 'SET_ASSIGNMENTS', payload: processedAssignments });
-    dispatch({ type: 'SET_LOADING', payload: false });
-    onAssignmentsChange?.(processedAssignments);
-    return processedAssignments;
-  }, [matchId, onAssignmentsChange]);
+  }, [matchId, onAssignmentsChange, toast]);
 
   useEffect(() => {
     if (trackerUsers.length === 0 && !hasFetchedTrackers.current) {
@@ -464,15 +488,25 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       tracker_type: assignment.tracker_type,
       assigned_player_ids: assignment.player_ids,
       assigned_event_types: assignment.assigned_event_types,
-      player_team_id: teamId // FIX: Add required field
+      player_team_id: teamId
     };
+    
     const { data, error } = await supabase
       .from('match_tracker_assignments')
       .insert([recordToInsert])
-      .select('id')
-      .single();
-    if (error) throw error;
-    return data?.id || null;
+      .select('id');
+    
+    if (error) {
+      console.error('Insert error:', error);
+      throw error;
+    }
+    
+    // Handle array response instead of .single()
+    if (!data || data.length === 0) {
+      throw new Error('No data returned from insert');
+    }
+    
+    return data[0].id;
   }, [matchId]);
 
   const sendNotificationToTracker = useCallback(async (trackerId: string, matchId: string, videoUrl?: string) => {
