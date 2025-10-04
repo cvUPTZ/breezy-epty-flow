@@ -110,20 +110,28 @@ export const useNewVoiceCollaboration = (): UseNewVoiceCollaborationReturn => {
   }, [manager]);
 
   const joinRoom = useCallback(async (roomId: string, userId: string, userRole: string, userName: string) => {
+    // Prevent joining if already connected or in the process of connecting
+    if (isConnecting || isConnected) {
+      console.warn('[useNewVoiceCollaboration] Attempted to join room while already connecting or connected.');
+      return;
+    }
+
     setIsConnecting(true);
     setError(null);
+
     try {
-      console.log('[useNewVoiceCollaboration] Joining room:', roomId);
-      // Mock implementation since we don't have the actual joinRoom method
+      console.log('[useNewVoiceCollaboration] Delegating join room call to manager for room:', roomId);
+      await manager.joinRoom(roomId, userId, userRole, userName);
+      // The manager will emit a ConnectionState.Connected event.
+      // The onConnectionStateChanged listener will handle the rest of the state updates.
+      // We can optimistically set the room ID here.
       setCurrentRoomId(roomId);
-      console.log('[useNewVoiceCollaboration] Successfully joined room');
     } catch (err) {
-      console.error('[useNewVoiceCollaboration] Error joining room:', err);
+      console.error('[useNewVoiceCollaboration] Error during join room attempt:', err);
       setError(err as Error);
-    } finally {
-      setIsConnecting(false);
+      setIsConnecting(false); // Reset on failure
     }
-  }, [manager]);
+  }, [manager, isConnecting, isConnected]);
 
   const leaveRoom = useCallback(async () => {
     console.log('[useNewVoiceCollaboration] Leaving room');
