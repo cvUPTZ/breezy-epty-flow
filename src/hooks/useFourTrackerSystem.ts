@@ -1,16 +1,21 @@
-// Hook for the 4-tracker match event system
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { EventType } from '@/types';
-import { parsePlayerIds } from '@/utils/parsing';
 
+// Enhanced hook with pending event queue
 export interface Player {
   id: number;
   jersey_number: number;
   player_name: string;
   team: 'home' | 'away';
   position?: string;
+}
+
+export interface PendingEvent {
+  id: string;
+  player: Player;
+  timestamp: number;
+  age_seconds: number;
+  priority: 'urgent' | 'normal' | 'old';
+  tracker_id: string;
 }
 
 export interface TrackerAssignment {
@@ -28,28 +33,74 @@ export interface BallPossessionEvent {
   tracker_id: string;
 }
 
-interface UseFourTrackerSystemProps {
+interface UseFourTrackerSystemEnhancedProps {
   matchId: string;
   trackerId: string;
   trackerType: 'ball' | 'player';
-  allPlayers: Player[]; // All players from the match
+  allPlayers: Player[];
+  supabase: any;
+  toast: any;
 }
 
-export const useFourTrackerSystem = ({
+export const useFourTrackerSystemEnhanced = ({
   matchId,
   trackerId,
   trackerType,
-  allPlayers
-}: UseFourTrackerSystemProps) => {
-  const { toast } = useToast();
+  allPlayers,
+  supabase,
+  toast
+}: UseFourTrackerSystemEnhancedProps) => {
   const [assignment, setAssignment] = useState<TrackerAssignment | null>(null);
   const [currentBallHolder, setCurrentBallHolder] = useState<Player | null>(null);
-  const [isActiveTracker, setIsActiveTracker] = useState(false);
+  const [pendingEvents, setPendingEvents] = useState<PendingEvent[]>([]);
   const [lastPossession, setLastPossession] = useState<BallPossessionEvent | null>(null);
   const channelRef = useRef<any>(null);
-  const processingRef = useRef(false); // Prevent race conditions
+  const processingRef = useRef(false);
+  const eventIdCounter = useRef(0);
 
-  // Fetch tracker assignment
+  // Update event ages every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPendingEvents(prev => 
+        prev.map(event => {
+          const age = Math.floor((Date.now() - event.timestamp) / 1000);
+          let priority: 'urgent' | 'normal' | 'old' = 'normal';
+          
+          if (age < 5) priority = 'urgent';
+          else if (age < 15) priority = 'normal';
+          else priority = 'old';
+          
+          return { ...event, age_seconds: age, priority };
+        })
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Auto-clear old events (optional - can be disabled)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPendingEvents(prev => {
+        const cleared = prev.filter(e => e.age_seconds < 30);
+        const removed = prev.length - cleared.length;
+        
+        if (removed > 0) {
+          toast({
+            title: 'Events Auto-Cleared',
+            description: `${removed} old event(s) cleared (>30s old)`,
+            duration: 2000,
+          });
+        }
+        
+        return cleared;
+      });
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [toast]);
+
+  // Fetch tracker assignment (same as before)
   useEffect(() => {
     const fetchAssignment = async () => {
       const { data: assignments, error: assignError } = await supabase
@@ -59,14 +110,12 @@ export const useFourTrackerSystem = ({
         .eq('tracker_user_id', trackerId);
 
       if (assignError || !assignments || assignments.length === 0) {
-        console.error('Error fetching assignment or assignment not found:', assignError);
+        console.error('Error fetching assignment:', assignError);
         return;
       }
 
       const assignmentData: any = assignments[0];
-      const assignedPlayerIds = parsePlayerIds(assignmentData.assigned_player_ids);
-
-      // Map assigned player IDs to actual player objects from the match data
+      const assignedPlayerIds = JSON.parse(assignmentData.assigned_player_ids || '[]');
       const assignedPlayers: Player[] = assignedPlayerIds
         .map((playerId: number) => allPlayers.find((p: Player) => p.id === playerId))
         .filter((p: Player | undefined): p is Player => p !== undefined);
@@ -83,19 +132,17 @@ export const useFourTrackerSystem = ({
     if (trackerId && matchId && allPlayers.length > 0) {
       fetchAssignment();
     }
-  }, [matchId, trackerId, trackerType, allPlayers]);
+  }, [matchId, trackerId, trackerType, allPlayers, supabase]);
 
-  // Subscribe to ball possession changes (for all trackers)
+  // Subscribe to ball possession changes
   useEffect(() => {
     const channel = supabase
       .channel(`ball-possession-${matchId}`)
       .on(
         'broadcast',
         { event: 'ball_possession_change' },
-        (payload) => {
+        (payload: any) => {
           const possession = payload.payload as BallPossessionEvent;
-          
-          // Validate player exists in current teams
           const player = allPlayers.find(p => p.id === possession.player_id);
           
           if (!player) {
@@ -106,11 +153,26 @@ export const useFourTrackerSystem = ({
           setCurrentBallHolder(player);
           setLastPossession(possession);
 
+          // For player trackers: Add to pending queue if it's one of assigned players
           if (trackerType === 'player') {
-            const isMyPlayer = assignment?.assigned_players?.some(p => p.id === possession.player_id) || false;
-            setIsActiveTracker(isMyPlayer);
-          } else {
-            setIsActiveTracker(true);
+            const isMyPlayer = assignment?.assigned_players?.some(p => p.id === possession.player_id);
+            
+            if (isMyPlayer) {
+              // Add to pending events queue
+              const newEvent: PendingEvent = {
+                id: `event-${eventIdCounter.current++}-${possession.player_id}-${possession.timestamp}`,
+                player: player,
+                timestamp: possession.timestamp,
+                age_seconds: 0,
+                priority: 'urgent',
+                tracker_id: trackerId
+              };
+              
+              setPendingEvents(prev => [...prev, newEvent]);
+              
+              // Audio cue (optional)
+              // new Audio('/notification.mp3').play().catch(() => {});
+            }
           }
         }
       )
@@ -121,12 +183,12 @@ export const useFourTrackerSystem = ({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [matchId, trackerType, assignment, allPlayers]);
+  }, [matchId, trackerType, assignment, allPlayers, trackerId, supabase]);
 
   // Ball tracker: update ball possession
   const updateBallPossession = useCallback(async (player: Player) => {
     if (trackerType !== 'ball') return;
-    if (processingRef.current) return; // Prevent duplicate processing
+    if (processingRef.current) return;
 
     processingRef.current = true;
 
@@ -138,12 +200,12 @@ export const useFourTrackerSystem = ({
         tracker_id: trackerId
       };
 
-      // 1. Infer event FIRST based on last possession (before broadcasting)
+      // Infer event based on last possession
       if (lastPossession) {
         await inferEvent(lastPossession, possessionEvent);
       }
 
-      // 2. Record the raw possession change event
+      // Record possession change
       const { error: insertError } = await supabase.from('match_events').insert([{
         match_id: matchId,
         event_type: 'ball_possession_change',
@@ -157,12 +219,9 @@ export const useFourTrackerSystem = ({
         }
       }]);
 
-      if (insertError) {
-        console.error('Error recording possession change:', insertError);
-        throw insertError;
-      }
+      if (insertError) throw insertError;
 
-      // 3. Broadcast to all trackers AFTER events are recorded
+      // Broadcast to all trackers
       if (channelRef.current) {
         await channelRef.current.send({
           type: 'broadcast',
@@ -171,7 +230,6 @@ export const useFourTrackerSystem = ({
         });
       }
 
-      // 4. Update local state
       setLastPossession(possessionEvent);
       setCurrentBallHolder(player);
     } catch (error) {
@@ -184,30 +242,27 @@ export const useFourTrackerSystem = ({
     } finally {
       processingRef.current = false;
     }
-  }, [trackerType, trackerId, lastPossession, matchId, toast]);
+  }, [trackerType, trackerId, lastPossession, matchId, toast, supabase]);
 
-  // Event inference logic with expanded cases
+  // Event inference logic
   const inferEvent = useCallback(async (
     prev: BallPossessionEvent,
     current: BallPossessionEvent
   ) => {
     try {
-      // Same player = dribble/keep (only if more than 2 seconds apart)
       if (prev.player_id === current.player_id) {
         const timeDiff = current.timestamp - prev.timestamp;
-        if (timeDiff > 2000) { // Only record if > 2 seconds
+        if (timeDiff > 2000) {
           await recordInferredEvent('dribble', current);
         }
         return;
       }
 
-      // Same team = pass (successful)
       if (prev.team === current.team) {
         await recordInferredEvent('pass', prev, current);
         return;
       }
 
-      // Different team = interception/turnover
       await recordInferredEvent('interception', current, prev);
     } catch (error) {
       console.error('Error inferring event:', error);
@@ -237,14 +292,8 @@ export const useFourTrackerSystem = ({
         }
       };
 
-      const { error } = await supabase
-        .from('match_events')
-        .insert([eventData]);
-
-      if (error) {
-        console.error('Error recording inferred event:', error);
-        throw error;
-      }
+      const { error } = await supabase.from('match_events').insert([eventData]);
+      if (error) throw error;
 
       toast({
         title: 'Event Recorded',
@@ -253,50 +302,43 @@ export const useFourTrackerSystem = ({
       });
     } catch (error) {
       console.error('Error in recordInferredEvent:', error);
-      // Don't throw - log but continue
     }
-  }, [matchId, trackerId, toast]);
+  }, [matchId, trackerId, toast, supabase]);
 
-  // Player tracker: record event
-  const recordEvent = useCallback(async (
-    eventType: EventType,
+  // Record event for a specific pending event
+  const recordEventForPending = useCallback(async (
+    pendingEventId: string,
+    eventType: string,
     details?: Record<string, any>
   ) => {
-    if (!isActiveTracker || !currentBallHolder) {
-      toast({
-        title: 'Not Active',
-        description: 'Wait for your player to get the ball',
-        variant: 'destructive'
-      });
-      return;
-    }
+    const pendingEvent = pendingEvents.find(e => e.id === pendingEventId);
+    if (!pendingEvent) return;
 
     try {
       const eventData = {
         match_id: matchId,
         event_type: eventType,
-        player_id: currentBallHolder.id,
-        team: currentBallHolder.team,
-        timestamp: Math.floor(Date.now() / 1000),
+        player_id: pendingEvent.player.id,
+        team: pendingEvent.player.team,
+        timestamp: Math.floor(pendingEvent.timestamp / 1000), // Use original timestamp!
         created_by: trackerId,
         event_data: {
           ...details,
           tracker_type: 'player',
-          recorded_at: new Date().toISOString()
+          recorded_at: new Date().toISOString(),
+          delay_seconds: Math.floor((Date.now() - pendingEvent.timestamp) / 1000)
         }
       };
 
-      const { error } = await supabase
-        .from('match_events')
-        .insert([eventData]);
+      const { error } = await supabase.from('match_events').insert([eventData]);
+      if (error) throw error;
 
-      if (error) {
-        throw error;
-      }
+      // Remove from pending queue
+      setPendingEvents(prev => prev.filter(e => e.id !== pendingEventId));
 
       toast({
         title: 'Event Recorded',
-        description: `${eventType} recorded successfully`,
+        description: `${eventType} for #${pendingEvent.player.jersey_number} ${pendingEvent.player.player_name}`,
         duration: 2000
       });
     } catch (error) {
@@ -307,14 +349,31 @@ export const useFourTrackerSystem = ({
         variant: 'destructive'
       });
     }
-  }, [isActiveTracker, currentBallHolder, matchId, trackerId, toast]);
+  }, [pendingEvents, matchId, trackerId, toast, supabase]);
+
+  // Clear a pending event without recording
+  const clearPendingEvent = useCallback((pendingEventId: string) => {
+    setPendingEvents(prev => prev.filter(e => e.id !== pendingEventId));
+  }, []);
+
+  // Clear all pending events
+  const clearAllPendingEvents = useCallback(() => {
+    setPendingEvents([]);
+    toast({
+      title: 'Queue Cleared',
+      description: 'All pending events cleared',
+      duration: 2000
+    });
+  }, [toast]);
 
   return {
     assignment,
     currentBallHolder,
-    isActiveTracker,
+    pendingEvents,
     updateBallPossession,
-    recordEvent,
+    recordEventForPending,
+    clearPendingEvent,
+    clearAllPendingEvents,
     lastPossession
   };
 };
