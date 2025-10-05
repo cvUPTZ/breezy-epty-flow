@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PressureEventData } from '@/types/eventData';
-import { PlayerForPianoInput } from '../TrackerPianoInput'; // Assuming PlayerForPianoInput is exported
+import { Player as PlayerForPianoInput } from '../TrackerPianoInput';
 import { useToast } from '@/hooks/use-toast';
 
 interface PressureDetailModalProps {
@@ -58,7 +58,7 @@ const PressureDetailModal: React.FC<PressureDetailModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Pressure Event Details (By: {pressurer?.name || 'Selected Player'})</DialogTitle>
+          <DialogTitle>Pressure Event Details (By: {pressurer?.player_name || 'Selected Player'})</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">

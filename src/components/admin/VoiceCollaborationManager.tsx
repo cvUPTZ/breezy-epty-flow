@@ -80,15 +80,15 @@ const VoiceCollaborationManager: React.FC = () => {
       const transformedData: VoiceRoom[] = data.map(room => ({
         id: room.id,
         name: room.name || 'Unnamed Room',
-        description: room.description,
-        match_id: room.match_id,
+        description: room.description ?? undefined,
+        match_id: room.match_id ?? undefined,
         is_active: room.is_active ?? true,
         is_private: room.is_private ?? false,
         max_participants: room.max_participants ?? 25,
-        permissions: room.permissions,
+        permissions: room.permissions ?? undefined,
         priority: room.priority ?? 1,
-        created_at: room.created_at,
-        updated_at: room.updated_at
+        created_at: room.created_at ?? undefined,
+        updated_at: room.updated_at ?? undefined
       }));
 
       setVoiceRooms(transformedData);
@@ -127,7 +127,7 @@ const VoiceCollaborationManager: React.FC = () => {
       }
 
       // Fetch profiles separately to avoid recursion issues
-      const userIds = participantsData.map(p => p.user_id);
+      const userIds = participantsData.map(p => p.user_id).filter((id): id is string => id !== null);
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, email')
@@ -141,19 +141,21 @@ const VoiceCollaborationManager: React.FC = () => {
       const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
 
       // Transform the data
-      const transformedData: Participant[] = participantsData.map(participant => ({
-        id: participant.id,
-        user_id: participant.user_id,
-        room_id: participant.room_id,
-        user_role: participant.user_role || 'viewer',
-        is_muted: participant.is_muted ?? false,
-        is_speaking: participant.is_speaking ?? false,
-        connection_quality: participant.connection_quality || 'unknown',
-        joined_at: participant.joined_at,
-        last_activity: participant.last_activity,
-        user_name: profilesMap.get(participant.user_id)?.full_name,
-        user_email: profilesMap.get(participant.user_id)?.email,
-      }));
+      const transformedData: Participant[] = participantsData
+        .filter(participant => participant.user_id && participant.room_id) // Filter out nulls
+        .map(participant => ({
+          id: participant.id,
+          user_id: participant.user_id!,
+          room_id: participant.room_id!,
+          user_role: participant.user_role || 'viewer',
+          is_muted: participant.is_muted ?? false,
+          is_speaking: participant.is_speaking ?? false,
+          connection_quality: participant.connection_quality || 'unknown',
+          joined_at: participant.joined_at ?? undefined,
+          last_activity: participant.last_activity ?? undefined,
+          user_name: profilesMap.get(participant.user_id!)?.full_name ?? undefined,
+          user_email: profilesMap.get(participant.user_id!)?.email ?? undefined,
+        }));
 
       setParticipants(transformedData);
       
@@ -190,11 +192,11 @@ const VoiceCollaborationManager: React.FC = () => {
 
       const transformedData: Match[] = data.map(match => ({
         id: match.id,
-        name: match.name,
+        name: match.name ?? undefined,
         home_team_name: match.home_team_name || 'Home Team',
         away_team_name: match.away_team_name || 'Away Team',
         status: match.status || 'scheduled',
-        match_date: match.match_date
+        match_date: match.match_date ?? undefined
       }));
 
       setMatches(transformedData);

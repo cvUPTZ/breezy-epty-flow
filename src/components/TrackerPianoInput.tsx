@@ -128,11 +128,13 @@ const TrackerPianoInput: React.FC<TrackerPianoInputProps> = ({
         throw new Error('No assignment found. Please contact an admin.');
       }
 
-      const assignment: TrackerAssignment = assignments[0];
-      setTrackerType(assignment.tracker_type);
+      const assignment = assignments[0] as any; // Database row
+      // Type assertion: database returns string, but we validate it's 'ball' | 'player'
+      const trackerType = (assignment.tracker_type || 'player') as 'ball' | 'player';
+      setTrackerType(trackerType);
 
       // For ball tracker, assign all players
-      if (assignment.tracker_type === 'ball') {
+      if (trackerType === 'ball') {
         setAssignedPlayers(allPlayers);
         setAssignedEventTypes(assignment.assigned_event_types || []);
         setLoading(false);

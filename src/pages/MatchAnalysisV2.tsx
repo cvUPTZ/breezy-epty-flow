@@ -111,7 +111,7 @@ const MatchAnalysisV2: React.FC = () => {
   }, []);
 
   // Utility function to parse player data consistently
-  const parsePlayerData = useCallback((data: any): PlayerForPianoInput[] => {
+  const parsePlayerData = useCallback((data: any, teamContext: 'home' | 'away'): PlayerForPianoInput[] => {
     if (!data) return [];
     
     let players: any[] = [];
@@ -140,10 +140,11 @@ const MatchAnalysisV2: React.FC = () => {
         (player.player_name?.trim() || player.name?.trim())
       )
       .map((player, index) => ({
-        id: Number(player.id) || index,
+        id: String(player.id || index),
         player_name: (player.player_name || player.name || '').trim(),
         jersey_number: Number(player.jersey_number || player.number) || index + 1,
-        position: player.position?.trim() || undefined
+        position: player.position?.trim() || undefined,
+        team_context: teamContext
       }));
   }, []);
 
@@ -214,8 +215,8 @@ const MatchAnalysisV2: React.FC = () => {
         formation: matchData.away_team_formation || '4-3-3'
       });
 
-      const homePlayers = parsePlayerData(matchData.home_team_players);
-      const awayPlayers = parsePlayerData(matchData.away_team_players);
+      const homePlayers = parsePlayerData(matchData.home_team_players, 'home');
+      const awayPlayers = parsePlayerData(matchData.away_team_players, 'away');
       
       console.log('Parsed match roster:', { home: homePlayers.length, away: awayPlayers.length });
       

@@ -1341,12 +1341,12 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
               )}
               <Button
                 onClick={handleCreateAssignment}
-                disabled={
+                disabled={Boolean(
                   state.creatingAssignment ||
                   !state.selectedTracker ||
                   (state.assignmentRole === 'player' && state.selectedPlayers.length === 0) ||
                   (state.assignmentVideoUrl.trim() && !isValidYouTubeUrl(state.assignmentVideoUrl))
-                }
+                )}
                 className="w-full"
                 aria-label="Create assignment"
               >
@@ -1475,12 +1475,12 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
               </div>
               <Button
                 onClick={handleCreateAssignment}
-                disabled={
+                disabled={Boolean(
                   state.creatingAssignment || 
                   !state.selectedTracker || 
                   state.selectedEventTypes.length === 0 ||
                   (state.assignmentVideoUrl.trim() && !isValidYouTubeUrl(state.assignmentVideoUrl))
-                }
+                )}
                 className="w-full"
                 aria-label="Create line-based assignment"
               >
