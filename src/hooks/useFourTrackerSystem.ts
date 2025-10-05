@@ -57,6 +57,7 @@ export const useFourTrackerSystem = ({
   const channelRef = useRef<any>(null);
   const processingRef = useRef(false);
   const eventIdCounter = useRef(0);
+  const lastEventTimestampRef = useRef<number>(0);
 
   // Update event ages every second
   useEffect(() => {
@@ -158,6 +159,13 @@ export const useFourTrackerSystem = ({
             const isMyPlayer = assignment?.assigned_players?.some(p => p.id === possession.player_id);
             
             if (isMyPlayer) {
+              // Duplicate prevention
+              const now = Date.now();
+              if (now - lastEventTimestampRef.current < 1000) {
+                return; // Ignore if last event was less than a second ago
+              }
+              lastEventTimestampRef.current = now;
+
               // Add to pending events queue
               const newEvent: PendingEvent = {
                 id: `event-${eventIdCounter.current++}-${possession.player_id}-${possession.timestamp}`,
@@ -168,7 +176,13 @@ export const useFourTrackerSystem = ({
                 tracker_id: trackerId
               };
               
-              setPendingEvents(prev => [...prev, newEvent]);
+              setPendingEvents(prev => {
+                // Prevent adding exact same event
+                if (prev.some(e => e.player.id === newEvent.player.id && e.timestamp === newEvent.timestamp)) {
+                  return prev;
+                }
+                return [...prev, newEvent];
+              });
               
               // Audio cue (optional)
               // new Audio('/notification.mp3').play().catch(() => {});
@@ -366,6 +380,47 @@ export const useFourTrackerSystem = ({
     });
   }, [toast]);
 
+  // Mark all pending events as "pass"
+  const markAllAsPass = useCallback(async () => {
+    const eventsToProcess = [...pendingEvents];
+    if (eventsToProcess.length === 0) return;
+
+    try {
+      const eventsData = eventsToProcess.map(pendingEvent => ({
+        match_id: matchId,
+        event_type: 'pass',
+        player_id: pendingEvent.player.id,
+        team: pendingEvent.player.team,
+        timestamp: Math.floor(pendingEvent.timestamp / 1000), // Use original timestamp!
+        created_by: trackerId,
+        event_data: {
+          tracker_type: 'player',
+          recorded_at: new Date().toISOString(),
+          delay_seconds: Math.floor((Date.now() - pendingEvent.timestamp) / 1000)
+        }
+      }));
+
+      const { error } = await supabase.from('match_events').insert(eventsData);
+      if (error) throw error;
+
+      // Clear the queue
+      setPendingEvents([]);
+
+      toast({
+        title: 'Batch Operation Complete',
+        description: `Marked all ${eventsToProcess.length} pending events as 'Pass'.`,
+        duration: 3000
+      });
+    } catch (error) {
+      console.error('Error in markAllAsPass:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to mark all events as pass',
+        variant: 'destructive'
+      });
+    }
+  }, [pendingEvents, matchId, trackerId, toast, supabase]);
+
   return {
     assignment,
     currentBallHolder,
@@ -374,6 +429,7 @@ export const useFourTrackerSystem = ({
     recordEventForPending,
     clearPendingEvent,
     clearAllPendingEvents,
+    markAllAsPass,
     lastPossession
   };
 };

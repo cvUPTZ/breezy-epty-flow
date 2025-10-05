@@ -28,6 +28,7 @@ interface EnhancedPlayerTrackerInterfaceProps {
   onRecordEvent: (pendingEventId: string, eventType: string, details?: Record<string, any>) => void;
   onClearEvent: (pendingEventId: string) => void;
   onClearAll: () => void;
+  onMarkAllAsPass: () => void;
 }
 
 const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
@@ -36,7 +37,8 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
   assignedEventTypes,
   onRecordEvent,
   onClearEvent,
-  onClearAll
+  onClearAll,
+  onMarkAllAsPass
 }) => {
   const eventTypeDisplay = (eventType: string) => {
     return eventType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -107,15 +109,26 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
               </span>
             </div>
             {pendingEvents.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onClearAll}
-                className="text-red-600 hover:text-red-700"
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                Clear All
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onMarkAllAsPass}
+                  className="text-blue-600 hover:text-blue-700 border-blue-300"
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Mark All As Pass
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onClearAll}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Clear All
+                </Button>
+              </div>
             )}
           </div>
         </CardContent>

@@ -1,21 +1,21 @@
-// components/FourTrackerSystemEnhanced.tsx
+// components/FourTrackerSystem.tsx
 import React, { useState, useEffect } from 'react';
-import { useFourTrackerSystemEnhanced, Player } from '@/hooks/useFourTrackerSystemEnhanced';
+import { useFourTrackerSystem, Player } from '@/hooks/useFourTrackerSystem';
 import BallTrackerInterface from './BallTrackerInterface';
-import PlayerTrackerInterfaceEnhanced from './PlayerTrackerInterfaceEnhanced';
+import PlayerTrackerInterface from './PlayerTrackerInterface';
 import { supabase } from '@/integrations/supabase/client';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Loader2, AlertTriangle } from 'lucide-react';
 
-interface FourTrackerSystemEnhancedProps {
+interface FourTrackerSystemProps {
   homeTeamPlayers: Player[];
   awayTeamPlayers: Player[];
   homeTeamName?: string;
   awayTeamName?: string;
 }
 
-const FourTrackerSystem: React.FC<FourTrackerSystemEnhancedProps> = ({
+const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
   homeTeamPlayers,
   awayTeamPlayers,
   homeTeamName = 'Home Team',
@@ -38,12 +38,14 @@ const FourTrackerSystem: React.FC<FourTrackerSystemEnhancedProps> = ({
     recordEventForPending,
     clearPendingEvent,
     clearAllPendingEvents,
-    markAllAsPass
-  } = useFourTrackerSystemEnhanced({
+    markAllAsPass,
+  } = useFourTrackerSystem({
     matchId: matchId!,
     trackerId: user?.id!,
     trackerType: trackerType || 'player',
-    allPlayers
+    allPlayers,
+    supabase: supabase,
+    toast: () => {}, // Replace with your actual toast implementation
   });
 
   useEffect(() => {
@@ -134,7 +136,7 @@ const FourTrackerSystem: React.FC<FourTrackerSystemEnhancedProps> = ({
           onSelectPlayer={updateBallPossession}
         />
       ) : (
-        <PlayerTrackerInterfaceEnhanced
+        <PlayerTrackerInterface
           assignedPlayers={assignment?.assigned_players || []}
           pendingEvents={pendingEvents}
           assignedEventTypes={assignment?.assigned_event_types || []}
