@@ -33,6 +33,7 @@ import Matches from './pages/Matches';
 import Statistics from './pages/Statistics';
 import Admin from './pages/Admin';
 import ProfileListPage from './pages/Admin/ProfileListPage';
+import QualityControlInterface from './pages/QualityControlInterface';
 import NewVoiceChatPage from './pages/NewVoiceChatPage';
 import ChromeExtensionBridge from './pages/ChromeExtensionBridge';
 import NotFound from './pages/NotFound';
@@ -158,6 +159,12 @@ const AppContent = () => {
           </RequireAuth>
         } />
         
+        <Route path="/match/:matchId/quality-control" element={
+          <AdminOnly>
+            <QualityControlInterface />
+          </AdminOnly>
+        } />
+
         {/* Video Analysis Routes */}
         <Route path="/video-analysis" element={
           <RequireAuth 

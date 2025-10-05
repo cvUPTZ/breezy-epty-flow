@@ -124,10 +124,53 @@ async function main() {
       console.log('Test match seeded successfully with ID:', testMatchId);
     }
 
+    console.log('Seeding a test admin user...');
+    await createTestAdmin();
+
 
     console.log('Done.');
   } catch (e) {
     console.error('An unexpected error occurred in main function:', e);
+  }
+}
+
+async function createTestAdmin() {
+  const adminEmail = 'admin@example.com';
+  const adminPassword = 'password';
+
+  // Check if user already exists
+  const { data: { user: existingUser } } = await supabase.auth.admin.getUserByEmail(adminEmail);
+
+  if (existingUser) {
+    console.log('Test admin user already exists.');
+    return;
+  }
+
+  const { data, error } = await supabase.auth.admin.createUser({
+    email: adminEmail,
+    password: adminPassword,
+    email_confirm: true,
+    user_metadata: { full_name: 'Admin User' },
+  });
+
+  if (error) {
+    console.error('Error creating test admin user:', JSON.stringify(error, null, 2));
+    return;
+  }
+
+  if (data.user) {
+    console.log('Test admin user created successfully.');
+    // Also add to profiles table with admin role
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ role: 'admin' })
+      .eq('id', data.user.id);
+
+    if (profileError) {
+      console.error('Error setting admin role for test user:', JSON.stringify(profileError, null, 2));
+    } else {
+      console.log('Test admin user role set to "admin".');
+    }
   }
 }
 
