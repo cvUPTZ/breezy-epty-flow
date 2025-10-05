@@ -160,7 +160,33 @@ export const useFourTrackerSystem = ({
         }
 
         const assignmentData: any = assignments[0];
-        const assignedPlayerIds = JSON.parse(assignmentData.assigned_player_ids || '[]');
+        
+        // Database uses Postgres ARRAY type, not JSON
+        // Supabase returns these as JavaScript arrays directly
+        const assignedPlayerIds: number[] = assignmentData.assigned_player_ids || [];
+        const assignedEventTypes: string[] = assignmentData.assigned_event_types || [];
+
+        // Validate types
+        if (!Array.isArray(assignedPlayerIds)) {
+          console.error('assigned_player_ids is not an array:', assignedPlayerIds);
+          toast({
+            title: 'Data Error',
+            description: 'Invalid player assignment data format',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        if (!Array.isArray(assignedEventTypes)) {
+          console.error('assigned_event_types is not an array:', assignedEventTypes);
+          toast({
+            title: 'Data Error',
+            description: 'Invalid event types data format',
+            variant: 'destructive',
+          });
+          return;
+        }
+
         const assignedPlayers: Player[] = assignedPlayerIds
           .map((playerId: number) => allPlayers.find((p: Player) => p.id === playerId))
           .filter((p: Player | undefined): p is Player => p !== undefined);
@@ -170,17 +196,23 @@ export const useFourTrackerSystem = ({
           tracker_name: 'Unknown Tracker',
           tracker_type: (assignmentData.tracker_type || 'player') as 'ball' | 'player',
           assigned_players: assignedPlayers,
-          assigned_event_types: assignmentData.assigned_event_types || [],
+          assigned_event_types: assignedEventTypes,
         });
       } catch (error) {
         console.error('Error in fetchAssignment:', error);
+        toast({
+          title: 'Assignment Error',
+          description: 'Failed to load tracker assignment. Please check your assignment data.',
+          variant: 'destructive',
+          duration: 5000,
+        });
       }
     };
 
     if (trackerId && matchId && allPlayers.length > 0) {
       fetchAssignment();
     }
-  }, [matchId, trackerId, allPlayers, supabase]);
+  }, [matchId, trackerId, allPlayers, supabase, toast]);
 
   // Subscribe to ball possession changes (fixed dependencies)
   useEffect(() => {
