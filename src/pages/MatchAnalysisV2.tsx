@@ -16,6 +16,7 @@ import { TrackerVoiceInput } from '@/components/TrackerVoiceInput';
 import { EventType as LocalEventType } from '@/types/matchForm';
 import { PlayerForPianoInput, AssignedPlayers } from '@/components/match/types';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { safeParseJson } from '@/utils/parsing';
 import { Activity, Piano, Users, Settings, Mic, Zap, LayoutDashboard, Video, Loader2 } from 'lucide-react';
 import { VoiceCollaborationProvider } from '@/context/VoiceCollaborationContext';
 import VoiceCollaborationOverlay from "@/components/match/VoiceCollaborationOverlay";
@@ -117,15 +118,8 @@ const MatchAnalysisV2: React.FC = () => {
     let players: any[] = [];
     
     if (typeof data === 'string') {
-      try {
-        const parsedData = JSON.parse(data);
-        if (Array.isArray(parsedData)) {
-          players = parsedData;
-        }
-      } catch (e) {
-        console.error('Error parsing player data:', e);
-        return [];
-      }
+      // Use the new safeParseJson utility
+      players = safeParseJson(data);
     } else if (Array.isArray(data)) {
       players = data;
     } else {
