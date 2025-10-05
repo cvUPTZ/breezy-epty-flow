@@ -1,20 +1,25 @@
+// components/FourTrackerSystemEnhanced.tsx
 import React, { useState, useEffect } from 'react';
-import { useFourTrackerSystem, Player } from '@/hooks/useFourTrackerSystem';
+import { useFourTrackerSystemEnhanced, Player } from '@/hooks/useFourTrackerSystemEnhanced';
 import BallTrackerInterface from './BallTrackerInterface';
-import PlayerTrackerInterface from './PlayerTrackerInterface';
+import PlayerTrackerInterfaceEnhanced from './PlayerTrackerInterfaceEnhanced';
 import { supabase } from '@/integrations/supabase/client';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Loader2, AlertTriangle } from 'lucide-react';
 
-interface FourTrackerSystemProps {
+interface FourTrackerSystemEnhancedProps {
   homeTeamPlayers: Player[];
   awayTeamPlayers: Player[];
+  homeTeamName?: string;
+  awayTeamName?: string;
 }
 
-const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
+const FourTrackerSystem: React.FC<FourTrackerSystemEnhancedProps> = ({
   homeTeamPlayers,
   awayTeamPlayers,
+  homeTeamName = 'Home Team',
+  awayTeamName = 'Away Team',
 }) => {
   const { matchId } = useParams<{ matchId: string }>();
   const { user } = useAuth();
@@ -28,10 +33,13 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
   const {
     assignment,
     currentBallHolder,
-    isActiveTracker,
+    pendingEvents,
     updateBallPossession,
-    recordEvent
-  } = useFourTrackerSystem({
+    recordEventForPending,
+    clearPendingEvent,
+    clearAllPendingEvents,
+    markAllAsPass
+  } = useFourTrackerSystemEnhanced({
     matchId: matchId!,
     trackerId: user?.id!,
     trackerType: trackerType || 'player',
@@ -49,7 +57,6 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
       setLoading(true);
       setError(null);
       try {
-        // Fetch a list of assignments instead of a single one to be robust.
         const { data: assignments, error: assignmentError } = await supabase
           .from('match_tracker_assignments')
           .select('*')
@@ -64,7 +71,6 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
           throw new Error('No assignment was found for your user for this match. Please ask an admin to assign you.');
         }
 
-        // Safely use the first assignment found to prevent crashes.
         const dbAssignment: any = assignments[0];
         setTrackerType(dbAssignment.tracker_type as 'ball' | 'player');
       } catch (e: any) {
@@ -122,18 +128,20 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
         <BallTrackerInterface
           homeTeamPlayers={homeTeamPlayers}
           awayTeamPlayers={awayTeamPlayers}
-          homeTeamName="Home Team"
-          awayTeamName="Away Team"
+          homeTeamName={homeTeamName}
+          awayTeamName={awayTeamName}
           currentBallHolder={currentBallHolder}
           onSelectPlayer={updateBallPossession}
         />
       ) : (
-        <PlayerTrackerInterface
+        <PlayerTrackerInterfaceEnhanced
           assignedPlayers={assignment?.assigned_players || []}
-          currentBallHolder={currentBallHolder}
-          isActive={isActiveTracker}
+          pendingEvents={pendingEvents}
           assignedEventTypes={assignment?.assigned_event_types || []}
-          onRecordEvent={recordEvent}
+          onRecordEvent={recordEventForPending}
+          onClearEvent={clearPendingEvent}
+          onClearAll={clearAllPendingEvents}
+          onMarkAllAsPass={markAllAsPass}
         />
       )}
     </div>
