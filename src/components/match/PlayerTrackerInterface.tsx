@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { User, Clock, AlertTriangle, Trash2, CheckCircle, Loader2, Keyboard } from 'lucide-react';
-import { useNumpadShortcuts } from '@/hooks/useNumpadShortcuts';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 interface Player {
   id: number;
@@ -46,7 +46,9 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
   const [processingEvents, setProcessingEvents] = useState<Set<string>>(new Set());
   const [batchProcessing, setBatchProcessing] = useState(false);
 
-  // Numpad shortcuts integration
+  // Keyboard shortcuts integration
+  const shortcutKeys = useMemo(() => ['Q', 'W', 'E', 'R', 'A', 'S', 'D', 'F', 'Z', 'X', 'C', 'V'], []);
+
   const shortcutMap = useMemo(() => {
     if (pendingEvents.length === 0 || !isOnline) {
       return {};
@@ -54,14 +56,15 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
     const firstEvent = pendingEvents[0];
     const map: { [key: string]: () => void } = {};
 
-    assignedEventTypes.slice(0, 9).forEach((eventType, index) => {
-      map[`Numpad${index + 1}`] = () => handleRecordEvent(firstEvent.id, eventType);
+    assignedEventTypes.slice(0, shortcutKeys.length).forEach((eventType, index) => {
+      const key = shortcutKeys[index];
+      map[`Key${key}`] = () => handleRecordEvent(firstEvent.id, eventType);
     });
 
     return map;
-  }, [pendingEvents, assignedEventTypes, isOnline]);
+  }, [pendingEvents, assignedEventTypes, isOnline, handleRecordEvent, shortcutKeys]);
 
-  useNumpadShortcuts(shortcutMap, isOnline && pendingEvents.length > 0);
+  useKeyboardShortcuts(shortcutMap, isOnline && pendingEvents.length > 0);
 
 
   const eventTypeDisplay = (eventType: string) => {
@@ -86,11 +89,11 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
     }
   };
 
-  const handleRecordEvent = (pendingEventId: string, eventType: string) => {
+  const handleRecordEvent = useCallback((pendingEventId: string, eventType: string) => {
     setProcessingEvents(prev => new Set(prev).add(pendingEventId));
     onRecordEvent(pendingEventId, eventType);
     // Processing state will be cleared when event is removed from queue
-  };
+  }, [onRecordEvent]);
 
   const handleMarkAllAsPass = async () => {
     setBatchProcessing(true);
@@ -261,34 +264,37 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
 
                     {/* Event Action Buttons */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      {assignedEventTypes.map((eventType, index) => (
-                        <Button
-                          key={eventType}
-                          onClick={() => handleRecordEvent(event.id, eventType)}
-                          disabled={!isOnline || isProcessing}
-                          size="lg"
-                          className={`h-16 text-sm font-semibold transition-all relative ${
-                            isProcessing
-                              ? 'bg-gray-400 cursor-not-allowed'
-                              : event.priority === 'urgent' 
-                                ? 'bg-red-600 hover:bg-red-700' 
-                                : event.priority === 'normal'
-                                  ? 'bg-yellow-600 hover:bg-yellow-700'
-                                  : 'bg-gray-600 hover:bg-gray-700'
-                          }`}
-                          aria-label={`Record ${eventType} for ${event.player.player_name}`}
-                        >
-                          {eventTypeDisplay(eventType)}
-                          {index < 9 && (
-                            <Badge
-                              variant="secondary"
-                              className="absolute -top-2 -right-2 px-1.5 py-0.5 text-xs font-mono"
-                            >
-                              {index + 1}
-                            </Badge>
-                          )}
-                        </Button>
-                      ))}
+                      {assignedEventTypes.map((eventType, index) => {
+                        const shortcutKey = index < shortcutKeys.length ? shortcutKeys[index] : null;
+                        return (
+                          <Button
+                            key={eventType}
+                            onClick={() => handleRecordEvent(event.id, eventType)}
+                            disabled={!isOnline || isProcessing}
+                            size="lg"
+                            className={`h-16 text-sm font-semibold transition-all relative ${
+                              isProcessing
+                                ? 'bg-gray-400 cursor-not-allowed'
+                                : event.priority === 'urgent'
+                                  ? 'bg-red-600 hover:bg-red-700'
+                                  : event.priority === 'normal'
+                                    ? 'bg-yellow-600 hover:bg-yellow-700'
+                                    : 'bg-gray-600 hover:bg-gray-700'
+                            }`}
+                            aria-label={`Record ${eventType} for ${event.player.player_name}`}
+                          >
+                            {eventTypeDisplay(eventType)}
+                            {shortcutKey && (
+                              <Badge
+                                variant="secondary"
+                                className="absolute -top-2 -right-2 px-1.5 py-0.5 text-xs font-mono"
+                              >
+                                {shortcutKey}
+                              </Badge>
+                            )}
+                          </Button>
+                        );
+                      })}
                     </div>
 
                     {/* Timestamp Info */}
@@ -327,11 +333,11 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
         <CardContent className="p-4">
            <h4 className="font-medium mb-2 flex items-center gap-2 text-blue-900">
             <Keyboard className="h-5 w-5" />
-            Numpad Shortcuts Enabled
+            Keyboard Shortcuts Enabled
           </h4>
           <p className="text-sm text-blue-800">
-            Use your wireless numeric keypad to record events for the player at the top of the queue.
-            The numbers on the buttons (1-9) correspond to the numpad keys.
+            Use your keyboard to record events for the player at the top of the queue.
+            The letters on the buttons (Q, W, E, etc.) correspond to the keyboard keys.
           </p>
         </CardContent>
       </Card>
