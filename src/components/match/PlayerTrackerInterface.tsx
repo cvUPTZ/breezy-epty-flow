@@ -1,25 +1,14 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { User, Clock, AlertTriangle, Trash2, CheckCircle, Loader2, Keyboard } from 'lucide-react';
-import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
-// Supposons que votre hook useKeyboardShortcuts se trouve  ce fichier
-/*
-import { useEffect, useCallback } from 'react';
-
-type ShortcutCallback = () => void;
-
-interface ShortcutMap {
-  [key: string]: ShortcutCallback;
-}
-
-export const useKeyboardShortcuts = (shortcutMap: ShortcutMap, isActive: boolean = true) => {
+// Hook useKeyboardShortcuts
+const useKeyboardShortcuts = (shortcutMap, isActive = true) => {
   const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
+    (event) => {
       if (!isActive) return;
-
       const callback = shortcutMap[event.code];
       if (callback) {
         event.preventDefault();
@@ -36,42 +25,9 @@ export const useKeyboardShortcuts = (shortcutMap: ShortcutMap, isActive: boolean
     };
   }, [handleKeyDown]);
 };
-*/
 
-
-// --- Définitions des types ---
-
-interface Player {
-  id: number;
-  jersey_number: number;
-  player_name: string;
-  team: 'home' | 'away';
-  position?: string;
-}
-
-interface PendingEvent {
-  id: string;
-  player: Player;
-  timestamp: number;
-  age_seconds: number;
-  priority: 'urgent' | 'normal' | 'old';
-  tracker_id: string;
-}
-
-interface EnhancedPlayerTrackerInterfaceProps {
-  assignedPlayers: Player[];
-  pendingEvents: PendingEvent[];
-  assignedEventTypes: string[];
-  isOnline?: boolean;
-  onRecordEvent: (pendingEventId: string, eventType: string, details?: Record<string, any>) => void;
-  onClearEvent: (pendingEventId: string) => void;
-  onClearAll: () => void;
-  onMarkAllAsPass: () => void;
-}
-
-// --- Composant React ---
-
-const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
+// Composant Principal
+const PlayerTrackerInterface = ({
   assignedPlayers,
   pendingEvents,
   assignedEventTypes,
@@ -81,13 +37,12 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
   onClearAll,
   onMarkAllAsPass
 }) => {
-  const [processingEvents, setProcessingEvents] = useState<Set<string>>(new Set());
+  const [processingEvents, setProcessingEvents] = useState(new Set());
   const [batchProcessing, setBatchProcessing] = useState(false);
 
   const shortcutKeys = useMemo(() => ['Q', 'W', 'E', 'R', 'A', 'S', 'D', 'F', 'Z', 'X', 'C', 'V'], []);
 
-  // CORRECTION : Déclaration de handleRecordEvent AVANT shortcutMap
-  const handleRecordEvent = useCallback((pendingEventId: string, eventType: string) => {
+  const handleRecordEvent = useCallback((pendingEventId, eventType) => {
     setProcessingEvents(prev => new Set(prev).add(pendingEventId));
     onRecordEvent(pendingEventId, eventType);
   }, [onRecordEvent]);
@@ -97,7 +52,7 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
       return {};
     }
     const firstEvent = pendingEvents[0];
-    const map: { [key: string]: () => void } = {};
+    const map = {};
     
     assignedEventTypes.slice(0, shortcutKeys.length).forEach((eventType, index) => {
       const key = shortcutKeys[index];
@@ -109,12 +64,11 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
 
   useKeyboardShortcuts(shortcutMap, isOnline && pendingEvents.length > 0);
 
-
-  const eventTypeDisplay = (eventType: string) => {
+  const eventTypeDisplay = (eventType) => {
     return eventType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityColor = (priority) => {
     switch (priority) {
       case 'urgent': return 'border-red-500 bg-red-50';
       case 'normal': return 'border-yellow-500 bg-yellow-50';
@@ -123,7 +77,7 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
     }
   };
 
-  const getPriorityBadge = (priority: string) => {
+  const getPriorityBadge = (priority) => {
     switch (priority) {
       case 'urgent': return <Badge className="bg-red-600">URGENT</Badge>;
       case 'normal': return <Badge className="bg-yellow-600">NORMAL</Badge>;
@@ -138,7 +92,7 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
     setBatchProcessing(false);
   };
 
-  const isEventProcessing = (eventId: string) => processingEvents.has(eventId);
+  const isEventProcessing = (eventId) => processingEvents.has(eventId);
 
   return (
     <div className="space-y-4">
@@ -298,39 +252,113 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
                       </Button>
                     </div>
 
-                    {/* Boutons d'action */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      {assignedEventTypes.map((eventType, index) => {
-                        const shortcutKey = index < shortcutKeys.length ? shortcutKeys[index] : null;
-                        return (
-                          <Button
-                            key={eventType}
-                            onClick={() => handleRecordEvent(event.id, eventType)}
-                            disabled={!isOnline || isProcessing}
-                            size="lg"
-                            className={`h-16 text-sm font-semibold transition-all relative ${
-                              isProcessing
-                                ? 'bg-gray-400 cursor-not-allowed'
-                                : event.priority === 'urgent' 
-                                  ? 'bg-red-600 hover:bg-red-700' 
-                                  : event.priority === 'normal'
-                                    ? 'bg-yellow-600 hover:bg-yellow-700'
-                                    : 'bg-gray-600 hover:bg-gray-700'
-                            }`}
-                            aria-label={`Enregistrer ${eventType} pour ${event.player.player_name}`}
-                          >
-                            {eventTypeDisplay(eventType)}
-                            {shortcutKey && (
-                              <Badge 
-                                variant="secondary" 
-                                className="absolute -top-2 -right-2 px-1.5 py-0.5 text-xs font-mono"
+                    {/* Disposition clavier - 3 rangées */}
+                    <div className="space-y-2">
+                      {/* Rangée 1: Q W E R */}
+                      <div className="flex gap-2">
+                        {assignedEventTypes.slice(0, 4).map((eventType, index) => {
+                          const shortcutKey = shortcutKeys[index];
+                          return (
+                            <Button
+                              key={eventType}
+                              onClick={() => handleRecordEvent(event.id, eventType)}
+                              disabled={!isOnline || isProcessing}
+                              className={`flex-1 h-20 text-xs font-semibold transition-all relative ${
+                                isProcessing
+                                  ? 'bg-gray-400 cursor-not-allowed'
+                                  : event.priority === 'urgent' 
+                                    ? 'bg-red-600 hover:bg-red-700' 
+                                    : event.priority === 'normal'
+                                      ? 'bg-yellow-600 hover:bg-yellow-700'
+                                      : 'bg-gray-600 hover:bg-gray-700'
+                              }`}
+                              aria-label={`Enregistrer ${eventType} pour ${event.player.player_name}`}
+                            >
+                              <div className="flex flex-col items-center justify-center">
+                                <Badge 
+                                  variant="secondary" 
+                                  className="mb-1 px-2 py-0.5 text-xs font-mono bg-white/90 text-gray-900"
+                                >
+                                  {shortcutKey}
+                                </Badge>
+                                <span className="text-center leading-tight">{eventTypeDisplay(eventType)}</span>
+                              </div>
+                            </Button>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Rangée 2: A S D F */}
+                      {assignedEventTypes.length > 4 && (
+                        <div className="flex gap-2">
+                          {assignedEventTypes.slice(4, 8).map((eventType, index) => {
+                            const shortcutKey = shortcutKeys[index + 4];
+                            return (
+                              <Button
+                                key={eventType}
+                                onClick={() => handleRecordEvent(event.id, eventType)}
+                                disabled={!isOnline || isProcessing}
+                                className={`flex-1 h-20 text-xs font-semibold transition-all relative ${
+                                  isProcessing
+                                    ? 'bg-gray-400 cursor-not-allowed'
+                                    : event.priority === 'urgent' 
+                                      ? 'bg-red-600 hover:bg-red-700' 
+                                      : event.priority === 'normal'
+                                        ? 'bg-yellow-600 hover:bg-yellow-700'
+                                        : 'bg-gray-600 hover:bg-gray-700'
+                                }`}
+                                aria-label={`Enregistrer ${eventType} pour ${event.player.player_name}`}
                               >
-                                {shortcutKey}
-                              </Badge>
-                            )}
-                          </Button>
-                        );
-                      })}
+                                <div className="flex flex-col items-center justify-center">
+                                  <Badge 
+                                    variant="secondary" 
+                                    className="mb-1 px-2 py-0.5 text-xs font-mono bg-white/90 text-gray-900"
+                                  >
+                                    {shortcutKey}
+                                  </Badge>
+                                  <span className="text-center leading-tight">{eventTypeDisplay(eventType)}</span>
+                                </div>
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      )}
+                      
+                      {/* Rangée 3: Z X C V */}
+                      {assignedEventTypes.length > 8 && (
+                        <div className="flex gap-2">
+                          {assignedEventTypes.slice(8, 12).map((eventType, index) => {
+                            const shortcutKey = shortcutKeys[index + 8];
+                            return (
+                              <Button
+                                key={eventType}
+                                onClick={() => handleRecordEvent(event.id, eventType)}
+                                disabled={!isOnline || isProcessing}
+                                className={`flex-1 h-20 text-xs font-semibold transition-all relative ${
+                                  isProcessing
+                                    ? 'bg-gray-400 cursor-not-allowed'
+                                    : event.priority === 'urgent' 
+                                      ? 'bg-red-600 hover:bg-red-700' 
+                                      : event.priority === 'normal'
+                                        ? 'bg-yellow-600 hover:bg-yellow-700'
+                                        : 'bg-gray-600 hover:bg-gray-700'
+                                }`}
+                                aria-label={`Enregistrer ${eventType} pour ${event.player.player_name}`}
+                              >
+                                <div className="flex flex-col items-center justify-center">
+                                  <Badge 
+                                    variant="secondary" 
+                                    className="mb-1 px-2 py-0.5 text-xs font-mono bg-white/90 text-gray-900"
+                                  >
+                                    {shortcutKey}
+                                  </Badge>
+                                  <span className="text-center leading-tight">{eventTypeDisplay(eventType)}</span>
+                                </div>
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     {/* Info Timestamp */}
