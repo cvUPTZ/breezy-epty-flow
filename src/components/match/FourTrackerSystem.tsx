@@ -6,6 +6,7 @@ import PlayerTrackerInterface from './PlayerTrackerInterface';
 import { supabase } from '@/integrations/supabase/client';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { Loader2, AlertTriangle } from 'lucide-react';
 
 interface FourTrackerSystemProps {
@@ -23,6 +24,7 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
 }) => {
   const { matchId } = useParams<{ matchId: string }>();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [trackerType, setTrackerType] = useState<'ball' | 'player' | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +47,7 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
     trackerType: trackerType || 'player',
     allPlayers,
     supabase: supabase,
-    toast: () => {}, // Replace with your actual toast implementation
+    toast: toast,
   });
 
   useEffect(() => {
