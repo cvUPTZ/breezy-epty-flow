@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { User, Clock, AlertTriangle, Trash2, CheckCircle, Loader2 } from 'lucide-react';
+import { User, Clock, AlertTriangle, Trash2, CheckCircle, Loader2, Keyboard } from 'lucide-react';
+import { useNumpadShortcuts } from '@/hooks/useNumpadShortcuts';
 
 interface Player {
   id: number;
@@ -44,6 +45,24 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
 }) => {
   const [processingEvents, setProcessingEvents] = useState<Set<string>>(new Set());
   const [batchProcessing, setBatchProcessing] = useState(false);
+
+  // Numpad shortcuts integration
+  const shortcutMap = useMemo(() => {
+    if (pendingEvents.length === 0 || !isOnline) {
+      return {};
+    }
+    const firstEvent = pendingEvents[0];
+    const map: { [key: string]: () => void } = {};
+
+    assignedEventTypes.slice(0, 9).forEach((eventType, index) => {
+      map[`Numpad${index + 1}`] = () => handleRecordEvent(firstEvent.id, eventType);
+    });
+
+    return map;
+  }, [pendingEvents, assignedEventTypes, isOnline]);
+
+  useNumpadShortcuts(shortcutMap, isOnline && pendingEvents.length > 0);
+
 
   const eventTypeDisplay = (eventType: string) => {
     return eventType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -242,13 +261,13 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
 
                     {/* Event Action Buttons */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      {assignedEventTypes.map(eventType => (
+                      {assignedEventTypes.map((eventType, index) => (
                         <Button
                           key={eventType}
                           onClick={() => handleRecordEvent(event.id, eventType)}
                           disabled={!isOnline || isProcessing}
                           size="lg"
-                          className={`h-16 text-sm font-semibold transition-all ${
+                          className={`h-16 text-sm font-semibold transition-all relative ${
                             isProcessing
                               ? 'bg-gray-400 cursor-not-allowed'
                               : event.priority === 'urgent' 
@@ -260,6 +279,14 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
                           aria-label={`Record ${eventType} for ${event.player.player_name}`}
                         >
                           {eventTypeDisplay(eventType)}
+                          {index < 9 && (
+                            <Badge
+                              variant="secondary"
+                              className="absolute -top-2 -right-2 px-1.5 py-0.5 text-xs font-mono"
+                            >
+                              {index + 1}
+                            </Badge>
+                          )}
                         </Button>
                       ))}
                     </div>
@@ -297,10 +324,14 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
 
       {/* Keyboard Shortcuts Hint */}
       <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="p-3">
-          <p className="text-sm text-blue-900">
-            <strong>💡 Pro Tip:</strong> During fast play, focus on the ball tracker. 
-            You can catch up on event logging during dead balls, throw-ins, or slower possession sequences.
+        <CardContent className="p-4">
+           <h4 className="font-medium mb-2 flex items-center gap-2 text-blue-900">
+            <Keyboard className="h-5 w-5" />
+            Numpad Shortcuts Enabled
+          </h4>
+          <p className="text-sm text-blue-800">
+            Use your wireless numeric keypad to record events for the player at the top of the queue.
+            The numbers on the buttons (1-9) correspond to the numpad keys.
           </p>
         </CardContent>
       </Card>
