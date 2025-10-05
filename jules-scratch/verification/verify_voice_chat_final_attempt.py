@@ -20,8 +20,11 @@ def run_verification(page: Page):
         # 4. Act: Navigate to the voice chat page for the specified match.
         page.goto("http://localhost:8080/match/1899fbd1-d0ab-402b-93f6-103ea84dc678/voice-chat", timeout=60000)
 
+        # Wait for the page to be fully loaded
+        page.wait_for_load_state("networkidle")
+
         # 5. Assert: Check that the voice chat page has loaded.
-        expect(page.get_by_text("Voice Chat for Match:")).to_be_visible(timeout=60000)
+        expect(page.get_by_text("Voice Chat for Match:")).to_be_visible(timeout=10000)
 
         # 6. Screenshot: Capture the final result for visual verification.
         page.screenshot(path="jules-scratch/verification/verification.png")
