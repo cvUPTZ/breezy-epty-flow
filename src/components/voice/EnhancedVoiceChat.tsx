@@ -186,66 +186,72 @@ export const EnhancedVoiceChat: React.FC<EnhancedVoiceChatProps> = ({
     </div>
   );
 
-  const renderActiveRoom = () => (
-    <div className="p-6 space-y-6">
-      {/* Control buttons */}
-      <div className="flex flex-wrap gap-3">
-        <Button
-          onClick={leaveRoom}
-          variant="destructive"
-          size="sm"
-          className="shadow-md hover:shadow-lg"
-        >
-          <PhoneOff className="h-4 w-4 mr-2" />
-          Leave Room
-        </Button>
-        <Button
-          onClick={handleToggleMuteSelf}
-          variant="outline"
-          size="sm"
-          disabled={!localParticipant}
-          className="shadow-sm hover:shadow-md"
-        >
-          {isParticipantMuted(localParticipant) ? (
-            <>
-              <VolumeX className="h-4 w-4 mr-2 text-red-500" />
-              Unmute Self
-            </>
-          ) : (
-            <>
-              <Volume2 className="h-4 w-4 mr-2 text-emerald-500" />
-              Mute Self
-            </>
-          )}
-        </Button>
+  const renderActiveRoom = () => {
+    // FIX: Filter out duplicate participants to prevent React DOM errors.
+    // This can happen if a user is both a ball and player tracker.
+    const uniqueParticipants = Array.from(new Map(participants.map(p => [p.identity, p])).values());
 
-        {canModerate && (
+    return (
+      <div className="p-6 space-y-6">
+        {/* Control buttons */}
+        <div className="flex flex-wrap gap-3">
           <Button
-            onClick={handleMuteAll}
+            onClick={leaveRoom}
+            variant="destructive"
+            size="sm"
+            className="shadow-md hover:shadow-lg"
+          >
+            <PhoneOff className="h-4 w-4 mr-2" />
+            Leave Room
+          </Button>
+          <Button
+            onClick={handleToggleMuteSelf}
             variant="outline"
             size="sm"
-            className="text-orange-600 hover:text-orange-700 border-orange-300 hover:bg-orange-50 shadow-sm hover:shadow-md"
+            disabled={!localParticipant}
+            className="shadow-sm hover:shadow-md"
           >
-            <Shield className="h-4 w-4 mr-2" />
-            {allMuted ? 'Unmute All Trackers' : 'Mute All Trackers'}
+            {isParticipantMuted(localParticipant) ? (
+              <>
+                <VolumeX className="h-4 w-4 mr-2 text-red-500" />
+                Unmute Self
+              </>
+            ) : (
+              <>
+                <Volume2 className="h-4 w-4 mr-2 text-emerald-500" />
+                Mute Self
+              </>
+            )}
           </Button>
-        )}
-      </div>
 
-      {/* Participants list */}
-      <div className="space-y-4">
-        <h4 className="font-semibold text-slate-700 text-base">Participants ({participants.length})</h4>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[28rem] overflow-y-auto p-1 -m-1">
-          {participants.map(participant => {
-            const isMuted = isParticipantMuted(participant);
-            const isSpeaking = isParticipantSpeaking(participant);
-            // Use a stable key combining identity and sid for uniqueness
-            const stableKey = `${participant.sid || participant.identity}`;
+          {canModerate && (
+            <Button
+              onClick={handleMuteAll}
+              variant="outline"
+              size="sm"
+              className="text-orange-600 hover:text-orange-700 border-orange-300 hover:bg-orange-50 shadow-sm hover:shadow-md"
+            >
+              <Shield className="h-4 w-4 mr-2" />
+              {allMuted ? 'Unmute All Trackers' : 'Mute All Trackers'}
+            </Button>
+          )}
+        </div>
 
-            return (
-              <div
-                key={stableKey}
-                className={`
+        {/* Participants list */}
+        <div className="space-y-4">
+          <h4 className="font-semibold text-slate-700 text-base">Participants ({uniqueParticipants.length})</h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[28rem] overflow-y-auto p-1 -m-1">
+            {uniqueParticipants.map(participant => {
+              const isMuted = isParticipantMuted(participant);
+              const isSpeaking = isParticipantSpeaking(participant);
+              // FIX: Use a stable key that does not change on SID assignment.
+              // The participant's identity is unique and stable.
+              const stableKey = participant.identity;
+
+              return (
+                <div
+                  key={stableKey}
+                  className={`
                   relative aspect-square flex flex-col items-center justify-center
                   p-2 rounded-2xl text-center
                   bg-white/60 backdrop-blur-sm border border-slate-200/60
