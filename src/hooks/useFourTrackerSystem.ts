@@ -219,37 +219,48 @@ export const useFourTrackerSystem = ({
     if (!matchId || !trackerId) return;
 
     const channel = supabase
-      .channel(`ball-possession-${matchId}-${trackerId}`)
+      .channel(`ball-possession-${matchId}`)
       .on(
         'broadcast',
         { event: 'ball_possession_change' },
         (payload: any) => {
           const possession = payload.payload as BallPossessionEvent;
+          console.log('🔔 Received possession change:', possession);
+          
           const player = allPlayers.find(p => p.id === possession.player_id);
           
           if (!player) {
-            console.warn('Received possession for unknown player:', possession.player_id);
+            console.warn('❌ Received possession for unknown player:', possession.player_id);
             return;
           }
           
+          console.log('✅ Player found:', player);
           setCurrentBallHolder(player);
           setLastPossession(possession);
 
           // For player trackers: Add to pending queue if it's one of assigned players
           if (trackerType === 'player') {
+            console.log('👤 Processing for player tracker...');
+            
             // Use callback form to get latest assignment state
             setAssignment(currentAssignment => {
-              if (!currentAssignment) return currentAssignment;
+              console.log('📋 Current assignment:', currentAssignment);
+              
+              if (!currentAssignment) {
+                console.warn('⚠️ No assignment loaded yet');
+                return currentAssignment;
+              }
 
               const isMyPlayer = currentAssignment.assigned_players?.some(p => p.id === possession.player_id);
+              console.log(`🎯 Is this my player (#${player.jersey_number})? ${isMyPlayer}`);
               
               if (isMyPlayer) {
                 // Improved duplicate prevention
                 const now = Date.now();
                 const timeSinceLastEvent = now - lastEventTimestampRef.current;
                 
-                // Allow events if >500ms apart OR different player
                 if (timeSinceLastEvent < 500) {
+                  console.log('⏭️ Skipping - too soon since last event');
                   return currentAssignment;
                 }
                 
@@ -265,11 +276,15 @@ export const useFourTrackerSystem = ({
                   tracker_id: trackerId
                 };
                 
+                console.log('➕ Adding to pending queue:', newEvent);
+                
                 setPendingEvents(prev => {
                   // Prevent adding exact duplicate
                   if (prev.some(e => e.id === newEvent.id)) {
+                    console.log('⚠️ Event already in queue');
                     return prev;
                   }
+                  console.log('✅ Event added to queue');
                   return [...prev, newEvent];
                 });
               }
