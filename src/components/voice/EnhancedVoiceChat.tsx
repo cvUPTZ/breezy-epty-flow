@@ -296,6 +296,7 @@ export const EnhancedVoiceChat: React.FC<EnhancedVoiceChatProps> = ({
       </div>
     </div>
   );
+  };
 
   return (
     <Card className="bg-white/60 backdrop-blur-lg border-slate-200/80 shadow-lg rounded-2xl transition-all">

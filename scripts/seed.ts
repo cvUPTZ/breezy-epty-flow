@@ -105,6 +105,26 @@ async function main() {
       }
     }
 
+    console.log('Seeding a test match...');
+    const testMatchId = '123e4567-e89b-12d3-a456-426614174000';
+    const { data: matchData, error: matchError } = await supabase
+      .from('matches')
+      .upsert({
+        id: testMatchId,
+        name: 'Test Match for Verification',
+        home_team_name: 'Team A',
+        away_team_name: 'Team B',
+        status: 'published',
+        match_date: new Date().toISOString(),
+      }, { onConflict: 'id' });
+
+    if (matchError) {
+      console.error('Error seeding test match:', JSON.stringify(matchError, null, 2));
+    } else {
+      console.log('Test match seeded successfully with ID:', testMatchId);
+    }
+
+
     console.log('Done.');
   } catch (e) {
     console.error('An unexpected error occurred in main function:', e);
