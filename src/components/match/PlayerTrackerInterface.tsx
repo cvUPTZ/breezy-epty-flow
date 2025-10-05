@@ -40,7 +40,11 @@ const PlayerTrackerInterface = ({
   const [processingEvents, setProcessingEvents] = useState(new Set());
   const [batchProcessing, setBatchProcessing] = useState(false);
 
-  const shortcutKeys = useMemo(() => ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M'], []);
+  const shortcutKeys = useMemo(() => [
+    'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
+    'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L',
+    'Z', 'X', 'C', 'V', 'B', 'N', 'M'
+  ], []);
 
   const handleRecordEvent = useCallback((pendingEventId, eventType) => {
     setProcessingEvents(prev => new Set(prev).add(pendingEventId));
@@ -254,9 +258,9 @@ const PlayerTrackerInterface = ({
 
                     {/* Disposition clavier - 3 rangées */}
                     <div className="space-y-2">
-                      {/* Rangée 1: Q W E R */}
+                      {/* Rangée 1: Q W E R T Y U I O P */}
                       <div className="flex gap-2">
-                        {assignedEventTypes.slice(0, 4).map((eventType, index) => {
+                        {assignedEventTypes.slice(0, 10).map((eventType, index) => {
                           const shortcutKey = shortcutKeys[index];
                           return (
                             <Button
@@ -288,11 +292,11 @@ const PlayerTrackerInterface = ({
                         })}
                       </div>
                       
-                      {/* Rangée 2: A S D F */}
-                      {assignedEventTypes.length > 4 && (
+                      {/* Rangée 2: A S D F G H J K L */}
+                      {assignedEventTypes.length > 10 && (
                         <div className="flex gap-2">
-                          {assignedEventTypes.slice(4, 8).map((eventType, index) => {
-                            const shortcutKey = shortcutKeys[index + 4];
+                          {assignedEventTypes.slice(10, 19).map((eventType, index) => {
+                            const shortcutKey = shortcutKeys[index + 10];
                             return (
                               <Button
                                 key={eventType}
@@ -324,11 +328,11 @@ const PlayerTrackerInterface = ({
                         </div>
                       )}
                       
-                      {/* Rangée 3: Z X C V */}
-                      {assignedEventTypes.length > 8 && (
+                      {/* Rangée 3: Z X C V B N M */}
+                      {assignedEventTypes.length > 19 && (
                         <div className="flex gap-2">
-                          {assignedEventTypes.slice(8, 12).map((eventType, index) => {
-                            const shortcutKey = shortcutKeys[index + 8];
+                          {assignedEventTypes.slice(19, 26).map((eventType, index) => {
+                            const shortcutKey = shortcutKeys[index + 19];
                             return (
                               <Button
                                 key={eventType}
@@ -401,7 +405,7 @@ const PlayerTrackerInterface = ({
           </h4>
           <p className="text-sm text-blue-800">
             Utilisez votre clavier pour enregistrer des événements pour le joueur en haut de la file.
-            Les lettres sur les boutons (Q, W, E, etc.) correspondent aux touches du clavier.
+            Les lettres sur les boutons correspondent aux touches du clavier (QWERTY - 26 touches disponibles).
           </p>
         </CardContent>
       </Card>
