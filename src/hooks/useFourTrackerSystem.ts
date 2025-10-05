@@ -42,7 +42,7 @@ interface UseFourTrackerSystemEnhancedProps {
   toast: any;
 }
 
-export const useFourTrackerSystemEnhanced = ({
+export const useFourTrackerSystem = ({
   matchId,
   trackerId,
   trackerType,
