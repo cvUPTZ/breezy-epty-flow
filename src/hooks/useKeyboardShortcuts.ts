@@ -6,7 +6,7 @@ interface ShortcutMap {
   [key: string]: ShortcutCallback;
 }
 
-export const useNumpadShortcuts = (shortcutMap: ShortcutMap, isActive: boolean = true) => {
+export const useKeyboardShortcuts = (shortcutMap: ShortcutMap, isActive: boolean = true) => {
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       if (!isActive) return;
