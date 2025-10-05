@@ -400,6 +400,7 @@ export type Database = {
           player_ids: number[] | null
           player_team_id: string
           tracker_id: string | null
+          tracker_type: string
           tracker_user_id: string
           updated_at: string | null
         }
@@ -414,6 +415,7 @@ export type Database = {
           player_ids?: number[] | null
           player_team_id: string
           tracker_id?: string | null
+          tracker_type?: string
           tracker_user_id: string
           updated_at?: string | null
         }
@@ -428,6 +430,7 @@ export type Database = {
           player_ids?: number[] | null
           player_team_id?: string
           tracker_id?: string | null
+          tracker_type?: string
           tracker_user_id?: string
           updated_at?: string | null
         }
@@ -810,6 +813,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fk_receiver"
+            columns: ["to_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_room"
             columns: ["room_id"]
             isOneToOne: false
@@ -828,6 +838,13 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "user_permissions_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_sender"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -1270,6 +1287,13 @@ export type Database = {
             referencedRelation: "user_permissions_view"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tracker_line_assignments_tracker_user_id_fkey"
+            columns: ["tracker_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_role"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_event_assignments: {
@@ -1304,6 +1328,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "user_permissions_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_event_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -1469,6 +1500,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "user_permissions_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_room_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -1638,6 +1676,20 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profiles_with_role: {
+        Row: {
+          created_at: string | null
+          custom_permissions: Json | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          role: string | null
+          updated_at: string | null
+          user_created_at: string | null
+          user_updated_at: string | null
+        }
+        Relationships: []
+      }
       user_roles_view: {
         Row: {
           email: string | null
@@ -1696,6 +1748,20 @@ export type Database = {
       find_replacement_tracker: {
         Args: { p_absent_tracker_id: string; p_match_id: string }
         Returns: string
+      }
+      get_all_assignment_logs: {
+        Args: { p_match_id?: string }
+        Returns: {
+          assignment_action: string
+          assignment_type: string
+          created_at: string
+          id: string
+          match_id: string
+          match_name: string
+          tracker_assignment: Json
+          tracker_name: string
+          tracker_user_id: string
+        }[]
       }
       get_all_users_with_metadata: {
         Args: Record<PropertyKey, never>
@@ -1825,6 +1891,10 @@ export type Database = {
       }
       is_admin: {
         Args: Record<PropertyKey, never> | { p_user_id: string }
+        Returns: boolean
+      }
+      is_room_participant: {
+        Args: { _room_id: string; _user_id: string }
         Returns: boolean
       }
       is_tracker: {
