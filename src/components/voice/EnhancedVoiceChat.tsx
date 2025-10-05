@@ -239,10 +239,12 @@ export const EnhancedVoiceChat: React.FC<EnhancedVoiceChatProps> = ({
           {participants.map(participant => {
             const isMuted = isParticipantMuted(participant);
             const isSpeaking = isParticipantSpeaking(participant);
+            // Use a stable key combining identity and sid for uniqueness
+            const stableKey = `${participant.sid || participant.identity}`;
 
             return (
               <div
-                key={participant.identity}
+                key={stableKey}
                 className={`
                   relative aspect-square flex flex-col items-center justify-center
                   p-2 rounded-2xl text-center
