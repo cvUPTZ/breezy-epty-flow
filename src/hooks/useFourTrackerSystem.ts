@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 
-// Enhanced hook with pending event queue
 export interface Player {
   id: number;
   jersey_number: number;
@@ -54,17 +53,59 @@ export const useFourTrackerSystem = ({
   const [currentBallHolder, setCurrentBallHolder] = useState<Player | null>(null);
   const [pendingEvents, setPendingEvents] = useState<PendingEvent[]>([]);
   const [lastPossession, setLastPossession] = useState<BallPossessionEvent | null>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  
   const channelRef = useRef<any>(null);
   const processingRef = useRef(false);
   const eventIdCounter = useRef(0);
   const lastEventTimestampRef = useRef<number>(0);
+  const pendingOperationsRef = useRef<Map<string, boolean>>(new Map());
 
-  // Update event ages every second
+  // Stable player IDs for dependency tracking
+  const assignedPlayerIds = useMemo(() => 
+    assignment?.assigned_players?.map(p => p.id).sort().join(',') || '',
+    [assignment]
+  );
+
+  // Online/offline detection
   useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast({
+        title: 'Back Online',
+        description: 'Connection restored',
+        duration: 2000,
+      });
+    };
+    
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast({
+        title: 'Offline',
+        description: 'No internet connection. Events will not be saved.',
+        variant: 'destructive',
+        duration: 5000,
+      });
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [toast]);
+
+  // Update event ages every second (optimized)
+  useEffect(() => {
+    if (pendingEvents.length === 0) return;
+
     const interval = setInterval(() => {
+      const now = Date.now();
       setPendingEvents(prev => 
         prev.map(event => {
-          const age = Math.floor((Date.now() - event.timestamp) / 1000);
+          const age = Math.floor((now - event.timestamp) / 1000);
           let priority: 'urgent' | 'normal' | 'old' = 'normal';
           
           if (age < 5) priority = 'urgent';
@@ -77,10 +118,12 @@ export const useFourTrackerSystem = ({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [pendingEvents.length > 0]);
 
-  // Auto-clear old events (optional - can be disabled)
+  // Auto-clear old events
   useEffect(() => {
+    if (pendingEvents.length === 0) return;
+
     const interval = setInterval(() => {
       setPendingEvents(prev => {
         const cleared = prev.filter(e => e.age_seconds < 30);
@@ -96,49 +139,55 @@ export const useFourTrackerSystem = ({
         
         return cleared;
       });
-    }, 5000); // Check every 5 seconds
+    }, 5000);
 
     return () => clearInterval(interval);
-  }, [toast]);
+  }, [pendingEvents.length > 0, toast]);
 
-  // Fetch tracker assignment (same as before)
+  // Fetch tracker assignment
   useEffect(() => {
     const fetchAssignment = async () => {
-      const { data: assignments, error: assignError } = await supabase
-        .from('match_tracker_assignments')
-        .select('*')
-        .eq('match_id', matchId)
-        .eq('tracker_user_id', trackerId);
+      try {
+        const { data: assignments, error: assignError } = await supabase
+          .from('match_tracker_assignments')
+          .select('*')
+          .eq('match_id', matchId)
+          .eq('tracker_user_id', trackerId);
 
-      if (assignError || !assignments || assignments.length === 0) {
-        console.error('Error fetching assignment:', assignError);
-        return;
+        if (assignError || !assignments || assignments.length === 0) {
+          console.error('Error fetching assignment:', assignError);
+          return;
+        }
+
+        const assignmentData: any = assignments[0];
+        const assignedPlayerIds = JSON.parse(assignmentData.assigned_player_ids || '[]');
+        const assignedPlayers: Player[] = assignedPlayerIds
+          .map((playerId: number) => allPlayers.find((p: Player) => p.id === playerId))
+          .filter((p: Player | undefined): p is Player => p !== undefined);
+
+        setAssignment({
+          tracker_id: trackerId,
+          tracker_name: 'Unknown Tracker',
+          tracker_type: (assignmentData.tracker_type || 'player') as 'ball' | 'player',
+          assigned_players: assignedPlayers,
+          assigned_event_types: assignmentData.assigned_event_types || [],
+        });
+      } catch (error) {
+        console.error('Error in fetchAssignment:', error);
       }
-
-      const assignmentData: any = assignments[0];
-      const assignedPlayerIds = JSON.parse(assignmentData.assigned_player_ids || '[]');
-      const assignedPlayers: Player[] = assignedPlayerIds
-        .map((playerId: number) => allPlayers.find((p: Player) => p.id === playerId))
-        .filter((p: Player | undefined): p is Player => p !== undefined);
-
-      setAssignment({
-        tracker_id: trackerId,
-        tracker_name: 'Unknown Tracker',
-        tracker_type: (assignmentData.tracker_type || 'player') as 'ball' | 'player',
-        assigned_players: assignedPlayers,
-        assigned_event_types: assignmentData.assigned_event_types || [],
-      });
     };
 
     if (trackerId && matchId && allPlayers.length > 0) {
       fetchAssignment();
     }
-  }, [matchId, trackerId, trackerType, allPlayers, supabase]);
+  }, [matchId, trackerId, allPlayers, supabase]);
 
-  // Subscribe to ball possession changes
+  // Subscribe to ball possession changes (fixed dependencies)
   useEffect(() => {
+    if (!matchId || !trackerId) return;
+
     const channel = supabase
-      .channel(`ball-possession-${matchId}`)
+      .channel(`ball-possession-${matchId}-${trackerId}`)
       .on(
         'broadcast',
         { event: 'ball_possession_change' },
@@ -156,37 +205,45 @@ export const useFourTrackerSystem = ({
 
           // For player trackers: Add to pending queue if it's one of assigned players
           if (trackerType === 'player') {
-            const isMyPlayer = assignment?.assigned_players?.some(p => p.id === possession.player_id);
-            
-            if (isMyPlayer) {
-              // Duplicate prevention
-              const now = Date.now();
-              if (now - lastEventTimestampRef.current < 1000) {
-                return; // Ignore if last event was less than a second ago
-              }
-              lastEventTimestampRef.current = now;
+            // Use callback form to get latest assignment state
+            setAssignment(currentAssignment => {
+              if (!currentAssignment) return currentAssignment;
 
-              // Add to pending events queue
-              const newEvent: PendingEvent = {
-                id: `event-${eventIdCounter.current++}-${possession.player_id}-${possession.timestamp}`,
-                player: player,
-                timestamp: possession.timestamp,
-                age_seconds: 0,
-                priority: 'urgent',
-                tracker_id: trackerId
-              };
+              const isMyPlayer = currentAssignment.assigned_players?.some(p => p.id === possession.player_id);
               
-              setPendingEvents(prev => {
-                // Prevent adding exact same event
-                if (prev.some(e => e.player.id === newEvent.player.id && e.timestamp === newEvent.timestamp)) {
-                  return prev;
+              if (isMyPlayer) {
+                // Improved duplicate prevention
+                const now = Date.now();
+                const timeSinceLastEvent = now - lastEventTimestampRef.current;
+                
+                // Allow events if >500ms apart OR different player
+                if (timeSinceLastEvent < 500) {
+                  return currentAssignment;
                 }
-                return [...prev, newEvent];
-              });
-              
-              // Audio cue (optional)
-              // new Audio('/notification.mp3').play().catch(() => {});
-            }
+                
+                lastEventTimestampRef.current = now;
+
+                // Create unique event ID
+                const newEvent: PendingEvent = {
+                  id: `event-${trackerId}-${possession.player_id}-${possession.timestamp}`,
+                  player: player,
+                  timestamp: possession.timestamp,
+                  age_seconds: 0,
+                  priority: 'urgent',
+                  tracker_id: trackerId
+                };
+                
+                setPendingEvents(prev => {
+                  // Prevent adding exact duplicate
+                  if (prev.some(e => e.id === newEvent.id)) {
+                    return prev;
+                  }
+                  return [...prev, newEvent];
+                });
+              }
+
+              return currentAssignment;
+            });
           }
         }
       )
@@ -195,14 +252,25 @@ export const useFourTrackerSystem = ({
     channelRef.current = channel;
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
-  }, [matchId, trackerType, assignment, allPlayers, trackerId, supabase]);
+  }, [matchId, trackerId, trackerType, assignedPlayerIds, supabase]); // Use stable IDs
 
   // Ball tracker: update ball possession
   const updateBallPossession = useCallback(async (player: Player) => {
     if (trackerType !== 'ball') return;
     if (processingRef.current) return;
+    if (!isOnline) {
+      toast({
+        title: 'Offline',
+        description: 'Cannot update possession while offline',
+        variant: 'destructive'
+      });
+      return;
+    }
 
     processingRef.current = true;
 
@@ -219,13 +287,13 @@ export const useFourTrackerSystem = ({
         await inferEvent(lastPossession, possessionEvent);
       }
 
-      // Record possession change
+      // Record possession change with millisecond precision
       const { error: insertError } = await supabase.from('match_events').insert([{
         match_id: matchId,
         event_type: 'ball_possession_change',
         player_id: player.id,
         team: player.team,
-        timestamp: Math.floor(possessionEvent.timestamp / 1000),
+        timestamp: possessionEvent.timestamp, // Keep milliseconds
         created_by: trackerId,
         event_data: {
           inferred: false,
@@ -256,7 +324,7 @@ export const useFourTrackerSystem = ({
     } finally {
       processingRef.current = false;
     }
-  }, [trackerType, trackerId, lastPossession, matchId, toast, supabase]);
+  }, [trackerType, trackerId, lastPossession, matchId, isOnline, toast, supabase]);
 
   // Event inference logic
   const inferEvent = useCallback(async (
@@ -295,7 +363,7 @@ export const useFourTrackerSystem = ({
         event_type: eventType,
         player_id: current.player_id,
         team: current.team,
-        timestamp: Math.floor(current.timestamp / 1000),
+        timestamp: current.timestamp, // Keep milliseconds
         created_by: trackerId,
         event_data: {
           inferred: true,
@@ -319,7 +387,7 @@ export const useFourTrackerSystem = ({
     }
   }, [matchId, trackerId, toast, supabase]);
 
-  // Record event for a specific pending event
+  // Record event for a specific pending event (with optimistic update)
   const recordEventForPending = useCallback(async (
     pendingEventId: string,
     eventType: string,
@@ -328,17 +396,35 @@ export const useFourTrackerSystem = ({
     const pendingEvent = pendingEvents.find(e => e.id === pendingEventId);
     if (!pendingEvent) return;
 
+    // Prevent duplicate operations
+    if (pendingOperationsRef.current.get(pendingEventId)) return;
+    pendingOperationsRef.current.set(pendingEventId, true);
+
+    if (!isOnline) {
+      toast({
+        title: 'Offline',
+        description: 'Cannot record events while offline',
+        variant: 'destructive'
+      });
+      pendingOperationsRef.current.delete(pendingEventId);
+      return;
+    }
+
+    // Optimistic update - remove immediately
+    setPendingEvents(prev => prev.filter(e => e.id !== pendingEventId));
+
     try {
       const eventData = {
         match_id: matchId,
         event_type: eventType,
         player_id: pendingEvent.player.id,
         team: pendingEvent.player.team,
-        timestamp: Math.floor(pendingEvent.timestamp / 1000), // Use original timestamp!
+        timestamp: pendingEvent.timestamp, // Keep milliseconds
         created_by: trackerId,
         event_data: {
           ...details,
           tracker_type: 'player',
+          pending_event_id: pendingEventId, // Add this!
           recorded_at: new Date().toISOString(),
           delay_seconds: Math.floor((Date.now() - pendingEvent.timestamp) / 1000)
         }
@@ -347,9 +433,6 @@ export const useFourTrackerSystem = ({
       const { error } = await supabase.from('match_events').insert([eventData]);
       if (error) throw error;
 
-      // Remove from pending queue
-      setPendingEvents(prev => prev.filter(e => e.id !== pendingEventId));
-
       toast({
         title: 'Event Recorded',
         description: `${eventType} for #${pendingEvent.player.jersey_number} ${pendingEvent.player.player_name}`,
@@ -357,13 +440,19 @@ export const useFourTrackerSystem = ({
       });
     } catch (error) {
       console.error('Error recording event:', error);
+      
+      // Rollback optimistic update on failure
+      setPendingEvents(prev => [...prev, pendingEvent].sort((a, b) => a.timestamp - b.timestamp));
+      
       toast({
         title: 'Error',
-        description: 'Failed to record event',
+        description: 'Failed to record event. Event restored to queue.',
         variant: 'destructive'
       });
+    } finally {
+      pendingOperationsRef.current.delete(pendingEventId);
     }
-  }, [pendingEvents, matchId, trackerId, toast, supabase]);
+  }, [pendingEvents, matchId, trackerId, isOnline, toast, supabase]);
 
   // Clear a pending event without recording
   const clearPendingEvent = useCallback((pendingEventId: string) => {
@@ -380,10 +469,23 @@ export const useFourTrackerSystem = ({
     });
   }, [toast]);
 
-  // Mark all pending events as "pass"
+  // Mark all pending events as "pass" (atomic operation)
   const markAllAsPass = useCallback(async () => {
     const eventsToProcess = [...pendingEvents];
     if (eventsToProcess.length === 0) return;
+
+    if (!isOnline) {
+      toast({
+        title: 'Offline',
+        description: 'Cannot record events while offline',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Optimistic update
+    const eventIds = eventsToProcess.map(e => e.id);
+    setPendingEvents([]);
 
     try {
       const eventsData = eventsToProcess.map(pendingEvent => ({
@@ -391,20 +493,25 @@ export const useFourTrackerSystem = ({
         event_type: 'pass',
         player_id: pendingEvent.player.id,
         team: pendingEvent.player.team,
-        timestamp: Math.floor(pendingEvent.timestamp / 1000), // Use original timestamp!
+        timestamp: pendingEvent.timestamp, // Keep milliseconds
         created_by: trackerId,
         event_data: {
           tracker_type: 'player',
+          pending_event_id: pendingEvent.id, // Add this!
           recorded_at: new Date().toISOString(),
-          delay_seconds: Math.floor((Date.now() - pendingEvent.timestamp) / 1000)
+          delay_seconds: Math.floor((Date.now() - pendingEvent.timestamp) / 1000),
+          batch_operation: true
         }
       }));
 
-      const { error } = await supabase.from('match_events').insert(eventsData);
+      const { error, data } = await supabase.from('match_events').insert(eventsData).select();
+      
       if (error) throw error;
 
-      // Clear the queue
-      setPendingEvents([]);
+      // Verify all events were inserted
+      if (data && data.length !== eventsData.length) {
+        throw new Error(`Only ${data.length} of ${eventsData.length} events were recorded`);
+      }
 
       toast({
         title: 'Batch Operation Complete',
@@ -413,13 +520,18 @@ export const useFourTrackerSystem = ({
       });
     } catch (error) {
       console.error('Error in markAllAsPass:', error);
+      
+      // Rollback optimistic update on failure
+      setPendingEvents(eventsToProcess);
+      
       toast({
         title: 'Error',
-        description: 'Failed to mark all events as pass',
-        variant: 'destructive'
+        description: 'Failed to mark all events as pass. Events restored to queue.',
+        variant: 'destructive',
+        duration: 5000
       });
     }
-  }, [pendingEvents, matchId, trackerId, toast, supabase]);
+  }, [pendingEvents, matchId, trackerId, isOnline, toast, supabase]);
 
   return {
     assignment,
@@ -430,6 +542,7 @@ export const useFourTrackerSystem = ({
     clearPendingEvent,
     clearAllPendingEvents,
     markAllAsPass,
-    lastPossession
+    lastPossession,
+    isOnline
   };
 };
