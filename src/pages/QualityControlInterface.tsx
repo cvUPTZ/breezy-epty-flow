@@ -479,8 +479,9 @@ const QualityControlInterface = () => {
 
         {activeTab === 'trackers' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {['tracker1@example.com', 'tracker2@example.com', 'tracker3@example.com'].map(tracker => {
+            {[...new Set(events.map(e => e.tracker))].map(tracker => {
               const trackerEvents = events.filter(e => e.tracker === tracker);
+              if (trackerEvents.length === 0) return null;
               const validatedEvents = trackerEvents.filter(e => e.validation?.is_valid).length;
               const avgDelay = trackerEvents.reduce((sum, e) => sum + e.delay_seconds, 0) / trackerEvents.length;
 
