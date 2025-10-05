@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "node --import tsx scripts/seed.ts"
   },
   "dependencies": {
     "@capacitor/android": "^7.2.0",
