@@ -70,6 +70,7 @@ const BallTrackerInterface = ({
 }) => {
   const [selectedPlayerId, setSelectedPlayerId] = useState(null);
   const [hoveredPlayerId, setHoveredPlayerId] = useState(null);
+  const [activeTeam, setActiveTeam] = useState('home'); // 'home' or 'away'
 
   const allPlayers = useMemo(() => 
     [...homeTeamPlayers, ...awayTeamPlayers],
@@ -92,6 +93,13 @@ const BallTrackerInterface = ({
     awayPlayers: awayTeamPlayers.length,
     possessionTeam: currentBallHolder?.team || 'none'
   }), [allPlayers, homeTeamPlayers, awayTeamPlayers, currentBallHolder]);
+
+  const displayedPlayers = useMemo(() => 
+    activeTeam === 'home' ? homeTeamPlayers : awayTeamPlayers,
+    [activeTeam, homeTeamPlayers, awayTeamPlayers]
+  );
+
+  const displayedTeamName = activeTeam === 'home' ? homeTeamName : awayTeamName;
 
   const handleSelectPlayer = (player) => {
     if (!isOnline) return;
@@ -178,6 +186,30 @@ const BallTrackerInterface = ({
                 {isOnline ? 'Live' : 'Offline'}
               </p>
             </div>
+          </div>
+
+          {/* Team Switcher */}
+          <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
+            <button
+              onClick={() => setActiveTeam('home')}
+              className={`flex-1 py-2 px-4 rounded-md font-semibold transition-all ${
+                activeTeam === 'home'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-transparent text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {homeTeamName}
+            </button>
+            <button
+              onClick={() => setActiveTeam('away')}
+              className={`flex-1 py-2 px-4 rounded-md font-semibold transition-all ${
+                activeTeam === 'away'
+                  ? 'bg-red-600 text-white shadow-md'
+                  : 'bg-transparent text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {awayTeamName}
+            </button>
           </div>
 
           {/* Current Ball Holder */}
@@ -276,24 +308,20 @@ const BallTrackerInterface = ({
             </div>
 
             {/* Team Labels */}
-            <div className="absolute top-4 left-4 z-30">
-              <Badge className="bg-blue-600 text-white shadow-lg text-base px-4 py-1.5">
-                {homeTeamName}
-              </Badge>
-            </div>
-            <div className="absolute top-4 right-4 z-30">
-              <Badge className="bg-red-600 text-white shadow-lg text-base px-4 py-1.5">
-                {awayTeamName}
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-30">
+              <Badge className={`${activeTeam === 'home' ? 'bg-blue-600' : 'bg-red-600'} text-white shadow-lg text-base px-4 py-1.5`}>
+                {displayedTeamName}
               </Badge>
             </div>
 
-            {/* Home Team Players */}
+            {/* Players */}
             <div className="absolute inset-0">
-              {homeTeamPlayers.map((player, index) => {
-                const pos = getPositionCoordinates(player.position || '', index, homeTeamPlayers.length, true);
+              {displayedPlayers.map((player, index) => {
+                const pos = getPositionCoordinates(player.position || '', index, displayedPlayers.length, activeTeam === 'home');
                 const isActive = isValidBallHolder && currentBallHolder?.id === player.id;
                 const isSelected = selectedPlayerId === player.id;
                 const isHovered = hoveredPlayerId === player.id;
+                const teamColor = activeTeam === 'home' ? 'blue' : 'red';
                 
                 return (
                   <button
@@ -313,8 +341,8 @@ const BallTrackerInterface = ({
                       isActive 
                         ? 'bg-green-500 text-white ring-4 ring-green-300 animate-pulse shadow-green-500/50' 
                         : isOnline
-                          ? 'bg-blue-600 text-white hover:bg-blue-500 ring-3 ring-white shadow-blue-500/30'
-                          : 'bg-blue-400 text-white ring-3 ring-white'
+                          ? `bg-${teamColor}-600 text-white hover:bg-${teamColor}-500 ring-3 ring-white shadow-${teamColor}-500/30`
+                          : `bg-${teamColor}-400 text-white ring-3 ring-white`
                     }`}>
                       {player.jersey_number}
                       {/* Active indicator */}
@@ -336,65 +364,7 @@ const BallTrackerInterface = ({
                     
                     {/* Position badge */}
                     {player.position && (isHovered || isActive) && (
-                      <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-semibold bg-blue-600 text-white px-2 py-0.5 rounded pointer-events-none">
-                        {player.position}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Away Team Players */}
-            <div className="absolute inset-0">
-              {awayTeamPlayers.map((player, index) => {
-                const pos = getPositionCoordinates(player.position || '', index, awayTeamPlayers.length, false);
-                const isActive = isValidBallHolder && currentBallHolder?.id === player.id;
-                const isSelected = selectedPlayerId === player.id;
-                const isHovered = hoveredPlayerId === player.id;
-                
-                return (
-                  <button
-                    key={player.id}
-                    onClick={() => handleSelectPlayer(player)}
-                    onMouseEnter={() => setHoveredPlayerId(player.id)}
-                    onMouseLeave={() => setHoveredPlayerId(null)}
-                    disabled={!isOnline}
-                    className={`absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ${
-                      isOnline ? 'hover:scale-150 cursor-pointer' : 'cursor-not-allowed opacity-60'
-                    } ${isActive ? 'scale-150 z-30' : 'z-20'} ${isSelected ? 'scale-140' : ''}`}
-                    style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
-                    title={`#${player.jersey_number} ${player.player_name} (${player.position || 'N/A'})`}
-                  >
-                    {/* Player circle */}
-                    <div className={`relative w-12 h-12 rounded-full flex items-center justify-center font-bold text-base shadow-xl transition-all ${
-                      isActive 
-                        ? 'bg-green-500 text-white ring-4 ring-green-300 animate-pulse shadow-green-500/50' 
-                        : isOnline
-                          ? 'bg-red-600 text-white hover:bg-red-500 ring-3 ring-white shadow-red-500/30'
-                          : 'bg-red-400 text-white ring-3 ring-white'
-                    }`}>
-                      {player.jersey_number}
-                      {/* Active indicator */}
-                      {isActive && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Player name label */}
-                    <div className={`absolute -bottom-7 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-bold px-2 py-1 rounded pointer-events-none transition-all ${
-                      isHovered || isActive 
-                        ? 'bg-white text-gray-900 shadow-lg scale-110' 
-                        : 'bg-black/80 text-white'
-                    }`}>
-                      {player.player_name.split(' ').pop()}
-                    </div>
-                    
-                    {/* Position badge */}
-                    {player.position && (isHovered || isActive) && (
-                      <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-semibold bg-red-600 text-white px-2 py-0.5 rounded pointer-events-none">
+                      <div className={`absolute -top-7 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-semibold bg-${teamColor}-600 text-white px-2 py-0.5 rounded pointer-events-none`}>
                         {player.position}
                       </div>
                     )}
