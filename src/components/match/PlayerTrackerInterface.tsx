@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { User, Clock, AlertTriangle, Trash2, CheckCircle, Loader2, Keyboard } from 'lucide-react';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
-// Supposons que votre hook useKeyboardShortcuts se trouve dans ce fichier
+// Supposons que votre hook useKeyboardShortcuts se trouve  ce fichier
 /*
 import { useEffect, useCallback } from 'react';
 
