@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { User, Clock, AlertTriangle, Trash2, CheckCircle } from 'lucide-react';
+import { User, Clock, AlertTriangle, Trash2, CheckCircle, Loader2 } from 'lucide-react';
 
 interface Player {
   id: number;
@@ -25,6 +25,7 @@ interface EnhancedPlayerTrackerInterfaceProps {
   assignedPlayers: Player[];
   pendingEvents: PendingEvent[];
   assignedEventTypes: string[];
+  isOnline?: boolean;
   onRecordEvent: (pendingEventId: string, eventType: string, details?: Record<string, any>) => void;
   onClearEvent: (pendingEventId: string) => void;
   onClearAll: () => void;
@@ -35,11 +36,15 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
   assignedPlayers,
   pendingEvents,
   assignedEventTypes,
+  isOnline = true,
   onRecordEvent,
   onClearEvent,
   onClearAll,
   onMarkAllAsPass
 }) => {
+  const [processingEvents, setProcessingEvents] = useState<Set<string>>(new Set());
+  const [batchProcessing, setBatchProcessing] = useState(false);
+
   const eventTypeDisplay = (eventType: string) => {
     return eventType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
@@ -62,8 +67,36 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
     }
   };
 
+  const handleRecordEvent = (pendingEventId: string, eventType: string) => {
+    setProcessingEvents(prev => new Set(prev).add(pendingEventId));
+    onRecordEvent(pendingEventId, eventType);
+    // Processing state will be cleared when event is removed from queue
+  };
+
+  const handleMarkAllAsPass = async () => {
+    setBatchProcessing(true);
+    await onMarkAllAsPass();
+    setBatchProcessing(false);
+  };
+
+  // Check if an event is currently being processed
+  const isEventProcessing = (eventId: string) => processingEvents.has(eventId);
+
   return (
     <div className="space-y-4">
+      {/* Offline Banner */}
+      {!isOnline && (
+        <Card className="bg-red-50 border-red-300">
+          <CardContent className="p-4 flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <div>
+              <p className="font-semibold text-red-900">Offline Mode</p>
+              <p className="text-sm text-red-700">Cannot record events until connection is restored</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header Status Card */}
       <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-300">
         <CardHeader className="pb-3">
@@ -113,16 +146,27 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={onMarkAllAsPass}
+                  onClick={handleMarkAllAsPass}
+                  disabled={!isOnline || batchProcessing}
                   className="text-blue-600 hover:text-blue-700 border-blue-300"
                 >
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  Mark All As Pass
+                  {batchProcessing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Mark All As Pass
+                    </>
+                  )}
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={onClearAll}
+                  disabled={batchProcessing}
                   className="text-red-600 hover:text-red-700"
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
@@ -151,65 +195,82 @@ const PlayerTrackerInterface: React.FC<EnhancedPlayerTrackerInterfaceProps> = ({
             </div>
           ) : (
             <div className="space-y-3">
-              {pendingEvents.map((event, index) => (
-                <div
-                  key={event.id}
-                  className={`border-2 rounded-lg p-4 transition-all ${getPriorityColor(event.priority)}`}
-                >
-                  {/* Event Header */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="text-2xl font-bold text-gray-700">
-                        #{event.player.jersey_number}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-lg">
-                          {event.player.player_name}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          {getPriorityBadge(event.priority)}
-                          <span className="text-sm text-gray-600">
-                            {event.age_seconds}s ago
-                          </span>
+              {pendingEvents.map((event) => {
+                const isProcessing = isEventProcessing(event.id);
+                
+                return (
+                  <div
+                    key={event.id}
+                    className={`border-2 rounded-lg p-4 transition-all ${getPriorityColor(event.priority)} ${
+                      isProcessing ? 'opacity-50' : ''
+                    }`}
+                  >
+                    {/* Event Header */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="text-2xl font-bold text-gray-700">
+                          #{event.player.jersey_number}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-lg">
+                            {event.player.player_name}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {getPriorityBadge(event.priority)}
+                            <span className="text-sm text-gray-600">
+                              {event.age_seconds}s ago
+                            </span>
+                            {isProcessing && (
+                              <Badge className="bg-blue-600 animate-pulse">
+                                Processing...
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onClearEvent(event.id)}
-                      className="text-gray-500 hover:text-red-600"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  {/* Event Action Buttons */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {assignedEventTypes.map(eventType => (
                       <Button
-                        key={eventType}
-                        onClick={() => onRecordEvent(event.id, eventType)}
-                        size="lg"
-                        className={`h-16 text-sm font-semibold ${
-                          event.priority === 'urgent' 
-                            ? 'bg-red-600 hover:bg-red-700' 
-                            : event.priority === 'normal'
-                            ? 'bg-yellow-600 hover:bg-yellow-700'
-                            : 'bg-gray-600 hover:bg-gray-700'
-                        }`}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onClearEvent(event.id)}
+                        disabled={isProcessing}
+                        className="text-gray-500 hover:text-red-600"
+                        aria-label={`Clear event for ${event.player.player_name}`}
                       >
-                        {eventTypeDisplay(eventType)}
+                        <Trash2 className="h-4 w-4" />
                       </Button>
-                    ))}
-                  </div>
+                    </div>
 
-                  {/* Timestamp Info */}
-                  <div className="mt-2 text-xs text-gray-500 text-right">
-                    Possession at: {new Date(event.timestamp).toLocaleTimeString()}
+                    {/* Event Action Buttons */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {assignedEventTypes.map(eventType => (
+                        <Button
+                          key={eventType}
+                          onClick={() => handleRecordEvent(event.id, eventType)}
+                          disabled={!isOnline || isProcessing}
+                          size="lg"
+                          className={`h-16 text-sm font-semibold transition-all ${
+                            isProcessing
+                              ? 'bg-gray-400 cursor-not-allowed'
+                              : event.priority === 'urgent' 
+                                ? 'bg-red-600 hover:bg-red-700' 
+                                : event.priority === 'normal'
+                                  ? 'bg-yellow-600 hover:bg-yellow-700'
+                                  : 'bg-gray-600 hover:bg-gray-700'
+                          }`}
+                          aria-label={`Record ${eventType} for ${event.player.player_name}`}
+                        >
+                          {eventTypeDisplay(eventType)}
+                        </Button>
+                      ))}
+                    </div>
+
+                    {/* Timestamp Info */}
+                    <div className="mt-2 text-xs text-gray-500 text-right">
+                      Possession at: {new Date(event.timestamp).toLocaleTimeString()}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
