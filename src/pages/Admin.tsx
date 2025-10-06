@@ -67,6 +67,7 @@ import BudgetTrackerConfig from '@/components/admin/BudgetTrackerConfig';
 import LineBasedTrackerAssignment from '@/components/admin/LineBasedTrackerAssignment';
 import UnifiedTrackerAssignment from '@/components/tracker/UnifiedTrackerAssignment';
 import { AssignmentLogsViewer } from '@/components/admin/AssignmentLogsViewer';
+import QualityControlInterface from '@/pages/QualityControlInterface'; // adjust path as needed
 
 const sidebarItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -88,6 +89,8 @@ const sidebarItems = [
   { id: 'business', label: 'Business Plan', icon: Building2 },
   { id: 'budget', label: 'Budget Tracker', icon: Calculator },
   { id: 'video-analyzer', label: 'Video Analyzer', icon: Video },
+    { id: 'quality', label: 'Quality Control', icon: Shield }, // Add this line
+
 ];
 
 function AdminSidebar({ activeSection, setActiveSection }: { activeSection: string; setActiveSection: (section: string) => void }) {
@@ -574,6 +577,23 @@ const Admin: React.FC = () => {
 
       case 'budget':
         return <BudgetTrackerConfig />;
+ case 'quality':
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle>Quality Control</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {allMatches.length > 0 ? (
+              <QualityControlInterface />
+            ) : (
+              <p className="text-gray-500 text-center py-4">
+                No matches available. Create a match first.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      );
 
       default:
         return <div>Section not found</div>;
