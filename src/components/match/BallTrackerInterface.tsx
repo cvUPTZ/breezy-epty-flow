@@ -541,7 +541,10 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
                       return (
                         <button
                           key={player.id}
-                          onClick={() => handleSelectPlayer(player)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectPlayer(player);
+                          }}
                           onMouseEnter={() => setHoveredPlayerId(player.id)}
                           onMouseLeave={() => setHoveredPlayerId(null)}
                           disabled={!isOnline}
@@ -551,7 +554,7 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
                           style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
                         >
                           {/* Player circle */}
-                          <div className={`relative w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-lg transition-all ${
+                          <div className={`relative w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-lg transition-all pointer-events-none ${
                             isActive 
                               ? 'bg-green-500 text-white ring-4 ring-green-300 animate-pulse' 
                               : isOnline
@@ -560,7 +563,7 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
                           } ${isOverlayMode ? 'ring-4' : ''}`}>
                             {player.jersey_number}
                             {isActive && (
-                              <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full">
+                              <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full pointer-events-none">
                                 <div className="w-full h-full bg-green-500 rounded-full animate-ping"></div>
                               </div>
                             )}
