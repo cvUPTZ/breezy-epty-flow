@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Activity, Target, AlertTriangle, Video, X, Maximize2, Minimize2, Wifi, WifiOff } from 'lucide-react';
+import { YouTubePlayer } from '@/components/video/YouTubePlayer';
 
 // Player type definition
 interface Player {
