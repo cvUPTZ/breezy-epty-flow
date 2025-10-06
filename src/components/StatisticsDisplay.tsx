@@ -1,14 +1,74 @@
 
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Statistics } from '@/types';
+import { Target, TrendingUp, Shield, Activity, Zap, Award } from 'lucide-react';
 
 interface StatisticsDisplayProps {
   statistics: Statistics;
   homeTeamName: string;
   awayTeamName: string;
 }
+
+interface StatRowProps {
+  label: string;
+  homeValue: number;
+  awayValue: number;
+  homeMax?: number;
+  awayMax?: number;
+  isPercentage?: boolean;
+}
+
+const StatRow: React.FC<StatRowProps> = ({ label, homeValue, awayValue, homeMax, awayMax, isPercentage }) => {
+  const total = homeValue + awayValue;
+  const homePercentage = total > 0 ? (homeValue / total) * 100 : 50;
+  const awayPercentage = 100 - homePercentage;
+  
+  const isHomeBetter = homeValue > awayValue;
+  const isAwayBetter = awayValue > homeValue;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between items-center text-sm">
+        <span className={`font-medium ${isHomeBetter ? 'text-primary' : 'text-muted-foreground'}`}>
+          {homeMax !== undefined ? `${homeValue}/${homeMax}` : homeValue}{isPercentage ? '%' : ''}
+        </span>
+        <span className="text-xs text-muted-foreground font-medium">{label}</span>
+        <span className={`font-medium ${isAwayBetter ? 'text-primary' : 'text-muted-foreground'}`}>
+          {awayMax !== undefined ? `${awayValue}/${awayMax}` : awayValue}{isPercentage ? '%' : ''}
+        </span>
+      </div>
+      <div className="relative h-1.5 bg-muted rounded-full overflow-hidden">
+        <div 
+          className="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500"
+          style={{ width: `${homePercentage}%` }}
+        />
+        <div 
+          className="absolute right-0 top-0 h-full bg-gradient-to-l from-red-500 to-red-600 transition-all duration-500"
+          style={{ width: `${awayPercentage}%` }}
+        />
+      </div>
+    </div>
+  );
+};
+
+const StatSection: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ 
+  title, 
+  icon, 
+  children 
+}) => (
+  <div className="space-y-4">
+    <div className="flex items-center gap-2 pb-2 border-b border-border">
+      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary">
+        {icon}
+      </div>
+      <h3 className="font-semibold text-base">{title}</h3>
+    </div>
+    <div className="space-y-4">
+      {children}
+    </div>
+  </div>
+);
 
 const StatisticsDisplay: React.FC<StatisticsDisplayProps> = ({
   statistics,
@@ -18,191 +78,167 @@ const StatisticsDisplay: React.FC<StatisticsDisplayProps> = ({
   const { home, away } = statistics;
 
   return (
-    <Card className="bg-white shadow-md">
-      <CardHeader>
-        <CardTitle className="text-lg">Match Statistics</CardTitle>
-        <CardDescription>Real-time match metrics and performance data</CardDescription>
+    <Card className="shadow-sm border-border/50">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-xl font-bold">Match Statistics</CardTitle>
+          <div className="flex items-center gap-6 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-blue-600" />
+              <span className="font-medium">{homeTeamName}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-red-600" />
+              <span className="font-medium">{awayTeamName}</span>
+            </div>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Ball Possession */}
-        <div>
-          <h4 className="font-semibold mb-2">Ball Possession</h4>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>{homeTeamName}</span>
-              <span>{awayTeamName}</span>
-            </div>
-            <Progress 
-              value={home?.possessionPercentage || 0}
-              max={100} 
-              className="h-3"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{home?.possessionPercentage || 0}%</span>
-              <span>{away?.possessionPercentage || 0}%</span>
-            </div>
-          </div>
-        </div>
+      <CardContent className="space-y-8">
+        {/* Possession */}
+        <StatSection title="Possession" icon={<Activity className="w-4 h-4" />}>
+          <StatRow 
+            label="Ball Possession"
+            homeValue={Math.round(home?.possessionPercentage || 0)}
+            awayValue={Math.round(away?.possessionPercentage || 0)}
+            isPercentage
+          />
+          <StatRow 
+            label="Touches"
+            homeValue={home?.contacts || 0}
+            awayValue={away?.contacts || 0}
+          />
+        </StatSection>
 
-        {/* Passes */}
-        <div>
-          <h4 className="font-semibold mb-3">Passing Statistics</h4>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-sm font-medium mb-1">{homeTeamName}</div>
-              <div className="text-xs text-muted-foreground mb-2">
-                {home?.passesCompleted || 0} / {home?.passesAttempted || 0} passes
-              </div>
-              <Progress
-                value={home?.passesCompleted || 0}
-                max={Math.max(home?.passesAttempted || 1, 1)}
-                className="h-2"
-              />
-              <div className="text-xs text-muted-foreground mt-1">
-                {home?.passesAttempted ?
-                  Math.round(((home.passesCompleted || 0) / home.passesAttempted) * 100) : 0}% accuracy
-              </div>
-              <div className="mt-2 space-y-1 text-xs">
-                <div>Support: {home?.supportPasses || 0}</div>
-                <div>Offensive: {home?.offensivePasses || 0}</div>
-                <div>Long: {home?.longPasses || 0}</div>
-                <div>Forward: {home?.forwardPasses || 0}</div>
-                <div>Backward: {home?.backwardPasses || 0}</div>
-                <div>Lateral: {home?.lateralPasses || 0}</div>
-                <div>Decisive: {home?.decisivePasses || 0}</div>
-                <div>Successful Crosses: {home?.successfulCrosses || 0} (Attempted: {home?.crosses || 0})</div>
-              </div>
-            </div>
-            <div>
-              <div className="text-sm font-medium mb-1">{awayTeamName}</div>
-              <div className="text-xs text-muted-foreground mb-2">
-                {away?.passesCompleted || 0} / {away?.passesAttempted || 0} passes
-              </div>
-              <Progress
-                value={away?.passesCompleted || 0}
-                max={Math.max(away?.passesAttempted || 1, 1)}
-                className="h-2"
-              />
-              <div className="text-xs text-muted-foreground mt-1">
-                {away?.passesAttempted ?
-                  Math.round(((away.passesCompleted || 0) / away.passesAttempted) * 100) : 0}% accuracy
-              </div>
-              <div className="mt-2 space-y-1 text-xs">
-                <div>Support: {away?.supportPasses || 0}</div>
-                <div>Offensive: {away?.offensivePasses || 0}</div>
-                <div>Long: {away?.longPasses || 0}</div>
-                <div>Forward: {away?.forwardPasses || 0}</div>
-                <div>Backward: {away?.backwardPasses || 0}</div>
-                <div>Lateral: {away?.lateralPasses || 0}</div>
-                <div>Decisive: {away?.decisivePasses || 0}</div>
-                <div>Successful Crosses: {away?.successfulCrosses || 0} (Attempted: {away?.crosses || 0})</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Attack */}
+        <StatSection title="Attack" icon={<Target className="w-4 h-4" />}>
+          <StatRow 
+            label="Shots"
+            homeValue={home?.shots || 0}
+            awayValue={away?.shots || 0}
+          />
+          <StatRow 
+            label="Shots on Target"
+            homeValue={home?.shotsOnTarget || 0}
+            awayValue={away?.shotsOnTarget || 0}
+          />
+          <StatRow 
+            label="Goals"
+            homeValue={home?.goals || 0}
+            awayValue={away?.goals || 0}
+          />
+          <StatRow 
+            label="Expected Goals (xG)"
+            homeValue={parseFloat((home?.totalXg || 0).toFixed(2))}
+            awayValue={parseFloat((away?.totalXg || 0).toFixed(2))}
+          />
+          <StatRow 
+            label="Successful Dribbles"
+            homeValue={home?.successfulDribbles || 0}
+            awayValue={away?.successfulDribbles || 0}
+          />
+        </StatSection>
 
-        {/* Shots */}
-        <div>
-          <h4 className="font-semibold mb-3">Shooting Statistics</h4>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-sm font-medium mb-1">{homeTeamName}</div>
-              <div className="text-xs text-muted-foreground mb-1">
-                Total Shots: {home?.shots || 0} (On Target: {home?.shotsOnTarget || 0})
-              </div>
-              <div className="text-xs text-muted-foreground mb-2">
-                xG: {home?.totalXg?.toFixed(2) || '0.00'}
-              </div>
-              <div className="text-xs space-y-1">
-                <div>Foot Shots: { (home?.dangerousFootShots || 0) + (home?.nonDangerousFootShots || 0) }
-                  (On Target: {home?.footShotsOnTarget || 0}, Post: {home?.footShotsPostHits || 0}, Blocked: {home?.footShotsBlocked || 0})
-                </div>
-                <div>Header Shots: { (home?.dangerousHeaderShots || 0) + (home?.nonDangerousHeaderShots || 0) }
-                  (On Target: {home?.headerShotsOnTarget || 0}, Post: {home?.headerShotsPostHits || 0}, Blocked: {home?.headerShotsBlocked || 0})
-                </div>
-              </div>
-            </div>
-            <div>
-              <div className="text-sm font-medium mb-1">{awayTeamName}</div>
-              <div className="text-xs text-muted-foreground mb-1">
-                Total Shots: {away?.shots || 0} (On Target: {away?.shotsOnTarget || 0})
-              </div>
-              <div className="text-xs text-muted-foreground mb-2">
-                xG: {away?.totalXg?.toFixed(2) || '0.00'}
-              </div>
-              <div className="text-xs space-y-1">
-                <div>Foot Shots: { (away?.dangerousFootShots || 0) + (away?.nonDangerousFootShots || 0) }
-                  (On Target: {away?.footShotsOnTarget || 0}, Post: {away?.footShotsPostHits || 0}, Blocked: {away?.footShotsBlocked || 0})
-                </div>
-                <div>Header Shots: { (away?.dangerousHeaderShots || 0) + (away?.nonDangerousHeaderShots || 0) }
-                  (On Target: {away?.headerShotsOnTarget || 0}, Post: {away?.headerShotsPostHits || 0}, Blocked: {away?.headerShotsBlocked || 0})
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Passing */}
+        <StatSection title="Passing" icon={<TrendingUp className="w-4 h-4" />}>
+          <StatRow 
+            label="Total Passes"
+            homeValue={home?.passesCompleted || 0}
+            awayValue={away?.passesCompleted || 0}
+            homeMax={home?.passesAttempted || 0}
+            awayMax={away?.passesAttempted || 0}
+          />
+          <StatRow 
+            label="Pass Accuracy"
+            homeValue={home?.passesAttempted ? Math.round((home.passesCompleted / home.passesAttempted) * 100) : 0}
+            awayValue={away?.passesAttempted ? Math.round((away.passesCompleted / away.passesAttempted) * 100) : 0}
+            isPercentage
+          />
+          <StatRow 
+            label="Long Passes"
+            homeValue={home?.longPasses || 0}
+            awayValue={away?.longPasses || 0}
+          />
+          <StatRow 
+            label="Crosses"
+            homeValue={home?.successfulCrosses || 0}
+            awayValue={away?.successfulCrosses || 0}
+            homeMax={home?.crosses || 0}
+            awayMax={away?.crosses || 0}
+          />
+        </StatSection>
 
-        {/* Duels and Ball Control */}
-        <div>
-          <h4 className="font-semibold mb-3">Duels & Ball Control</h4>
-          <div className="grid grid-cols-2 gap-4 text-xs">
-            <div>
-              <div className="font-medium mb-2">{homeTeamName}</div>
-              <div className="space-y-1">
-                <div>Duels Won: {home?.duelsWon || 0} (Lost: {home?.duelsLost || 0})</div>
-                <div>Aerial Duels Won: {home?.aerialDuelsWon || 0} (Lost: {home?.aerialDuelsLost || 0})</div>
-                <div>Balls Played: {home?.ballsPlayed || 0}</div>
-                <div>Balls Recovered: {home?.ballsRecovered || 0}</div>
-                <div>Balls Lost: {home?.ballsLost || 0}</div>
-                <div>Contacts: {home?.contacts || 0}</div>
-                <div>Successful Dribbles: {home?.successfulDribbles || 0}</div>
-              </div>
-            </div>
-            <div>
-              <div className="font-medium mb-2">{awayTeamName}</div>
-              <div className="space-y-1">
-                <div>Duels Won: {away?.duelsWon || 0} (Lost: {away?.duelsLost || 0})</div>
-                <div>Aerial Duels Won: {away?.aerialDuelsWon || 0} (Lost: {away?.aerialDuelsLost || 0})</div>
-                <div>Balls Played: {away?.ballsPlayed || 0}</div>
-                <div>Balls Recovered: {away?.ballsRecovered || 0}</div>
-                <div>Balls Lost: {away?.ballsLost || 0}</div>
-                <div>Contacts: {away?.contacts || 0}</div>
-                <div>Successful Dribbles: {away?.successfulDribbles || 0}</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Defense */}
+        <StatSection title="Defense" icon={<Shield className="w-4 h-4" />}>
+          <StatRow 
+            label="Tackles"
+            homeValue={home?.tackles || 0}
+            awayValue={away?.tackles || 0}
+          />
+          <StatRow 
+            label="Interceptions"
+            homeValue={home?.interceptions || 0}
+            awayValue={away?.interceptions || 0}
+          />
+          <StatRow 
+            label="Clearances"
+            homeValue={home?.clearances || 0}
+            awayValue={away?.clearances || 0}
+          />
+          <StatRow 
+            label="Blocks"
+            homeValue={home?.blocks || 0}
+            awayValue={away?.blocks || 0}
+          />
+        </StatSection>
 
-        {/* Disciplinary & Game Flow */}
-        <div>
-          <h4 className="font-semibold mb-3">Disciplinary & Game Flow</h4>
-          <div className="grid grid-cols-2 gap-4 text-xs">
-            <div>
-              <div className="font-medium mb-2">{homeTeamName}</div>
-              <div className="space-y-1">
-                <div>Fouls Committed: {home?.foulsCommitted || 0}</div>
-                <div>Yellow Cards: {home?.yellowCards || 0}</div>
-                <div>Red Cards: {home?.redCards || 0}</div>
-                <div>Free Kicks Awarded: {home?.freeKicks || 0}</div>
-                <div>6m Violations: {home?.sixMeterViolations || 0}</div>
-                <div>Corners: {home?.corners || 0}</div>
-                <div>Offsides: {home?.offsides || 0}</div>
-              </div>
-            </div>
-            <div>
-              <div className="font-medium mb-2">{awayTeamName}</div>
-              <div className="space-y-1">
-                <div>Fouls Committed: {away?.foulsCommitted || 0}</div>
-                <div>Yellow Cards: {away?.yellowCards || 0}</div>
-                <div>Red Cards: {away?.redCards || 0}</div>
-                <div>Free Kicks Awarded: {away?.freeKicks || 0}</div>
-                <div>6m Violations: {away?.sixMeterViolations || 0}</div>
-                <div>Corners: {away?.corners || 0}</div>
-                <div>Offsides: {away?.offsides || 0}</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Duels */}
+        <StatSection title="Duels" icon={<Zap className="w-4 h-4" />}>
+          <StatRow 
+            label="Ground Duels Won"
+            homeValue={home?.duelsWon || 0}
+            awayValue={away?.duelsWon || 0}
+          />
+          <StatRow 
+            label="Aerial Duels Won"
+            homeValue={home?.aerialDuelsWon || 0}
+            awayValue={away?.aerialDuelsWon || 0}
+          />
+          <StatRow 
+            label="Ball Recoveries"
+            homeValue={home?.ballsRecovered || 0}
+            awayValue={away?.ballsRecovered || 0}
+          />
+        </StatSection>
+
+        {/* Discipline */}
+        <StatSection title="Discipline" icon={<Award className="w-4 h-4" />}>
+          <StatRow 
+            label="Fouls"
+            homeValue={home?.foulsCommitted || 0}
+            awayValue={away?.foulsCommitted || 0}
+          />
+          <StatRow 
+            label="Yellow Cards"
+            homeValue={home?.yellowCards || 0}
+            awayValue={away?.yellowCards || 0}
+          />
+          <StatRow 
+            label="Red Cards"
+            homeValue={home?.redCards || 0}
+            awayValue={away?.redCards || 0}
+          />
+          <StatRow 
+            label="Corners"
+            homeValue={home?.corners || 0}
+            awayValue={away?.corners || 0}
+          />
+          <StatRow 
+            label="Offsides"
+            homeValue={home?.offsides || 0}
+            awayValue={away?.offsides || 0}
+          />
+        </StatSection>
       </CardContent>
     </Card>
   );
