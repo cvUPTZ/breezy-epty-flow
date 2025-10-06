@@ -2,37 +2,80 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { AlertCircle, CheckCircle, Clock, Users, TrendingUp, Download, Filter, Search, RefreshCw, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Users, TrendingUp, Download, Search, RefreshCw, Loader2 } from 'lucide-react';
 
-const QualityControlInterface = () => {
-  const { matchId } = useParams();
+// Type definitions
+interface QualityControl {
+  is_valid: boolean;
+  issues: string[];
+  validated_at: string;
+}
+
+interface EventData {
+  recorded_at?: string;
+  [key: string]: any;
+}
+
+interface Player {
+  id: string;
+  player_name: string;
+  jersey_number?: string;
+}
+
+interface ProcessedEvent {
+  id: string;
+  event_type: string;
+  player_id: string;
+  player_name: string;
+  team: string;
+  timestamp: string;
+  tracker: string;
+  delay_seconds: number;
+  validation: QualityControl | null;
+  completeness: number;
+}
+
+interface Metrics {
+  match_id: string;
+  total_events: number;
+  validated_events: number;
+  pending_validation: number;
+  critical_issues: number;
+  data_completeness: number;
+  tracker_coverage: number;
+  avg_response_time: string;
+  last_updated: string;
+}
+
+const QualityControlInterface: React.FC = () => {
+  const { matchId } = useParams<{ matchId: string }>();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [metrics, setMetrics] = useState({
-    match_id: matchId,
+  const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'trackers'>('overview');
+  const [metrics, setMetrics] = useState<Metrics>({
+    match_id: matchId || '',
     total_events: 0,
     validated_events: 0,
     pending_validation: 0,
     critical_issues: 0,
     data_completeness: 0,
     tracker_coverage: 0,
-    avg_response_time: 0,
+    avg_response_time: '0',
     last_updated: new Date().toISOString()
   });
 
-  const [events, setEvents] = useState([]);
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [events, setEvents] = useState<ProcessedEvent[]>([]);
+  const [filterStatus, setFilterStatus] = useState<'all' | 'validated' | 'issues' | 'pending'>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState<ProcessedEvent | null>(null);
 
   const fetchQualityData = useCallback(async () => {
     if (!matchId) return;
 
     setLoading(true);
     try {
-      // Fetch match events
+      // Fetch match events - Note: quality_control might need to be added as metadata or in event_data
       const { data: eventData, error: eventsError } = await supabase
         .from('match_events')
         .select(`
@@ -42,8 +85,8 @@ const QualityControlInterface = () => {
           team,
           timestamp,
           created_by,
-          quality_control,
-          event_data
+          event_data,
+          metadata
         `)
         .eq('match_id', matchId)
         .order('timestamp', { ascending: false });
@@ -59,15 +102,14 @@ const QualityControlInterface = () => {
 
       if (matchError) throw matchError;
 
-      const allPlayers = [
-        ...(matchData.home_team_players || []),
-        ...(matchData.away_team_players || [])
-      ];
+      const homeTeamPlayers = (matchData.home_team_players as any[]) || [];
+      const awayTeamPlayers = (matchData.away_team_players as any[]) || [];
+      const allPlayers: Player[] = [...homeTeamPlayers, ...awayTeamPlayers];
 
-      const playerMap = new Map(allPlayers.map(p => [p.id, p]));
+      const playerMap = new Map<string, Player>(allPlayers.map(p => [p.id, p]));
 
       // Fetch user profiles to map tracker IDs to names/emails
-      const trackerIds = [...new Set(eventData.map(e => e.created_by))];
+      const trackerIds = [...new Set(eventData?.map(e => e.created_by).filter(Boolean) || [])];
       const { data: trackerData, error: trackersError } = await supabase
         .from('profiles')
         .select('id, email')
@@ -75,24 +117,32 @@ const QualityControlInterface = () => {
 
       if (trackersError) throw trackersError;
 
-      const trackerMap = new Map(trackerData.map(t => [t.id, t.email]));
+      const trackerMap = new Map<string, string>(
+        (trackerData || []).map(t => [t.id, t.email || 'Unknown'])
+      );
 
-      const processedEvents = eventData.map(e => {
-        const player = playerMap.get(e.player_id);
-        const recordedAt = e.event_data?.recorded_at ? new Date(e.event_data.recorded_at) : null;
-        const eventTimestamp = new Date(e.timestamp * 1000);
-        const delay = recordedAt ? (eventTimestamp - recordedAt) / 1000 : 0;
+      const processedEvents: ProcessedEvent[] = (eventData || []).map(e => {
+        const player = playerMap.get(e.player_id || '');
+        const eventDataObj = (e.event_data as EventData) || {};
+        const metadata = (e.metadata as any) || {};
+        
+        // Check if quality_control is stored in metadata or event_data
+        const qualityControl = metadata.quality_control as QualityControl | null;
+        
+        const recordedAt = eventDataObj.recorded_at ? new Date(eventDataObj.recorded_at) : null;
+        const eventTimestamp = new Date((e.timestamp || 0) * 1000);
+        const delay = recordedAt ? Math.abs((eventTimestamp.getTime() - recordedAt.getTime()) / 1000) : 0;
 
         return {
           id: e.id,
-          event_type: e.event_type,
-          player_id: e.player_id,
+          event_type: e.event_type || 'Unknown',
+          player_id: e.player_id || '',
           player_name: player?.player_name || 'Unknown Player',
-          team: e.team,
+          team: e.team || 'Unknown',
           timestamp: eventTimestamp.toISOString(),
-          tracker: trackerMap.get(e.created_by) || 'Unknown Tracker',
-          delay_seconds: Math.abs(delay), // Use Math.abs to avoid negative delays due to clock differences
-          validation: e.quality_control,
+          tracker: trackerMap.get(e.created_by || '') || 'Unknown Tracker',
+          delay_seconds: delay,
+          validation: qualityControl,
           completeness: (e.player_id && e.event_type) ? 100 : 50,
         };
       });
@@ -116,7 +166,7 @@ const QualityControlInterface = () => {
     fetchQualityData();
   }, [fetchQualityData]);
 
-  const calculateMetrics = (currentEvents) => {
+  const calculateMetrics = (currentEvents: ProcessedEvent[]) => {
     const total = currentEvents.length;
     if (total === 0) return;
 
@@ -128,7 +178,7 @@ const QualityControlInterface = () => {
     const totalDelay = currentEvents.reduce((sum, e) => sum + e.delay_seconds, 0);
 
     setMetrics({
-      match_id: matchId,
+      match_id: matchId || '',
       total_events: total,
       validated_events: validated,
       pending_validation: pending,
@@ -141,8 +191,8 @@ const QualityControlInterface = () => {
   };
 
   const filteredEvents = events.filter(event => {
-    const matchesSearch = (event.player_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-                         (event.event_type?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    const matchesSearch = event.player_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         event.event_type.toLowerCase().includes(searchTerm.toLowerCase());
 
     if (filterStatus === 'all') return matchesSearch;
     if (filterStatus === 'validated') return matchesSearch && event.validation?.is_valid;
@@ -151,8 +201,12 @@ const QualityControlInterface = () => {
     return matchesSearch;
   });
 
-  const handleValidate = async (eventId, isValid, issues = []) => {
-    const newValidationState = { is_valid: isValid, issues, validated_at: new Date().toISOString() };
+  const handleValidate = async (eventId: string, isValid: boolean, issues: string[] = []) => {
+    const newValidationState: QualityControl = { 
+      is_valid: isValid, 
+      issues, 
+      validated_at: new Date().toISOString() 
+    };
 
     // Optimistically update UI
     const originalEvents = [...events];
@@ -165,9 +219,12 @@ const QualityControlInterface = () => {
     calculateMetrics(updatedEvents);
 
     try {
+      // Store quality_control in metadata field
       const { error } = await supabase
         .from('match_events')
-        .update({ quality_control: newValidationState })
+        .update({ 
+          metadata: { quality_control: newValidationState }
+        })
         .eq('id', eventId);
 
       if (error) throw error;
@@ -201,7 +258,7 @@ const QualityControlInterface = () => {
         new Date(e.timestamp).toLocaleString(),
         e.tracker,
         e.validation?.is_valid ?? 'Pending',
-        e.validation?.issues.join('; ') || '',
+        (e.validation?.issues || []).join('; '),
         e.delay_seconds
       ].join(','))
     ].join('\n');
@@ -215,7 +272,15 @@ const QualityControlInterface = () => {
     URL.revokeObjectURL(url);
   };
 
-  const MetricCard = ({ icon: Icon, title, value, subtitle, color }) => (
+  interface MetricCardProps {
+    icon: React.ElementType;
+    title: string;
+    value: string | number;
+    subtitle?: string;
+    color: string;
+  }
+
+  const MetricCard: React.FC<MetricCardProps> = ({ icon: Icon, title, value, subtitle, color }) => (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-start justify-between">
         <div className="flex-1">
@@ -273,7 +338,7 @@ const QualityControlInterface = () => {
       {/* Tabs */}
       <div className="bg-white border-b border-gray-200 px-6">
         <div className="flex gap-6">
-          {['overview', 'events', 'trackers'].map(tab => (
+          {(['overview', 'events', 'trackers'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -305,7 +370,7 @@ const QualityControlInterface = () => {
                 icon={AlertCircle}
                 title="Pending Validation"
                 value={metrics.pending_validation}
-                subtitle={`${Math.round((metrics.pending_validation/metrics.total_events)*100)}% of total`}
+                subtitle={`${metrics.total_events > 0 ? Math.round((metrics.pending_validation/metrics.total_events)*100) : 0}% of total`}
                 color="text-yellow-600"
               />
               <MetricCard
@@ -381,7 +446,7 @@ const QualityControlInterface = () => {
                   />
                 </div>
                 <div className="flex gap-2">
-                  {['all', 'validated', 'issues', 'pending'].map(status => (
+                  {(['all', 'validated', 'issues', 'pending'] as const).map(status => (
                     <button
                       key={status}
                       onClick={() => setFilterStatus(status)}
@@ -440,7 +505,7 @@ const QualityControlInterface = () => {
                             event.delay_seconds < 3 ? 'bg-yellow-100 text-yellow-700' :
                             'bg-red-100 text-red-700'
                           }`}>
-                            {event.delay_seconds}s
+                            {event.delay_seconds.toFixed(1)}s
                           </span>
                         </td>
                         <td className="px-6 py-4">
@@ -552,7 +617,7 @@ const QualityControlInterface = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">Delay</label>
-                  <p className="text-gray-900 font-medium">{selectedEvent.delay_seconds}s</p>
+                  <p className="text-gray-900 font-medium">{selectedEvent.delay_seconds.toFixed(1)}s</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">Tracker</label>
