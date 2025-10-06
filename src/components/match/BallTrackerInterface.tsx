@@ -1,75 +1,95 @@
 import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Activity, Target, AlertTriangle, Users, Timer, TrendingUp, Video, X, Maximize2, Minimize2 } from 'lucide-react';
-import { Player } from '@/hooks/useFourTrackerSystem';
-import { YouTubePlayer } from '@/components/video/YouTubePlayer';
+import { Activity, Target, AlertTriangle, Video, X, Maximize2, Minimize2, Wifi, WifiOff } from 'lucide-react';
 
-// Enhanced position mapping with tactical formations
-const getPositionCoordinates = (position: string, index: number, totalPlayers: number, isHome: boolean) => {
-  const baseY = isHome ? 15 : 85;
+// Player type definition
+interface Player {
+  id: number;
+  player_name: string;
+  jersey_number: number;
+  position?: string;
+  team: 'home' | 'away';
+}
+
+// Horizontal position mapping for professional layout
+const getHorizontalPosition = (position: string, index: number, totalPlayers: number, isHome: boolean) => {
+  const baseX = isHome ? 10 : 90;
   const direction = isHome ? 1 : -1;
   
   const pos = position?.toUpperCase().trim() || '';
   
   // Goalkeeper
-  if (pos.includes('GK') || pos.includes('GOALKEEPER') || pos.includes('GOAL')) {
-    return { left: 50, top: baseY };
+  if (pos.includes('GK') || pos.includes('GOALKEEPER')) {
+    return { left: baseX, top: 50 };
   }
   
-  // Defenders (4 positions spread across width)
-  if (pos.includes('CB') || pos.includes('LB') || pos.includes('RB') || 
-      pos.includes('DC') || pos.includes('DL') || pos.includes('DR') || 
-      pos.includes('DEF') || pos.includes('BACK')) {
-    const defenderPositions = [20, 37, 63, 80];
-    const defIndex = index % 4;
+  // Defenders (4-3-3 formation)
+  if (pos.includes('CB') || pos.includes('LB') || pos.includes('RB') || pos.includes('DEF')) {
+    const defPositions = [20, 40, 60, 80];
     return { 
-      left: defenderPositions[defIndex], 
-      top: baseY + (direction * 12) 
+      left: baseX + (direction * 15), 
+      top: defPositions[index % 4] 
     };
   }
   
-  // Midfielders (spread across width with varied depth)
-  if (pos.includes('CM') || pos.includes('DM') || pos.includes('AM') || 
-      pos.includes('LM') || pos.includes('RM') || pos.includes('MID')) {
-    const midPositions = [15, 32, 50, 68, 85];
-    const midIndex = index % 5;
-    const depthVariation = pos.includes('DM') ? -5 : pos.includes('AM') ? 5 : 0;
+  // Midfielders
+  if (pos.includes('CM') || pos.includes('DM') || pos.includes('AM') || pos.includes('MID')) {
+    const midPositions = [25, 50, 75];
+    const depthVariation = pos.includes('DM') ? -8 : pos.includes('AM') ? 8 : 0;
     return { 
-      left: midPositions[midIndex], 
-      top: baseY + (direction * (30 + depthVariation))
+      left: baseX + (direction * (35 + depthVariation)), 
+      top: midPositions[index % 3]
     };
   }
   
-  // Forwards (3 attacking positions)
-  if (pos.includes('ST') || pos.includes('CF') || pos.includes('LW') || 
-      pos.includes('RW') || pos.includes('FW') || pos.includes('FORWARD') || 
-      pos.includes('ATTACK') || pos.includes('STRIKER') || pos.includes('WING')) {
-    const fwdPositions = [25, 50, 75];
-    const fwdIndex = index % 3;
+  // Forwards
+  if (pos.includes('ST') || pos.includes('CF') || pos.includes('FW') || pos.includes('WING')) {
+    const fwdPositions = [30, 50, 70];
     return { 
-      left: fwdPositions[fwdIndex], 
-      top: baseY + (direction * 45) 
+      left: baseX + (direction * 50), 
+      top: fwdPositions[index % 3]
     };
   }
   
-  // Default grid positioning
-  const gridPositions = [20, 35, 50, 65, 80];
+  // Default positioning
+  const gridY = [20, 35, 50, 65, 80];
   return { 
-    left: gridPositions[index % 5], 
-    top: baseY + (direction * 25) 
+    left: baseX + (direction * 25), 
+    top: gridY[index % 5]
   };
 };
 
+interface YouTubePlayerProps {
+  videoId: string;
+  matchId: string;
+  isAdmin: boolean;
+}
+
+const YouTubePlayer: React.FC<YouTubePlayerProps> = ({ videoId }) => {
+  return (
+    <iframe
+      width="100%"
+      height="100%"
+      src={`https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1`}
+      title="Match Video"
+      frameBorder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowFullScreen
+      className="w-full h-full"
+    />
+  );
+};
+
 interface BallTrackerInterfaceProps {
-  homeTeamPlayers: Player[];
-  awayTeamPlayers: Player[];
+  homeTeamPlayers?: Player[];
+  awayTeamPlayers?: Player[];
   homeTeamName?: string;
   awayTeamName?: string;
-  currentBallHolder: Player | null;
+  currentBallHolder?: Player | null;
   isOnline?: boolean;
-  onSelectPlayer: (player: Player) => void;
+  onSelectPlayer?: (player: Player) => void;
   videoUrl?: string;
 }
 
@@ -85,9 +105,9 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
 }) => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [hoveredPlayerId, setHoveredPlayerId] = useState<number | null>(null);
-  const [activeTeam, setActiveTeam] = useState('home'); // 'home' or 'away'
   const [showVideo, setShowVideo] = useState(false);
   const [isVideoExpanded, setIsVideoExpanded] = useState(false);
+  const [viewMode, setViewMode] = useState<'tracking' | 'analysis'>('tracking');
 
   const allPlayers = useMemo(() => 
     [...homeTeamPlayers, ...awayTeamPlayers],
@@ -111,37 +131,14 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
     possessionTeam: currentBallHolder?.team || 'none'
   }), [allPlayers, homeTeamPlayers, awayTeamPlayers, currentBallHolder]);
 
-  const displayedPlayers = useMemo(() => 
-    activeTeam === 'home' ? homeTeamPlayers : awayTeamPlayers,
-    [activeTeam, homeTeamPlayers, awayTeamPlayers]
-  );
-
-  const displayedTeamName = activeTeam === 'home' ? homeTeamName : awayTeamName;
-
   const handleSelectPlayer = (player: Player) => {
     if (!isOnline) return;
     
     setSelectedPlayerId(player.id);
     onSelectPlayer(player);
     
-    setTimeout(() => setSelectedPlayerId(null), 400);
+    setTimeout(() => setSelectedPlayerId(null), 300);
   };
-
-  if (!hasPlayers) {
-    return (
-      <Card className="border-amber-200">
-        <CardContent className="pt-8 pb-8 text-center">
-          <div className="bg-amber-50 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-            <AlertTriangle className="h-10 w-10 text-amber-500" />
-          </div>
-          <p className="font-semibold text-xl mb-2">No Players Available</p>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Please ensure match teams are configured with players before using the ball tracker interface.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   // Extract video ID from URL
   const videoId = useMemo(() => {
@@ -159,8 +156,26 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
     return null;
   }, [videoUrl]);
 
+  if (!hasPlayers) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="max-w-md border-amber-200">
+          <CardContent className="pt-8 pb-8 text-center">
+            <div className="bg-amber-50 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <AlertTriangle className="h-8 w-8 text-amber-500" />
+            </div>
+            <p className="font-semibold text-lg mb-2">No Players Available</p>
+            <p className="text-sm text-gray-600">
+              Configure match teams with players to start tracking.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative space-y-4">
+    <div className="min-h-screen bg-gray-50">
       {/* Video Player Overlay */}
       {videoUrl && videoId && showVideo && (
         <div 
@@ -171,7 +186,7 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
           }`}
           style={{ 
             boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
-            borderRadius: '12px',
+            borderRadius: '8px',
             overflow: 'hidden'
           }}
         >
@@ -182,12 +197,11 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
               isAdmin={false}
             />
             
-            {/* Video Controls Overlay */}
             <div className="absolute top-2 right-2 flex gap-2">
               <Button
                 size="sm"
                 variant="secondary"
-                className="bg-black/70 hover:bg-black/90 text-white"
+                className="bg-black/70 hover:bg-black/90 text-white h-8 w-8 p-0"
                 onClick={() => setIsVideoExpanded(!isVideoExpanded)}
               >
                 {isVideoExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -195,7 +209,7 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
               <Button
                 size="sm"
                 variant="secondary"
-                className="bg-black/70 hover:bg-black/90 text-white"
+                className="bg-black/70 hover:bg-black/90 text-white h-8 w-8 p-0"
                 onClick={() => setShowVideo(false)}
               >
                 <X className="h-4 w-4" />
@@ -205,294 +219,316 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
         </div>
       )}
 
-      {/* Offline Banner */}
-      {!isOnline && (
-        <Card className="bg-gradient-to-r from-red-50 to-orange-50 border-red-300">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-red-100 rounded-full p-2">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-red-900">Offline Mode Active</p>
-                <p className="text-sm text-red-700">Ball possession tracking is disabled until connection is restored</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Enhanced Header with Stats */}
-      <Card className="bg-gradient-to-br from-orange-50 via-red-50 to-purple-50 border-orange-200">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center justify-between">
+      {/* Fixed Header */}
+      <header className="sticky top-0 z-40 bg-white border-b shadow-sm">
+        <div className="flex items-center justify-between px-6 py-3">
+          <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="bg-orange-100 rounded-lg p-2">
-                <Activity className="h-5 w-5 text-orange-600" />
-              </div>
-              <span>Ball Tracker Interface</span>
+              <Activity className="h-5 w-5 text-blue-600" />
+              <h1 className="text-lg font-semibold text-gray-900">Ball Tracker Pro</h1>
             </div>
-            <div className="flex items-center gap-2">
-              {videoUrl && videoId && (
-                <Button
-                  variant={showVideo ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setShowVideo(!showVideo)}
-                  className="flex items-center gap-2"
-                >
-                  <Video className="h-4 w-4" />
-                  {showVideo ? 'Hide' : 'Show'} Video
-                </Button>
-              )}
-              <Badge variant="outline" className="text-base px-3 py-1">
-                {stats.totalPlayers} Players
-              </Badge>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-white rounded-lg p-3 border">
-              <div className="flex items-center gap-2 mb-1">
-                <Users className="h-4 w-4 text-blue-600" />
-                <span className="text-xs text-muted-foreground">Home</span>
-              </div>
-              <p className="text-2xl font-bold text-blue-600">{stats.homePlayers}</p>
-            </div>
-            <div className="bg-white rounded-lg p-3 border">
-              <div className="flex items-center gap-2 mb-1">
-                <Users className="h-4 w-4 text-red-600" />
-                <span className="text-xs text-muted-foreground">Away</span>
-              </div>
-              <p className="text-2xl font-bold text-red-600">{stats.awayPlayers}</p>
-            </div>
-            <div className="bg-white rounded-lg p-3 border">
-              <div className="flex items-center gap-2 mb-1">
-                <TrendingUp className="h-4 w-4 text-green-600" />
-                <span className="text-xs text-muted-foreground">Status</span>
-              </div>
-              <p className="text-sm font-bold text-green-600">
-                {isOnline ? 'Live' : 'Offline'}
-              </p>
+            
+            {/* View Mode Toggle */}
+            <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('tracking')}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'tracking'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Tracking
+              </button>
+              <button
+                onClick={() => setViewMode('analysis')}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'analysis'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Analysis
+              </button>
             </div>
           </div>
 
-          {/* Team Switcher */}
-          <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
-            <button
-              onClick={() => setActiveTeam('home')}
-              className={`flex-1 py-2 px-4 rounded-md font-semibold transition-all ${
-                activeTeam === 'home'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-transparent text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {homeTeamName}
-            </button>
-            <button
-              onClick={() => setActiveTeam('away')}
-              className={`flex-1 py-2 px-4 rounded-md font-semibold transition-all ${
-                activeTeam === 'away'
-                  ? 'bg-red-600 text-white shadow-md'
-                  : 'bg-transparent text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {awayTeamName}
-            </button>
-          </div>
+          <div className="flex items-center gap-3">
+            {/* Connection Status */}
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${
+              isOnline ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+            }`}>
+              {isOnline ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
+              <span className="text-sm font-medium">{isOnline ? 'Live' : 'Offline'}</span>
+            </div>
 
-          {/* Current Ball Holder */}
-          {currentBallHolder && isValidBallHolder ? (
-            <div className="p-4 bg-white rounded-lg border-2 border-green-500 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="bg-green-100 rounded-full p-2">
-                  <Target className="h-5 w-5 text-green-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs text-muted-foreground mb-1">Current Possession</p>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-lg font-bold">
-                      #{currentBallHolder.jersey_number} {currentBallHolder.player_name}
-                    </span>
-                    <Badge className={currentBallHolder.team === 'home' ? 'bg-blue-600' : 'bg-red-600'}>
-                      {currentBallHolder.team === 'home' ? homeTeamName : awayTeamName}
-                    </Badge>
-                    {currentBallHolder.position && (
-                      <Badge variant="outline" className="text-xs">
-                        {currentBallHolder.position}
-                      </Badge>
-                    )}
+            {/* Video Toggle */}
+            {videoUrl && videoId && (
+              <Button
+                variant={showVideo ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowVideo(!showVideo)}
+                className="gap-2"
+              >
+                <Video className="h-4 w-4" />
+                Video
+              </Button>
+            )}
+
+            {/* Player Count */}
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              {stats.totalPlayers} Players
+            </Badge>
+          </div>
+        </div>
+
+        {/* Offline Warning Banner */}
+        {!isOnline && (
+          <div className="bg-red-50 border-t border-red-200 px-6 py-2">
+            <div className="flex items-center gap-2 text-sm text-red-800">
+              <AlertTriangle className="h-4 w-4" />
+              <span>Tracking disabled - Connection required for ball possession updates</span>
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* Main Content */}
+      <main className="p-6">
+        <div className="max-w-[1800px] mx-auto grid grid-cols-12 gap-6">
+          {/* Left Sidebar - Team Stats */}
+          <aside className="col-span-2 space-y-4">
+            <Card>
+              <CardContent className="p-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">Teams</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-blue-50">
+                    <span className="text-sm font-medium text-blue-900">{homeTeamName}</span>
+                    <Badge variant="secondary" className="bg-blue-600 text-white">{stats.homePlayers}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-red-50">
+                    <span className="text-sm font-medium text-red-900">{awayTeamName}</span>
+                    <Badge variant="secondary" className="bg-red-600 text-white">{stats.awayPlayers}</Badge>
                   </div>
                 </div>
-              </div>
-            </div>
-          ) : currentBallHolder && !isValidBallHolder ? (
-            <div className="p-4 bg-amber-50 rounded-lg border-2 border-amber-400">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-amber-600" />
-                <span className="text-sm font-medium text-amber-900">
-                  Warning: Current ball holder not found in team rosters
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div className="p-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-              <div className="flex items-center gap-3">
-                <Timer className="h-5 w-5 text-gray-400" />
-                <span className="text-sm text-muted-foreground">
-                  Waiting for ball possession...
-                </span>
-              </div>
-            </div>
-          )}
+              </CardContent>
+            </Card>
 
-          <p className="text-sm text-muted-foreground">
-            Click on any player to indicate they have gained possession of the ball. The system will automatically track passes, interceptions, and dribbles.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Enhanced Football Pitch */}
-      <Card className="overflow-hidden">
-        <CardContent className="p-4">
-          <div className="relative w-full aspect-[2/3] bg-gradient-to-b from-green-500 via-green-600 to-green-500 rounded-xl overflow-hidden shadow-2xl">
-            {/* Enhanced pitch markings */}
-            <div className="absolute inset-0 pointer-events-none">
-              {/* Grass pattern effect */}
-              <div className="absolute inset-0 opacity-20">
-                <div className="absolute inset-0" style={{
-                  backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(0,0,0,0.1) 20px, rgba(0,0,0,0.1) 40px)'
-                }}></div>
-              </div>
-
-              {/* Touchlines */}
-              <div className="absolute inset-2 border-2 border-white/50 rounded-lg"></div>
-              
-              {/* Center circle */}
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 border-3 border-white/50 rounded-full"></div>
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-white/70 rounded-full"></div>
-              
-              {/* Center line */}
-              <div className="absolute top-1/2 left-0 right-0 h-1 bg-white/50"></div>
-              
-              {/* Penalty areas - Home (bottom) */}
-              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-3/4 h-24 border-3 border-white/50 border-b-0 rounded-t-lg"></div>
-              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-2/5 h-14 border-3 border-white/50 border-b-0 rounded-t-lg"></div>
-              <div className="absolute bottom-14 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-white/70 rounded-full"></div>
-              
-              {/* Penalty areas - Away (top) */}
-              <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-3/4 h-24 border-3 border-white/50 border-t-0 rounded-b-lg"></div>
-              <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-2/5 h-14 border-3 border-white/50 border-t-0 rounded-b-lg"></div>
-              <div className="absolute top-14 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-white/70 rounded-full"></div>
-              
-              {/* Goals */}
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-3 bg-white/80 rounded-t-lg shadow-lg"></div>
-              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-24 h-3 bg-white/80 rounded-b-lg shadow-lg"></div>
-              
-              {/* Corner arcs */}
-              <div className="absolute bottom-2 left-2 w-8 h-8 border-l-2 border-b-2 border-white/50 rounded-bl-full"></div>
-              <div className="absolute bottom-2 right-2 w-8 h-8 border-r-2 border-b-2 border-white/50 rounded-br-full"></div>
-              <div className="absolute top-2 left-2 w-8 h-8 border-l-2 border-t-2 border-white/50 rounded-tl-full"></div>
-              <div className="absolute top-2 right-2 w-8 h-8 border-r-2 border-t-2 border-white/50 rounded-tr-full"></div>
-            </div>
-
-            {/* Team Labels */}
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-30">
-              <Badge className={`${activeTeam === 'home' ? 'bg-blue-600' : 'bg-red-600'} text-white shadow-lg text-base px-4 py-1.5`}>
-                {displayedTeamName}
-              </Badge>
-            </div>
-
-            {/* Players */}
-            <div className="absolute inset-0">
-              {displayedPlayers.map((player, index) => {
-                const pos = getPositionCoordinates(player.position || '', index, displayedPlayers.length, activeTeam === 'home');
-                const isActive = isValidBallHolder && currentBallHolder?.id === player.id;
-                const isSelected = selectedPlayerId === player.id;
-                const isHovered = hoveredPlayerId === player.id;
-                const teamColor = activeTeam === 'home' ? 'blue' : 'red';
-                
-                return (
-                  <button
-                    key={player.id}
-                    onClick={() => handleSelectPlayer(player)}
-                    onMouseEnter={() => setHoveredPlayerId(player.id)}
-                    onMouseLeave={() => setHoveredPlayerId(null)}
-                    disabled={!isOnline}
-                    className={`absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ${
-                      isOnline ? 'hover:scale-150 cursor-pointer' : 'cursor-not-allowed opacity-60'
-                    } ${isActive ? 'scale-150 z-30' : 'z-20'} ${isSelected ? 'scale-140' : ''}`}
-                    style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
-                    title={`#${player.jersey_number} ${player.player_name} (${player.position || 'N/A'})`}
-                  >
-                    {/* Player circle */}
-                    <div className={`relative w-12 h-12 rounded-full flex items-center justify-center font-bold text-base shadow-xl transition-all ${
-                      isActive 
-                        ? 'bg-green-500 text-white ring-4 ring-green-300 animate-pulse shadow-green-500/50' 
-                        : isOnline
-                          ? `bg-${teamColor}-600 text-white hover:bg-${teamColor}-500 ring-3 ring-white shadow-${teamColor}-500/30`
-                          : `bg-${teamColor}-400 text-white ring-3 ring-white`
-                    }`}>
-                      {player.jersey_number}
-                      {/* Active indicator */}
-                      {isActive && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Player name label */}
-                    <div className={`absolute -bottom-7 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-bold px-2 py-1 rounded pointer-events-none transition-all ${
-                      isHovered || isActive 
-                        ? 'bg-white text-gray-900 shadow-lg scale-110' 
-                        : 'bg-black/80 text-white'
-                    }`}>
-                      {player.player_name.split(' ').pop()}
-                    </div>
-                    
-                    {/* Position badge */}
-                    {player.position && (isHovered || isActive) && (
-                      <div className={`absolute -top-7 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-semibold bg-${teamColor}-600 text-white px-2 py-0.5 rounded pointer-events-none`}>
-                        {player.position}
+            {/* Current Possession */}
+            <Card>
+              <CardContent className="p-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">Possession</h3>
+                {currentBallHolder && isValidBallHolder ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white font-bold text-sm">
+                        {currentBallHolder.jersey_number}
                       </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {currentBallHolder.player_name}
+                        </p>
+                        <p className="text-xs text-gray-500">{currentBallHolder.position || 'N/A'}</p>
+                      </div>
+                    </div>
+                    <Badge className={currentBallHolder.team === 'home' ? 'bg-blue-600 w-full justify-center' : 'bg-red-600 w-full justify-center'}>
+                      {currentBallHolder.team === 'home' ? homeTeamName : awayTeamName}
+                    </Badge>
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <Target className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-xs text-gray-500">Awaiting possession...</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-      {/* Enhanced Instructions */}
-      <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-        <CardContent className="p-4">
-          <h4 className="font-semibold mb-3 flex items-center gap-2 text-blue-900">
-            <Activity className="h-5 w-5" />
-            How Ball Tracking Works
-          </h4>
-          <div className="space-y-2 text-sm text-blue-800">
-            <div className="flex items-start gap-2">
-              <div className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">1</div>
-              <p><strong>Click immediately</strong> when a player receives the ball to update possession</p>
-            </div>
-            <div className="flex items-start gap-2">
-              <div className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">2</div>
-              <p><strong>Automatic detection</strong> of passes, interceptions, and tackles between clicks</p>
-            </div>
-            <div className="flex items-start gap-2">
-              <div className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">3</div>
-              <p><strong>Dribbles are recorded</strong> only if possession lasts more than 2 seconds</p>
-            </div>
-            <div className="flex items-start gap-2">
-              <div className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">4</div>
-              <p><strong>Hover over players</strong> to see their names and positions clearly</p>
-            </div>
+            {/* Quick Guide */}
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="p-4">
+                <h3 className="text-xs font-semibold text-blue-900 uppercase mb-3">Quick Guide</h3>
+                <ul className="space-y-2 text-xs text-blue-800">
+                  <li className="flex gap-2">
+                    <span className="font-bold">→</span>
+                    <span>Click player on possession</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold">→</span>
+                    <span>Hover for player info</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold">→</span>
+                    <span>Auto-tracks passes & tackles</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+          </aside>
+
+          {/* Center - Horizontal Pitch */}
+          <div className="col-span-8">
+            <Card className="overflow-hidden">
+              <CardContent className="p-6">
+                <div className="relative w-full aspect-[16/9] bg-gradient-to-r from-green-600 via-green-500 to-green-600 rounded-lg overflow-hidden shadow-lg">
+                  {/* Pitch markings */}
+                  <div className="absolute inset-0 pointer-events-none">
+                    {/* Subtle grass pattern */}
+                    <div className="absolute inset-0 opacity-10">
+                      <div className="absolute inset-0" style={{
+                        backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 30px, rgba(0,0,0,0.1) 30px, rgba(0,0,0,0.1) 60px)'
+                      }}></div>
+                    </div>
+
+                    {/* Border */}
+                    <div className="absolute inset-3 border-2 border-white/40 rounded"></div>
+                    
+                    {/* Center line */}
+                    <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-white/40"></div>
+                    
+                    {/* Center circle */}
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-2 border-white/40 rounded-full"></div>
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white/60 rounded-full"></div>
+                    
+                    {/* Penalty areas - Home (left) */}
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 w-24 h-3/5 border-2 border-white/40 border-l-0 rounded-r"></div>
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 w-16 h-2/5 border-2 border-white/40 border-l-0 rounded-r"></div>
+                    <div className="absolute left-16 top-1/2 transform -translate-y-1/2 w-1.5 h-1.5 bg-white/60 rounded-full"></div>
+                    
+                    {/* Penalty areas - Away (right) */}
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 w-24 h-3/5 border-2 border-white/40 border-r-0 rounded-l"></div>
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 w-16 h-2/5 border-2 border-white/40 border-r-0 rounded-l"></div>
+                    <div className="absolute right-16 top-1/2 transform -translate-y-1/2 w-1.5 h-1.5 bg-white/60 rounded-full"></div>
+                    
+                    {/* Goals */}
+                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-4 h-20 bg-white/70 rounded-r shadow-lg"></div>
+                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-4 h-20 bg-white/70 rounded-l shadow-lg"></div>
+                  </div>
+
+                  {/* Team labels */}
+                  <div className="absolute top-4 left-8 z-30">
+                    <Badge className="bg-blue-600 text-white shadow-md">{homeTeamName}</Badge>
+                  </div>
+                  <div className="absolute top-4 right-8 z-30">
+                    <Badge className="bg-red-600 text-white shadow-md">{awayTeamName}</Badge>
+                  </div>
+
+                  {/* Players */}
+                  <div className="absolute inset-0">
+                    {allPlayers.map((player, index) => {
+                      const isHome = player.team === 'home';
+                      const teamPlayers = isHome ? homeTeamPlayers : awayTeamPlayers;
+                      const teamIndex = teamPlayers.findIndex(p => p.id === player.id);
+                      const pos = getHorizontalPosition(player.position || '', teamIndex, teamPlayers.length, isHome);
+                      const isActive = isValidBallHolder && currentBallHolder?.id === player.id;
+                      const isSelected = selectedPlayerId === player.id;
+                      const isHovered = hoveredPlayerId === player.id;
+                      const teamColor = isHome ? 'blue' : 'red';
+                      
+                      return (
+                        <button
+                          key={player.id}
+                          onClick={() => handleSelectPlayer(player)}
+                          onMouseEnter={() => setHoveredPlayerId(player.id)}
+                          onMouseLeave={() => setHoveredPlayerId(null)}
+                          disabled={!isOnline}
+                          className={`absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 ${
+                            isOnline ? 'hover:scale-125 cursor-pointer' : 'cursor-not-allowed opacity-50'
+                          } ${isActive ? 'scale-125 z-30' : 'z-20'} ${isSelected ? 'scale-110' : ''}`}
+                          style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
+                        >
+                          {/* Player circle */}
+                          <div className={`relative w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-lg transition-all ${
+                            isActive 
+                              ? 'bg-green-500 text-white ring-4 ring-green-300 animate-pulse' 
+                              : isOnline
+                                ? `bg-${teamColor}-600 text-white hover:bg-${teamColor}-500 ring-2 ring-white`
+                                : `bg-${teamColor}-400 text-white ring-2 ring-white`
+                          }`}>
+                            {player.jersey_number}
+                            {isActive && (
+                              <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full">
+                                <div className="w-full h-full bg-green-500 rounded-full animate-ping"></div>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Tooltip on hover */}
+                          {(isHovered || isActive) && (
+                            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white px-3 py-1.5 rounded shadow-lg text-xs font-medium pointer-events-none">
+                              <div className="text-center">
+                                <div className="font-bold">#{player.jersey_number} {player.player_name}</div>
+                                {player.position && <div className="text-gray-300 text-xs">{player.position}</div>}
+                              </div>
+                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Right Sidebar - Analytics */}
+          <aside className="col-span-2 space-y-4">
+            <Card>
+              <CardContent className="p-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">Live Stats</h3>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs text-gray-600">Possession</span>
+                      <span className="text-xs font-semibold">50/50</span>
+                    </div>
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-600 w-1/2"></div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs text-gray-600">Passes</span>
+                      <span className="text-xs font-semibold">0</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-200 rounded-full"></div>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs text-gray-600">Tackles</span>
+                      <span className="text-xs font-semibold">0</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-200 rounded-full"></div>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs text-gray-600">Interceptions</span>
+                      <span className="text-xs font-semibold">0</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-200 rounded-full"></div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
+              <CardContent className="p-4">
+                <h3 className="text-xs font-semibold text-purple-900 uppercase mb-2">Pro Features</h3>
+                <ul className="space-y-1.5 text-xs text-purple-800">
+                  <li>✓ Real-time tracking</li>
+                  <li>✓ Auto event detection</li>
+                  <li>✓ Formation analysis</li>
+                  <li>✓ Heat maps (coming)</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </aside>
+        </div>
+      </main>
     </div>
   );
 };
