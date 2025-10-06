@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { User, Clock, AlertTriangle, Trash2, CheckCircle, Loader2, Keyboard, Video, X, Maximize2, Minimize2 } from 'lucide-react';
+import { User, Clock, AlertTriangle, Trash2, CheckCircle, Loader2, Keyboard, Video, X, Layers } from 'lucide-react';
 import { Player, PendingEvent } from '@/hooks/useFourTrackerSystem';
 import { YouTubePlayer } from '@/components/video/YouTubePlayer';
 
@@ -55,13 +55,67 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
   const [processingEvents, setProcessingEvents] = useState(new Set());
   const [batchProcessing, setBatchProcessing] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
-  const [isVideoExpanded, setIsVideoExpanded] = useState(false);
+  const [isOverlayMode, setIsOverlayMode] = useState(false);
+  const [videoPosition, setVideoPosition] = useState({ x: 20, y: 100 });
+  const [videoSize, setVideoSize] = useState({ width: 480, height: 270 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const shortcutKeys = useMemo(() => [
     'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
     'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L',
     'Z', 'X', 'C', 'V', 'B', 'N', 'M'
   ], []);
+
+  // Video dragging handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.video-drag-handle')) {
+      setIsDragging(true);
+      setDragStart({
+        x: e.clientX - videoPosition.x,
+        y: e.clientY - videoPosition.y
+      });
+    }
+  };
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (isDragging) {
+      setVideoPosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    } else if (isResizing) {
+      const newWidth = Math.max(320, e.clientX - videoPosition.x);
+      const newHeight = Math.max(180, newWidth * (9/16));
+      setVideoSize({ width: newWidth, height: newHeight });
+    }
+  }, [isDragging, isResizing, dragStart, videoPosition]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    setIsResizing(false);
+  }, []);
+
+  useEffect(() => {
+    if (isDragging || isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, isResizing, handleMouseMove, handleMouseUp]);
+
+  const handleToggleOverlayMode = () => {
+    if (!isOverlayMode) {
+      setIsOverlayMode(true);
+      setShowVideo(false);
+    } else {
+      setIsOverlayMode(false);
+    }
+  };
 
   const handleRecordEvent = useCallback((pendingEventId: string, eventType: string) => {
     setProcessingEvents(prev => new Set(prev).add(pendingEventId));
@@ -133,44 +187,89 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
 
   return (
     <div className="relative space-y-4">
-      {/* Video Player Overlay */}
-      {videoUrl && videoId && showVideo && (
+      {/* Video Player Overlay - Draggable & Resizable */}
+      {videoUrl && videoId && showVideo && !isOverlayMode && (
         <div 
-          className={`fixed z-50 transition-all duration-300 ${
-            isVideoExpanded 
-              ? 'inset-4' 
-              : 'bottom-4 right-4 w-96 h-64'
-          }`}
+          className="fixed z-50 bg-black rounded-lg shadow-2xl overflow-hidden"
           style={{ 
-            boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
-            borderRadius: '12px',
-            overflow: 'hidden'
+            left: `${videoPosition.x}px`,
+            top: `${videoPosition.y}px`,
+            width: `${videoSize.width}px`,
+            height: `${videoSize.height}px`,
+            cursor: isDragging ? 'grabbing' : 'default'
           }}
+          onMouseDown={handleMouseDown}
         >
-          <div className="relative w-full h-full bg-black">
+          {/* Drag Handle */}
+          <div className="video-drag-handle absolute top-0 left-0 right-0 h-10 bg-gradient-to-b from-black/80 to-transparent z-10 cursor-grab active:cursor-grabbing flex items-center justify-between px-3">
+            <div className="flex items-center gap-2 text-white text-sm font-medium">
+              <Video className="h-4 w-4" />
+              <span>Match Video</span>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="bg-white/10 hover:bg-white/20 text-white h-7 w-7 p-0 border-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowVideo(false);
+                }}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Video Content */}
+          <div className="relative w-full h-full">
             <YouTubePlayer
               videoId={videoId}
               matchId=""
               isAdmin={false}
             />
-            
-            {/* Video Controls Overlay */}
-            <div className="absolute top-2 right-2 flex gap-2">
+          </div>
+
+          {/* Resize Handle */}
+          <div 
+            className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize group"
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              setIsResizing(true);
+            }}
+          >
+            <div className="absolute bottom-1 right-1 w-4 h-4 border-r-2 border-b-2 border-white/50 group-hover:border-white transition-colors"></div>
+          </div>
+        </div>
+      )}
+
+      {/* Video Overlay Mode - Fixed Background */}
+      {videoUrl && videoId && isOverlayMode && (
+        <div className="fixed inset-0 z-40 bg-black">
+          <div className="absolute inset-0">
+            <YouTubePlayer
+              videoId={videoId}
+              matchId=""
+              isAdmin={false}
+            />
+          </div>
+          
+          {/* Overlay Mode Info Banner */}
+          <div className="absolute top-0 left-0 right-0 z-50 bg-purple-900/90 backdrop-blur-sm px-6 py-3 border-b border-purple-700">
+            <div className="flex items-center justify-between text-sm text-white">
+              <div className="flex items-center gap-3">
+                <Video className="h-5 w-5" />
+                <span className="font-semibold">Video Overlay Mode Active</span>
+                <span className="text-purple-200">- Events displayed over match video</span>
+              </div>
               <Button
                 size="sm"
-                variant="secondary"
-                className="bg-black/70 hover:bg-black/90 text-white"
-                onClick={() => setIsVideoExpanded(!isVideoExpanded)}
+                variant="ghost"
+                onClick={handleToggleOverlayMode}
+                className="text-white hover:text-purple-100 hover:bg-purple-800"
               >
-                {isVideoExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="bg-black/70 hover:bg-black/90 text-white"
-                onClick={() => setShowVideo(false)}
-              >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4 mr-1" />
+                Exit Overlay Mode
               </Button>
             </div>
           </div>
@@ -191,7 +290,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
       )}
 
       {/* Carte d'état de l'en-tête */}
-      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-300">
+      <Card className={`bg-gradient-to-r from-blue-50 to-purple-50 border-blue-300 ${isOverlayMode ? 'fixed top-20 left-0 right-0 z-50 mx-4' : ''}`}>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -200,15 +299,28 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
             </div>
             <div className="flex items-center gap-2">
               {videoUrl && videoId && (
-                <Button
-                  variant={showVideo ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setShowVideo(!showVideo)}
-                  className="flex items-center gap-2"
-                >
-                  <Video className="h-4 w-4" />
-                  {showVideo ? 'Masquer' : 'Afficher'} Vidéo
-                </Button>
+                <>
+                  <Button
+                    variant={isOverlayMode ? "default" : "outline"}
+                    size="sm"
+                    onClick={handleToggleOverlayMode}
+                    className="flex items-center gap-2"
+                  >
+                    <Layers className="h-4 w-4" />
+                    {isOverlayMode ? 'Quitter' : 'Mode'} Overlay
+                  </Button>
+                  {!isOverlayMode && (
+                    <Button
+                      variant={showVideo ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setShowVideo(!showVideo)}
+                      className="flex items-center gap-2"
+                    >
+                      <Video className="h-4 w-4" />
+                      {showVideo ? 'Masquer' : 'Afficher'} Vidéo
+                    </Button>
+                  )}
+                </>
               )}
               <Badge variant="outline" className="text-lg px-4 py-1">
                 {pendingEvents.length} en attente
@@ -285,7 +397,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
       </Card>
 
       {/* File d'attente des événements */}
-      <Card>
+      <Card className={isOverlayMode ? 'fixed top-80 left-4 right-4 z-50 max-h-[calc(100vh-22rem)] overflow-y-auto' : ''}>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-orange-600" />
@@ -467,38 +579,41 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
         </CardContent>
       </Card>
 
-      {/* Instructions */}
-      <Card className="bg-muted/50">
-        <CardContent className="p-4">
-          <h4 className="font-medium mb-2 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            Fonctionnement de la file d'attente :
-          </h4>
-          <ul className="text-sm space-y-1 text-muted-foreground">
-            <li>🔴 <strong>ROUGE (Urgent):</strong> Événements de moins de 5s - à enregistrer immédiatement !</li>
-            <li>🟡 <strong>JAUNE (Normal):</strong> Événements de 5-15s - à enregistrer dès que possible.</li>
-            <li>⚪ <strong>GRIS (Ancien):</strong> Événements de plus de 15s - peuvent s'effacer automatiquement après 30s.</li>
-            <li>• Les événements conservent leur horodatage original pour des analyses précises.</li>
-            <li>• Vous pouvez enregistrer les événements dans n'importe quel ordre.</li>
-            <li>• Plusieurs événements peuvent s'empiler ; traitez-les systématiquement.</li>
-            <li>• Utilisez "Effacer" pour ignorer les événements que vous n'avez pas pu observer correctement.</li>
-          </ul>
-        </CardContent>
-      </Card>
+      {/* Instructions - Hidden in overlay mode */}
+      {!isOverlayMode && (
+        <>
+          <Card className="bg-muted/50">
+            <CardContent className="p-4">
+              <h4 className="font-medium mb-2 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Fonctionnement de la file d'attente :
+              </h4>
+              <ul className="text-sm space-y-1 text-muted-foreground">
+                <li>🔴 <strong>ROUGE (Urgent):</strong> Événements de moins de 5s - à enregistrer immédiatement !</li>
+                <li>🟡 <strong>JAUNE (Normal):</strong> Événements de 5-15s - à enregistrer dès que possible.</li>
+                <li>⚪ <strong>GRIS (Ancien):</strong> Événements de plus de 15s - peuvent s'effacer automatiquement après 30s.</li>
+                <li>• Les événements conservent leur horodatage original pour des analyses précises.</li>
+                <li>• Vous pouvez enregistrer les événements dans n'importe quel ordre.</li>
+                <li>• Plusieurs événements peuvent s'empiler ; traitez-les systématiquement.</li>
+                <li>• Utilisez "Effacer" pour ignorer les événements que vous n'avez pas pu observer correctement.</li>
+              </ul>
+            </CardContent>
+          </Card>
 
-      {/* Aide sur les raccourcis clavier */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="p-4">
-           <h4 className="font-medium mb-2 flex items-center gap-2 text-blue-900">
-            <Keyboard className="h-5 w-5" />
-            Raccourcis Clavier Activés
-          </h4>
-          <p className="text-sm text-blue-800">
-            Utilisez votre clavier pour enregistrer des événements pour le joueur en haut de la file.
-            Les lettres sur les boutons correspondent aux touches du clavier (QWERTY - 26 touches disponibles).
-          </p>
-        </CardContent>
-      </Card>
+          <Card className="bg-blue-50 border-blue-200">
+            <CardContent className="p-4">
+              <h4 className="font-medium mb-2 flex items-center gap-2 text-blue-900">
+                <Keyboard className="h-5 w-5" />
+                Raccourcis Clavier Activés
+              </h4>
+              <p className="text-sm text-blue-800">
+                Utilisez votre clavier pour enregistrer des événements pour le joueur en haut de la file.
+                Les lettres sur les boutons correspondent aux touches du clavier (QWERTY - 26 touches disponibles).
+              </p>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 };
