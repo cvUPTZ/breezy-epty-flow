@@ -67,7 +67,10 @@ import BudgetTrackerConfig from '@/components/admin/BudgetTrackerConfig';
 import LineBasedTrackerAssignment from '@/components/admin/LineBasedTrackerAssignment';
 import UnifiedTrackerAssignment from '@/components/tracker/UnifiedTrackerAssignment';
 import { AssignmentLogsViewer } from '@/components/admin/AssignmentLogsViewer';
+<<<<<<< HEAD
 import QualityControlInterface from '@/pages/QualityControlInterface'; // adjust path as needed
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
 
 const sidebarItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -89,8 +92,11 @@ const sidebarItems = [
   { id: 'business', label: 'Business Plan', icon: Building2 },
   { id: 'budget', label: 'Budget Tracker', icon: Calculator },
   { id: 'video-analyzer', label: 'Video Analyzer', icon: Video },
+<<<<<<< HEAD
     { id: 'quality', label: 'Quality Control', icon: Shield }, // Add this line
 
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
 ];
 
 function AdminSidebar({ activeSection, setActiveSection }: { activeSection: string; setActiveSection: (section: string) => void }) {
@@ -577,6 +583,7 @@ const Admin: React.FC = () => {
 
       case 'budget':
         return <BudgetTrackerConfig />;
+<<<<<<< HEAD
  case 'quality':
       return (
         <Card>
@@ -594,6 +601,8 @@ const Admin: React.FC = () => {
           </CardContent>
         </Card>
       );
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
 
       default:
         return <div>Section not found</div>;

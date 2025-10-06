@@ -1,3 +1,4 @@
+// Hook for the 4-tracker match event system
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 
 export interface Player {

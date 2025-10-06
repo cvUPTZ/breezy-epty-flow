@@ -5,13 +5,20 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+<<<<<<< HEAD
 import { Input } from '@/components/ui/input';
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
 import { Users, UserPlus, Trash2, ChevronRight, Shield, Zap, Target, Loader2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { EVENT_TYPE_CATEGORIES } from '@/constants/eventTypes';
 
+<<<<<<< HEAD
 // Type definitions
+=======
+// Strict type definitions
+>>>>>>> remotes/origin/feature/four-tracker-system
 interface Player {
   id: number;
   jersey_number: number;
@@ -34,8 +41,12 @@ interface Assignment {
   tracker_email: string;
   tracker_type: 'player' | 'ball';
   player_ids: number[] | null;
+<<<<<<< HEAD
   assigned_event_types: string[];
   team_id: 'home' | 'away';
+=======
+  assigned_event_types: string[] | null;
+>>>>>>> remotes/origin/feature/four-tracker-system
 }
 
 interface UnifiedTrackerAssignmentProps {
@@ -51,7 +62,11 @@ interface UnifiedTrackerAssignmentProps {
 
 type TrackerType = 'specialized' | 'defence' | 'midfield' | 'attack';
 
+<<<<<<< HEAD
 // State management
+=======
+// State management with reducer
+>>>>>>> remotes/origin/feature/four-tracker-system
 interface TrackerAssignmentState {
   trackers: TrackerUser[];
   assignments: Assignment[];
@@ -59,7 +74,11 @@ interface TrackerAssignmentState {
   selectedPlayers: number[];
   selectedEventTypes: string[];
   selectedTrackerType: TrackerType;
+<<<<<<< HEAD
   assignmentRole: 'player' | 'ball';
+=======
+  assignmentRole: 'player' | 'ball'; // New role for assignment
+>>>>>>> remotes/origin/feature/four-tracker-system
   selectedTeam: 'home' | 'away';
   expandedCategories: Set<string>;
   assignmentVideoUrl: string;
@@ -67,7 +86,10 @@ interface TrackerAssignmentState {
   creatingAssignment: boolean;
   deletingAssignment: string | null;
   error: string | null;
+<<<<<<< HEAD
   autoSelectedTrackers: string[];
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
 }
 
 type AssignmentAction =
@@ -85,8 +107,12 @@ type AssignmentAction =
   | { type: 'SET_VIDEO_URL'; payload: string }
   | { type: 'SET_CREATING'; payload: boolean }
   | { type: 'SET_DELETING'; payload: string | null }
+<<<<<<< HEAD
   | { type: 'RESET_FORM' }
   | { type: 'SET_AUTO_SELECTED_TRACKERS'; payload: string[] };
+=======
+  | { type: 'RESET_FORM' };
+>>>>>>> remotes/origin/feature/four-tracker-system
 
 const initialState = (videoUrl: string = ''): TrackerAssignmentState => ({
   trackers: [],
@@ -103,7 +129,10 @@ const initialState = (videoUrl: string = ''): TrackerAssignmentState => ({
   creatingAssignment: false,
   deletingAssignment: null,
   error: null,
+<<<<<<< HEAD
   autoSelectedTrackers: [],
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
 });
 
 function assignmentReducer(state: TrackerAssignmentState, action: AssignmentAction): TrackerAssignmentState {
@@ -125,7 +154,11 @@ function assignmentReducer(state: TrackerAssignmentState, action: AssignmentActi
     case 'SET_TRACKER_TYPE':
       return { ...state, selectedTrackerType: action.payload };
     case 'SET_ASSIGNMENT_ROLE':
+<<<<<<< HEAD
       return { ...state, assignmentRole: action.payload, selectedPlayers: [] };
+=======
+      return { ...state, assignmentRole: action.payload };
+>>>>>>> remotes/origin/feature/four-tracker-system
     case 'SET_TEAM':
       return { ...state, selectedTeam: action.payload, selectedPlayers: [] };
     case 'TOGGLE_CATEGORY': {
@@ -149,13 +182,20 @@ function assignmentReducer(state: TrackerAssignmentState, action: AssignmentActi
         selectedTrackerType: 'specialized',
         assignmentRole: 'player',
       };
+<<<<<<< HEAD
     case 'SET_AUTO_SELECTED_TRACKERS':
       return { ...state, autoSelectedTrackers: action.payload.slice(0, 3) };
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
     default:
       return state;
   }
 }
 
+<<<<<<< HEAD
+=======
+// Configuration for tracker types
+>>>>>>> remotes/origin/feature/four-tracker-system
 const trackerTypeConfig = {
   specialized: {
     icon: Users,
@@ -183,6 +223,7 @@ const trackerTypeConfig = {
   }
 };
 
+<<<<<<< HEAD
 // Validate YouTube URL
 const isValidYouTubeUrl = (url: string): boolean => {
   if (!url.trim()) return true; // Empty is valid (means live tracking)
@@ -190,6 +231,8 @@ const isValidYouTubeUrl = (url: string): boolean => {
   return youtubeRegex.test(url);
 };
 
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
 const processAssignments = (rawAssignments: any[]): Assignment[] => {
   try {
     return rawAssignments.map(assignment => ({
@@ -199,8 +242,12 @@ const processAssignments = (rawAssignments: any[]): Assignment[] => {
       tracker_email: assignment.profiles?.email || 'Unknown',
       tracker_type: assignment.tracker_type,
       player_ids: assignment.assigned_player_ids,
+<<<<<<< HEAD
       assigned_event_types: assignment.assigned_event_types || [],
       team_id: assignment.player_team_id || 'home',
+=======
+      assigned_event_types: null, // Column no longer exists
+>>>>>>> remotes/origin/feature/four-tracker-system
     }));
   } catch (error) {
     console.error('Error processing assignments:', error);
@@ -220,6 +267,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
 }) => {
   const { toast } = useToast();
   const [state, dispatch] = useReducer(assignmentReducer, initialState(videoUrl));
+<<<<<<< HEAD
 
   const mountedRef = useRef(true);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -240,6 +288,28 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     }
     if (assignments.length > 0) {
       dispatch({ type: 'SET_ASSIGNMENTS', payload: assignments });
+=======
+
+  // Refs for cleanup and abort control
+  const mountedRef = useRef(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const operationsRef = useRef<Set<string>>(new Set());
+  const hasFetchedTrackers = useRef(false);
+  const hasFetchedAssignments = useRef(false);
+
+  // Memoized values
+  const allPlayers = useMemo(() => [...homeTeamPlayers, ...awayTeamPlayers], [homeTeamPlayers, awayTeamPlayers]);
+
+  // Initialize state from props
+  useEffect(() => {
+    if (trackerUsers.length > 0) {
+      dispatch({ type: 'SET_TRACKERS', payload: trackerUsers });
+      hasFetchedTrackers.current = true;
+    }
+    if (assignments.length > 0) {
+      dispatch({ type: 'SET_ASSIGNMENTS', payload: assignments });
+      hasFetchedAssignments.current = true;
+>>>>>>> remotes/origin/feature/four-tracker-system
     }
   }, [trackerUsers, assignments]);
 
@@ -251,6 +321,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     };
   }, []);
 
+<<<<<<< HEAD
   const fetchTrackers = useCallback(async () => {
     if (fetchingTrackers.current) return null;
     fetchingTrackers.current = true;
@@ -377,14 +448,138 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       fetchAssignments();
     }
   }, [matchId, assignments.length, fetchAssignments]);
+=======
+  // Safe async operation wrapper
+  const safeAsync = useCallback(async <T,>(
+    operation: () => Promise<T>,
+    operationKey: string
+  ): Promise<T | null> => {
+    if (operationsRef.current.has(operationKey)) {
+      console.warn(`Operation ${operationKey} already in progress`);
+      return null;
+    }
+
+    operationsRef.current.add(operationKey);
+
+    try {
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = new AbortController();
+
+      const result = await operation();
+      return mountedRef.current ? result : null;
+    } catch (error: any) {
+      if (error.name !== 'AbortError' && mountedRef.current) {
+        console.error(`Error in ${operationKey}:`, error);
+        dispatch({ type: 'SET_ERROR', payload: error.message || 'Operation failed' });
+      }
+      return null;
+    } finally {
+      operationsRef.current.delete(operationKey);
+      if (mountedRef.current) {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
+    }
+  }, []);
+
+  const fetchTrackers = useCallback(async () => {
+    dispatch({ type: 'SET_LOADING', payload: true });
+
+    const { data, error } = await supabase.functions.invoke('get-tracker-users');
+
+    if (error) throw error;
+
+    dispatch({ type: 'SET_TRACKERS', payload: data || [] });
+    dispatch({ type: 'SET_LOADING', payload: false });
+    return data;
+  }, []);
+
+  const fetchAssignments = useCallback(async () => {
+    if (!matchId) return null;
+
+    dispatch({ type: 'SET_LOADING', payload: true });
+
+    // Step 1: Fetch assignments
+    const { data: assignmentsData, error: assignmentsError } = await supabase
+      .from('match_tracker_assignments')
+      .select('*')
+      .eq('match_id', matchId);
+
+    if (assignmentsError) {
+      dispatch({ type: 'SET_LOADING', payload: false });
+      throw assignmentsError;
+    }
+
+    if (!assignmentsData || assignmentsData.length === 0) {
+      dispatch({ type: 'SET_ASSIGNMENTS', payload: [] });
+      dispatch({ type: 'SET_LOADING', payload: false });
+      onAssignmentsChange?.([]);
+      return [];
+    }
+
+    // Step 2: Fetch profiles for the assigned trackers
+    const trackerUserIds = [...new Set(assignmentsData.map(a => a.tracker_user_id))];
+
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .in('id', trackerUserIds);
+
+    if (profilesError) {
+      console.warn('Failed to fetch profiles:', profilesError);
+    }
+
+    // Step 3: Combine and process the data
+    const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+    const enrichedAssignments = assignmentsData.map(assignment => ({
+      ...assignment,
+      profiles: profilesMap.get(assignment.tracker_user_id) || null
+    }));
+
+    const processedAssignments = processAssignments(enrichedAssignments);
+    dispatch({ type: 'SET_ASSIGNMENTS', payload: processedAssignments });
+    dispatch({ type: 'SET_LOADING', payload: false });
+    onAssignmentsChange?.(processedAssignments);
+
+    return processedAssignments;
+  }, [matchId, onAssignmentsChange]);
+
+  // Initialize data - use refs to track if we've already fetched
+  useEffect(() => {
+    if (trackerUsers.length === 0 && !hasFetchedTrackers.current) {
+      hasFetchedTrackers.current = true;
+      fetchTrackers().catch(err => {
+        console.error('Failed to fetch trackers:', err);
+        hasFetchedTrackers.current = false;
+      });
+    }
+  }, [trackerUsers.length]);
+
+  useEffect(() => {
+    if (matchId && assignments.length === 0 && !hasFetchedAssignments.current) {
+      hasFetchedAssignments.current = true;
+      fetchAssignments().catch(err => {
+        console.error('Failed to fetch assignments:', err);
+        hasFetchedAssignments.current = false;
+      });
+    }
+  }, [matchId, assignments.length]);
+>>>>>>> remotes/origin/feature/four-tracker-system
 
   const getLinePlayers = useCallback((trackerType: TrackerType, team?: 'home' | 'away') => {
     if (trackerType === 'specialized') {
       return allPlayers.filter(player => state.selectedPlayers.includes(player.id));
     }
+<<<<<<< HEAD
     const playersToFilter = team ? 
       (team === 'home' ? homeTeamPlayers : awayTeamPlayers) : 
       allPlayers;
+=======
+
+    const playersToFilter = team ?
+      (team === 'home' ? homeTeamPlayers : awayTeamPlayers) :
+      allPlayers;
+
+>>>>>>> remotes/origin/feature/four-tracker-system
     return playersToFilter.filter(player => {
       const position = player.position?.toLowerCase() || '';
       switch (trackerType) {
@@ -403,6 +598,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     });
   }, [allPlayers, homeTeamPlayers, awayTeamPlayers, state.selectedPlayers]);
 
+<<<<<<< HEAD
   const autoDistributePlayers = useCallback((
     team: 'home' | 'away',
     numTrackers: number = 3
@@ -470,11 +666,17 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
         .eq('tracker_user_id', assignment.tracker_user_id);
     }
     
+=======
+  const saveAssignmentToDB = useCallback(async (assignment: Omit<Assignment, 'id' | 'tracker_name' | 'tracker_email'>) => {
+    if (!matchId) return null;
+
+>>>>>>> remotes/origin/feature/four-tracker-system
     const recordToInsert = {
       match_id: matchId,
       tracker_user_id: assignment.tracker_user_id,
       tracker_type: assignment.tracker_type,
       assigned_player_ids: assignment.player_ids,
+<<<<<<< HEAD
       assigned_event_types: assignment.assigned_event_types,
       player_team_id: teamId
     };
@@ -494,6 +696,18 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     }
     
     return data[0].id;
+=======
+    };
+
+    const { data, error } = await supabase
+      .from('match_tracker_assignments')
+      .insert([recordToInsert])
+      .select('id')
+      .single();
+
+    if (error) throw error;
+    return data?.id || null;
+>>>>>>> remotes/origin/feature/four-tracker-system
   }, [matchId]);
 
   const sendNotificationToTracker = useCallback(async (trackerId: string, matchId: string, videoUrl?: string) => {
@@ -503,6 +717,10 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       const notificationMessage = videoUrl 
         ? 'You have been assigned to track video analysis.'
         : 'You have been assigned to track a new match.';
+<<<<<<< HEAD
+=======
+
+>>>>>>> remotes/origin/feature/four-tracker-system
       const { error } = await supabase.from('notifications').insert({
         user_id: trackerId,
         match_id: matchId,
@@ -516,6 +734,10 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
         },
         is_read: false,
       });
+<<<<<<< HEAD
+=======
+
+>>>>>>> remotes/origin/feature/four-tracker-system
       if (error) {
         console.warn('Failed to send notification:', error);
       }
@@ -524,6 +746,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     }
   }, []);
 
+<<<<<<< HEAD
   const handleAutoAssignTrackers = useCallback(async () => {
     const selectedTrackers = state.autoSelectedTrackers
       .map(id => state.trackers.find(t => t.id === id))
@@ -631,6 +854,9 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     allEventTypes
   ]);
 
+=======
+  // Event handlers
+>>>>>>> remotes/origin/feature/four-tracker-system
   const handleEventTypeToggle = useCallback((eventType: string) => {
     const newEventTypes = state.selectedEventTypes.includes(eventType)
       ? state.selectedEventTypes.filter(type => type !== eventType)
@@ -654,7 +880,11 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       });
       return;
     }
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> remotes/origin/feature/four-tracker-system
     if (state.assignmentRole === 'player' && state.selectedPlayers.length === 0) {
       toast({
         title: "Validation Error",
@@ -664,6 +894,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       return;
     }
 
+<<<<<<< HEAD
     // Validate video URL if provided
     if (state.assignmentVideoUrl.trim() && !isValidYouTubeUrl(state.assignmentVideoUrl)) {
       toast({
@@ -688,11 +919,17 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     dispatch({ type: 'SET_CREATING', payload: true });
 
     try {
+=======
+    return safeAsync(async () => {
+      dispatch({ type: 'SET_CREATING', payload: true });
+
+>>>>>>> remotes/origin/feature/four-tracker-system
       const trackerUser = state.trackers.find(t => t.id === state.selectedTracker);
       if (!trackerUser) {
         throw new Error('Selected tracker not found');
       }
 
+<<<<<<< HEAD
       const eventTypes = state.selectedEventTypes.length > 0 
         ? state.selectedEventTypes 
         : allEventTypes;
@@ -712,6 +949,18 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
       if (realAssignmentId && matchId) {
         const finalVideoUrl = state.assignmentVideoUrl.trim() || undefined;
         await sendNotificationToTracker(state.selectedTracker, matchId, finalVideoUrl);
+=======
+      const assignmentToSave = {
+        tracker_user_id: state.selectedTracker,
+        tracker_type: state.assignmentRole,
+        player_ids: state.assignmentRole === 'player' ? state.selectedPlayers : null,
+      };
+
+      const realAssignmentId = matchId ? await saveAssignmentToDB(assignmentToSave) : `temp-${Date.now()}`;
+      if (realAssignmentId && matchId) {
+         const finalVideoUrl = state.assignmentVideoUrl.trim() || undefined;
+         await sendNotificationToTracker(state.selectedTracker, matchId, finalVideoUrl);
+>>>>>>> remotes/origin/feature/four-tracker-system
       }
 
       const finalAssignment: Assignment = {
@@ -720,20 +969,30 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
         tracker_name: trackerUser.full_name || trackerUser.email || 'Unknown',
         tracker_email: trackerUser.email || 'Unknown',
         tracker_type: state.assignmentRole,
+<<<<<<< HEAD
         player_ids: playerIds,
         assigned_event_types: eventTypes,
         team_id: teamId
+=======
+        player_ids: assignmentToSave.player_ids,
+        assigned_event_types: null,
+>>>>>>> remotes/origin/feature/four-tracker-system
       };
 
       const updatedAssignments = [...state.assignments, finalAssignment];
       dispatch({ type: 'SET_ASSIGNMENTS', payload: updatedAssignments });
       onAssignmentsChange?.(updatedAssignments);
       dispatch({ type: 'RESET_FORM' });
+<<<<<<< HEAD
+=======
+      dispatch({ type: 'SET_CREATING', payload: false });
+>>>>>>> remotes/origin/feature/four-tracker-system
 
       toast({
         title: "Success",
         description: "Assignment created successfully"
       });
+<<<<<<< HEAD
     } catch (error: any) {
       console.error('Create assignment error:', error);
       toast({
@@ -744,10 +1003,16 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     } finally {
       dispatch({ type: 'SET_CREATING', payload: false });
     }
+=======
+
+      return finalAssignment;
+    }, 'createAssignment');
+>>>>>>> remotes/origin/feature/four-tracker-system
   }, [
     state.selectedTracker,
     state.assignmentRole,
     state.selectedPlayers,
+<<<<<<< HEAD
     state.selectedTeam,
     state.selectedEventTypes,
     state.trackers,
@@ -755,10 +1020,16 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     state.assignmentVideoUrl,
     homeTeamPlayers,
     awayTeamPlayers,
+=======
+    state.trackers,
+    state.assignments,
+    state.assignmentVideoUrl,
+>>>>>>> remotes/origin/feature/four-tracker-system
     saveAssignmentToDB,
     sendNotificationToTracker,
     matchId,
     onAssignmentsChange,
+<<<<<<< HEAD
     toast,
     allEventTypes
   ]);
@@ -777,23 +1048,47 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     dispatch({ type: 'SET_DELETING', payload: assignmentId });
 
     try {
+=======
+    safeAsync,
+    toast
+  ]);
+
+  const handleDeleteAssignment = useCallback(async (assignmentId: string) => {
+    return safeAsync(async () => {
+      dispatch({ type: 'SET_DELETING', payload: assignmentId });
+
+      const assignment = state.assignments.find(a => a.id === assignmentId);
+      if (!assignment) {
+        throw new Error('Assignment not found');
+      }
+
+>>>>>>> remotes/origin/feature/four-tracker-system
       if (matchId && !assignmentId.startsWith('temp-')) {
         const { error } = await supabase
           .from('match_tracker_assignments')
           .delete()
           .eq('id', assignmentId);
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> remotes/origin/feature/four-tracker-system
         if (error) throw error;
       }
 
       const updatedAssignments = state.assignments.filter(a => a.id !== assignmentId);
       dispatch({ type: 'SET_ASSIGNMENTS', payload: updatedAssignments });
+<<<<<<< HEAD
+=======
+      dispatch({ type: 'SET_DELETING', payload: null });
+>>>>>>> remotes/origin/feature/four-tracker-system
       onAssignmentsChange?.(updatedAssignments);
 
       toast({
         title: "Success",
         description: "Assignment deleted successfully"
       });
+<<<<<<< HEAD
     } catch (error: any) {
       console.error('Delete assignment error:', error);
       toast({
@@ -806,6 +1101,14 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     }
   }, [state.assignments, matchId, onAssignmentsChange, toast]);
 
+=======
+
+      return true;
+    }, 'deleteAssignment');
+  }, [state.assignments, matchId, onAssignmentsChange, safeAsync, toast]);
+
+  // Render functions
+>>>>>>> remotes/origin/feature/four-tracker-system
   const renderEventTypeCategories = useCallback(() => (
     <div className="space-y-3">
       {EVENT_TYPE_CATEGORIES.map(category => (
@@ -932,6 +1235,11 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
         <Button 
           onClick={() => {
             dispatch({ type: 'SET_ERROR', payload: null });
+<<<<<<< HEAD
+=======
+            hasFetchedTrackers.current = false;
+            hasFetchedAssignments.current = false;
+>>>>>>> remotes/origin/feature/four-tracker-system
             if (trackerUsers.length === 0) fetchTrackers();
             if (matchId && assignments.length === 0) fetchAssignments();
           }}
@@ -944,10 +1252,13 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     );
   }
 
+<<<<<<< HEAD
   const availableTrackers = state.trackers.filter(
     t => !state.assignments.some(a => a.tracker_user_id === t.id)
   );
 
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
   return (
     <div className="space-y-6">
       {/* Current Assignments */}
@@ -962,6 +1273,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
           <CardContent>
             <div className="space-y-4">
               {state.assignments.map(assignment => {
+<<<<<<< HEAD
                 const assignedPlayers = (assignment.player_ids || [])
                   .map(playerId => allPlayers.find(player => player.id === playerId))
                   .filter((player): player is Player => Boolean(player));
@@ -969,12 +1281,19 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                 // Filter players by assignment's team_id
                 const teamFilteredPlayers = assignedPlayers.filter(p => p.team === assignment.team_id);
                 
+=======
+                const assignedPlayers = assignment.player_ids
+                  .map(playerId => allPlayers.find(player => player.id === playerId))
+                  .filter((player): player is Player => Boolean(player));
+
+>>>>>>> remotes/origin/feature/four-tracker-system
                 return (
                   <div key={assignment.id} className="p-4 bg-gray-50 rounded-lg space-y-3">
                     <div className="flex items-start justify-between">
                       <div>
                         <span className="font-medium text-lg">{assignment.tracker_name}</span>
                         <div className="text-sm text-gray-600">{assignment.tracker_email}</div>
+<<<<<<< HEAD
                         <div className="flex items-center gap-2 mt-1">
                           <Badge variant={assignment.tracker_type === 'ball' ? 'destructive' : 'default'}>
                             {assignment.tracker_type === 'ball' ? 'Ball Tracker' : 'Player Tracker'}
@@ -983,6 +1302,8 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                             {assignment.team_id} Team
                           </Badge>
                         </div>
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
                       </div>
                       <Button
                         variant="outline"
@@ -999,12 +1320,22 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                         )}
                       </Button>
                     </div>
+<<<<<<< HEAD
                     <div>
                       <label className="text-sm font-medium text-gray-700 block mb-2">
                         Assigned Players ({teamFilteredPlayers.length})
                       </label>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-32 overflow-y-auto">
                         {teamFilteredPlayers.map(player => (
+=======
+
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 block mb-2">
+                        Assigned Players ({assignedPlayers.length})
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-32 overflow-y-auto">
+                        {assignedPlayers.map(player => (
+>>>>>>> remotes/origin/feature/four-tracker-system
                           <div
                             key={player.id}
                             className="p-2 bg-white border border-gray-200 rounded text-center"
@@ -1018,16 +1349,30 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                             {player.position && (
                               <div className="text-xs text-gray-500">{player.position}</div>
                             )}
+<<<<<<< HEAD
+=======
+                            <div className="text-xs text-gray-400">
+                              {player.team === 'home' ? 'Home' : 'Away'}
+                            </div>
+>>>>>>> remotes/origin/feature/four-tracker-system
                           </div>
                         ))}
                       </div>
                     </div>
+<<<<<<< HEAD
+=======
+
+>>>>>>> remotes/origin/feature/four-tracker-system
                     <div>
                       <label className="text-sm font-medium text-gray-700 block mb-2">
                         Event Types ({assignment.assigned_event_types.length})
                       </label>
                       <div className="flex flex-wrap gap-1">
+<<<<<<< HEAD
                         {assignment.assigned_event_types.slice(0, 6).map((eventType) => (
+=======
+                        {assignment.assigned_event_types.slice(0, 6).map(eventType => (
+>>>>>>> remotes/origin/feature/four-tracker-system
                           <Badge key={eventType} variant="outline" className="text-xs">
                             {eventType}
                           </Badge>
@@ -1056,6 +1401,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+<<<<<<< HEAD
           {/* AUTO-ASSIGN SECTION */}
           <div className="pt-2 border-t">
             <h3 className="text-sm font-medium mb-3">Quick Setup: Auto-Assign 3 Trackers</h3>
@@ -1218,22 +1564,33 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
           </div>
 
           {/* Manual Assignment Tabs */}
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
           <Tabs defaultValue="by-player" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="by-player">By Player</TabsTrigger>
               <TabsTrigger value="by-line">By Line</TabsTrigger>
             </TabsList>
+<<<<<<< HEAD
+=======
+
+>>>>>>> remotes/origin/feature/four-tracker-system
             <TabsContent value="by-player" className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="videoUrl" className="text-sm font-medium text-gray-700">
                   YouTube Video URL (Optional)
                 </label>
+<<<<<<< HEAD
                 <Input
+=======
+                <input
+>>>>>>> remotes/origin/feature/four-tracker-system
                   id="videoUrl"
                   type="text"
                   value={state.assignmentVideoUrl}
                   onChange={(e) => dispatch({ type: 'SET_VIDEO_URL', payload: e.target.value })}
                   placeholder="e.g., https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+<<<<<<< HEAD
                   className={`w-full ${
                     state.assignmentVideoUrl.trim() && !isValidYouTubeUrl(state.assignmentVideoUrl)
                       ? 'border-red-500'
@@ -1249,12 +1606,23 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   )}
                 </div>
               </div>
+=======
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  aria-describedby="videoUrl-description"
+                />
+                <div id="videoUrl-description" className="text-xs text-gray-500">
+                  Leave empty for live match tracking
+                </div>
+              </div>
+
+>>>>>>> remotes/origin/feature/four-tracker-system
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Select Tracker</label>
                   <Select
                     value={state.selectedTracker}
                     onValueChange={(value) => dispatch({ type: 'SET_SELECTED_TRACKER', payload: value })}
+<<<<<<< HEAD
                     disabled={state.trackers.length === 0}
                   >
                     <SelectTrigger aria-label="Select tracker" className="bg-background">
@@ -1279,6 +1647,20 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                       No tracker users available. Please contact an admin.
                     </p>
                   )}
+=======
+                  >
+                    <SelectTrigger aria-label="Select tracker">
+                      <SelectValue placeholder="Choose a tracker" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {state.trackers.map(tracker => (
+                        <SelectItem key={tracker.id} value={tracker.id}>
+                          {tracker.full_name || tracker.email || 'Unknown'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+>>>>>>> remotes/origin/feature/four-tracker-system
                 </div>
                 <div>
                   <label className="text-sm font-medium">Assignment Role</label>
@@ -1296,6 +1678,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   </Select>
                 </div>
               </div>
+<<<<<<< HEAD
               <div>
                 <label className="text-sm font-medium mb-2 block">Select Team</label>
                 <Select
@@ -1318,11 +1701,41 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
               {state.assignmentRole === 'player' && (
                 <>
                   <div>
+=======
+
+              {state.assignmentRole === 'player' && (
+                <>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Select Team</label>
+                    <Select
+                      value={state.selectedTeam}
+                      onValueChange={(value: 'home' | 'away') => dispatch({ type: 'SET_TEAM', payload: value })}
+                    >
+                      <SelectTrigger aria-label="Select team">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="home">
+                          Home Team ({homeTeamPlayers.length} players)
+                        </SelectItem>
+                        <SelectItem value="away">
+                          Away Team ({awayTeamPlayers.length} players)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+>>>>>>> remotes/origin/feature/four-tracker-system
                     <label className="text-sm font-medium mb-2 block">
                       Players ({state.selectedPlayers.length} selected)
                     </label>
                     {renderPlayerGrid(state.selectedTeam === 'home' ? homeTeamPlayers : awayTeamPlayers)}
                   </div>
+<<<<<<< HEAD
+=======
+
+>>>>>>> remotes/origin/feature/four-tracker-system
                   <div>
                     <label className="text-sm font-medium mb-2 block">
                       Event Types ({state.selectedEventTypes.length} selected)
@@ -1331,6 +1744,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   </div>
                 </>
               )}
+<<<<<<< HEAD
               {state.assignmentRole === 'ball' && (
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
                   <p className="text-sm text-amber-800">
@@ -1347,6 +1761,12 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   (state.assignmentRole === 'player' && state.selectedPlayers.length === 0) ||
                   (state.assignmentVideoUrl.trim() && !isValidYouTubeUrl(state.assignmentVideoUrl))
                 )}
+=======
+
+              <Button
+                onClick={handleCreateAssignment}
+                disabled={state.creatingAssignment || !state.selectedTracker || state.selectedEventTypes.length === 0 || state.selectedPlayers.length === 0}
+>>>>>>> remotes/origin/feature/four-tracker-system
                 className="w-full"
                 aria-label="Create assignment"
               >
@@ -1360,17 +1780,28 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                 )}
               </Button>
             </TabsContent>
+<<<<<<< HEAD
             <TabsContent value="by-line" className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="videoUrl-line" className="text-sm font-medium text-gray-700">
                   YouTube Video URL (Optional)
                 </label>
                 <Input
+=======
+
+            <TabsContent value="by-line" className="space-y-4">
+               <div className="space-y-2">
+                <label htmlFor="videoUrl-line" className="text-sm font-medium text-gray-700">
+                  YouTube Video URL (Optional)
+                </label>
+                <input
+>>>>>>> remotes/origin/feature/four-tracker-system
                   id="videoUrl-line"
                   type="text"
                   value={state.assignmentVideoUrl}
                   onChange={(e) => dispatch({ type: 'SET_VIDEO_URL', payload: e.target.value })}
                   placeholder="e.g., https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+<<<<<<< HEAD
                   className={`w-full ${
                     state.assignmentVideoUrl.trim() && !isValidYouTubeUrl(state.assignmentVideoUrl)
                       ? 'border-red-500'
@@ -1386,6 +1817,16 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   )}
                 </div>
               </div>
+=======
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  aria-describedby="videoUrl-line-description"
+                />
+                <div id="videoUrl-line-description" className="text-xs text-gray-500">
+                  Leave empty for live match tracking
+                </div>
+              </div>
+
+>>>>>>> remotes/origin/feature/four-tracker-system
               <div>
                 <label className="text-sm font-medium">Select Tracker</label>
                 <Select 
@@ -1404,6 +1845,10 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   </SelectContent>
                 </Select>
               </div>
+<<<<<<< HEAD
+=======
+
+>>>>>>> remotes/origin/feature/four-tracker-system
               <div>
                 <label className="text-sm font-medium mb-2 block">Select Team</label>
                 <Select 
@@ -1423,6 +1868,10 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   </SelectContent>
                 </Select>
               </div>
+<<<<<<< HEAD
+=======
+
+>>>>>>> remotes/origin/feature/four-tracker-system
               <div>
                 <label className="text-sm font-medium mb-2 block">Select Tracker Type</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1430,6 +1879,10 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                     const config = trackerTypeConfig[type];
                     const Icon = config.icon;
                     const linePlayers = getLinePlayers(type, state.selectedTeam);
+<<<<<<< HEAD
+=======
+
+>>>>>>> remotes/origin/feature/four-tracker-system
                     return (
                       <div
                         key={type}
@@ -1467,12 +1920,17 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   })}
                 </div>
               </div>
+<<<<<<< HEAD
+=======
+
+>>>>>>> remotes/origin/feature/four-tracker-system
               <div>
                 <label className="text-sm font-medium mb-2 block">
                   Event Types ({state.selectedEventTypes.length} selected)
                 </label>
                 {renderEventTypeCategories()}
               </div>
+<<<<<<< HEAD
               <Button
                 onClick={handleCreateAssignment}
                 disabled={Boolean(
@@ -1481,6 +1939,12 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   state.selectedEventTypes.length === 0 ||
                   (state.assignmentVideoUrl.trim() && !isValidYouTubeUrl(state.assignmentVideoUrl))
                 )}
+=======
+
+              <Button
+                onClick={handleCreateAssignment}
+                disabled={state.creatingAssignment || !state.selectedTracker || state.selectedEventTypes.length === 0}
+>>>>>>> remotes/origin/feature/four-tracker-system
                 className="w-full"
                 aria-label="Create line-based assignment"
               >

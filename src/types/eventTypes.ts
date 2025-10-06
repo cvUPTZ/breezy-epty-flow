@@ -9,6 +9,7 @@ export type EventType =
   | 'offensivePass' | 'contact' | 'sixMeterViolation' | 'postHit'
   | 'aerialDuelWon' | 'aerialDuelLost' | 'decisivePass' | 'successfulCross'
   | 'successfulDribble' | 'longPass' | 'forwardPass' | 'backwardPass'
+<<<<<<< HEAD
   | 'lateralPass'
   // New goalkeeper events
   | 'punch' | 'claim' | 'sweeperAction'
@@ -26,6 +27,9 @@ export type EventType =
   | 'progressivePass' | 'progressiveCarry' | 'passIntoFinalThird'
   | 'passIntoPenaltyArea' | 'shotCreatingAction' | 'goalKickShort'
   | 'goalKickLong' | 'offsideTrap';
+=======
+  | 'lateralPass';
+>>>>>>> remotes/origin/feature/four-tracker-system
 
 export interface EventTypeDefinition {
   key: EventType;
@@ -69,7 +73,10 @@ export const EVENT_TYPE_DEFINITIONS: Record<EventType, EventTypeDefinition> = {
   yellowCard: { key: 'yellowCard', label: 'Yellow Card', color: '#F59E0B', description: 'Yellow card', icon: '🟨', keyboardShortcut: 'y' },
   redCard: { key: 'redCard', label: 'Red Card', color: '#EF4444', description: 'Red card', icon: '🟥', keyboardShortcut: 'r' },
   offside: { key: 'offside', label: 'Offside', color: '#F59E0B', description: 'Offside violation', icon: '🚩', keyboardShortcut: 'o' },
+<<<<<<< HEAD
   handball: { key: 'handball', label: 'Handball', color: '#DC2626', description: 'Handball violation', icon: '🖐️' },
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
 
   // Goals & Assists
   goal: { key: 'goal', label: 'Goal', color: '#10B981', description: 'Goal scored', icon: '⚽', keyboardShortcut: 'g' },
@@ -110,6 +117,7 @@ export const EVENT_TYPE_DEFINITIONS: Record<EventType, EventTypeDefinition> = {
   contact: { key: 'contact', label: 'Contact', color: '#F5A623', description: 'Player contact event', icon: '💥' },
   sixMeterViolation: { key: 'sixMeterViolation', label: '6 Meter Violation', color: '#BD10E0', description: '6 Meter Violation', icon: '📏' },
   postHit: { key: 'postHit', label: 'Post Hit', color: '#9013FE', description: 'Ball hit the post', icon: '🥅' },
+<<<<<<< HEAD
 
   // NEW: Goalkeeper Specific
   punch: { key: 'punch', label: 'Punch', color: '#059669', description: 'Goalkeeper punches ball away', icon: '👊' },
@@ -152,6 +160,8 @@ export const EVENT_TYPE_DEFINITIONS: Record<EventType, EventTypeDefinition> = {
   goalKickShort: { key: 'goalKickShort', label: 'Goal Kick Short', color: '#0EA5E9', description: 'Short goal kick', icon: '👢📏' },
   goalKickLong: { key: 'goalKickLong', label: 'Goal Kick Long', color: '#0284C7', description: 'Long goal kick', icon: '👢🚀' },
   offsideTrap: { key: 'offsideTrap', label: 'Offside Trap', color: '#F97316', description: 'Deliberate offside trap', icon: '🪤' },
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
 };
 
 export const EVENT_TYPE_CATEGORIES: EventCategory[] = [
@@ -195,7 +205,10 @@ export const EVENT_TYPE_CATEGORIES: EventCategory[] = [
       EVENT_TYPE_DEFINITIONS.yellowCard,
       EVENT_TYPE_DEFINITIONS.redCard,
       EVENT_TYPE_DEFINITIONS.offside,
+<<<<<<< HEAD
       EVENT_TYPE_DEFINITIONS.handball,
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
     ]
   },
   {
@@ -280,6 +293,7 @@ export const EVENT_TYPE_CATEGORIES: EventCategory[] = [
       EVENT_TYPE_DEFINITIONS.postHit,
     ]
   },
+<<<<<<< HEAD
   {
     key: 'goalkeeperActions',
     label: 'Goalkeeper Actions',
@@ -358,6 +372,8 @@ export const EVENT_TYPE_CATEGORIES: EventCategory[] = [
       EVENT_TYPE_DEFINITIONS.offsideTrap,
     ]
   },
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
 ];
 
 // Derived constants for backward compatibility and utility

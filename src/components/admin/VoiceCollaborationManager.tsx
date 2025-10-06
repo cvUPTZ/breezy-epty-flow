@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> remotes/origin/feature/four-tracker-system
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,18 +10,30 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+<<<<<<< HEAD
 import { Mic, MicOff, Users, Settings, Phone, PhoneOff, Loader2, AlertTriangle } from 'lucide-react';
+=======
+import { Mic, MicOff, Users, Settings, Phone, PhoneOff } from 'lucide-react';
+>>>>>>> remotes/origin/feature/four-tracker-system
 
 interface VoiceRoom {
   id: string;
   name: string;
   description?: string;
   match_id?: string;
+<<<<<<< HEAD
   is_active: boolean;
   is_private: boolean;
   max_participants: number;
   permissions?: string[];
   priority: number;
+=======
+  is_active?: boolean;
+  is_private?: boolean;
+  max_participants?: number;
+  permissions?: string[];
+  priority?: number;
+>>>>>>> remotes/origin/feature/four-tracker-system
   created_at?: string;
   updated_at?: string;
 }
@@ -27,13 +43,23 @@ interface Participant {
   user_id: string;
   room_id?: string;
   user_role: string;
+<<<<<<< HEAD
   is_muted: boolean;
   is_speaking: boolean;
   connection_quality: string;
+=======
+  is_muted?: boolean;
+  is_speaking?: boolean;
+  connection_quality?: string;
+>>>>>>> remotes/origin/feature/four-tracker-system
   joined_at?: string;
   last_activity?: string;
   user_name?: string;
   user_email?: string;
+<<<<<<< HEAD
+=======
+  profiles?: any;
+>>>>>>> remotes/origin/feature/four-tracker-system
 }
 
 interface Match {
@@ -50,11 +76,16 @@ const VoiceCollaborationManager: React.FC = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<string>('');
+<<<<<<< HEAD
   const [selectedRoomId, setSelectedRoomId] = useState<string>('');
   const [newRoomName, setNewRoomName] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetchingRooms, setFetchingRooms] = useState(true);
   const [fetchingParticipants, setFetchingParticipants] = useState(false);
+=======
+  const [newRoomName, setNewRoomName] = useState('');
+  const [loading, setLoading] = useState(false);
+>>>>>>> remotes/origin/feature/four-tracker-system
   const { toast } = useToast();
 
   useEffect(() => {
@@ -63,7 +94,10 @@ const VoiceCollaborationManager: React.FC = () => {
   }, []);
 
   const fetchVoiceRooms = async () => {
+<<<<<<< HEAD
     setFetchingRooms(true);
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
     try {
       const { data, error } = await supabase
         .from('voice_rooms')
@@ -72,6 +106,7 @@ const VoiceCollaborationManager: React.FC = () => {
 
       if (error) throw error;
 
+<<<<<<< HEAD
       if (!data) {
         setVoiceRooms([]);
         return;
@@ -89,6 +124,21 @@ const VoiceCollaborationManager: React.FC = () => {
         priority: room.priority ?? 1,
         created_at: room.created_at ?? undefined,
         updated_at: room.updated_at ?? undefined
+=======
+      // Transform the data to match our VoiceRoom interface
+      const transformedData: VoiceRoom[] = (data || []).map(room => ({
+        id: room.id,
+        name: room.name,
+        description: room.description || undefined,
+        match_id: room.match_id || undefined,
+        is_active: room.is_active || undefined,
+        is_private: room.is_private || undefined,
+        max_participants: room.max_participants || undefined,
+        permissions: room.permissions || undefined,
+        priority: room.priority || undefined,
+        created_at: room.created_at || undefined,
+        updated_at: room.updated_at || undefined
+>>>>>>> remotes/origin/feature/four-tracker-system
       }));
 
       setVoiceRooms(transformedData);
@@ -96,15 +146,22 @@ const VoiceCollaborationManager: React.FC = () => {
       console.error('Error fetching voice rooms:', error);
       toast({
         title: "Error",
+<<<<<<< HEAD
         description: error.message || "Failed to fetch voice rooms",
         variant: "destructive"
       });
     } finally {
       setFetchingRooms(false);
+=======
+        description: "Failed to fetch voice rooms",
+        variant: "destructive"
+      });
+>>>>>>> remotes/origin/feature/four-tracker-system
     }
   };
 
   const fetchParticipants = async (roomId: string) => {
+<<<<<<< HEAD
     setFetchingParticipants(true);
     setSelectedRoomId(roomId);
     
@@ -173,6 +230,46 @@ const VoiceCollaborationManager: React.FC = () => {
       });
     } finally {
       setFetchingParticipants(false);
+=======
+    try {
+      const { data, error } = await supabase
+        .from('voice_room_participants')
+        .select(`
+          *,
+          profiles:user_id (
+            full_name,
+            email
+          )
+        `)
+        .eq('room_id', roomId);
+
+      if (error) throw error;
+
+      // Transform the data to match our Participant interface, handling null values properly
+      const transformedData: Participant[] = (data || []).map(participant => ({
+        id: participant.id,
+        user_id: participant.user_id || '',
+        room_id: participant.room_id || undefined,
+        user_role: participant.user_role,
+        is_muted: participant.is_muted || undefined,
+        is_speaking: participant.is_speaking || undefined,
+        connection_quality: participant.connection_quality || undefined,
+        joined_at: participant.joined_at || undefined,
+        last_activity: participant.last_activity || undefined,
+        user_name: participant.profiles?.full_name || undefined,
+        user_email: participant.profiles?.email || undefined,
+        profiles: participant.profiles
+      }));
+
+      setParticipants(transformedData);
+    } catch (error: any) {
+      console.error('Error fetching participants:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch participants",
+        variant: "destructive"
+      });
+>>>>>>> remotes/origin/feature/four-tracker-system
     }
   };
 
@@ -185,6 +282,7 @@ const VoiceCollaborationManager: React.FC = () => {
 
       if (error) throw error;
 
+<<<<<<< HEAD
       if (!data) {
         setMatches([]);
         return;
@@ -197,6 +295,16 @@ const VoiceCollaborationManager: React.FC = () => {
         away_team_name: match.away_team_name || 'Away Team',
         status: match.status || 'scheduled',
         match_date: match.match_date ?? undefined
+=======
+      // Transform the data to match our Match interface
+      const transformedData: Match[] = (data || []).map(match => ({
+        id: match.id,
+        name: match.name || undefined,
+        home_team_name: match.home_team_name,
+        away_team_name: match.away_team_name,
+        status: match.status,
+        match_date: match.match_date || undefined
+>>>>>>> remotes/origin/feature/four-tracker-system
       }));
 
       setMatches(transformedData);
@@ -204,7 +312,11 @@ const VoiceCollaborationManager: React.FC = () => {
       console.error('Error fetching matches:', error);
       toast({
         title: "Error",
+<<<<<<< HEAD
         description: error.message || "Failed to fetch matches",
+=======
+        description: "Failed to fetch matches",
+>>>>>>> remotes/origin/feature/four-tracker-system
         variant: "destructive"
       });
     }
@@ -222,6 +334,7 @@ const VoiceCollaborationManager: React.FC = () => {
 
     setLoading(true);
     try {
+<<<<<<< HEAD
       const roomData: any = {
         name: newRoomName.trim(),
         is_active: true,
@@ -236,6 +349,17 @@ const VoiceCollaborationManager: React.FC = () => {
       const { error } = await supabase
         .from('voice_rooms')
         .insert(roomData);
+=======
+      const { error } = await supabase
+        .from('voice_rooms')
+        .insert({
+          name: newRoomName,
+          match_id: selectedMatch || null,
+          is_active: true,
+          is_private: false,
+          max_participants: 25
+        });
+>>>>>>> remotes/origin/feature/four-tracker-system
 
       if (error) throw error;
 
@@ -245,13 +369,20 @@ const VoiceCollaborationManager: React.FC = () => {
       });
 
       setNewRoomName('');
+<<<<<<< HEAD
       setSelectedMatch('');
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
       fetchVoiceRooms();
     } catch (error: any) {
       console.error('Error creating voice room:', error);
       toast({
         title: "Error",
+<<<<<<< HEAD
         description: error.message || "Failed to create voice room",
+=======
+        description: "Failed to create voice room",
+>>>>>>> remotes/origin/feature/four-tracker-system
         variant: "destructive"
       });
     } finally {
@@ -260,10 +391,13 @@ const VoiceCollaborationManager: React.FC = () => {
   };
 
   const deleteVoiceRoom = async (roomId: string) => {
+<<<<<<< HEAD
     if (!confirm('Are you sure you want to delete this voice room? All participants will be removed.')) {
       return;
     }
 
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
     setLoading(true);
     try {
       const { error } = await supabase
@@ -278,17 +412,24 @@ const VoiceCollaborationManager: React.FC = () => {
         description: "Voice room deleted successfully"
       });
 
+<<<<<<< HEAD
       if (selectedRoomId === roomId) {
         setParticipants([]);
         setSelectedRoomId('');
       }
 
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
       fetchVoiceRooms();
     } catch (error: any) {
       console.error('Error deleting voice room:', error);
       toast({
         title: "Error",
+<<<<<<< HEAD
         description: error.message || "Failed to delete voice room",
+=======
+        description: "Failed to delete voice room",
+>>>>>>> remotes/origin/feature/four-tracker-system
         variant: "destructive"
       });
     } finally {
@@ -316,7 +457,11 @@ const VoiceCollaborationManager: React.FC = () => {
       console.error('Error updating voice room:', error);
       toast({
         title: "Error",
+<<<<<<< HEAD
         description: error.message || "Failed to update voice room",
+=======
+        description: "Failed to update voice room",
+>>>>>>> remotes/origin/feature/four-tracker-system
         variant: "destructive"
       });
     } finally {
@@ -324,6 +469,7 @@ const VoiceCollaborationManager: React.FC = () => {
     }
   };
 
+<<<<<<< HEAD
   const getMatchDisplay = (matchId: string) => {
     const match = matches.find(m => m.id === matchId);
     if (!match) return 'Unknown';
@@ -341,6 +487,8 @@ const VoiceCollaborationManager: React.FC = () => {
     );
   }
 
+=======
+>>>>>>> remotes/origin/feature/four-tracker-system
   return (
     <div className="space-y-6">
       <Card>
@@ -354,6 +502,7 @@ const VoiceCollaborationManager: React.FC = () => {
           <Tabs defaultValue="rooms" className="w-full">
             <TabsList>
               <TabsTrigger value="rooms">Voice Rooms</TabsTrigger>
+<<<<<<< HEAD
               <TabsTrigger value="participants">
                 Participants
                 {participants.length > 0 && (
@@ -362,6 +511,9 @@ const VoiceCollaborationManager: React.FC = () => {
                   </Badge>
                 )}
               </TabsTrigger>
+=======
+              <TabsTrigger value="participants">Participants</TabsTrigger>
+>>>>>>> remotes/origin/feature/four-tracker-system
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
 
@@ -372,19 +524,31 @@ const VoiceCollaborationManager: React.FC = () => {
                   <CardTitle className="text-lg">Create New Voice Room</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+<<<<<<< HEAD
                   <div className="grid gap-4 md:grid-cols-3">
+=======
+                  <div className="flex gap-4">
+>>>>>>> remotes/origin/feature/four-tracker-system
                     <Input
                       placeholder="Room name"
                       value={newRoomName}
                       onChange={(e) => setNewRoomName(e.target.value)}
+<<<<<<< HEAD
                       className="md:col-span-1"
                       disabled={loading}
+=======
+                      className="flex-1"
+>>>>>>> remotes/origin/feature/four-tracker-system
                     />
                     <select
                       value={selectedMatch}
                       onChange={(e) => setSelectedMatch(e.target.value)}
+<<<<<<< HEAD
                       className="px-3 py-2 border rounded-md md:col-span-1"
                       disabled={loading}
+=======
+                      className="px-3 py-2 border rounded-md"
+>>>>>>> remotes/origin/feature/four-tracker-system
                     >
                       <option value="">Select Match (Optional)</option>
                       {matches.map((match) => (
@@ -393,6 +557,7 @@ const VoiceCollaborationManager: React.FC = () => {
                         </option>
                       ))}
                     </select>
+<<<<<<< HEAD
                     <Button onClick={createVoiceRoom} disabled={loading} className="md:col-span-1">
                       {loading ? (
                         <>
@@ -402,6 +567,10 @@ const VoiceCollaborationManager: React.FC = () => {
                       ) : (
                         'Create Room'
                       )}
+=======
+                    <Button onClick={createVoiceRoom} disabled={loading}>
+                      Create Room
+>>>>>>> remotes/origin/feature/four-tracker-system
                     </Button>
                   </div>
                 </CardContent>
@@ -409,6 +578,7 @@ const VoiceCollaborationManager: React.FC = () => {
 
               {/* Existing Voice Rooms */}
               <div className="grid gap-4">
+<<<<<<< HEAD
                 {voiceRooms.length === 0 ? (
                   <Card>
                     <CardContent className="p-6 text-center text-muted-foreground">
@@ -486,12 +656,69 @@ const VoiceCollaborationManager: React.FC = () => {
                     </Card>
                   ))
                 )}
+=======
+                {voiceRooms.map((room) => (
+                  <Card key={room.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold">{room.name}</h3>
+                            <Badge variant={room.is_active ? "default" : "secondary"}>
+                              {room.is_active ? "Active" : "Inactive"}
+                            </Badge>
+                            {room.match_id && (
+                              <Badge variant="outline">
+                                Match: {matches.find(m => m.id === room.match_id)?.name || 'Unknown'}
+                              </Badge>
+                            )}
+                          </div>
+                          {room.description && (
+                            <p className="text-sm text-muted-foreground">{room.description}</p>
+                          )}
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Users className="h-4 w-4" />
+                              Max: {room.max_participants || 25}
+                            </span>
+                            <span>Priority: {room.priority || 1}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fetchParticipants(room.id)}
+                          >
+                            <Users className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleRoomStatus(room.id, room.is_active || false)}
+                          >
+                            {room.is_active ? <PhoneOff className="h-4 w-4" /> : <Phone className="h-4 w-4" />}
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => deleteVoiceRoom(room.id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+>>>>>>> remotes/origin/feature/four-tracker-system
               </div>
             </TabsContent>
 
             <TabsContent value="participants" className="space-y-4">
               <Card>
                 <CardHeader>
+<<<<<<< HEAD
                   <CardTitle>
                     {selectedRoomId ? (
                       <>
@@ -515,16 +742,31 @@ const VoiceCollaborationManager: React.FC = () => {
                         {selectedRoomId ? 'No participants in this room' : 'Select a room to view participants'}
                       </p>
                     </div>
+=======
+                  <CardTitle>Active Participants</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {participants.length === 0 ? (
+                    <p className="text-muted-foreground">Select a room to view participants</p>
+>>>>>>> remotes/origin/feature/four-tracker-system
                   ) : (
                     <div className="space-y-2">
                       {participants.map((participant) => (
                         <div key={participant.id} className="flex items-center justify-between p-3 border rounded-lg">
                           <div className="space-y-1">
+<<<<<<< HEAD
                             <p className="font-medium">{participant.user_name || participant.user_email || 'Unknown User'}</p>
                             <div className="flex items-center gap-2">
                               <Badge variant="outline">{participant.user_role}</Badge>
                               <Badge variant={participant.connection_quality === 'good' ? 'default' : 'destructive'}>
                                 {participant.connection_quality}
+=======
+                            <p className="font-medium">{participant.user_name || participant.user_email}</p>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">{participant.user_role}</Badge>
+                              <Badge variant={participant.connection_quality === 'good' ? 'default' : 'destructive'}>
+                                {participant.connection_quality || 'unknown'}
+>>>>>>> remotes/origin/feature/four-tracker-system
                               </Badge>
                             </div>
                           </div>
