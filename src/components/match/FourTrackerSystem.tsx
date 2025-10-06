@@ -14,6 +14,7 @@ interface FourTrackerSystemProps {
   awayTeamPlayers: Player[];
   homeTeamName?: string;
   awayTeamName?: string;
+  videoUrl?: string;
 }
 
 // Error Boundary Component
@@ -72,6 +73,7 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
   awayTeamPlayers,
   homeTeamName = 'Home Team',
   awayTeamName = 'Away Team',
+  videoUrl,
 }) => {
   const { matchId } = useParams<{ matchId: string }>();
   const { user } = useAuth();
@@ -224,6 +226,7 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
             currentBallHolder={currentBallHolder}
             isOnline={isOnline}
             onSelectPlayer={updateBallPossession}
+            videoUrl={videoUrl}
           />
         ) : (
           <PlayerTrackerInterface
@@ -235,6 +238,7 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
             onClearEvent={clearPendingEvent}
             onClearAll={clearAllPendingEvents}
             onMarkAllAsPass={markAllAsPass}
+            videoUrl={videoUrl}
           />
         )}
       </div>

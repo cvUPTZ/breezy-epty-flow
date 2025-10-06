@@ -619,6 +619,9 @@ const MatchAnalysisV2: React.FC = () => {
                         <FourTrackerSystem
                           homeTeamPlayers={fullMatchRoster.home.map(p => ({ ...p, id: Number(p.id), team: 'home' as const }))}
                           awayTeamPlayers={fullMatchRoster.away.map(p => ({ ...p, id: Number(p.id), team: 'away' as const }))}
+                          homeTeamName={homeTeam.name}
+                          awayTeamName={awayTeam.name}
+                          videoUrl={videoUrl}
                         />
                         <VoiceCollaborationOverlay />
                       </>

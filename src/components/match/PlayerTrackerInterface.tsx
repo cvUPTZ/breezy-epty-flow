@@ -2,12 +2,14 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { User, Clock, AlertTriangle, Trash2, CheckCircle, Loader2, Keyboard } from 'lucide-react';
+import { User, Clock, AlertTriangle, Trash2, CheckCircle, Loader2, Keyboard, Video, X, Maximize2, Minimize2 } from 'lucide-react';
+import { Player, PendingEvent } from '@/hooks/useFourTrackerSystem';
+import { YouTubePlayer } from '@/components/video/YouTubePlayer';
 
 // Hook useKeyboardShortcuts
-const useKeyboardShortcuts = (shortcutMap, isActive = true) => {
+const useKeyboardShortcuts = (shortcutMap: Record<string, () => void>, isActive = true) => {
   const handleKeyDown = useCallback(
-    (event) => {
+    (event: KeyboardEvent) => {
       if (!isActive) return;
       const callback = shortcutMap[event.code];
       if (callback) {
@@ -26,8 +28,20 @@ const useKeyboardShortcuts = (shortcutMap, isActive = true) => {
   }, [handleKeyDown]);
 };
 
+interface PlayerTrackerInterfaceProps {
+  assignedPlayers: Player[];
+  pendingEvents: PendingEvent[];
+  assignedEventTypes: string[];
+  isOnline?: boolean;
+  onRecordEvent: (pendingEventId: string, eventType: string) => void;
+  onClearEvent: (eventId: string) => void;
+  onClearAll: () => void;
+  onMarkAllAsPass: () => Promise<void>;
+  videoUrl?: string;
+}
+
 // Composant Principal
-const PlayerTrackerInterface = ({
+const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
   assignedPlayers,
   pendingEvents,
   assignedEventTypes,
@@ -35,10 +49,13 @@ const PlayerTrackerInterface = ({
   onRecordEvent,
   onClearEvent,
   onClearAll,
-  onMarkAllAsPass
+  onMarkAllAsPass,
+  videoUrl
 }) => {
   const [processingEvents, setProcessingEvents] = useState(new Set());
   const [batchProcessing, setBatchProcessing] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
+  const [isVideoExpanded, setIsVideoExpanded] = useState(false);
 
   const shortcutKeys = useMemo(() => [
     'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
@@ -46,7 +63,7 @@ const PlayerTrackerInterface = ({
     'Z', 'X', 'C', 'V', 'B', 'N', 'M'
   ], []);
 
-  const handleRecordEvent = useCallback((pendingEventId, eventType) => {
+  const handleRecordEvent = useCallback((pendingEventId: string, eventType: string) => {
     setProcessingEvents(prev => new Set(prev).add(pendingEventId));
     onRecordEvent(pendingEventId, eventType);
   }, [onRecordEvent]);
@@ -56,9 +73,9 @@ const PlayerTrackerInterface = ({
       return {};
     }
     const firstEvent = pendingEvents[0];
-    const map = {};
+    const map: Record<string, () => void> = {};
     
-    assignedEventTypes.slice(0, shortcutKeys.length).forEach((eventType, index) => {
+    assignedEventTypes.slice(0, shortcutKeys.length).forEach((eventType: string, index: number) => {
       const key = shortcutKeys[index];
       map[`Key${key}`] = () => handleRecordEvent(firstEvent.id, eventType);
     });
@@ -68,11 +85,11 @@ const PlayerTrackerInterface = ({
 
   useKeyboardShortcuts(shortcutMap, isOnline && pendingEvents.length > 0);
 
-  const eventTypeDisplay = (eventType) => {
-    return eventType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  const eventTypeDisplay = (eventType: string) => {
+    return eventType.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
   };
 
-  const getPriorityColor = (priority) => {
+  const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent': return 'border-red-500 bg-red-50';
       case 'normal': return 'border-yellow-500 bg-yellow-50';
@@ -81,7 +98,7 @@ const PlayerTrackerInterface = ({
     }
   };
 
-  const getPriorityBadge = (priority) => {
+  const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case 'urgent': return <Badge className="bg-red-600">URGENT</Badge>;
       case 'normal': return <Badge className="bg-yellow-600">NORMAL</Badge>;
@@ -96,10 +113,70 @@ const PlayerTrackerInterface = ({
     setBatchProcessing(false);
   };
 
-  const isEventProcessing = (eventId) => processingEvents.has(eventId);
+  const isEventProcessing = (eventId: string) => processingEvents.has(eventId);
+
+  // Extract video ID from URL
+  const videoId = useMemo(() => {
+    if (!videoUrl) return null;
+    try {
+      const url = new URL(videoUrl);
+      if (url.hostname.includes('youtube.com')) {
+        return url.searchParams.get('v');
+      } else if (url.hostname.includes('youtu.be')) {
+        return url.pathname.slice(1);
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }, [videoUrl]);
 
   return (
-    <div className="space-y-4">
+    <div className="relative space-y-4">
+      {/* Video Player Overlay */}
+      {videoUrl && videoId && showVideo && (
+        <div 
+          className={`fixed z-50 transition-all duration-300 ${
+            isVideoExpanded 
+              ? 'inset-4' 
+              : 'bottom-4 right-4 w-96 h-64'
+          }`}
+          style={{ 
+            boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+            borderRadius: '12px',
+            overflow: 'hidden'
+          }}
+        >
+          <div className="relative w-full h-full bg-black">
+            <YouTubePlayer
+              videoId={videoId}
+              matchId=""
+              isAdmin={false}
+            />
+            
+            {/* Video Controls Overlay */}
+            <div className="absolute top-2 right-2 flex gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="bg-black/70 hover:bg-black/90 text-white"
+                onClick={() => setIsVideoExpanded(!isVideoExpanded)}
+              >
+                {isVideoExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="bg-black/70 hover:bg-black/90 text-white"
+                onClick={() => setShowVideo(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bannière Hors Ligne */}
       {!isOnline && (
         <Card className="bg-red-50 border-red-300">
@@ -121,9 +198,22 @@ const PlayerTrackerInterface = ({
               <User className="h-5 w-5 text-blue-600" />
               Interface de Suivi des Joueurs
             </div>
-            <Badge variant="outline" className="text-lg px-4 py-1">
-              {pendingEvents.length} en attente
-            </Badge>
+            <div className="flex items-center gap-2">
+              {videoUrl && videoId && (
+                <Button
+                  variant={showVideo ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowVideo(!showVideo)}
+                  className="flex items-center gap-2"
+                >
+                  <Video className="h-4 w-4" />
+                  {showVideo ? 'Masquer' : 'Afficher'} Vidéo
+                </Button>
+              )}
+              <Badge variant="outline" className="text-lg px-4 py-1">
+                {pendingEvents.length} en attente
+              </Badge>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -131,8 +221,8 @@ const PlayerTrackerInterface = ({
           <div>
             <span className="text-sm font-medium">Vos joueurs assignés :</span>
             <div className="flex flex-wrap gap-2 mt-2">
-              {assignedPlayers.map(player => {
-                const hasPending = pendingEvents.some(e => e.player.id === player.id);
+              {assignedPlayers.map((player: Player) => {
+                const hasPending = pendingEvents.some((e: PendingEvent) => e.player.id === player.id);
                 return (
                   <Badge 
                     key={player.id}
@@ -211,7 +301,7 @@ const PlayerTrackerInterface = ({
             </div>
           ) : (
             <div className="space-y-3">
-              {pendingEvents.map((event) => {
+              {pendingEvents.map((event: PendingEvent) => {
                 const isProcessing = isEventProcessing(event.id);
                 
                 return (
@@ -260,7 +350,7 @@ const PlayerTrackerInterface = ({
                     <div className="space-y-2">
                       {/* Rangée 1: Q W E R T Y U I O P */}
                       <div className="flex gap-2">
-                        {assignedEventTypes.slice(0, 10).map((eventType, index) => {
+                        {assignedEventTypes.slice(0, 10).map((eventType: string, index: number) => {
                           const shortcutKey = shortcutKeys[index];
                           return (
                             <Button
@@ -295,7 +385,7 @@ const PlayerTrackerInterface = ({
                       {/* Rangée 2: A S D F G H J K L */}
                       {assignedEventTypes.length > 10 && (
                         <div className="flex gap-2">
-                          {assignedEventTypes.slice(10, 19).map((eventType, index) => {
+                          {assignedEventTypes.slice(10, 19).map((eventType: string, index: number) => {
                             const shortcutKey = shortcutKeys[index + 10];
                             return (
                               <Button
@@ -331,7 +421,7 @@ const PlayerTrackerInterface = ({
                       {/* Rangée 3: Z X C V B N M */}
                       {assignedEventTypes.length > 19 && (
                         <div className="flex gap-2">
-                          {assignedEventTypes.slice(19, 26).map((eventType, index) => {
+                          {assignedEventTypes.slice(19, 26).map((eventType: string, index: number) => {
                             const shortcutKey = shortcutKeys[index + 19];
                             return (
                               <Button

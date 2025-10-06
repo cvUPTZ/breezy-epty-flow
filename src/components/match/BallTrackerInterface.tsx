@@ -1,10 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Activity, Target, AlertTriangle, Users, Timer, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Activity, Target, AlertTriangle, Users, Timer, TrendingUp, Video, X, Maximize2, Minimize2 } from 'lucide-react';
+import { Player } from '@/hooks/useFourTrackerSystem';
+import { YouTubePlayer } from '@/components/video/YouTubePlayer';
 
 // Enhanced position mapping with tactical formations
-const getPositionCoordinates = (position, index, totalPlayers, isHome) => {
+const getPositionCoordinates = (position: string, index: number, totalPlayers: number, isHome: boolean) => {
   const baseY = isHome ? 15 : 85;
   const direction = isHome ? 1 : -1;
   
@@ -59,18 +62,32 @@ const getPositionCoordinates = (position, index, totalPlayers, isHome) => {
   };
 };
 
-const BallTrackerInterface = ({
+interface BallTrackerInterfaceProps {
+  homeTeamPlayers: Player[];
+  awayTeamPlayers: Player[];
+  homeTeamName?: string;
+  awayTeamName?: string;
+  currentBallHolder: Player | null;
+  isOnline?: boolean;
+  onSelectPlayer: (player: Player) => void;
+  videoUrl?: string;
+}
+
+const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
   homeTeamPlayers = [],
   awayTeamPlayers = [],
   homeTeamName = 'Home',
   awayTeamName = 'Away',
   currentBallHolder = null,
   isOnline = true,
-  onSelectPlayer = () => {}
+  onSelectPlayer = () => {},
+  videoUrl
 }) => {
-  const [selectedPlayerId, setSelectedPlayerId] = useState(null);
-  const [hoveredPlayerId, setHoveredPlayerId] = useState(null);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
+  const [hoveredPlayerId, setHoveredPlayerId] = useState<number | null>(null);
   const [activeTeam, setActiveTeam] = useState('home'); // 'home' or 'away'
+  const [showVideo, setShowVideo] = useState(false);
+  const [isVideoExpanded, setIsVideoExpanded] = useState(false);
 
   const allPlayers = useMemo(() => 
     [...homeTeamPlayers, ...awayTeamPlayers],
@@ -101,7 +118,7 @@ const BallTrackerInterface = ({
 
   const displayedTeamName = activeTeam === 'home' ? homeTeamName : awayTeamName;
 
-  const handleSelectPlayer = (player) => {
+  const handleSelectPlayer = (player: Player) => {
     if (!isOnline) return;
     
     setSelectedPlayerId(player.id);
@@ -126,8 +143,68 @@ const BallTrackerInterface = ({
     );
   }
 
+  // Extract video ID from URL
+  const videoId = useMemo(() => {
+    if (!videoUrl) return null;
+    try {
+      const url = new URL(videoUrl);
+      if (url.hostname.includes('youtube.com')) {
+        return url.searchParams.get('v');
+      } else if (url.hostname.includes('youtu.be')) {
+        return url.pathname.slice(1);
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }, [videoUrl]);
+
   return (
-    <div className="space-y-4">
+    <div className="relative space-y-4">
+      {/* Video Player Overlay */}
+      {videoUrl && videoId && showVideo && (
+        <div 
+          className={`fixed z-50 transition-all duration-300 ${
+            isVideoExpanded 
+              ? 'inset-4' 
+              : 'bottom-4 right-4 w-96 h-64'
+          }`}
+          style={{ 
+            boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+            borderRadius: '12px',
+            overflow: 'hidden'
+          }}
+        >
+          <div className="relative w-full h-full bg-black">
+            <YouTubePlayer
+              videoId={videoId}
+              matchId=""
+              isAdmin={false}
+            />
+            
+            {/* Video Controls Overlay */}
+            <div className="absolute top-2 right-2 flex gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="bg-black/70 hover:bg-black/90 text-white"
+                onClick={() => setIsVideoExpanded(!isVideoExpanded)}
+              >
+                {isVideoExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="bg-black/70 hover:bg-black/90 text-white"
+                onClick={() => setShowVideo(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Offline Banner */}
       {!isOnline && (
         <Card className="bg-gradient-to-r from-red-50 to-orange-50 border-red-300">
@@ -155,9 +232,22 @@ const BallTrackerInterface = ({
               </div>
               <span>Ball Tracker Interface</span>
             </div>
-            <Badge variant="outline" className="text-base px-3 py-1">
-              {stats.totalPlayers} Players
-            </Badge>
+            <div className="flex items-center gap-2">
+              {videoUrl && videoId && (
+                <Button
+                  variant={showVideo ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowVideo(!showVideo)}
+                  className="flex items-center gap-2"
+                >
+                  <Video className="h-4 w-4" />
+                  {showVideo ? 'Hide' : 'Show'} Video
+                </Button>
+              )}
+              <Badge variant="outline" className="text-base px-3 py-1">
+                {stats.totalPlayers} Players
+              </Badge>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
