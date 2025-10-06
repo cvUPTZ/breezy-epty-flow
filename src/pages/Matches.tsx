@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import MatchAnalysisSidebar from '@/components/match/MatchAnalysisSidebar';
-import { LayoutDashboard, Play, Calendar, BarChart3, TrendingUp, Target, Loader2, Eye, Edit } from 'lucide-react';
+import { LayoutDashboard, Play, Calendar, BarChart3, TrendingUp, Target, Loader2, Eye, Edit, ClipboardCheck } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const Matches: React.FC = () => {
@@ -146,6 +146,12 @@ const Matches: React.FC = () => {
                                   <Button variant="outline" size="icon">
                                     <Eye className="h-4 w-4" />
                                     <span className="sr-only">View Match</span>
+                                  </Button>
+                                </Link>
+                                <Link to={`/match/${match.id}/control-quality`}>
+                                  <Button variant="outline" size="icon">
+                                    <ClipboardCheck className="h-4 w-4" />
+                                    <span className="sr-only">Quality Control</span>
                                   </Button>
                                 </Link>
                                 <Link to={`/match/${match.id}/edit`}>
