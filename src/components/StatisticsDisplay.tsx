@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Statistics } from '@/types';
@@ -12,30 +11,30 @@ interface StatisticsDisplayProps {
 
 interface StatRowProps {
   label: string;
-  homeValue: number;
-  awayValue: number;
-  homeMax?: number;
-  awayMax?: number;
+  homeValue: number | string;
+  awayValue: number | string;
   isPercentage?: boolean;
 }
 
-const StatRow: React.FC<StatRowProps> = ({ label, homeValue, awayValue, homeMax, awayMax, isPercentage }) => {
-  const total = homeValue + awayValue;
-  const homePercentage = total > 0 ? (homeValue / total) * 100 : 50;
-  const awayPercentage = 100 - homePercentage;
+const StatRow: React.FC<StatRowProps> = ({ label, homeValue, awayValue, isPercentage }) => {
+  const homeNumeric = typeof homeValue === 'string' ? parseFloat(homeValue.split('/')[0]) : homeValue;
+  const awayNumeric = typeof awayValue === 'string' ? parseFloat(awayValue.split('/')[0]) : awayValue;
+
+  const total = homeNumeric + awayNumeric;
+  const homePercentage = total > 0 ? (homeNumeric / total) * 100 : 50;
   
-  const isHomeBetter = homeValue > awayValue;
-  const isAwayBetter = awayValue > homeValue;
+  const isHomeBetter = homeNumeric > awayNumeric;
+  const isAwayBetter = awayNumeric > homeNumeric;
 
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-center text-sm">
-        <span className={`font-medium ${isHomeBetter ? 'text-primary' : 'text-muted-foreground'}`}>
-          {homeMax !== undefined ? `${homeValue}/${homeMax}` : homeValue}{isPercentage ? '%' : ''}
+        <span className={`font-medium w-1/4 text-left ${isHomeBetter ? 'text-primary' : 'text-muted-foreground'}`}>
+          {homeValue}{isPercentage ? '%' : ''}
         </span>
-        <span className="text-xs text-muted-foreground font-medium">{label}</span>
-        <span className={`font-medium ${isAwayBetter ? 'text-primary' : 'text-muted-foreground'}`}>
-          {awayMax !== undefined ? `${awayValue}/${awayMax}` : awayValue}{isPercentage ? '%' : ''}
+        <span className="text-xs text-muted-foreground font-medium w-1/2 text-center">{label}</span>
+        <span className={`font-medium w-1/4 text-right ${isAwayBetter ? 'text-primary' : 'text-muted-foreground'}`}>
+          {awayValue}{isPercentage ? '%' : ''}
         </span>
       </div>
       <div className="relative h-1.5 bg-muted rounded-full overflow-hidden">
@@ -45,7 +44,7 @@ const StatRow: React.FC<StatRowProps> = ({ label, homeValue, awayValue, homeMax,
         />
         <div 
           className="absolute right-0 top-0 h-full bg-gradient-to-l from-red-500 to-red-600 transition-all duration-500"
-          style={{ width: `${awayPercentage}%` }}
+          style={{ width: `${100 - homePercentage}%` }}
         />
       </div>
     </div>
@@ -76,6 +75,11 @@ const StatisticsDisplay: React.FC<StatisticsDisplayProps> = ({
   awayTeamName,
 }) => {
   const { home, away } = statistics;
+
+  const getPassAccuracy = (completed: number, attempted: number) => {
+    if (!attempted) return 0;
+    return Math.round((completed / attempted) * 100);
+  };
 
   return (
     <Card className="shadow-sm border-border/50">
@@ -119,8 +123,8 @@ const StatisticsDisplay: React.FC<StatisticsDisplayProps> = ({
           />
           <StatRow 
             label="Shots on Target"
-            homeValue={home?.shotsOnTarget || 0}
-            awayValue={away?.shotsOnTarget || 0}
+            homeValue={`${home?.shotsOnTarget || 0}/${home?.shots || 0}`}
+            awayValue={`${away?.shotsOnTarget || 0}/${away?.shots || 0}`}
           />
           <StatRow 
             label="Goals"
@@ -143,28 +147,34 @@ const StatisticsDisplay: React.FC<StatisticsDisplayProps> = ({
         <StatSection title="Passing" icon={<TrendingUp className="w-4 h-4" />}>
           <StatRow 
             label="Total Passes"
-            homeValue={home?.passesCompleted || 0}
-            awayValue={away?.passesCompleted || 0}
-            homeMax={home?.passesAttempted || 0}
-            awayMax={away?.passesAttempted || 0}
+            homeValue={`${home?.passesCompleted || 0}/${home?.passesAttempted || 0}`}
+            awayValue={`${away?.passesCompleted || 0}/${away?.passesAttempted || 0}`}
           />
           <StatRow 
             label="Pass Accuracy"
-            homeValue={home?.passesAttempted ? Math.round((home.passesCompleted / home.passesAttempted) * 100) : 0}
-            awayValue={away?.passesAttempted ? Math.round((away.passesCompleted / away.passesAttempted) * 100) : 0}
+            homeValue={getPassAccuracy(home?.passesCompleted || 0, home?.passesAttempted || 0)}
+            awayValue={getPassAccuracy(away?.passesCompleted || 0, away?.passesAttempted || 0)}
             isPercentage
+          />
+           <StatRow
+            label="Forward Passes"
+            homeValue={home?.forwardPasses || 0}
+            awayValue={away?.forwardPasses || 0}
           />
           <StatRow 
             label="Long Passes"
             homeValue={home?.longPasses || 0}
             awayValue={away?.longPasses || 0}
           />
+           <StatRow
+            label="Decisive Passes"
+            homeValue={home?.decisivePasses || 0}
+            awayValue={away?.decisivePasses || 0}
+          />
           <StatRow 
-            label="Crosses"
-            homeValue={home?.successfulCrosses || 0}
-            awayValue={away?.successfulCrosses || 0}
-            homeMax={home?.crosses || 0}
-            awayMax={away?.crosses || 0}
+            label="Successful Crosses"
+            homeValue={`${home?.successfulCrosses || 0}/${home?.crosses || 0}`}
+            awayValue={`${away?.successfulCrosses || 0}/${away?.crosses || 0}`}
           />
         </StatSection>
 
@@ -195,7 +205,7 @@ const StatisticsDisplay: React.FC<StatisticsDisplayProps> = ({
         {/* Duels */}
         <StatSection title="Duels" icon={<Zap className="w-4 h-4" />}>
           <StatRow 
-            label="Ground Duels Won"
+            label="Duels Won"
             homeValue={home?.duelsWon || 0}
             awayValue={away?.duelsWon || 0}
           />
@@ -209,12 +219,17 @@ const StatisticsDisplay: React.FC<StatisticsDisplayProps> = ({
             homeValue={home?.ballsRecovered || 0}
             awayValue={away?.ballsRecovered || 0}
           />
+           <StatRow
+            label="Balls Lost"
+            homeValue={home?.ballsLost || 0}
+            awayValue={away?.ballsLost || 0}
+          />
         </StatSection>
 
         {/* Discipline */}
         <StatSection title="Discipline" icon={<Award className="w-4 h-4" />}>
           <StatRow 
-            label="Fouls"
+            label="Fouls Committed"
             homeValue={home?.foulsCommitted || 0}
             awayValue={away?.foulsCommitted || 0}
           />
