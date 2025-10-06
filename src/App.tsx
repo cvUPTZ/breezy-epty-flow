@@ -4,10 +4,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
-import { RequireAuth, AdminOnly, TrackerAccess } from "./components/RequireAuth";
+import { RequireAuth, AdminOnly, ManagerAccess, TrackerAccess } from "./components/RequireAuth";
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ToastAction } from "@/components/ui/toast";
 // import { useNetworkStatus } from './hooks/useNetworkStatus';
@@ -28,7 +28,6 @@ import VideoAnalysis from './pages/VideoAnalysis';
 import DirectVideoAnalyzer from './pages/DirectVideoAnalyzer';
 import GPUNetworkManagerPage from './pages/GPUNetworkManager';
 import ErrorManagerPage from './pages/ErrorManager';
-import ErrorBoundary from './components/ErrorBoundary';
 import TrackerInterface from './pages/TrackerInterface';
 import Matches from './pages/Matches';
 import Statistics from './pages/Statistics';
@@ -69,12 +68,13 @@ const AppContent = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       const registerServiceWorker = async () => {
         try {
-          await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+          const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
           // Service Worker registered successfully
         } catch (error) {
           // Service Worker registration failed silently
@@ -92,7 +92,7 @@ const AppContent = () => {
 
 
   return (
-    <ErrorBoundary componentName="AppRoot">
+    <>
       <Header />
       <Routes>
         {/* Public routes */}
@@ -362,7 +362,7 @@ const AppContent = () => {
         
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </ErrorBoundary>
+    </>
   );
 };
 

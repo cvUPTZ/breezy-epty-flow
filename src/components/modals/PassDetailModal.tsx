@@ -6,11 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PassEventData } from '@/types/eventData';
-<<<<<<< HEAD
 import { Player as PlayerForPianoInput } from '../TrackerPianoInput';
-=======
-import { PlayerForPianoInput } from '../TrackerPianoInput';
->>>>>>> remotes/origin/feature/four-tracker-system
 import { useToast } from '@/hooks/use-toast';
 
 interface PassDetailModalProps {
@@ -67,11 +63,7 @@ const PassDetailModal: React.FC<PassDetailModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-<<<<<<< HEAD
           <DialogTitle>Pass Details (From: {passer?.player_name || 'Selected Player'})</DialogTitle>
-=======
-          <DialogTitle>Pass Details (From: {passer?.name || 'Selected Player'})</DialogTitle>
->>>>>>> remotes/origin/feature/four-tracker-system
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
@@ -86,11 +78,7 @@ const PassDetailModal: React.FC<PassDetailModalProps> = ({
               <SelectContent>
                 {availableRecipients.map(player => (
                   <SelectItem key={player.id} value={String(player.id)}>
-<<<<<<< HEAD
                     {player.player_name} (#{player.jersey_number || 0})
-=======
-                    {player.name} (#{player.jersey_number || 0})
->>>>>>> remotes/origin/feature/four-tracker-system
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-=======
-
->>>>>>> remotes/origin/feature/four-tracker-system
 import { useState, useEffect, useCallback } from 'react';
 import NewVoiceChatManager from '@/services/NewVoiceChatManager';
 import { Participant, ConnectionState } from 'livekit-client';
@@ -43,7 +39,6 @@ export const useNewVoiceCollaboration = (): UseNewVoiceCollaborationReturn => {
   const [error, setError] = useState<Error | null>(null);
   const [audioLevels, setAudioLevels] = useState<Map<string, number>>(new Map());
 
-<<<<<<< HEAD
   // Calculate isConnected early, before any callbacks that use it
   const isConnected = connectionState === ConnectionState.Connected;
 
@@ -54,27 +49,6 @@ export const useNewVoiceCollaboration = (): UseNewVoiceCollaborationReturn => {
       // This prevents React reconciliation issues
       setParticipants(newParticipants);
       setLocalParticipant(manager.getLocalParticipant() || null);
-=======
-  useEffect(() => {
-    manager.onParticipantsChanged = (newParticipants: Participant[]) => {
-      console.log('[useNewVoiceCollaboration] Participants updated:', newParticipants.length);
-      // Always provide new object refs for participants
-      // Shallow copy each participant object
-      const cloned = newParticipants.map(p =>
-        Object.assign(
-          Object.create(Object.getPrototypeOf(p)),
-          p
-        )
-      );
-      setParticipants(cloned);
-      setLocalParticipant(manager.getLocalParticipant()
-        ? Object.assign(
-            Object.create(Object.getPrototypeOf(manager.getLocalParticipant()!)),
-            manager.getLocalParticipant()!
-          )
-        : null
-      );
->>>>>>> remotes/origin/feature/four-tracker-system
     };
 
     manager.onConnectionStateChanged = (state: ConnectionState) => {
@@ -126,7 +100,6 @@ export const useNewVoiceCollaboration = (): UseNewVoiceCollaborationReturn => {
   }, [manager]);
 
   const joinRoom = useCallback(async (roomId: string, userId: string, userRole: string, userName: string) => {
-<<<<<<< HEAD
     // Check connection state directly from state instead of derived variable
     const currentlyConnected = connectionState === ConnectionState.Connected;
     
@@ -152,22 +125,6 @@ export const useNewVoiceCollaboration = (): UseNewVoiceCollaborationReturn => {
       setIsConnecting(false); // Reset on failure
     }
   }, [manager, isConnecting, connectionState]);
-=======
-    setIsConnecting(true);
-    setError(null);
-    try {
-      console.log('[useNewVoiceCollaboration] Joining room:', roomId);
-      // Mock implementation since we don't have the actual joinRoom method
-      setCurrentRoomId(roomId);
-      console.log('[useNewVoiceCollaboration] Successfully joined room');
-    } catch (err) {
-      console.error('[useNewVoiceCollaboration] Error joining room:', err);
-      setError(err as Error);
-    } finally {
-      setIsConnecting(false);
-    }
-  }, [manager]);
->>>>>>> remotes/origin/feature/four-tracker-system
 
   const leaveRoom = useCallback(async () => {
     console.log('[useNewVoiceCollaboration] Leaving room');
@@ -192,11 +149,6 @@ export const useNewVoiceCollaboration = (): UseNewVoiceCollaborationReturn => {
     return manager.getAudioLevel(participantId);
   }, [manager]);
 
-<<<<<<< HEAD
-=======
-  const isConnected = connectionState === ConnectionState.Connected;
-
->>>>>>> remotes/origin/feature/four-tracker-system
   return {
     availableRooms,
     currentRoomId,

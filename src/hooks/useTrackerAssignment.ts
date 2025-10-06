@@ -2,10 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-<<<<<<< HEAD
 import { parsePlayerIds } from '@/utils/parsing';
-=======
->>>>>>> remotes/origin/feature/four-tracker-system
 
 export interface Player {
   id: number;
@@ -34,12 +31,8 @@ export interface Assignment {
 interface DatabaseAssignment {
   id: string;
   tracker_user_id: string;
-<<<<<<< HEAD
   assigned_player_id?: number | null;
   assigned_player_ids?: unknown;
-=======
-  assigned_player_id: number | null;
->>>>>>> remotes/origin/feature/four-tracker-system
   assigned_event_types: string[] | null;
   profiles?: {
     id: string;
@@ -66,19 +59,10 @@ interface UseTrackerAssignmentsReturn {
 }
 
 const validateAssignmentData = (data: any[]): data is DatabaseAssignment[] => {
-<<<<<<< HEAD
   return Array.isArray(data) && data.every(item =>
     typeof item === 'object' && item != null &&
     typeof item.id === 'string' &&
     typeof item.tracker_user_id === 'string'
-=======
-  return Array.isArray(data) && data.every(item =>
-    typeof item === 'object' &&
-    typeof item.id === 'string' &&
-    typeof item.tracker_user_id === 'string' &&
-    (typeof item.assigned_player_id === 'number' || item.assigned_player_id === null) &&
-    (Array.isArray(item.assigned_event_types) || item.assigned_event_types === null)
->>>>>>> remotes/origin/feature/four-tracker-system
   );
 };
 
@@ -98,7 +82,6 @@ const processAssignments = (rawAssignments: DatabaseAssignment[]): Assignment[] 
         };
       }
       
-<<<<<<< HEAD
       const playerIds = new Set(acc[key].player_ids);
 
       // Handle single player ID for backwards compatibility
@@ -113,14 +96,6 @@ const processAssignments = (rawAssignments: DatabaseAssignment[]): Assignment[] 
       
       acc[key].player_ids = Array.from(playerIds);
 
-=======
-      if (assignment.assigned_player_id !== null &&
-          assignment.assigned_player_id !== undefined &&
-          !acc[key].player_ids.includes(assignment.assigned_player_id)) {
-        acc[key].player_ids.push(assignment.assigned_player_id);
-      }
-
->>>>>>> remotes/origin/feature/four-tracker-system
       return acc;
     }, {} as Record<string, Assignment>);
 
@@ -175,7 +150,6 @@ export const useTrackerAssignments = ({
     setError(null);
     
     const result = await safeAsync(async () => {
-<<<<<<< HEAD
       // Get current session token
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
@@ -187,9 +161,6 @@ export const useTrackerAssignments = ({
           Authorization: `Bearer ${session.access_token}`
         }
       });
-=======
-      const { data, error } = await supabase.functions.invoke('get-tracker-users');
->>>>>>> remotes/origin/feature/four-tracker-system
       if (error) throw error;
       return data || [];
     });

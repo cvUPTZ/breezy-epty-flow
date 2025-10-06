@@ -40,6 +40,7 @@ interface PlayerTrackerInterfaceProps {
   videoUrl?: string;
 }
 
+// Composant Principal
 const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
   assignedPlayers,
   pendingEvents,
@@ -114,6 +115,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
 
   const isEventProcessing = (eventId: string) => processingEvents.has(eventId);
 
+  // Extract video ID from URL
   const videoId = useMemo(() => {
     if (!videoUrl) return null;
     try {
@@ -131,6 +133,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
 
   return (
     <div className="relative space-y-4">
+      {/* Video Player Overlay */}
       {videoUrl && videoId && showVideo && (
         <div 
           className={`fixed z-50 transition-all duration-300 ${
@@ -150,6 +153,8 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
               matchId=""
               isAdmin={false}
             />
+            
+            {/* Video Controls Overlay */}
             <div className="absolute top-2 right-2 flex gap-2">
               <Button
                 size="sm"
@@ -172,24 +177,26 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
         </div>
       )}
 
+      {/* Bannière Hors Ligne */}
       {!isOnline && (
         <Card className="bg-red-50 border-red-300">
           <CardContent className="p-4 flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-red-600" />
             <div>
-              <p className="font-semibold text-red-900">Offline Mode</p>
-              <p className="text-sm text-red-700">Cannot record events until connection is restored</p>
+              <p className="font-semibold text-red-900">Mode Hors Ligne</p>
+              <p className="text-sm text-red-700">Impossible d'enregistrer des événements tant que la connexion n'est pas rétablie</p>
             </div>
           </CardContent>
         </Card>
       )}
 
+      {/* Carte d'état de l'en-tête */}
       <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-300">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <User className="h-5 w-5 text-blue-600" />
-              Player Tracker Interface
+              Interface de Suivi des Joueurs
             </div>
             <div className="flex items-center gap-2">
               {videoUrl && videoId && (
@@ -200,18 +207,19 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                   className="flex items-center gap-2"
                 >
                   <Video className="h-4 w-4" />
-                  {showVideo ? 'Hide' : 'Show'} Video
+                  {showVideo ? 'Masquer' : 'Afficher'} Vidéo
                 </Button>
               )}
               <Badge variant="outline" className="text-lg px-4 py-1">
-                {pendingEvents.length} pending
+                {pendingEvents.length} en attente
               </Badge>
             </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          {/* Joueurs assignés */}
           <div>
-            <span className="text-sm font-medium">Your Assigned Players:</span>
+            <span className="text-sm font-medium">Vos joueurs assignés :</span>
             <div className="flex flex-wrap gap-2 mt-2">
               {assignedPlayers.map((player: Player) => {
                 const hasPending = pendingEvents.some((e: PendingEvent) => e.player.id === player.id);
@@ -229,13 +237,14 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
             </div>
           </div>
 
+          {/* Résumé de la file d'attente */}
           <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-blue-600" />
               <span className="text-sm font-medium">
-                {pendingEvents.length === 0 ? "No pending events" :
-                 pendingEvents.length === 1 ? "1 event pending" :
-                 `${pendingEvents.length} events pending`}
+                {pendingEvents.length === 0 ? "Aucun événement en attente" : 
+                 pendingEvents.length === 1 ? "1 événement en attente" : 
+                 `${pendingEvents.length} événements en attente`}
               </span>
             </div>
             {pendingEvents.length > 0 && (
@@ -250,12 +259,12 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                   {batchProcessing ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                      Processing...
+                      Traitement...
                     </>
                   ) : (
                     <>
                       <CheckCircle className="h-4 w-4 mr-1" />
-                      Mark all as Pass
+                      Marquer tout comme Passe
                     </>
                   )}
                 </Button>
@@ -267,7 +276,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                   className="text-red-600 hover:text-red-700"
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
-                  Clear All
+                  Tout effacer
                 </Button>
               </div>
             )}
@@ -275,19 +284,20 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
         </CardContent>
       </Card>
 
+      {/* File d'attente des événements */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-orange-600" />
-            Event Queue (Click to record)
+            File d'attente (Cliquez pour enregistrer)
           </CardTitle>
         </CardHeader>
         <CardContent>
           {pendingEvents.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-500" />
-              <p className="font-medium">All caught up!</p>
-              <p className="text-sm">No pending events. Waiting for your players to get the ball.</p>
+              <p className="font-medium">Tout est en ordre !</p>
+              <p className="text-sm">Aucun événement en attente. Attendez que vos joueurs aient le ballon.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -301,6 +311,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                       isProcessing ? 'opacity-50' : ''
                     }`}
                   >
+                    {/* En-tête de l'événement */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <div className="text-2xl font-bold text-gray-700">
@@ -313,11 +324,11 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                           <div className="flex items-center gap-2 mt-1">
                             {getPriorityBadge(event.priority)}
                             <span className="text-sm text-gray-600">
-                              {event.age_seconds}s ago
+                              il y a {event.age_seconds}s
                             </span>
                             {isProcessing && (
                               <Badge className="bg-blue-600 animate-pulse">
-                                Processing...
+                                Traitement...
                               </Badge>
                             )}
                           </div>
@@ -329,14 +340,16 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                         onClick={() => onClearEvent(event.id)}
                         disabled={isProcessing}
                         className="text-gray-500 hover:text-red-600"
-                        aria-label={`Clear event for ${event.player.player_name}`}
+                        aria-label={`Effacer l'événement pour ${event.player.player_name}`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
 
+                    {/* Disposition clavier - 3 rangées */}
                     <div className="space-y-2">
-                      {assignedEventTypes.slice(0, 10).length > 0 && <div className="flex gap-2">
+                      {/* Rangée 1: Q W E R T Y U I O P */}
+                      <div className="flex gap-2">
                         {assignedEventTypes.slice(0, 10).map((eventType: string, index: number) => {
                           const shortcutKey = shortcutKeys[index];
                           return (
@@ -353,7 +366,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                                       ? 'bg-yellow-600 hover:bg-yellow-700'
                                       : 'bg-gray-600 hover:bg-gray-700'
                               }`}
-                              aria-label={`Record ${eventType} for ${event.player.player_name}`}
+                              aria-label={`Enregistrer ${eventType} pour ${event.player.player_name}`}
                             >
                               <div className="flex flex-col items-center justify-center">
                                 <Badge 
@@ -367,9 +380,11 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                             </Button>
                           );
                         })}
-                      </div>}
+                      </div>
                       
-                      {assignedEventTypes.slice(10, 19).length > 0 && <div className="flex gap-2">
+                      {/* Rangée 2: A S D F G H J K L */}
+                      {assignedEventTypes.length > 10 && (
+                        <div className="flex gap-2">
                           {assignedEventTypes.slice(10, 19).map((eventType: string, index: number) => {
                             const shortcutKey = shortcutKeys[index + 10];
                             return (
@@ -386,7 +401,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                                         ? 'bg-yellow-600 hover:bg-yellow-700'
                                         : 'bg-gray-600 hover:bg-gray-700'
                                 }`}
-                                aria-label={`Record ${eventType} for ${event.player.player_name}`}
+                                aria-label={`Enregistrer ${eventType} pour ${event.player.player_name}`}
                               >
                                 <div className="flex flex-col items-center justify-center">
                                   <Badge 
@@ -400,9 +415,12 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                               </Button>
                             );
                           })}
-                        </div>}
+                        </div>
+                      )}
                       
-                      {assignedEventTypes.slice(19, 26).length > 0 && <div className="flex gap-2">
+                      {/* Rangée 3: Z X C V B N M */}
+                      {assignedEventTypes.length > 19 && (
+                        <div className="flex gap-2">
                           {assignedEventTypes.slice(19, 26).map((eventType: string, index: number) => {
                             const shortcutKey = shortcutKeys[index + 19];
                             return (
@@ -419,7 +437,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                                         ? 'bg-yellow-600 hover:bg-yellow-700'
                                         : 'bg-gray-600 hover:bg-gray-700'
                                 }`}
-                                aria-label={`Record ${eventType} for ${event.player.player_name}`}
+                                aria-label={`Enregistrer ${eventType} pour ${event.player.player_name}`}
                               >
                                 <div className="flex flex-col items-center justify-center">
                                   <Badge 
@@ -433,11 +451,13 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                               </Button>
                             );
                           })}
-                        </div>}
+                        </div>
+                      )}
                     </div>
 
+                    {/* Info Timestamp */}
                     <div className="mt-2 text-xs text-gray-500 text-right">
-                      Possession at: {new Date(event.timestamp).toLocaleTimeString()}
+                      Possession à : {new Date(event.timestamp).toLocaleTimeString()}
                     </div>
                   </div>
                 );
@@ -447,33 +467,35 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
         </CardContent>
       </Card>
 
+      {/* Instructions */}
       <Card className="bg-muted/50">
         <CardContent className="p-4">
           <h4 className="font-medium mb-2 flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
-            How the Queue Works:
+            Fonctionnement de la file d'attente :
           </h4>
           <ul className="text-sm space-y-1 text-muted-foreground">
-            <li>🔴 <strong>RED (Urgent):</strong> Events < 5s old - record immediately!</li>
-            <li>🟡 <strong>YELLOW (Normal):</strong> Events 5-15s old - record as soon as possible.</li>
-            <li>⚪ <strong>GRAY (Old):</strong> Events > 15s old - may auto-clear after 30s.</li>
-            <li>• Events retain their original timestamp for accurate analysis.</li>
-            <li>• You can record events in any order.</li>
-            <li>• Multiple events may stack; process them systematically.</li>
-            <li>• Use "Clear" to ignore events you couldn't observe correctly.</li>
+            <li>🔴 <strong>ROUGE (Urgent):</strong> Événements de moins de 5s - à enregistrer immédiatement !</li>
+            <li>🟡 <strong>JAUNE (Normal):</strong> Événements de 5-15s - à enregistrer dès que possible.</li>
+            <li>⚪ <strong>GRIS (Ancien):</strong> Événements de plus de 15s - peuvent s'effacer automatiquement après 30s.</li>
+            <li>• Les événements conservent leur horodatage original pour des analyses précises.</li>
+            <li>• Vous pouvez enregistrer les événements dans n'importe quel ordre.</li>
+            <li>• Plusieurs événements peuvent s'empiler ; traitez-les systématiquement.</li>
+            <li>• Utilisez "Effacer" pour ignorer les événements que vous n'avez pas pu observer correctement.</li>
           </ul>
         </CardContent>
       </Card>
 
+      {/* Aide sur les raccourcis clavier */}
       <Card className="bg-blue-50 border-blue-200">
         <CardContent className="p-4">
            <h4 className="font-medium mb-2 flex items-center gap-2 text-blue-900">
             <Keyboard className="h-5 w-5" />
-            Keyboard Shortcuts Enabled
+            Raccourcis Clavier Activés
           </h4>
           <p className="text-sm text-blue-800">
-            Use your keyboard to record events for the player at the top of the queue.
-            The letters on the buttons correspond to the keyboard keys (QWERTY - 26 keys available).
+            Utilisez votre clavier pour enregistrer des événements pour le joueur en haut de la file.
+            Les lettres sur les boutons correspondent aux touches du clavier (QWERTY - 26 touches disponibles).
           </p>
         </CardContent>
       </Card>

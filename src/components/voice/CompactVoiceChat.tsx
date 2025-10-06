@@ -103,12 +103,9 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
     p => !p.isLocal && isTrackerParticipant(p)
   );
 
-<<<<<<< HEAD
   // FIX: Filter out duplicate participants to prevent React DOM errors.
   const uniqueParticipants = Array.from(new Map(participants.map(p => [p.identity, p])).values());
 
-=======
->>>>>>> remotes/origin/feature/four-tracker-system
   const handleToggleMuteSelf = async () => {
     const result = await toggleMuteSelf();
     if (typeof result === "undefined") {
@@ -238,15 +235,9 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
 
       {/* Participants grid */}
       <div className="space-y-2">
-<<<<<<< HEAD
         <h4 className="font-medium text-white text-xs">Participants ({uniqueParticipants.length})</h4>
         <div className="grid grid-cols-2 gap-2">
           {uniqueParticipants.map(participant => {
-=======
-        <h4 className="font-medium text-white text-xs">Participants ({participants.length})</h4>
-        <div className="grid grid-cols-2 gap-2">
-          {participants.map(participant => {
->>>>>>> remotes/origin/feature/four-tracker-system
             const isMuted = isParticipantMuted(participant);
             const isSpeaking = isParticipantSpeaking(participant);
             
