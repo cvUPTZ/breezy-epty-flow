@@ -61,26 +61,8 @@ const getHorizontalPosition = (position: string, index: number, totalPlayers: nu
   };
 };
 
-interface YouTubePlayerProps {
-  videoId: string;
-  matchId: string;
-  isAdmin: boolean;
-}
-
-const YouTubePlayer: React.FC<YouTubePlayerProps> = ({ videoId }) => {
-  return (
-    <iframe
-      width="100%"
-      height="100%"
-      src={`https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1`}
-      title="Match Video"
-      frameBorder="0"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      allowFullScreen
-      className="w-full h-full"
-    />
-  );
-};
+// Note: This component imports YouTubePlayer from the actual component library
+// The import statement at the top handles this: import { YouTubePlayer } from '@/components/video/YouTubePlayer';
 
 interface BallTrackerInterfaceProps {
   homeTeamPlayers?: Player[];
