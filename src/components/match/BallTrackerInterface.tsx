@@ -468,7 +468,7 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
                   {/* NEW: Video Background in Overlay Mode */}
                   {isOverlayMode && videoUrl && videoId && (
                     <>
-                      {/* Video as background */}
+                      {/* Video as background - with pointer events enabled for controls */}
                       <div className="absolute inset-0 z-0">
                         <YouTubePlayer
                           videoId={videoId}
@@ -477,13 +477,13 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
                         />
                       </div>
                       
-                      {/* Semi-transparent pitch overlay */}
-                      <div className="absolute inset-0 bg-green-600 opacity-30 pointer-events-none z-10" />
+                      {/* Semi-transparent pitch overlay - blocks pointer events except for controls area */}
+                      <div className="absolute inset-0 bg-green-600 opacity-30 z-10" style={{ pointerEvents: 'none' }} />
                     </>
                   )}
 
                   {/* Pitch markings */}
-                  <div className={`absolute inset-0 pointer-events-none ${isOverlayMode ? 'z-20 opacity-40' : ''}`}>
+                  <div className={`absolute inset-0 ${isOverlayMode ? 'z-20 opacity-40' : ''}`} style={{ pointerEvents: 'none' }}>
                     {/* Subtle grass pattern (only in normal mode) */}
                     {!isOverlayMode && (
                       <div className="absolute inset-0 opacity-10">
@@ -527,7 +527,7 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
                   </div>
 
                   {/* Players */}
-                  <div className={`absolute inset-0 ${isOverlayMode ? 'z-30' : ''}`}>
+                  <div className={`absolute inset-0 ${isOverlayMode ? 'z-30' : ''}`} style={{ pointerEvents: 'none' }}>
                     {allPlayers.map((player, index) => {
                       const isHome = player.team === 'home';
                       const teamPlayers = isHome ? homeTeamPlayers : awayTeamPlayers;
@@ -540,18 +540,23 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
                       
                       return (
                         <button
-                          key={player.id}
+                          key={`${player.team}-${player.id}`}
                           onClick={(e) => {
                             e.stopPropagation();
+                            e.preventDefault();
                             handleSelectPlayer(player);
                           }}
                           onMouseEnter={() => setHoveredPlayerId(player.id)}
                           onMouseLeave={() => setHoveredPlayerId(null)}
                           disabled={!isOnline}
+                          style={{ 
+                            left: `${pos.left}%`, 
+                            top: `${pos.top}%`,
+                            pointerEvents: 'auto'
+                          }}
                           className={`absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 ${
                             isOnline ? 'hover:scale-125 cursor-pointer' : 'cursor-not-allowed opacity-50'
                           } ${isActive ? 'scale-125 z-30' : 'z-20'} ${isSelected ? 'scale-110' : ''}`}
-                          style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
                         >
                           {/* Player circle */}
                           <div className={`relative w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-lg transition-all pointer-events-none ${
