@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -11,21 +11,19 @@ import VoiceCollaborationWithTest from '@/components/match/VoiceCollaborationWit
 import MatchPlanningNetwork from '@/components/match/MatchPlanningNetwork';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import MatchAnalysisSidebar from '@/components/match/MatchAnalysisSidebar';
-import TrackerPianoInput from '@/components/TrackerPianoInput';
+import FourTrackerSystem from '@/components/match/FourTrackerSystem';
 import { TrackerVoiceInput } from '@/components/TrackerVoiceInput';
 import { EventType as LocalEventType } from '@/types/matchForm';
-import { EventType as AppEventType } from '@/types';
-import { MatchSpecificEventData, ShotEventData, PassEventData, TackleEventData, FoulCommittedEventData, CardEventData, SubstitutionEventData, GenericEventData } from '@/types/eventData';
 import { PlayerForPianoInput, AssignedPlayers } from '@/components/match/types';
-import { useIsMobile, useBreakpoint } from '@/hooks/use-mobile';
-import { Activity, Piano, Users, Settings, Mic, Zap, LayoutDashboard, Video } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { safeParseJson } from '@/utils/parsing';
+import { Activity, Piano, Users, Settings, Mic, Zap, LayoutDashboard, Video, Loader2 } from 'lucide-react';
 import { VoiceCollaborationProvider } from '@/context/VoiceCollaborationContext';
 import VoiceCollaborationOverlay from "@/components/match/VoiceCollaborationOverlay";
 import VideoSetupSection from '@/components/match/form/VideoSetupSection';
 import TrackerVideoInterface from '@/components/video/TrackerVideoInterface';
 import { YouTubeService } from '@/services/youtubeService';
 
-// Type for TrackerVoiceInput players
 interface VoiceInputPlayer {
   id: number;
   name: string;
@@ -38,6 +36,12 @@ interface VoiceInputAssignedPlayers {
 }
 
 const viewDetails = {
+  main: {
+    title: 'Dashboard',
+    subtitle: 'Overview and match controls',
+    icon: LayoutDashboard,
+    color: 'from-slate-500 to-slate-600',
+  },
   piano: {
     title: 'Piano Input',
     subtitle: 'Quick event recording interface',
@@ -89,15 +93,57 @@ const MatchAnalysisV2: React.FC = () => {
   const [fullMatchRoster, setFullMatchRoster] = useState<AssignedPlayers | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
   const [videoId, setVideoId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const isSmall = useBreakpoint('sm');
+
+  const mountedRef = useRef(true);
+  const hasLoadedInitialData = useRef(false);
 
   const isAdmin = userRole === 'admin';
   const [activeView, setActiveView] = useState(isAdmin ? 'main' : 'piano');
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Utility function to parse player data consistently
+  const parsePlayerData = useCallback((data: any, teamContext: 'home' | 'away'): PlayerForPianoInput[] => {
+    if (!data) return [];
+
+    let players: any[] = [];
+
+    if (typeof data === 'string') {
+      // Use the new safeParseJson utility
+      players = safeParseJson(data);
+    } else if (Array.isArray(data)) {
+      players = data;
+    } else {
+      return [];
+    }
+
+    // Normalize and validate player objects
+    return players
+      .filter(player =>
+        player &&
+        typeof player === 'object' &&
+        (player.player_name?.trim() || player.name?.trim())
+      )
+      .map((player, index) => ({
+        id: String(player.id || index),
+        player_name: (player.player_name || player.name || '').trim(),
+        jersey_number: Number(player.jersey_number || player.number) || index + 1,
+        position: player.position?.trim() || undefined,
+        team_context: teamContext
+      }));
+  }, []);
+
   // Convert PlayerForPianoInput to VoiceInputPlayer format
-  const convertPlayersForVoiceInput = (players: AssignedPlayers): VoiceInputAssignedPlayers => {
+  const convertPlayersForVoiceInput = useCallback((players: AssignedPlayers): VoiceInputAssignedPlayers => {
     return {
       home: players.home.map(player => ({
         id: Number(player.id),
@@ -110,20 +156,27 @@ const MatchAnalysisV2: React.FC = () => {
         jersey_number: player.jersey_number
       }))
     };
-  };
+  }, []);
 
   const fetchMatchDetails = useCallback(async () => {
     if (!matchId) {
       console.error("Match ID is missing.");
+      setLoading(false);
       return;
     }
 
+    if (!mountedRef.current) return;
+
     try {
+      setLoading(true);
+
       const { data: matchData, error: matchError } = await supabase
         .from('matches')
         .select('home_team_name, away_team_name, home_team_formation, away_team_formation, home_team_players, away_team_players')
         .eq('id', matchId)
         .maybeSingle();
+
+      if (!mountedRef.current) return;
 
       if (matchError) {
         console.error("Error fetching match details:", matchError);
@@ -132,6 +185,7 @@ const MatchAnalysisV2: React.FC = () => {
           description: "Failed to fetch match details",
           variant: "destructive",
         });
+        setLoading(false);
         return;
       }
 
@@ -141,52 +195,58 @@ const MatchAnalysisV2: React.FC = () => {
           description: "The requested match could not be found",
           variant: "destructive",
         });
+        setLoading(false);
         return;
       }
 
       setHomeTeam({
-        name: matchData.home_team_name,
+        name: matchData.home_team_name || 'Home Team',
         formation: matchData.home_team_formation || '4-4-2'
       });
 
       setAwayTeam({
-        name: matchData.away_team_name,
+        name: matchData.away_team_name || 'Away Team',
         formation: matchData.away_team_formation || '4-3-3'
       });
 
-      // Parse player data safely
-      const parsePlayerData = (data: any): PlayerForPianoInput[] => {
-        if (typeof data === 'string') {
-          try {
-            return JSON.parse(data);
-          } catch {
-            return [];
-          }
-        }
-        return Array.isArray(data) ? data : [];
-      };
+      const homePlayers = parsePlayerData(matchData.home_team_players, 'home');
+      const awayPlayers = parsePlayerData(matchData.away_team_players, 'away');
 
-      const homePlayers = parsePlayerData(matchData.home_team_players);
-      const awayPlayers = parsePlayerData(matchData.away_team_players);
+      console.log('Parsed match roster:', { home: homePlayers.length, away: awayPlayers.length });
+
       setFullMatchRoster({ home: homePlayers, away: awayPlayers });
+      hasLoadedInitialData.current = true;
 
     } catch (error: any) {
       console.error("Error fetching match details:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch match details",
-        variant: "destructive",
-      });
+      if (mountedRef.current) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch match details",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
-  }, [matchId, toast]);
+  }, [matchId, toast, parsePlayerData]);
 
   const fetchTrackerAssignments = useCallback(async () => {
-    if (!matchId || !user?.id) {
-      console.error("Match ID or user ID is missing.");
+    if (!matchId || !user?.id || !fullMatchRoster) {
+      console.log("Missing requirements for fetching tracker assignments:", {
+        matchId: !!matchId,
+        userId: !!user?.id,
+        fullMatchRoster: !!fullMatchRoster
+      });
       return;
     }
 
+    if (!mountedRef.current) return;
+
     try {
+      setAssignmentsLoading(true);
       console.log('Fetching tracker assignments for:', { matchId, userId: user.id });
       
       const { data, error } = await supabase
@@ -194,6 +254,8 @@ const MatchAnalysisV2: React.FC = () => {
         .select('*')
         .eq('match_id', matchId)
         .eq('tracker_user_id', user.id);
+
+      if (!mountedRef.current) return;
 
       if (error) {
         console.error("Error fetching tracker assignments:", error);
@@ -222,37 +284,54 @@ const MatchAnalysisV2: React.FC = () => {
       setAssignedEventTypes(assignedEventTypesData);
       console.log('Assigned event types:', assignedEventTypesData);
 
-      // Aggregate assigned players
+      // Aggregate assigned players - FIX: Use assigned_player_ids array
       const homePlayers: PlayerForPianoInput[] = [];
       const awayPlayers: PlayerForPianoInput[] = [];
+      const processedPlayerIds = new Set<number>();
 
       data.forEach(assignment => {
-        if (assignment.player_team_id === 'home') {
-          const player = fullMatchRoster?.home?.find(p => String(p.id) === String(assignment.player_id));
-          if (player && !homePlayers.some(p => p.id === player.id)) {
-            homePlayers.push(player);
+        const playerIds = assignment.assigned_player_ids || [];
+        const teamId = assignment.player_team_id;
+
+        playerIds.forEach((playerId: number) => {
+          if (processedPlayerIds.has(playerId)) return;
+
+          if (teamId === 'home') {
+            const player = fullMatchRoster.home.find(p => Number(p.id) === Number(playerId));
+            if (player) {
+              homePlayers.push(player);
+              processedPlayerIds.add(playerId);
+            }
+          } else if (teamId === 'away') {
+            const player = fullMatchRoster.away.find(p => Number(p.id) === Number(playerId));
+            if (player) {
+              awayPlayers.push(player);
+              processedPlayerIds.add(playerId);
+            }
           }
-        } else if (assignment.player_team_id === 'away') {
-          const player = fullMatchRoster?.away?.find(p => String(p.id) === String(assignment.player_id));
-          if (player && !awayPlayers.some(p => p.id === player.id)) {
-            awayPlayers.push(player);
-          }
-        }
+        });
       });
 
       setAssignedPlayers({ home: homePlayers, away: awayPlayers });
-      console.log('Assigned players:', { home: homePlayers, away: awayPlayers });
+      console.log('Assigned players:', { home: homePlayers.length, away: awayPlayers.length });
 
     } catch (error: any) {
       console.error("Error fetching tracker assignments:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch tracker assignments",
-        variant: "destructive",
-      });
+      if (mountedRef.current) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch tracker assignments",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      if (mountedRef.current) {
+        setAssignmentsLoading(false);
+      }
     }
-  }, [matchId, user?.id, toast, fullMatchRoster]);
+  }, [matchId, user?.id, fullMatchRoster, toast]);
 
+  // Initial data fetch
   useEffect(() => {
     fetchMatchDetails();
   }, [fetchMatchDetails]);
@@ -264,41 +343,60 @@ const MatchAnalysisV2: React.FC = () => {
     const videoIdParam = searchParams.get('videoId');
     
     if (videoUrlParam) {
-      const extractedId = YouTubeService.extractVideoId(videoUrlParam);
-      if (extractedId) {
-        setVideoId(extractedId);
-        setVideoUrl(videoUrlParam);
-        // Automatically switch to video view when video URL is provided
-        setActiveView('video');
+      try {
+        const extractedId = YouTubeService.extractVideoId(videoUrlParam);
+        if (extractedId && extractedId.length === 11) {
+          setVideoId(extractedId);
+          setVideoUrl(videoUrlParam);
+          setActiveView('video');
+        } else {
+          toast({
+            title: "Invalid Video URL",
+            description: "Could not extract a valid YouTube video ID from the URL.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error('Error extracting video ID:', error);
+        toast({
+          title: "Error",
+          description: "Failed to process video URL.",
+          variant: "destructive",
+        });
       }
     } else if (videoIdParam) {
       if (videoIdParam.length === 11) {
         setVideoId(videoIdParam);
         setVideoUrl(`https://www.youtube.com/watch?v=${videoIdParam}`);
-        // Automatically switch to video view when video ID is provided
         setActiveView('video');
+      } else {
+        toast({
+          title: "Invalid Video ID",
+          description: "The provided video ID is not valid.",
+          variant: "destructive",
+        });
       }
     }
-  }, [location.search]);
+  }, [location.search, toast]);
 
+  // Fetch assignments when roster is ready
   useEffect(() => {
-    if (fullMatchRoster) {
+    if (fullMatchRoster && hasLoadedInitialData.current) {
       fetchTrackerAssignments();
     }
-  }, [fetchTrackerAssignments, fullMatchRoster]);
+  }, [fullMatchRoster, fetchTrackerAssignments]);
 
-  const handleToggleTracking = () => {
-    setIsTracking(!isTracking);
-  };
+  const handleToggleTracking = useCallback(() => {
+    setIsTracking(prev => !prev);
+  }, []);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     toast({
       title: "Match Saved",
       description: "Your match progress has been saved.",
     });
-  };
+  }, [toast]);
 
-  // Optimized centralized event recording function
   const handleRecordEvent = useCallback(async (
     eventTypeKey: string,
     playerId?: number,
@@ -356,7 +454,6 @@ const MatchAnalysisV2: React.FC = () => {
 
       console.log("Inserting event via MatchAnalysisV2:", eventToInsert);
 
-      // Use upsert with conflict resolution for better performance
       const { data: newEvent, error: dbError } = await supabase
         .from('match_events')
         .insert([eventToInsert])
@@ -367,31 +464,44 @@ const MatchAnalysisV2: React.FC = () => {
         console.error('Error recording event in MatchAnalysisV2:', dbError);
         toast({
           title: 'Error Recording Event',
-          description: 'Database error occurred. Please try again.',
+          description: dbError.message || 'Database error occurred. Please try again.',
           variant: 'destructive',
         });
         throw dbError;
-      } else {
-        toast({
-          title: 'Event Recorded',
-          description: `${eventTypeKey} event recorded successfully. You have 10 seconds to cancel.`,
-        });
-        return newEvent;
       }
+
+      toast({
+        title: 'Event Recorded',
+        description: `${eventTypeKey} event recorded successfully.`,
+      });
+      return newEvent;
     } catch (error: any) {
       console.error("Error in handleRecordEvent:", error);
       toast({
         title: 'Recording Failed',
-        description: 'Please check your connection and try again.',
+        description: error.message || 'Please check your connection and try again.',
         variant: 'destructive',
       });
       return null;
     }
   }, [matchId, user?.id, toast]);
 
-  const canShowVoiceCollab = !!user?.id;
-  const canShowVoiceInput = !!(assignedPlayers && assignedEventTypes);
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-0 shadow-2xl bg-white/95 backdrop-blur-sm">
+          <CardContent className="text-center p-8">
+            <Loader2 className="w-16 h-16 animate-spin text-blue-600 mx-auto mb-4" />
+            <p className="text-lg font-medium text-gray-900 mb-2">Loading Match</p>
+            <p className="text-sm text-gray-500">Please wait...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
+  // Error state
   if (!matchId) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex items-center justify-center p-4">
@@ -407,6 +517,9 @@ const MatchAnalysisV2: React.FC = () => {
       </div>
     );
   }
+
+  const canShowVoiceCollab = !!user?.id;
+  const canShowVoiceInput = !!(assignedPlayers && assignedEventTypes && !assignmentsLoading);
 
   const menuItems = [
     ...(isAdmin ? [{
@@ -441,7 +554,6 @@ const MatchAnalysisV2: React.FC = () => {
         icon: Settings,
       }
     ] : []),
-    // Video view available to all users when video is available
     ...(videoId || isAdmin ? [{
       value: 'video',
       label: videoId ? 'Video Tracking' : 'Video Setup',
@@ -461,125 +573,137 @@ const MatchAnalysisV2: React.FC = () => {
           groupLabel="Match Tools"
         />
         <SidebarInset>
-          {/* WRAP THE MAIN MATCH CONTENT WITH THE VOICE PROVIDER */}
           <VoiceCollaborationProvider>
-          <div className="container mx-auto p-4 lg:p-6 max-w-7xl">
-            {/* Modern Header */}
-            <div className="flex items-center gap-4 mb-8">
-              <SidebarTrigger />
-              <div className="flex-grow">
-                <MatchHeader
-                  mode={mode}
-                  setMode={setMode}
-                  homeTeam={homeTeam}
-                  awayTeam={awayTeam}
-                  handleToggleTracking={handleToggleTracking}
-                  handleSave={handleSave}
-                />
+            <div className="container mx-auto p-4 lg:p-6 max-w-7xl">
+              <div className="flex items-center gap-4 mb-8">
+                <SidebarTrigger />
+                <div className="flex-grow">
+                  <MatchHeader
+                    mode={mode}
+                    setMode={setMode}
+                    homeTeam={homeTeam}
+                    awayTeam={awayTeam}
+                    handleToggleTracking={handleToggleTracking}
+                    handleSave={handleSave}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-6 animate-fade-in">
+                <Card className="border-0 shadow-xl bg-white/95 backdrop-blur-sm rounded-2xl overflow-hidden min-h-[60vh]">
+                  <CardContent className="p-6">
+                    {currentViewDetails && (
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className={`w-10 h-10 bg-gradient-to-r ${currentViewDetails.color} rounded-xl flex items-center justify-center`}>
+                          <currentViewDetails.icon className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">{currentViewDetails.title}</h3>
+                          <p className="text-sm text-gray-500">{currentViewDetails.subtitle}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeView === 'main' && isAdmin && (
+                      <MainTabContentV2
+                        matchId={matchId}
+                        homeTeam={homeTeam}
+                        awayTeam={awayTeam}
+                        isTracking={isTracking}
+                        onEventRecord={handleRecordEvent}
+                      />
+                    )}
+
+                    {activeView === 'piano' && fullMatchRoster && (
+                      <>
+                        <FourTrackerSystem
+                          homeTeamPlayers={fullMatchRoster.home.map(p => ({ ...p, id: Number(p.id), team: 'home' as const }))}
+                          awayTeamPlayers={fullMatchRoster.away.map(p => ({ ...p, id: Number(p.id), team: 'away' as const }))}
+                          homeTeamName={homeTeam.name}
+                          awayTeamName={awayTeam.name}
+                          videoUrl={videoUrl}
+                        />
+                        <VoiceCollaborationOverlay />
+                      </>
+                    )}
+
+                    {activeView === 'voice-collab' && canShowVoiceCollab && (
+                      <VoiceCollaborationWithTest
+                        matchId={matchId}
+                        userId={user.id!}
+                      />
+                    )}
+
+                    {activeView === 'voice-input' && (
+                      <>
+                        {assignmentsLoading ? (
+                          <div className="flex items-center justify-center py-12">
+                            <Loader2 className="w-8 h-8 animate-spin text-blue-600 mr-3" />
+                            <span className="text-gray-600">Loading assignments...</span>
+                          </div>
+                        ) : canShowVoiceInput && assignedPlayers && assignedEventTypes ? (
+                          <TrackerVoiceInput
+                            assignedPlayers={convertPlayersForVoiceInput(assignedPlayers)}
+                            assignedEventTypes={assignedEventTypes}
+                            onRecordEvent={handleRecordEvent}
+                          />
+                        ) : (
+                          <div className="text-center py-12">
+                            <p className="text-gray-600">No tracker assignments found. Please contact an admin.</p>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {activeView === 'planning' && isAdmin && (
+                      <MatchPlanningNetwork
+                        matchId={matchId}
+                        width={isMobile ? 350 : 800}
+                        height={isMobile ? 400 : 600}
+                      />
+                    )}
+
+                    {activeView === 'tracker' && isAdmin && fullMatchRoster && (
+                      <UnifiedTrackerAssignment
+                        matchId={matchId}
+                        videoUrl={videoUrl}
+                        homeTeamPlayers={fullMatchRoster.home.map((player, index) => ({
+                          id: Number(player.id) || index,
+                          jersey_number: player.jersey_number,
+                          player_name: player.player_name,
+                          team: 'home' as const,
+                          position: player.position
+                        }))}
+                        awayTeamPlayers={fullMatchRoster.away.map((player, index) => ({
+                          id: Number(player.id) || (index + 1000),
+                          jersey_number: player.jersey_number,
+                          player_name: player.player_name,
+                          team: 'away' as const,
+                          position: player.position
+                        }))}
+                      />
+                    )}
+
+                    {activeView === 'video' && (
+                      <>
+                        {isAdmin && !videoId && (
+                          <VideoSetupSection
+                            videoUrl={videoUrl}
+                            onVideoUrlChange={setVideoUrl}
+                          />
+                        )}
+                        {videoId && matchId && (
+                          <TrackerVideoInterface
+                            initialVideoId={videoId}
+                            matchId={matchId}
+                          />
+                        )}
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             </div>
-
-            {/* Unified Content Area */}
-            <div className="space-y-6 animate-fade-in">
-              <Card className="border-0 shadow-xl bg-white/95 backdrop-blur-sm rounded-2xl overflow-hidden min-h-[60vh]">
-                <CardContent className="p-6">
-                  {currentViewDetails && (
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className={`w-10 h-10 bg-gradient-to-r ${currentViewDetails.color} rounded-xl flex items-center justify-center`}>
-                        <currentViewDetails.icon className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{currentViewDetails.title}</h3>
-                        <p className="text-sm text-gray-500">{currentViewDetails.subtitle}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Content based on activeView */}
-                  {activeView === 'main' && isAdmin && (
-                    <MainTabContentV2
-                      matchId={matchId}
-                      homeTeam={homeTeam}
-                      awayTeam={awayTeam}
-                      isTracking={isTracking}
-                      onEventRecord={handleRecordEvent}
-                    />
-                  )}
-
-                  {activeView === 'piano' && (
-                    <>
-                      <TrackerPianoInput 
-                        matchId={matchId} 
-                        onRecordEvent={handleRecordEvent}
-                      />
-                      <VoiceCollaborationOverlay />
-                    </>
-                  )}
-
-                  {activeView === 'voice-collab' && canShowVoiceCollab && (
-                    <VoiceCollaborationWithTest
-                      matchId={matchId}
-                      userId={user.id!}
-                    />
-                  )}
-
-                  {activeView === 'voice-input' && canShowVoiceInput && (
-                    <TrackerVoiceInput
-                      assignedPlayers={convertPlayersForVoiceInput(assignedPlayers!)}
-                      assignedEventTypes={assignedEventTypes!}
-                      onRecordEvent={handleRecordEvent}
-                    />
-                  )}
-
-                  {activeView === 'planning' && isAdmin && (
-                    <MatchPlanningNetwork 
-                      matchId={matchId}
-                      width={isMobile ? 350 : 800}
-                      height={isMobile ? 400 : 600}
-                    />
-                  )}
-                    
-                  {activeView === 'tracker' && isAdmin && (
-                    <UnifiedTrackerAssignment
-                      matchId={matchId!}
-                      videoUrl={videoUrl}
-                      homeTeamPlayers={fullMatchRoster?.home?.map((player, index) => ({
-                        id: Number(player.id) || index,
-                        jersey_number: player.jersey_number || index + 1,
-                        player_name: player.player_name || `Player ${index + 1}`,
-                        team: 'home' as const,
-                        position: player.position
-                      })) || []}
-                      awayTeamPlayers={fullMatchRoster?.away?.map((player, index) => ({
-                        id: Number(player.id) || index + 100,
-                        jersey_number: player.jersey_number || index + 1,
-                        player_name: player.player_name || `Player ${index + 1}`,
-                        team: 'away' as const,
-                        position: player.position
-                      })) || []}
-                    />
-                  )}
-
-                  {activeView === 'video' && (
-                    <>
-                      {isAdmin && !videoId && (
-                        <VideoSetupSection
-                          videoUrl={videoUrl}
-                          onVideoUrlChange={setVideoUrl}
-                        />
-                      )}
-                      {videoId && matchId && (
-                        <TrackerVideoInterface
-                          initialVideoId={videoId}
-                          matchId={matchId}
-                        />
-                      )}
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
           </VoiceCollaborationProvider>
         </SidebarInset>
       </div>

@@ -3,14 +3,6 @@ import React from 'react';
 import { usePermissionChecker } from '@/hooks/usePermissionChecker';
 import { useAuth } from '@/context/AuthContext';
 
-/**
- * @component PermissionDebugger
- * @description A debugging tool for developers to inspect the current user's
- * permissions and roles. It displays the user's role, all their granted permissions,
- * and the routes they are allowed to access based on the permissions system.
- * This component should only be used for development and troubleshooting purposes.
- * @returns {React.FC} A React functional component.
- */
 const PermissionDebugger = () => {
   const { user } = useAuth();
   const { role, permissions, hasPermission, isLoading, error, getAllowedRoutes } = usePermissionChecker();

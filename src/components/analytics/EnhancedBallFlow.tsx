@@ -6,27 +6,12 @@ import { Progress } from '@/components/ui/progress';
 import { Activity, TrendingUp, Zap, MapPin } from 'lucide-react';
 import { Team } from '@/types';
 
-/**
- * @interface EnhancedBallFlowProps
- * @description Props for the EnhancedBallFlow component.
- * @property {any[]} ballTrackingPoints - An array of ball tracking data points.
- * @property {Team} homeTeam - The data for the home team.
- * @property {Team} awayTeam - The data for the away team.
- */
 interface EnhancedBallFlowProps {
   ballTrackingPoints: any[];
   homeTeam: Team;
   awayTeam: Team;
 }
 
-/**
- * @component EnhancedBallFlow
- * @description A sophisticated component that analyzes and visualizes ball movement data.
- * It generates a heatmap of ball occupancy zones, calculates speed and distance metrics,
- * and displays the ball's recent trail on a pitch representation.
- * @param {EnhancedBallFlowProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const EnhancedBallFlow: React.FC<EnhancedBallFlowProps> = ({ 
   ballTrackingPoints, 
   homeTeam, 

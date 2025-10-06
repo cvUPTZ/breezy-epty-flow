@@ -9,12 +9,6 @@ import {
 } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
 
-/**
- * @interface IndividualPlayerChartsProps
- * @description Props for the IndividualPlayerCharts component.
- * @property {PlayerStatSummary[]} playerStats - An array of statistics for all players.
- * @property {string | number | null} selectedPlayerId - The ID of the player to display charts for.
- */
 interface IndividualPlayerChartsProps {
   playerStats: PlayerStatSummary[];
   selectedPlayerId: string | number | null;
@@ -30,13 +24,6 @@ const chartColors = [
     "hsl(var(--chart-2)/0.8)",
 ];
 
-/**
- * @component IndividualPlayerCharts
- * @description A component that renders a set of bar charts detailing the performance
- * of a single selected player across various statistical categories (shooting, passing, etc.).
- * @param {IndividualPlayerChartsProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const IndividualPlayerCharts: React.FC<IndividualPlayerChartsProps> = ({
   playerStats,
   selectedPlayerId,

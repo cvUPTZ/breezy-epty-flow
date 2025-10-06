@@ -7,16 +7,6 @@ import { toast } from 'sonner';
 import { createPortal } from 'react-dom';
 import { DetectionResult } from '@/services/pythonDetectionService';
 
-/**
- * @interface ProductionTacticalOverlayProps
- * @description Props for the ProductionTacticalOverlay component.
- * @property {HTMLVideoElement | null} videoElement - A reference to the HTML video element.
- * @property {string} videoUrl - The URL of the video being analyzed.
- * @property {{ width: number; height: number }} videoDimensions - The dimensions of the video player.
- * @property {number} currentTime - The current playback time of the video.
- * @property {boolean} isPlaying - Whether the video is currently playing.
- * @property {DetectionResult[]} detectionResults - An array of detection results from the AI service.
- */
 interface ProductionTacticalOverlayProps {
   videoElement: HTMLVideoElement | null;
   videoUrl: string;
@@ -26,14 +16,6 @@ interface ProductionTacticalOverlayProps {
   detectionResults: DetectionResult[];
 }
 
-/**
- * @component ProductionTacticalOverlay
- * @description A high-level container for the production-ready tactical analysis system.
- * It integrates the `AdvancedDrawingOverlay` for drawing annotations and the `DrawingToolsPanel` for tool selection.
- * It manages the overall state, including annotations, drawing mode, and fullscreen, and handles persistence.
- * @param {ProductionTacticalOverlayProps} props The props for the component.
- * @returns {JSX.Element} The rendered ProductionTacticalOverlay component.
- */
 export const ProductionTacticalOverlay: React.FC<ProductionTacticalOverlayProps> = ({
   videoElement,
   videoUrl,

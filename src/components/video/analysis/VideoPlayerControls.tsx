@@ -5,23 +5,11 @@ import { SkipBack, SkipForward } from 'lucide-react';
 
 const ASSUMED_FPS = 30;
 
-/**
- * @interface VideoPlayerControlsProps
- * @description Props for the frame-by-frame VideoPlayerControls component.
- * @property {React.RefObject<HTMLVideoElement>} videoPlayerRef - A ref to the HTML video element to be controlled.
- * @property {boolean} isPlayingPlaylist - A flag to disable controls when a playlist is active.
- */
 interface VideoPlayerControlsProps {
   videoPlayerRef: React.RefObject<HTMLVideoElement>;
   isPlayingPlaylist: boolean; 
 }
 
-/**
- * @component VideoPlayerControls
- * @description A set of specialized video player controls for frame-by-frame analysis and playback speed adjustment.
- * @param {VideoPlayerControlsProps} props The props for the component.
- * @returns {JSX.Element} The rendered VideoPlayerControls component.
- */
 export const VideoPlayerControls: React.FC<VideoPlayerControlsProps> = ({ videoPlayerRef, isPlayingPlaylist }) => {
   const [currentPlaybackRate, setCurrentPlaybackRate] = useState(1);
 

@@ -9,15 +9,6 @@ import { Team } from '@/types';
 import { toast } from 'sonner';
 import { createSimulatedTeams } from '@/utils/formationUtils';
 
-/**
- * @interface SetupScreenProps
- * @description Props for the SetupScreen component.
- * @property {Team | null} homeTeam - The current data for the home team, or null if new.
- * @property {Team | null} awayTeam - The current data for the away team, or null if new.
- * @property {(home: Team, away: Team) => void} updateTeams - Callback to update the state of both teams.
- * @property {(home: Team, away: Team) => void} completeSetup - Callback to finalize the setup and proceed.
- * @property {string} [matchId] - The ID of the match if it's being edited, otherwise undefined for a new match.
- */
 interface SetupScreenProps {
   homeTeam: Team | null;
   awayTeam: Team | null;
@@ -26,14 +17,6 @@ interface SetupScreenProps {
   matchId?: string;
 }
 
-/**
- * @component SetupScreen
- * @description A full-screen component dedicated to setting up a new match or editing an existing one.
- * It integrates the `TeamSetupWithFormation` component to handle the detailed team and player configuration.
- * It also provides an option to load simulated teams for quick testing.
- * @param {SetupScreenProps} props The props for the component.
- * @returns {JSX.Element} The rendered SetupScreen component.
- */
 const SetupScreen: React.FC<SetupScreenProps> = ({
   homeTeam,
   awayTeam,

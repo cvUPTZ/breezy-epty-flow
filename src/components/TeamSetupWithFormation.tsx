@@ -9,27 +9,12 @@ import FormationSelector from './FormationSelector';
 import { generatePlayersForFormation } from '@/utils/formationUtils';
 import { toast } from 'sonner';
 
-/**
- * @interface TeamSetupWithFormationProps
- * @description Props for the TeamSetupWithFormation component.
- * @property {{ home: Team | null; away: Team | null }} teams - The state of the home and away teams. Can be null initially.
- * @property {function(teams: { home: Team; away: Team }): void} onTeamsChange - Callback to update the state of both teams.
- * @property {function(): void} onConfirm - Callback to finalize the setup and proceed.
- */
 interface TeamSetupWithFormationProps {
   teams: { home: Team | null; away: Team | null };
   onTeamsChange: (teams: { home: Team; away: Team }) => void;
   onConfirm: () => void;
 }
 
-/**
- * @component TeamSetupWithFormation
- * @description An advanced team setup component that integrates formation selection.
- * It allows users to set team names, choose a formation, and automatically generates a
- * default roster of players based on that formation. The UI is tabbed for home and away teams.
- * @param {TeamSetupWithFormationProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const TeamSetupWithFormation: React.FC<TeamSetupWithFormationProps> = ({ teams, onTeamsChange, onConfirm }) => {
   const [activeTab, setActiveTab] = useState<string>("home");
   
@@ -61,7 +46,7 @@ const TeamSetupWithFormation: React.FC<TeamSetupWithFormationProps> = ({ teams, 
     if (needsUpdate) {
       onTeamsChange(updatedTeams as { home: Team, away: Team });
     }
-  }, [onTeamsChange, teams]);
+  }, []);
   
   const updateTeamName = (teamId: 'home' | 'away', name: string) => {
     if (!teams[teamId]) return;
@@ -75,7 +60,7 @@ const TeamSetupWithFormation: React.FC<TeamSetupWithFormationProps> = ({ teams, 
     } as { home: Team, away: Team });
   };
   
-  const updateTeamFormation = React.useCallback((teamId: 'home' | 'away', formation: Formation) => {
+  const updateTeamFormation = (teamId: 'home' | 'away', formation: Formation) => {
     if (!teams[teamId]) return;
     
     const team = teams[teamId]!;
@@ -94,7 +79,7 @@ const TeamSetupWithFormation: React.FC<TeamSetupWithFormationProps> = ({ teams, 
     } as { home: Team, away: Team });
     
     toast.success(`${teamId === 'home' ? 'Home' : 'Away'} team formation updated to ${formation} with new players`);
-  }, [onTeamsChange, teams]);
+  };
   
   const addPlayer = (teamId: 'home' | 'away') => {
     if (!teams[teamId]) return;
@@ -161,7 +146,7 @@ const TeamSetupWithFormation: React.FC<TeamSetupWithFormationProps> = ({ teams, 
     if (teams.away?.formation && teams.away.players.length === 0) {
       updateTeamFormation('away', teams.away.formation as Formation);
     }
-  }, [teams.home?.formation, teams.away?.formation, teams.home?.players.length, teams.away?.players.length, updateTeamFormation]);
+  }, [teams.home?.formation, teams.away?.formation]);
   
   // Render nothing if teams are not initialized yet
   if (!teams.home || !teams.away) {

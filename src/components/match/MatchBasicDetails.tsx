@@ -8,15 +8,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MatchFormData } from '@/types/matchForm';
 
-/**
- * @interface MatchBasicDetailsProps
- * @description Props for the MatchBasicDetails component. Integrates with react-hook-form.
- * @property {UseFormRegister<MatchFormData>} register - The register function from react-hook-form.
- * @property {FieldErrors<MatchFormData>} errors - The errors object from react-hook-form.
- * @property {UseFormSetValue<MatchFormData>} setValue - The setValue function from react-hook-form.
- * @property {UseFormWatch<MatchFormData>} watch - The watch function from react-hook-form.
- * @property {boolean} [isEditMode=false] - Flag to indicate if the form is in edit mode, which changes the card title.
- */
 interface MatchBasicDetailsProps {
   register: UseFormRegister<MatchFormData>;
   errors: FieldErrors<MatchFormData>;
@@ -25,13 +16,6 @@ interface MatchBasicDetailsProps {
   isEditMode?: boolean;
 }
 
-/**
- * @component MatchBasicDetails
- * @description A form component for inputting the basic details of a football match.
- * It is designed to be used as part of a larger form managed by `react-hook-form`.
- * @param {MatchBasicDetailsProps} props The props for the component.
- * @returns {JSX.Element} The rendered MatchBasicDetails form section.
- */
 const MatchBasicDetails: React.FC<MatchBasicDetailsProps> = ({
   register,
   errors,

@@ -6,19 +6,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PassEventData } from '@/types/eventData';
-import { PlayerForPianoInput } from '../TrackerPianoInput';
+import { Player as PlayerForPianoInput } from '../TrackerPianoInput';
 import { useToast } from '@/hooks/use-toast';
 
-/**
- * @interface PassDetailModalProps
- * @description Props for the PassDetailModal component.
- * @property {boolean} isOpen - Whether the modal is currently open.
- * @property {() => void} onClose - Callback function to close the modal.
- * @property {(details: PassEventData) => void} onSubmit - Callback function to submit the pass details.
- * @property {Partial<PassEventData>} initialDetails - The initial details to populate the form with.
- * @property {PlayerForPianoInput | null} passer - The player who made the pass.
- * @property {PlayerForPianoInput[]} teamPlayers - A list of all players on the same team as the passer.
- */
 interface PassDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -28,13 +18,6 @@ interface PassDetailModalProps {
   teamPlayers: PlayerForPianoInput[];
 }
 
-/**
- * @component PassDetailModal
- * @description A modal dialog for capturing detailed information about a football pass event.
- * It allows the user to specify the recipient, success status, and type of the pass.
- * @param {PassDetailModalProps} props The props for the component.
- * @returns {JSX.Element} The rendered PassDetailModal component.
- */
 const PassDetailModal: React.FC<PassDetailModalProps> = ({
   isOpen,
   onClose,
@@ -80,7 +63,7 @@ const PassDetailModal: React.FC<PassDetailModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Pass Details (From: {passer?.name || 'Selected Player'})</DialogTitle>
+          <DialogTitle>Pass Details (From: {passer?.player_name || 'Selected Player'})</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
@@ -95,7 +78,7 @@ const PassDetailModal: React.FC<PassDetailModalProps> = ({
               <SelectContent>
                 {availableRecipients.map(player => (
                   <SelectItem key={player.id} value={String(player.id)}>
-                    {player.name} (#{player.jersey_number || 0})
+                    {player.player_name} (#{player.jersey_number || 0})
                   </SelectItem>
                 ))}
               </SelectContent>

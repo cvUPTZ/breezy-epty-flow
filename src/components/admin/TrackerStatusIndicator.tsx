@@ -5,10 +5,6 @@ import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { AlertTriangle, CheckCircle, Clock, Wifi, WifiOff, Battery } from 'lucide-react';
 
-/**
- * @interface TrackerInfo
- * @description Defines the structure for a tracker's real-time activity and status data.
- */
 interface TrackerInfo {
   user_id: string;
   email?: string;
@@ -20,14 +16,6 @@ interface TrackerInfo {
   network_quality?: 'excellent' | 'good' | 'poor';
 }
 
-/**
- * @interface TrackerStatusIndicatorProps
- * @description Props for the TrackerStatusIndicator component.
- * @property {TrackerInfo} activity - The real-time activity data for the tracker.
- * @property {boolean} isAbsent - Flag indicating if the tracker is marked as absent.
- * @property {function(trackerId: string): void} onMarkAbsent - Callback to manually mark the tracker as absent.
- * @property {function(trackerId: string): void} onReconnect - Callback to manually mark the tracker as reconnected.
- */
 interface TrackerStatusIndicatorProps {
   activity: TrackerInfo;
   isAbsent: boolean;
@@ -35,13 +23,6 @@ interface TrackerStatusIndicatorProps {
   onReconnect: (trackerId: string) => void;
 }
 
-/**
- * @component TrackerStatusIndicator
- * @description A component that displays a single tracker's status in a compact row.
- * It shows connection status, last activity, and provides actions for absence management.
- * @param {TrackerStatusIndicatorProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const TrackerStatusIndicator: React.FC<TrackerStatusIndicatorProps> = ({
   activity,
   isAbsent,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -104,15 +104,18 @@ const Scouting: React.FC = () => {
   };
 
   return (
-    <SidebarInset>
-      <div className="container mx-auto max-w-7xl px-4 py-6 space-y-6">
-        <div className="flex items-center gap-4 mb-6">
-          <SidebarTrigger />
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Football Scouting System</h1>
-            <p className="text-muted-foreground">Comprehensive talent identification and analysis platform</p>
-          </div>
-        </div>
+    <SidebarProvider>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex w-full">
+        <MatchAnalysisSidebar menuItems={menuItems} groupLabel="Navigation" />
+        <SidebarInset>
+          <div className="container mx-auto max-w-7xl px-4 py-6 space-y-6">
+            <div className="flex items-center gap-4 mb-6">
+              <SidebarTrigger />
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Football Scouting System</h1>
+                <p className="text-muted-foreground">Comprehensive talent identification and analysis platform</p>
+              </div>
+            </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsList className="grid w-full grid-cols-2 lg:grid-cols-7 gap-2">
@@ -138,9 +141,11 @@ const Scouting: React.FC = () => {
               <div className="min-h-[600px]">
                 {renderTabContent()}
               </div>
-        </Tabs>
+            </Tabs>
+          </div>
+        </SidebarInset>
       </div>
-    </SidebarInset>
+    </SidebarProvider>
   );
 };
 

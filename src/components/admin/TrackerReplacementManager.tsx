@@ -8,10 +8,6 @@ import { UserX } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-/**
- * @interface TrackerAssignment
- * @description Represents a tracker assignment with enriched details for display.
- */
 interface TrackerAssignment {
   id: string;
   tracker_user_id: string;
@@ -22,24 +18,11 @@ interface TrackerAssignment {
   player_name?: string;
 }
 
-/**
- * @interface TrackerReplacementManagerProps
- * @description Props for the TrackerReplacementManager component.
- * @property {string} matchId - The ID of the match to manage replacements for.
- * @property {function(): Promise<void>} [onReplacementUpdate] - Optional callback to trigger after a replacement is made.
- */
 interface TrackerReplacementManagerProps {
   matchId: string;
   onReplacementUpdate?: () => Promise<void>;
 }
 
-/**
- * @component TrackerReplacementManager
- * @description An admin component for managing tracker replacements for a specific match.
- * It allows swapping the primary tracker on an assignment with an available replacement.
- * @param {TrackerReplacementManagerProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const TrackerReplacementManager: React.FC<TrackerReplacementManagerProps> = ({ 
   matchId, 
   onReplacementUpdate 

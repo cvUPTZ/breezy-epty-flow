@@ -1,26 +1,13 @@
 
 import React, { memo, useMemo, useEffect, useRef, useState, CSSProperties } from 'react';
-import * as AllTypes from 'src/types/index';
+import * as AllTypes from '@/types';
 import { getEventTypeIcon } from './getEventTypeIcon';
 
 // --- Helper: Intersection Observer Hook ---
-
-/**
- * @interface IntersectionObserverHookOptions
- * @extends IntersectionObserverInit
- * @description Options for the useIntersectionObserver hook.
- * @property {boolean} [freezeOnceVisible=false] - If true, the observer will stop observing the element once it has become visible.
- */
 interface IntersectionObserverHookOptions extends IntersectionObserverInit {
   freezeOnceVisible?: boolean;
 }
 
-/**
- * @function useIntersectionObserver
- * @description A custom React hook that uses the Intersection Observer API to detect when an element is visible in the viewport.
- * @param {IntersectionObserverHookOptions} [options] - Configuration options for the Intersection Observer.
- * @returns {[React.Dispatch<React.SetStateAction<HTMLElement | null>>, boolean]} A tuple containing a state setter for the element to observe, and a boolean indicating if the element is currently intersecting.
- */
 function useIntersectionObserver(
   options?: IntersectionObserverHookOptions
 ): [React.Dispatch<React.SetStateAction<HTMLElement | null>>, boolean] {
@@ -91,17 +78,7 @@ const SvgDefaultIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 );
 
 // --- Enhanced Type Definitions ---
-
-/**
- * @typedef {'xs' | 'sm' | 'md' | 'lg' | 'xl' | number} IconSize
- * @description Defines the possible sizes for the icon. Can be a predefined string or a custom number.
- */
 export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | number;
-
-/**
- * @typedef {'default' | 'selected' | 'disabled' | 'highlighted'} IconVariant
- * @description Defines the visual variants for the icon, affecting its appearance (e.g., color, style).
- */
 export type IconVariant = 'default' | 'selected' | 'disabled' | 'highlighted';
 
 // --- Icon Registry - Updated to include all EventType values ---
@@ -142,22 +119,6 @@ const sizeMap: Record<Exclude<IconSize, number>, number> = {
 };
 
 // --- Component Props ---
-
-/**
- * @interface EnhancedEventTypeIconProps
- * @description Props for the EnhancedEventTypeIcon component.
- * @property {AllTypes.EventType} eventType - The type of event to display an icon for.
- * @property {IconSize} [size='md'] - The size of the icon.
- * @property {IconVariant} [variant='default'] - The visual variant of the icon.
- * @property {string} [className] - Additional CSS class names to apply to the icon container.
- * @property {CSSProperties} [style] - Custom inline styles to apply to the icon container.
- * @property {string} [accessibilityLabel] - A custom accessibility label for the icon.
- * @property {() => void} [onClick] - Callback function to be executed when the icon is clicked.
- * @property {boolean} [disabled=false] - If true, the icon will be visually disabled and non-interactive.
- * @property {string} ['data-testid'] - A test ID for the component for testing purposes.
- * @property {boolean} [showTooltip=false] - If true, a tooltip will be shown on hover.
- * @property {React.ReactNode} [tooltipContent] - The content to display within the tooltip.
- */
 export interface EnhancedEventTypeIconProps {
   eventType: AllTypes.EventType;
   size?: IconSize;
@@ -173,14 +134,6 @@ export interface EnhancedEventTypeIconProps {
 }
 
 // --- Main Component ---
-
-/**
- * @component EnhancedEventTypeIcon
- * @description A highly customizable and performant icon component for representing different match event types.
- * It features lazy loading via the Intersection Observer API to only render icons when they are visible in the viewport.
- * @param {EnhancedEventTypeIconProps} props The props for the component.
- * @returns {JSX.Element} The rendered EnhancedEventTypeIcon component.
- */
 export const EnhancedEventTypeIcon: React.FC<EnhancedEventTypeIconProps> = memo(({
   eventType,
   size = 'md',

@@ -11,18 +11,6 @@ import { toast } from 'sonner';
 // Import the official permission definitions from the central hook
 import { RolePermissions, UserRole, DEFAULT_PERMISSIONS as defaultPermissions } from '@/hooks/useUserPermissions';
 
-/**
- * @interface UserProfile
- * @description Represents a user's profile with their roles and permissions for the admin panel.
- * @property {string} id - The unique identifier for the user.
- * @property {string | null} email - The user's email address.
- * @property {string | null} full_name - The user's full name.
- * @property {string | null} role - The user's assigned role.
- * @property {string} created_at - The timestamp of when the user was created.
- * @property {string | null} updated_at - The timestamp of the last update.
- * @property {Partial<RolePermissions> | null} custom_permissions - Any permissions that override the role defaults.
- * @property {RolePermissions} [effective_permissions] - The final, calculated permissions for the user.
- */
 interface UserProfile {
   id: string;
   email: string | null;
@@ -34,12 +22,6 @@ interface UserProfile {
   effective_permissions?: RolePermissions;
 }
 
-/**
- * @function getPermissionDescription
- * @description A helper function that returns a human-readable description for a given permission key.
- * @param {keyof RolePermissions} permission - The permission key (e.g., 'canCreateMatches').
- * @returns {string} The description of the permission.
- */
 const getPermissionDescription = (permission: keyof RolePermissions): string => {
   const descriptions: Record<keyof RolePermissions, string> = {
     // Match Management
@@ -87,13 +69,6 @@ const getPermissionDescription = (permission: keyof RolePermissions): string => 
   return descriptions[permission] || 'No description available.';
 };
 
-/**
- * @component AccessManagement
- * @description A comprehensive admin component for managing user roles and fine-grained permissions.
- * It allows admins to view all users, change their roles, and override default role permissions
- * with specific toggles for each capability within the application.
- * @returns {React.FC} A React functional component.
- */
 const AccessManagement: React.FC = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);

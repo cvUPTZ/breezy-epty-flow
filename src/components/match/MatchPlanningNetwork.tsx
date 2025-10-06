@@ -9,20 +9,6 @@ import { useTrackerAbsenceDetection } from '@/hooks/useTrackerAbsenceDetection';
 import ReplacementTrackerFinder from '@/components/admin/ReplacementTrackerFinder';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-/**
- * @interface MatchData
- * @description Represents the core data for a match.
- * @property {string} id - The unique ID of the match.
- * @property {string | null} name - The name of the match.
- * @property {string | null} home_team_name - The name of the home team.
- * @property {string | null} away_team_name - The name of the away team.
- * @property {string | null} match_date - The date and time of the match.
- * @property {string} status - The current status of the match.
- * @property {any[]} home_team_players - An array of players for the home team.
- * @property {any[]} away_team_players - An array of players for the away team.
- * @property {string | null} [description] - A description of the match.
- * @property {string | null} [location] - The location of the match.
- */
 interface MatchData {
   id: string;
   name: string | null;
@@ -36,17 +22,6 @@ interface MatchData {
   location?: string | null;
 }
 
-/**
- * @interface TrackerAssignment
- * @description Represents an assignment of a tracker to a player or event for a match.
- * @property {string} id - The unique ID of the assignment.
- * @property {string | null} tracker_user_id - The user ID of the assigned tracker.
- * @property {string | null} tracker_email - The email of the assigned tracker.
- * @property {number | null} [player_id] - The ID of the player the tracker is assigned to.
- * @property {string | null} [player_team_id] - The team ID of the assigned player.
- * @property {string[] | null} [assigned_event_types] - The event types the tracker is assigned to.
- * @property {string} created_at - The timestamp when the assignment was created.
- */
 interface TrackerAssignment {
   id: string;
   tracker_user_id: string | null;
@@ -57,18 +32,6 @@ interface TrackerAssignment {
   created_at: string;
 }
 
-/**
- * @interface TrackerStatus
- * @description Represents the current status of a tracker.
- * @property {string} id - The user ID of the tracker.
- * @property {string} email - The email of the tracker.
- * @property {string} full_name - The full name of the tracker.
- * @property {'active' | 'inactive' | 'pending'} status - The current status of the tracker.
- * @property {number} [battery_level] - The battery level of the tracker's device.
- * @property {string} [last_activity] - The timestamp of the tracker's last activity.
- * @property {number} assigned_players - The number of players assigned to this tracker.
- * @property {string[]} assigned_events - The event types assigned to this tracker.
- */
 interface TrackerStatus {
   id: string;
   email: string;
@@ -80,14 +43,6 @@ interface TrackerStatus {
   assigned_events: string[];
 }
 
-/**
- * @interface EventTypeCoverage
- * @description Represents the coverage status for a specific event type.
- * @property {string} event_type - The key of the event type.
- * @property {number} assigned_trackers - The number of trackers assigned to this event type.
- * @property {number} total_assignments - The total number of tracker assignments for the match.
- * @property {number} coverage_percentage - The percentage of trackers assigned to this event type.
- */
 interface EventTypeCoverage {
   event_type: string;
   assigned_trackers: number;
@@ -95,13 +50,6 @@ interface EventTypeCoverage {
   coverage_percentage: number;
 }
 
-/**
- * @interface MatchPlanningNetworkProps
- * @description Props for the MatchPlanningNetwork component.
- * @property {string} matchId - The ID of the match to display the planning network for.
- * @property {number} [width=800] - The width of the component (not currently used in layout).
- * @property {number} [height=600] - The height of the component (not currently used in layout).
- */
 interface MatchPlanningNetworkProps {
   matchId: string;
   width?: number;
@@ -123,14 +71,6 @@ const EVENT_TYPES = [
   { key: 'clearance', label: 'Clearances', priority: 'low' }
 ];
 
-/**
- * @component MatchPlanningNetwork
- * @description A comprehensive dashboard component for organizing and planning all aspects of a match.
- * It provides a centralized view of match details, tracker assignments, tracker status, event coverage, and readiness.
- * It also includes features for detecting and replacing absent trackers.
- * @param {MatchPlanningNetworkProps} props The props for the component.
- * @returns {JSX.Element} The rendered MatchPlanningNetwork component.
- */
 export const MatchPlanningNetwork: React.FC<MatchPlanningNetworkProps> = ({
   matchId,
   width = 800,

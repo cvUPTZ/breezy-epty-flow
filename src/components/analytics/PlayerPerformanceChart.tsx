@@ -4,27 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { PlayerStatistics } from '@/types';
 
-/**
- * @interface PlayerPerformanceChartProps
- * @description Props for the PlayerPerformanceChart component.
- * @property {PlayerStatistics[]} playerStats - An array of statistics for each player.
- * @property {string} homeTeamName - The name of the home team.
- * @property {string} awayTeamName - The name of the away team.
- */
 interface PlayerPerformanceChartProps {
   playerStats: PlayerStatistics[];
   homeTeamName: string;
   awayTeamName: string;
 }
 
-/**
- * @component PlayerPerformanceChart
- * @description A component that renders a series of charts to compare the performance
- * of individual players across various metrics like pass accuracy, a calculated
- * performance index, and key event counts.
- * @param {PlayerPerformanceChartProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const PlayerPerformanceChart: React.FC<PlayerPerformanceChartProps> = ({
   playerStats,
   homeTeamName,

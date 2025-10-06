@@ -5,17 +5,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Circle, Square, ArrowRight, Ruler, Search, MousePointer, PenTool, PenOff, Zap, Triangle, Users, Shield, Target, Flag, ArrowRightLeft } from 'lucide-react';
 
-/**
- * @interface DrawingToolsPanelProps
- * @description Props for the DrawingToolsPanel component.
- * @property {string} activeAnnotationTool - The key of the currently active annotation tool.
- * @property {(tool: string) => void} onToolChange - Callback function to change the active tool.
- * @property {() => void} onClearAll - Callback function to clear all annotations.
- * @property {() => void} onSaveAnalysis - Callback function to save the current analysis.
- * @property {number} violationCount - The number of detected tactical violations to display.
- * @property {boolean} drawingMode - A flag indicating if drawing mode is currently enabled.
- * @property {() => void} onDrawingModeToggle - Callback function to toggle drawing mode.
- */
 interface DrawingToolsPanelProps {
   activeAnnotationTool: string;
   onToolChange: (tool: string) => void;
@@ -26,14 +15,6 @@ interface DrawingToolsPanelProps {
   onDrawingModeToggle: () => void;
 }
 
-/**
- * @component DrawingToolsPanel
- * @description A floating toolbar that provides a selection of drawing and tactical annotation tools.
- * It allows the user to switch between different drawing modes, toggle drawing on and off, and perform
- * actions like clearing all annotations or saving the analysis.
- * @param {DrawingToolsPanelProps} props The props for the component.
- * @returns {JSX.Element} The rendered DrawingToolsPanel component.
- */
 export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
   activeAnnotationTool,
   onToolChange,

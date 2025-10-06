@@ -27,10 +27,6 @@ import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import type { User } from '@supabase/auth-helpers-nextjs';
 
-/**
- * @interface ErrorLog
- * @description Defines the structure of a single error log entry from the database.
- */
 interface ErrorLog {
   id: string;
   user_id?: string | null;
@@ -58,15 +54,8 @@ interface ErrorLog {
   updated_at: string;
 }
 
-/**
- * @component ErrorManager
- * @description A comprehensive admin dashboard for monitoring, filtering, and managing application errors.
- * It fetches logs from the database, displays them in a sortable table, and provides a detailed
- * modal view for inspecting and updating the status of each error.
- * @returns {React.FC} A React functional component.
- */
 const ErrorManager: React.FC = () => {
-  const { hasPermission } = usePermissionChecker();
+  const { hasPermission, isLoading: permissionLoading } = usePermissionChecker();
   const [errors, setErrors] = useState<ErrorLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -272,8 +261,8 @@ const ErrorManager: React.FC = () => {
     }
   };
 
-  // Handle loading / load error
-  if (loading) {
+  // Handle loading / permissionLoading / load error
+  if (permissionLoading || loading) {
     return (
       <Card>
         <CardContent className="p-6">

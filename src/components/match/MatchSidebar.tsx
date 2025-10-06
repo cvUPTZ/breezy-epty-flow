@@ -11,36 +11,6 @@ import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-/**
- * @interface MatchSidebarProps
- * @description Props for the MatchSidebar component. This component has a wide range of props to manage the state of a live match.
- * @property {number | null} [dbTimerValue] - The current timer value from the database.
- * @property {string | null} [timerStatus] - The status of the timer from the database (e.g., 'running', 'paused').
- * @property {string | null} [timerLastStartedAt] - The ISO timestamp of when the timer was last started.
- * @property {boolean} isRunning - Legacy prop indicating if the timer is running.
- * @property {number} [elapsedTime] - Legacy prop for the elapsed time.
- * @property {(time: number) => void} [setElapsedTime] - Legacy prop to set the elapsed time.
- * @property {'piano' | 'tracking'} mode - The current tracking mode.
- * @property {Player | null} selectedPlayer - The currently selected player.
- * @property {(player: any) => void} onPlayerSelect - Callback function to handle player selection.
- * @property {any[]} ballTrackingPoints - An array of coordinates representing the ball's movement.
- * @property {(coordinates: { x: number; y: number; }) => void} [trackBallMovement] - Callback to track ball movement.
- * @property {{ name: string; players: Player[]; formation: string; }} homeTeam - Data for the home team.
- * @property {{ name: string; players: Player[]; formation: string; }} awayTeam - Data for the away team.
- * @property {Statistics} statistics - The current match statistics.
- * @property {(stats: Statistics) => void} [updateStatistics] - Callback to update the match statistics.
- * @property {(segments: TimeSegmentStatistics[]) => void} [setTimeSegments] - Callback to set the calculated time segments.
- * @property {() => TimeSegmentStatistics[]} [calculateTimeSegments] - Function to calculate time segment statistics.
- * @property {boolean} isPassTrackingModeActive - Flag indicating if pass tracking mode is active.
- * @property {() => void} togglePassTrackingMode - Callback to toggle pass tracking mode.
- * @property {string} [activeTab] - The currently active tab in a parent component.
- * @property {(tab: string) => void} [setActiveTab] - Callback to set the active tab.
- * @property {any} [teamPositions] - The current positions of the teams.
- * @property {(positions: any) => void} [setTeamPositions] - Callback to set team positions.
- * @property {any} [potentialPasser] - The potential passer in pass tracking mode.
- * @property {any} [ballPathHistory] - The history of the ball's path.
- * @property {() => void} [toggleBallTrackingMode] - Callback to toggle ball tracking mode.
- */
 interface MatchSidebarProps {
   // Props for DB-driven timer
   dbTimerValue?: number | null;
@@ -86,13 +56,6 @@ interface MatchSidebarProps {
   toggleBallTrackingMode?: () => void;
 }
 
-/**
- * @component MatchSidebar
- * @description A sidebar component for the main match interface. It displays the match timer, provides tracking controls,
- * and shows team summaries and statistics. It features a responsive design, collapsing into an accordion on mobile devices.
- * @param {MatchSidebarProps} props The props for the component.
- * @returns {JSX.Element} The rendered MatchSidebar component.
- */
 const MatchSidebar: React.FC<MatchSidebarProps> = ({
   dbTimerValue,
   timerStatus,

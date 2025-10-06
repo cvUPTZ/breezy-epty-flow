@@ -3,14 +3,6 @@ import { TeamDetailedStats } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-/**
- * @interface PerformanceDifferenceAnalysisProps
- * @description Props for the PerformanceDifferenceAnalysis component.
- * @property {TeamDetailedStats} homeStats - The detailed statistics for the home team.
- * @property {TeamDetailedStats} awayStats - The detailed statistics for the away team.
- * @property {string} homeTeamName - The name of the home team.
- * @property {string} awayTeamName - The name of the away team.
- */
 interface PerformanceDifferenceAnalysisProps {
   homeStats: TeamDetailedStats;
   awayStats: TeamDetailedStats;
@@ -18,15 +10,6 @@ interface PerformanceDifferenceAnalysisProps {
   awayTeamName: string;
 }
 
-/**
- * @interface DifferenceStat
- * @description Represents a single row in the difference analysis table.
- * @property {string} metric - The name of the metric being compared.
- * @property {number | string} homeValue - The value of the metric for the home team.
- * @property {number | string} awayValue - The value of the metric for the away team.
- * @property {number | string} difference - The calculated difference between the home and away values.
- * @property {string} [unit] - An optional unit for the values.
- */
 interface DifferenceStat {
   metric: string;
   homeValue: number | string;
@@ -35,13 +18,6 @@ interface DifferenceStat {
   unit?: string;
 }
 
-/**
- * @component PerformanceDifferenceAnalysis
- * @description A component that displays a table to directly compare key performance
- * indicators between two teams and shows the numerical difference.
- * @param {PerformanceDifferenceAnalysisProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const PerformanceDifferenceAnalysis: React.FC<PerformanceDifferenceAnalysisProps> = ({
   homeStats,
   awayStats,

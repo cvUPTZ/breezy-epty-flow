@@ -20,25 +20,11 @@ import {
 import { enhancedPythonDetectionService, DetectionResult, DetectionJob } from '@/services/enhancedPythonDetectionService';
 import { toast } from 'sonner';
 
-/**
- * @interface ProductionPlayerBallDetectionPanelProps
- * @description Props for the ProductionPlayerBallDetectionPanel component.
- * @property {string} videoId - The ID of the video to be analyzed.
- * @property {function(results: DetectionResult[]): void} onDetectionResults - Callback to handle the final detection results.
- */
 interface ProductionPlayerBallDetectionPanelProps {
   videoId: string;
   onDetectionResults: (results: DetectionResult[]) => void;
 }
 
-/**
- * @component ProductionPlayerBallDetectionPanel
- * @description A control panel for an enhanced, production-ready ML detection service.
- * It provides more detailed configuration options for the ML model and processing,
- * and interacts with a queue-based system for handling detection jobs.
- * @param {ProductionPlayerBallDetectionPanelProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 export const ProductionPlayerBallDetectionPanel: React.FC<ProductionPlayerBallDetectionPanelProps> = ({
   videoId,
   onDetectionResults,

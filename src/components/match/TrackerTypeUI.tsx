@@ -9,33 +9,14 @@ import { Shield, Zap, Target, Users, ChevronDown, User, Play } from 'lucide-reac
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-/**
- * @interface TrackerTypeUIProps
- * @description Props for the TrackerTypeUI component.
- * @property {string} matchId - The ID of the current match.
- * @property {string} userId - The ID of the user acting as the tracker.
- * @property {(eventType: EventType, playerId?: string | number, teamId?: 'home' | 'away') => void} recordEvent - Callback to record a match event.
- */
 interface TrackerTypeUIProps {
   matchId: string;
   userId: string;
   recordEvent: (eventType: EventType, playerId?: string | number, teamId?: 'home' | 'away') => void;
 }
 
-/**
- * @typedef {'specialized' | 'defence' | 'midfield' | 'attack'} TrackerType
- * @description Defines the possible types of tracker assignments.
- */
 type TrackerType = 'specialized' | 'defence' | 'midfield' | 'attack';
 
-/**
- * @interface UserAssignment
- * @description Represents the assignment details for a specific user.
- * @property {string} id - The ID of the assignment.
- * @property {TrackerType} tracker_type - The type of tracker assignment.
- * @property {string[]} assigned_event_types - An array of event types the tracker is responsible for.
- * @property {any[]} line_players - An array of players the tracker is assigned to (for line-based assignments).
- */
 interface UserAssignment {
   id: string;
   tracker_type: TrackerType;
@@ -43,14 +24,6 @@ interface UserAssignment {
   line_players: any[];
 }
 
-/**
- * @component TrackerTypeUI
- * @description A dynamic user interface that adapts based on the tracker's specific assignment for a match.
- * It fetches the assignment from the database and renders a tailored UI for 'specialized', 'defence', 'midfield', or 'attack' trackers.
- * This ensures that trackers are presented with the most relevant controls for their assigned tasks.
- * @param {TrackerTypeUIProps} props The props for the component.
- * @returns {JSX.Element} The rendered TrackerTypeUI component, or a loading/error state.
- */
 const TrackerTypeUI: React.FC<TrackerTypeUIProps> = ({
   matchId,
   userId,

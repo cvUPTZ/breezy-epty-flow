@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { VideoJobService } from './videoJobService';
 
 export interface YouTubeVideoInfo {
   id: string;
@@ -90,7 +91,14 @@ export class YouTubeService {
       throw new Error(`Download failed: ${error.message}`);
     }
 
-    return data.filePath;
+    if (!data.filePath) {
+      throw new Error('Download function did not return a file path.');
+    }
+
+    // Get a signed URL for the downloaded video
+    const downloadUrl = await VideoJobService.getVideoDownloadUrl(data.filePath);
+
+    return downloadUrl;
   }
 
   static async saveVideoMatchSetup(

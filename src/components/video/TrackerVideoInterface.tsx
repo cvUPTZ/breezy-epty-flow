@@ -16,25 +16,11 @@ import { useGamepadTracker } from '@/hooks/useGamepadTracker';
 import { EventType } from '@/types';
 import CompactPlayerTracker from './CompactPlayerTracker';
 
-/**
- * @interface TrackerVideoInterfaceProps
- * @description Props for the TrackerVideoInterface component.
- * @property {string} initialVideoId - The initial YouTube video ID to load.
- * @property {string} matchId - The ID of the match this interface is associated with.
- */
 interface TrackerVideoInterfaceProps {
   initialVideoId: string;
   matchId: string;
 }
 
-/**
- * @interface PlayerControlEvent
- * @description Defines the structure for a player control event, used for broadcasting admin actions.
- * @property {'PLAY' | 'PAUSE' | 'SEEK' | 'LOAD_VIDEO'} type - The type of control action.
- * @property {string} [videoId] - The new video ID for a 'LOAD_VIDEO' event.
- * @property {number} [currentTime] - The seek time for a 'SEEK' event.
- * @property {number} timestamp - The timestamp when the event was created.
- */
 interface PlayerControlEvent {
   type: 'PLAY' | 'PAUSE' | 'SEEK' | 'LOAD_VIDEO';
   videoId?: string;
@@ -42,14 +28,7 @@ interface PlayerControlEvent {
   timestamp: number;
 }
 
-/**
- * @component TrackerVideoContent
- * @description The core logic and layout for the tracker video interface. It manages state for the player,
- * overlays, and connections, and renders the appropriate UI components. It's wrapped by `TrackerVideoInterface`
- * to provide the necessary `VoiceCollaborationProvider`.
- * @param {TrackerVideoInterfaceProps} props The props for the component.
- * @returns {JSX.Element} The rendered tracker video content.
- */
+// Create a separate component that uses the context
 const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVideoId, matchId }) => {
   const { user, userRole } = useAuth();
   const { toast } = useToast();
@@ -707,13 +686,6 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
   );
 };
 
-/**
- * @component TrackerVideoInterface
- * @description A wrapper component that provides the `VoiceCollaborationProvider` to its children.
- * This ensures that the `TrackerVideoContent` and its descendants have access to the voice collaboration context.
- * @param {TrackerVideoInterfaceProps} props The props for the component.
- * @returns {JSX.Element} The rendered component tree with the voice provider.
- */
 const TrackerVideoInterface: React.FC<TrackerVideoInterfaceProps> = (props) => {
   return (
     <VoiceCollaborationProvider>

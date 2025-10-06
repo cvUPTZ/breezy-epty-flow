@@ -5,26 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ZAxis } from 'recharts';
 
-/**
- * @interface PassFrequencyHeatmapProps
- * @description Props for the PassFrequencyHeatmap component.
- * @property {PlayerStatSummary[]} playerStats - An array of statistics for each player, including pass network data.
- * @property {Player[]} allPlayers - An array of all player objects to resolve names and IDs.
- */
 interface PassFrequencyHeatmapProps {
   playerStats: PlayerStatSummary[];
   allPlayers: Player[];
 }
 
-/**
- * @interface HeatmapDataPoint
- * @description Represents a single cell in the heatmap, corresponding to a pass combination.
- * @property {string} fromPlayerId - The ID of the passing player.
- * @property {string} toPlayerId - The ID of the receiving player.
- * @property {string} fromPlayerName - The name of the passing player.
- * @property {string} toPlayerName - The name of the receiving player.
- * @property {number} count - The number of passes between the two players.
- */
 interface HeatmapDataPoint {
   fromPlayerId: string;
   toPlayerId: string;
@@ -33,13 +18,6 @@ interface HeatmapDataPoint {
   count: number;
 }
 
-/**
- * @component PassFrequencyHeatmap
- * @description A component that creates a heatmap visualization to show the frequency
- * of passes between every pair of players on a team.
- * @param {PassFrequencyHeatmapProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const PassFrequencyHeatmap: React.FC<PassFrequencyHeatmapProps> = ({
   playerStats,
   allPlayers,

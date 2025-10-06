@@ -4,14 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { MatchEvent, PlayerStatSummary } from '@/types';
 
-/**
- * @interface PossessionTimelineChartProps
- * @description Props for the PossessionTimelineChart component.
- * @property {MatchEvent[]} events - An array of all events from the match.
- * @property {PlayerStatSummary[]} playerStats - An array of statistics for each player.
- * @property {string} homeTeamName - The name of the home team.
- * @property {string} awayTeamName - The name of the away team.
- */
 interface PossessionTimelineChartProps {
   events: MatchEvent[];
   playerStats: PlayerStatSummary[];
@@ -19,24 +11,12 @@ interface PossessionTimelineChartProps {
   awayTeamName: string;
 }
 
-/**
- * @interface PossessionChartDataPoint
- * @description Represents a single data point for the possession timeline chart.
- * @property {string} name - The label for the time point (e.g., "45'").
- * @property {Object.<string, number | string>} [key] - Dynamic keys for team names.
- */
+// Define correct chart data point type
 interface PossessionChartDataPoint {
   name: string;
   [key: string]: number | string;
 }
 
-/**
- * @component PossessionTimelineChart
- * @description A component that displays a line chart visualizing the cumulative possession
- * percentage for each team over the 90 minutes of a match.
- * @param {PossessionTimelineChartProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const PossessionTimelineChart: React.FC<PossessionTimelineChartProps> = ({
   events,
   playerStats,

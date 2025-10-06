@@ -93,6 +93,39 @@ export type Database = {
           },
         ]
       }
+      code_analysis_jobs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          payload: Json
+          result: Json | null
+          status: Database["public"]["Enums"]["code_analysis_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          payload: Json
+          result?: Json | null
+          status?: Database["public"]["Enums"]["code_analysis_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          payload?: Json
+          result?: Json | null
+          status?: Database["public"]["Enums"]["code_analysis_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       error_logs: {
         Row: {
           component_name: string | null
@@ -198,6 +231,51 @@ export type Database = {
           name?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      gpu_nodes: {
+        Row: {
+          capabilities: Json | null
+          created_at: string | null
+          endpoint: string | null
+          gpu_info: Json | null
+          id: string
+          last_heartbeat: string | null
+          location: string | null
+          name: string | null
+          owner_id: string | null
+          performance: Json | null
+          priority: number | null
+          status: string | null
+        }
+        Insert: {
+          capabilities?: Json | null
+          created_at?: string | null
+          endpoint?: string | null
+          gpu_info?: Json | null
+          id?: string
+          last_heartbeat?: string | null
+          location?: string | null
+          name?: string | null
+          owner_id?: string | null
+          performance?: Json | null
+          priority?: number | null
+          status?: string | null
+        }
+        Update: {
+          capabilities?: Json | null
+          created_at?: string | null
+          endpoint?: string | null
+          gpu_info?: Json | null
+          id?: string
+          last_heartbeat?: string | null
+          location?: string | null
+          name?: string | null
+          owner_id?: string | null
+          performance?: Json | null
+          priority?: number | null
+          status?: string | null
         }
         Relationships: []
       }
@@ -322,6 +400,7 @@ export type Database = {
           player_ids: number[] | null
           player_team_id: string
           tracker_id: string | null
+          tracker_type: string
           tracker_user_id: string
           updated_at: string | null
         }
@@ -336,6 +415,7 @@ export type Database = {
           player_ids?: number[] | null
           player_team_id: string
           tracker_id?: string | null
+          tracker_type?: string
           tracker_user_id: string
           updated_at?: string | null
         }
@@ -350,6 +430,7 @@ export type Database = {
           player_ids?: number[] | null
           player_team_id?: string
           tracker_id?: string | null
+          tracker_type?: string
           tracker_user_id?: string
           updated_at?: string | null
         }
@@ -732,6 +813,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fk_receiver"
+            columns: ["to_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_room"
             columns: ["room_id"]
             isOneToOne: false
@@ -750,6 +838,13 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "user_permissions_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_sender"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -1192,6 +1287,13 @@ export type Database = {
             referencedRelation: "user_permissions_view"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tracker_line_assignments_tracker_user_id_fkey"
+            columns: ["tracker_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_role"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_event_assignments: {
@@ -1226,6 +1328,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "user_permissions_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_event_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -1391,6 +1500,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "user_permissions_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_room_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -1560,6 +1676,20 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profiles_with_role: {
+        Row: {
+          created_at: string | null
+          custom_permissions: Json | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          role: string | null
+          updated_at: string | null
+          user_created_at: string | null
+          user_updated_at: string | null
+        }
+        Relationships: []
+      }
       user_roles_view: {
         Row: {
           email: string | null
@@ -1618,6 +1748,20 @@ export type Database = {
       find_replacement_tracker: {
         Args: { p_absent_tracker_id: string; p_match_id: string }
         Returns: string
+      }
+      get_all_assignment_logs: {
+        Args: { p_match_id?: string }
+        Returns: {
+          assignment_action: string
+          assignment_type: string
+          created_at: string
+          id: string
+          match_id: string
+          match_name: string
+          tracker_assignment: Json
+          tracker_name: string
+          tracker_user_id: string
+        }[]
       }
       get_all_users_with_metadata: {
         Args: Record<PropertyKey, never>
@@ -1749,6 +1893,10 @@ export type Database = {
         Args: Record<PropertyKey, never> | { p_user_id: string }
         Returns: boolean
       }
+      is_room_participant: {
+        Args: { _room_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_tracker: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -1830,6 +1978,7 @@ export type Database = {
       }
     }
     Enums: {
+      code_analysis_status: "pending" | "processing" | "completed" | "failed"
       job_status: "pending" | "processing" | "completed" | "failed"
       tracker_type: "specialized" | "defence" | "midfield" | "attack"
       user_role:
@@ -1966,6 +2115,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      code_analysis_status: ["pending", "processing", "completed", "failed"],
       job_status: ["pending", "processing", "completed", "failed"],
       tracker_type: ["specialized", "defence", "midfield", "attack"],
       user_role: ["admin", "teacher", "user", "tracker", "manager", "special"],

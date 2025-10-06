@@ -6,16 +6,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Target } from 'lucide-react';
 import { TrackerUser, EVENT_TYPES, Assignment } from '../types/TrackerAssignmentTypes';
 
-/**
- * @interface SpecializedAssignmentFormProps
- * @description Props for the SpecializedAssignmentForm component.
- * @property {TrackerUser[]} trackerUsers - List of available trackers.
- * @property {any[]} homeTeamPlayers - Roster for the home team.
- * @property {any[]} awayTeamPlayers - Roster for the away team.
- * @property {Assignment[]} assignments - Current list of all assignments for conflict detection.
- * @property {boolean} loading - Flag indicating if an action is in progress.
- * @property {function} onCreateAssignment - Callback to create a new assignment record.
- */
 interface SpecializedAssignmentFormProps {
   trackerUsers: TrackerUser[];
   homeTeamPlayers: any[];
@@ -25,13 +15,6 @@ interface SpecializedAssignmentFormProps {
   onCreateAssignment: (trackerId: string, playerId: number, teamId: 'home' | 'away', eventTypes: string[]) => Promise<boolean>;
 }
 
-/**
- * @component SpecializedAssignmentForm
- * @description A form for creating specialized tracker assignments, allowing an admin
- * to assign a single tracker to multiple players and multiple event types simultaneously.
- * @param {SpecializedAssignmentFormProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const SpecializedAssignmentForm: React.FC<SpecializedAssignmentFormProps> = ({
   trackerUsers,
   homeTeamPlayers,

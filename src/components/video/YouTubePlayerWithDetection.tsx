@@ -9,16 +9,6 @@ import { toast } from 'sonner';
 import { ProcessedDetectionResult } from '@/services/roboflowDetectionService';
 import { RoboflowVideoDetectionOverlay } from './RoboflowVideoDetectionOverlay';
 
-/**
- * @interface YouTubePlayerWithDetectionProps
- * @description Props for the YouTubePlayerWithDetection component.
- * @property {string} videoId - The ID of the YouTube video.
- * @property {string} matchId - The ID of the match, used for real-time synchronization.
- * @property {boolean} isAdmin - Flag indicating if the user has admin controls.
- * @property {(player: YouTubePlayerInstance) => void} [onPlayerReady] - Callback when the player is ready.
- * @property {(event: any) => void} [onStateChange] - Callback on player state change.
- * @property {(results: ProcessedDetectionResult[]) => void} [onDetectionResults] - Callback to handle the results from the AI detection.
- */
 interface YouTubePlayerWithDetectionProps {
   videoId: string;
   matchId: string;
@@ -28,14 +18,6 @@ interface YouTubePlayerWithDetectionProps {
   onDetectionResults?: (results: ProcessedDetectionResult[]) => void;
 }
 
-/**
- * @component YouTubePlayerWithDetection
- * @description An enhanced YouTube player component that integrates AI object detection capabilities.
- * It wraps the synchronized `YouTubePlayer` and adds a canvas overlay for displaying detection results
- * and a `RoboflowVideoDetectionOverlay` for controlling the analysis process.
- * @param {YouTubePlayerWithDetectionProps} props The props for the component.
- * @returns {JSX.Element} The rendered YouTube player with detection features.
- */
 export const YouTubePlayerWithDetection: React.FC<YouTubePlayerWithDetectionProps> = ({
   videoId,
   matchId,

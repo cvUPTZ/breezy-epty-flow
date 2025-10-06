@@ -6,22 +6,10 @@ import { useAuth } from '@/context/AuthContext';
 import { EnhancedEventTypeIcon } from '@/components/match/EnhancedEventTypeIcon';
 import { EventType } from '@/types';
 
-/**
- * @interface PianoInputProps
- * @description Props for the PianoInput component.
- * @property {(eventType: EventType) => void} onEventRecord - Callback function to record an event when the button is pressed.
- */
 interface PianoInputProps {
   onEventRecord: (eventType: EventType) => void;
 }
 
-/**
- * @component PianoInput
- * @description A user interface for recording match events, styled like a piano. This version requires a two-step process:
- * first select an event type, then click a separate button to record it.
- * @param {PianoInputProps} props The props for the component.
- * @returns {JSX.Element} The rendered PianoInput component.
- */
 const PianoInput: React.FC<PianoInputProps> = ({
   onEventRecord
 }) => {

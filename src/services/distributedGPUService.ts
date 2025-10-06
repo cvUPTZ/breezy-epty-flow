@@ -90,9 +90,8 @@ export interface LoadBalancingConfig {
 }
 
 class DistributedGPUService {
-  private httpBaseUrl: string;
-  private wsBaseUrl: string;
-  private accessToken: string | null = null;
+  private baseUrl: string;
+  private apiKey: string | null = null;
   private wsConnection: WebSocket | null = null;
   private nodes: Map<string, GPUNode> = new Map();
   private jobs: Map<string, InferenceJob> = new Map();
@@ -100,54 +99,49 @@ class DistributedGPUService {
 
   private eventListeners: {
     nodeUpdate: ((node: GPUNode) => void)[];
-    nodeRemoved: ((nodeId: string) => void)[];
     jobUpdate: ((job: InferenceJob) => void)[];
     networkStats: ((stats: NetworkStats) => void)[];
   } = {
     nodeUpdate: [],
-    nodeRemoved: [],
     jobUpdate: [],
-    networkStats: [],
+    networkStats: []
   };
 
   constructor() {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
-    this.httpBaseUrl = `${supabaseUrl}/functions/v1/gpu-network-manager`;
-    this.wsBaseUrl = supabaseUrl.replace(/^http/, 'ws') + '/functions/v1/gpu-network-manager';
-
+    this.baseUrl = 'wss://gpu-network.example.com'; // Replace with actual network coordinator
     this.loadBalancing = {
       algorithm: 'performance_based',
       failoverEnabled: true,
-      retryAttempts: 3,
+      retryAttempts: 3
     };
   }
 
   // Initialize connection to GPU network
-  async connect(accessToken: string): Promise<boolean> {
-    this.accessToken = accessToken;
+  async connect(apiKey: string): Promise<boolean> {
+    this.apiKey = apiKey;
 
     try {
-      // First, get initial list of nodes
-      const response = await fetch(`${this.httpBaseUrl}/gpu-nodes`, {
+      // First, get network status via REST
+      const response = await fetch(`${this.baseUrl.replace('wss://', 'https://')}/api/network/status`, {
         headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-          'Content-Type': 'application/json',
-        },
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (!response.ok) {
         throw new Error(`Authentication failed: ${response.statusText}`);
       }
 
-      const initialNodes = await response.json();
+      const networkStatus = await response.json();
 
-      this.nodes.clear();
-      for (const node of initialNodes) {
+      // Initialize nodes
+      for (const node of networkStatus.nodes) {
         this.nodes.set(node.id, node);
       }
 
       // Establish WebSocket connection for real-time updates
-      await this.connectWebSocket();
+      await this.connectWebSocket(apiKey);
 
       return true;
     } catch (error) {
@@ -156,12 +150,13 @@ class DistributedGPUService {
     }
   }
 
-  private async connectWebSocket(): Promise<void> {
+  // Establish WebSocket connection
+  private async connectWebSocket(apiKey: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.wsConnection = new WebSocket(`${this.wsBaseUrl}?token=${this.accessToken}`);
+      this.wsConnection = new WebSocket(`${this.baseUrl}/ws?token=${apiKey}`);
 
       this.wsConnection.onopen = () => {
-        console.log('Connected to GPU network via WebSocket');
+        console.log('Connected to GPU network');
         resolve();
       };
 
@@ -187,9 +182,9 @@ class DistributedGPUService {
   }
 
   private async reconnectWebSocket(): Promise<void> {
-    if (this.accessToken) {
+    if (this.apiKey) {
       try {
-        await this.connectWebSocket();
+        await this.connectWebSocket(this.apiKey);
       } catch (error) {
         console.error('Failed to reconnect WebSocket:', error);
       }
@@ -197,75 +192,21 @@ class DistributedGPUService {
   }
 
   private handleWebSocketMessage(message: any): void {
-    const { type, payload } = message;
-    let statsChanged = false;
-    switch (type) {
-      case 'node_added':
-      case 'node_updated':
-        this.nodes.set(payload.id, payload);
-        this.eventListeners.nodeUpdate.forEach((listener) => listener(payload));
-        statsChanged = true;
+    switch (message.type) {
+      case 'node_update':
+        this.nodes.set(message.data.id, message.data);
+        this.eventListeners.nodeUpdate.forEach(listener => listener(message.data));
         break;
-      case 'node_removed':
-        this.nodes.delete(payload.id);
-        this.eventListeners.nodeRemoved.forEach((listener) => listener(payload.id));
-        statsChanged = true;
-        break;
+
       case 'job_update':
-        this.jobs.set(payload.id, payload);
-        this.eventListeners.jobUpdate.forEach((listener) => listener(payload));
-        statsChanged = true;
+        this.jobs.set(message.data.id, message.data);
+        this.eventListeners.jobUpdate.forEach(listener => listener(message.data));
+        break;
+
+      case 'network_stats':
+        this.eventListeners.networkStats.forEach(listener => listener(message.data));
         break;
     }
-    if (statsChanged) {
-        this.eventListeners.networkStats.forEach(listener => listener(this.getNetworkStats()));
-    }
-  }
-
-  async addNode(nodeData: Partial<GPUNode> & { endpoint: string; api_key: string }): Promise<GPUNode> {
-    if (!this.accessToken) throw new Error('Not connected');
-
-    const response = await fetch(`${this.httpBaseUrl}/gpu-nodes`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(nodeData)
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to add node: ${errorText}`);
-    }
-    return await response.json();
-  }
-
-  async removeNode(nodeId: string): Promise<void> {
-    if (!this.accessToken) throw new Error('Not connected');
-
-    const response = await fetch(`${this.httpBaseUrl}/gpu-nodes/${nodeId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${this.accessToken}` }
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to remove node: ${errorText}`);
-    }
-  }
-
-  async sendHeartbeat(nodeId: string, status: string, performance: any): Promise<void> {
-    if (!this.accessToken) throw new Error('Not connected');
-
-    await fetch(`${this.httpBaseUrl}/gpu-nodes/${nodeId}/heartbeat`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${this.accessToken}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status, performance })
-    });
   }
 
   // Submit inference job to network
@@ -279,14 +220,14 @@ class DistributedGPUService {
     trackBall: boolean;
     trackReferee: boolean;
   }): Promise<string> {
-    if (!this.accessToken) {
+    if (!this.apiKey) {
       throw new Error('Not connected to GPU network');
     }
 
-    const response = await fetch(`${this.httpBaseUrl}/jobs/submit`, {
+    const response = await fetch(`${this.baseUrl.replace('wss://', 'https://')}/api/jobs/submit`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
+        'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -303,16 +244,17 @@ class DistributedGPUService {
     return result.jobId;
   }
 
+  // Get optimal node for job based on load balancing
   getOptimalNode(requirements?: { minVRAM?: number; preferredLocation?: string }): GPUNode | null {
     const availableNodes = Array.from(this.nodes.values())
-      .filter(node => node.status === 'online' && (node.performance?.queueLength ?? 0) < 10);
+      .filter(node => node.status === 'online' && node.performance.queueLength < 10);
 
     if (availableNodes.length === 0) return null;
 
     switch (this.loadBalancing.algorithm) {
       case 'least_loaded':
         return availableNodes.reduce((best, node) => 
-          (node.performance?.queueLength ?? 0) < (best.performance?.queueLength ?? 0) ? node : best
+          node.performance.queueLength < best.performance.queueLength ? node : best
         );
       
       case 'performance_based':
@@ -342,46 +284,44 @@ class DistributedGPUService {
   }
 
   private calculateNodeScore(node: GPUNode): number {
-    const utilizationScore = (100 - (node.performance?.utilization ?? 0)) / 100;
-    const queueScore = Math.max(0, (10 - (node.performance?.queueLength ?? 0)) / 10);
-    const performanceScore = 1 / Math.max(1, node.performance?.averageInferenceTime ?? Infinity);
+    const utilizationScore = (100 - node.performance.utilization) / 100;
+    const queueScore = Math.max(0, (10 - node.performance.queueLength) / 10);
+    const performanceScore = 1 / Math.max(1, node.performance.averageInferenceTime);
     const priorityScore = node.priority / 100;
     
     return (utilizationScore * 0.3 + queueScore * 0.3 + performanceScore * 0.2 + priorityScore * 0.2);
   }
 
+  // Get job status
   getJobStatus(jobId: string): InferenceJob | null {
     return this.jobs.get(jobId) || null;
   }
 
+  // Cancel job
   async cancelJob(jobId: string): Promise<void> {
-    if (!this.accessToken) throw new Error('Not connected');
+    if (!this.apiKey) throw new Error('Not connected');
 
-    await fetch(`${this.httpBaseUrl}/jobs/${jobId}/cancel`, {
+    await fetch(`${this.baseUrl.replace('wss://', 'https://')}/api/jobs/${jobId}/cancel`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
+        'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json'
       }
     });
   }
 
+  // Get network statistics
   getNetworkStats(): NetworkStats {
     const nodes = Array.from(this.nodes.values());
     const jobs = Array.from(this.jobs.values());
     
-    const onlineNodes = nodes.filter(n => n.status === 'online');
-    const busyNodes = nodes.filter(n => n.status === 'busy');
-
     return {
       totalNodes: nodes.length,
-      onlineNodes: onlineNodes.length,
-      busyNodes: busyNodes.length,
+      onlineNodes: nodes.filter(n => n.status === 'online').length,
+      busyNodes: nodes.filter(n => n.status === 'busy').length,
       totalGPUs: nodes.length,
-      totalVRAM: nodes.reduce((sum, n) => sum + (n.gpuInfo?.memoryTotal || 0), 0),
-      averageUtilization: onlineNodes.length > 0
-          ? onlineNodes.reduce((sum, n) => sum + (n.performance?.utilization || 0), 0) / onlineNodes.length
-          : 0,
+      totalVRAM: nodes.reduce((sum, n) => sum + n.gpuInfo.memoryTotal, 0),
+      averageUtilization: nodes.reduce((sum, n) => sum + n.performance.utilization, 0) / nodes.length,
       queuedJobs: jobs.filter(j => j.status === 'queued').length,
       processingJobs: jobs.filter(j => j.status === 'processing').length,
       completedJobs24h: jobs.filter(j => {
@@ -392,19 +332,12 @@ class DistributedGPUService {
     };
   }
 
+  // Event listeners
   onNodeUpdate(callback: (node: GPUNode) => void): () => void {
     this.eventListeners.nodeUpdate.push(callback);
     return () => {
       const index = this.eventListeners.nodeUpdate.indexOf(callback);
       if (index > -1) this.eventListeners.nodeUpdate.splice(index, 1);
-    };
-  }
-
-  onNodeRemoved(callback: (nodeId: string) => void): () => void {
-    this.eventListeners.nodeRemoved.push(callback);
-    return () => {
-      const index = this.eventListeners.nodeRemoved.indexOf(callback);
-      if (index > -1) this.eventListeners.nodeRemoved.splice(index, 1);
     };
   }
 
@@ -424,14 +357,17 @@ class DistributedGPUService {
     };
   }
 
+  // Get all available nodes
   getNodes(): GPUNode[] {
     return Array.from(this.nodes.values());
   }
 
+  // Update load balancing configuration
   setLoadBalancingConfig(config: Partial<LoadBalancingConfig>): void {
     this.loadBalancing = { ...this.loadBalancing, ...config };
   }
 
+  // Disconnect from network
   disconnect(): void {
     if (this.wsConnection) {
       this.wsConnection.close();
@@ -439,7 +375,7 @@ class DistributedGPUService {
     }
     this.nodes.clear();
     this.jobs.clear();
-    this.accessToken = null;
+    this.apiKey = null;
   }
 }
 

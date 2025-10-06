@@ -19,14 +19,6 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
-/**
- * @component AppSidebar
- * @description The main sidebar navigation component for the application.
- * It displays navigation links based on user roles and includes a feature
- * for quickly switching between admin and tracker user accounts for debugging
- * and demonstration purposes.
- * @returns {React.FC} A React functional component.
- */
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();

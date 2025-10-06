@@ -4,22 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 
-/**
- * @interface PlayerBallLossRatioTableProps
- * @description Props for the PlayerBallLossRatioTable component.
- * @property {PlayerStatSummary[]} playerStats - An array of statistics for each player.
- */
+
 interface PlayerBallLossRatioTableProps {
   playerStats: PlayerStatSummary[];
+  // allPlayersForMatch: Player[];
 }
 
-/**
- * @component PlayerBallLossRatioTable
- * @description A component that calculates and displays the ball loss ratio for each player
- * in a sortable table, helping to identify players who frequently lose possession.
- * @param {PlayerBallLossRatioTableProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const PlayerBallLossRatioTable: React.FC<PlayerBallLossRatioTableProps> = ({
   playerStats,
 }) => {

@@ -3,12 +3,6 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { EventType } from '@/types';
 
-/**
- * @interface ActionButtonsProps
- * @description The props for the ActionButtons component.
- * @property {function(action: EventType): void} onSelectAction - Callback function to be called when an action button is clicked.
- * @property {boolean} disabled - Whether the action buttons should be disabled.
- */
 interface ActionButtonsProps {
   onSelectAction: (action: EventType) => void;
   disabled: boolean;
@@ -28,12 +22,6 @@ const ACTIONS: { type: EventType; label: string }[] = [
   { type: 'throw-in', label: 'Throw In' },
 ];
 
-/**
- * @component ActionButtons
- * @description A component that renders a grid of buttons for common match events.
- * @param {ActionButtonsProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const ActionButtons: React.FC<ActionButtonsProps> = ({ onSelectAction, disabled }) => {
   return (
     <div className="grid grid-cols-3 gap-2">

@@ -6,19 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Target, User, Clock } from 'lucide-react';
 import { EventType } from '@/types';
 
-/**
- * @interface SpecializedTrackerUIProps
- * @description Props for the SpecializedTrackerUI component.
- * @property {object} assignedPlayer - The player this tracker is assigned to.
- * @property {number} assignedPlayer.id - The ID of the assigned player.
- * @property {string} assignedPlayer.name - The name of the assigned player.
- * @property {number} assignedPlayer.jerseyNumber - The jersey number of the assigned player.
- * @property {'home' | 'away'} assignedPlayer.teamId - The team ID of the assigned player.
- * @property {string} assignedPlayer.teamName - The name of the assigned player's team.
- * @property {string[]} assignedEventTypes - An array of event types this tracker is responsible for.
- * @property {(eventType: EventType, playerId: number, teamId: 'home' | 'away', coordinates?: { x: number; y: number }) => void} recordEvent - Callback to record a match event.
- * @property {string} matchId - The ID of the current match.
- */
 interface SpecializedTrackerUIProps {
   assignedPlayer: {
     id: number;
@@ -32,14 +19,6 @@ interface SpecializedTrackerUIProps {
   matchId: string;
 }
 
-/**
- * @component SpecializedTrackerUI
- * @description A user interface designed for a "specialized" tracker. This UI is highly focused, providing a clear
- * view of the single assigned player and the specific event types to track for that player.
- * It includes large, easy-to-use buttons for recording events and a clear set of instructions.
- * @param {SpecializedTrackerUIProps} props The props for the component.
- * @returns {JSX.Element} The rendered SpecializedTrackerUI component.
- */
 const SpecializedTrackerUI: React.FC<SpecializedTrackerUIProps> = ({
   assignedPlayer,
   assignedEventTypes,

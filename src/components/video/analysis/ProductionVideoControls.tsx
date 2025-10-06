@@ -4,21 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
 
-/**
- * @interface ProductionVideoControlsProps
- * @description Props for the ProductionVideoControls component.
- * @property {boolean} isPlaying - Whether the video is currently playing.
- * @property {number} currentTime - The current playback time of the video in seconds.
- * @property {number} duration - The total duration of the video in seconds.
- * @property {number} volume - The current volume level (0-1).
- * @property {boolean} isMuted - Whether the video is currently muted.
- * @property {boolean} isFullscreen - Whether the video is in fullscreen mode.
- * @property {() => void} onPlayPause - Callback to toggle play/pause.
- * @property {(time: number) => void} onSeek - Callback to seek to a specific time.
- * @property {(volume: number) => void} onVolumeChange - Callback to change the volume.
- * @property {() => void} onMuteToggle - Callback to toggle mute.
- * @property {() => void} onFullscreenToggle - Callback to toggle fullscreen.
- */
 interface ProductionVideoControlsProps {
   isPlaying: boolean;
   currentTime: number;
@@ -33,14 +18,6 @@ interface ProductionVideoControlsProps {
   onFullscreenToggle: () => void;
 }
 
-/**
- * @component ProductionVideoControls
- * @description A set of video player controls designed to be used as an overlay on a video.
- * It provides a full suite of controls including a timeline, play/pause, skip, volume, and fullscreen buttons.
- * The component is decoupled and controlled via props.
- * @param {ProductionVideoControlsProps} props The props for the component.
- * @returns {JSX.Element} The rendered ProductionVideoControls component.
- */
 export const ProductionVideoControls: React.FC<ProductionVideoControlsProps> = ({
   isPlaying,
   currentTime,

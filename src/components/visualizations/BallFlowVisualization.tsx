@@ -2,26 +2,12 @@ import React, { useMemo } from 'react';
 import * as d3 from 'd3';
 import { BallTrackingPoint, FlowPlayerNode, Player, Team } from '@/types';
 
-/**
- * @interface BallFlowVisualizationProps
- * @description Props for the BallFlowVisualization component.
- * @property {BallTrackingPoint[]} ballTrackingPoints - An array of points representing the ball's movement and possession.
- * @property {Team} homeTeam - The data for the home team, including players.
- * @property {Team} awayTeam - The data for the away team, including players.
- */
 interface BallFlowVisualizationProps {
   ballTrackingPoints: BallTrackingPoint[];
   homeTeam: Team;
   awayTeam: Team;
 }
 
-/**
- * @component BallFlowVisualization
- * @description A component that visualizes the flow of the ball between players as a network graph.
- * It processes ball tracking data to create nodes for players and links for passes, then renders them as an SVG.
- * @param {BallFlowVisualizationProps} props The props for the component.
- * @returns {JSX.Element} The rendered SVG visualization of the ball flow.
- */
 const BallFlowVisualization: React.FC<BallFlowVisualizationProps> = ({
   ballTrackingPoints,
   homeTeam,

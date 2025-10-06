@@ -10,26 +10,19 @@ import EnhancedVideoPlayer from './EnhancedVideoPlayer';
 import { ProductionTacticalOverlay } from './analysis/ProductionTacticalOverlay';
 import { AnalysisControlPanel } from './analysis/AnalysisControlPanel';
 import { ExternalVideoControls } from './analysis/ExternalVideoControls';
-import { ComprehensiveAnnotationSystem, AnnotationType } from './analysis/ComprehensiveAnnotationSystem';
+import {
+  DetailedAnalysisTabs,
+  MatchPhase,
+  Possession,
+  SetPiece,
+  TacticalNote
+} from './analysis/DetailedAnalysisTabs';
 import { pythonDetectionService, DetectionJob, DetectionResult } from '@/services/pythonDetectionService';
 
-/**
- * @interface DirectAnalysisInterfaceProps
- * @description Props for the DirectAnalysisInterface component.
- * @property {string} videoUrl - The URL of the video to be analyzed.
- */
 interface DirectAnalysisInterfaceProps {
   videoUrl: string;
 }
 
-/**
- * @component DirectAnalysisInterface
- * @description A comprehensive, all-in-one interface for direct video analysis. It integrates a video player,
- * tactical overlays, annotation tools, and controls for interacting with a Python-based detection service.
- * This component serves as a central hub for detailed video-based tactical analysis.
- * @param {DirectAnalysisInterfaceProps} props The props for the component.
- * @returns {JSX.Element} The rendered DirectAnalysisInterface component.
- */
 export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = ({ videoUrl }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -45,9 +38,14 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
     analysisProgress: 0
   });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [annotations, setAnnotations] = useState<AnnotationType[]>([]);
   const [detectionJob, setDetectionJob] = useState<DetectionJob | null>(null);
   const [detectionResults, setDetectionResults] = useState<DetectionResult[]>([]);
+
+  // State for manual analysis data
+  const [matchPhases, setMatchPhases] = useState<MatchPhase[]>([]);
+  const [possessions, setPossessions] = useState<Possession[]>([]);
+  const [setPieces, setSetPieces] = useState<SetPiece[]>([]);
+  const [tacticalNotes, setTacticalNotes] = useState<TacticalNote[]>([]);
   
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -128,15 +126,46 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
     }
   };
 
-  // Annotation handlers
-  const handleAnnotationSave = (annotation: AnnotationType) => {
-    setAnnotations(prev => [...prev, annotation]);
-    toast.success(`${annotation.type.replace('-', ' ')} annotation saved at ${Math.floor(annotation.timestamp / 60)}:${Math.floor(annotation.timestamp % 60).toString().padStart(2, '0')}`);
+  // --- Manual Analysis Data Handlers ---
+  const handleAddPhase = (phase: Omit<MatchPhase, 'id'>) => {
+    const newPhase = { ...phase, id: `phase-${Date.now()}` };
+    setMatchPhases(prev => [...prev, newPhase].sort((a, b) => a.startTime - b.startTime));
+    toast.success(`${newPhase.type} phase added successfully.`);
+  };
+  const handleDeletePhase = (id: string) => {
+    setMatchPhases(prev => prev.filter(p => p.id !== id));
+    toast.success('Phase deleted.');
   };
 
-  const handleAnnotationDelete = (id: string) => {
-    setAnnotations(prev => prev.filter(a => a.id !== id));
-    toast.success('Annotation deleted');
+  const handleAddPossession = (possession: Omit<Possession, 'id'>) => {
+    const newPossession = { ...possession, id: `poss-${Date.now()}` };
+    setPossessions(prev => [...prev, newPossession].sort((a, b) => a.startTime - b.startTime));
+    toast.success(`Possession ending in ${newPossession.outcome} added.`);
+  };
+  const handleDeletePossession = (id: string) => {
+    setPossessions(prev => prev.filter(p => p.id !== id));
+    toast.success('Possession deleted.');
+  };
+
+  const handleAddSetPiece = (setPiece: Omit<SetPiece, 'id'>) => {
+    const newSetPiece = { ...setPiece, id: `sp-${Date.now()}` };
+    setSetPieces(prev => [...prev, newSetPiece].sort((a, b) => a.timestamp - b.timestamp));
+    const timeStr = new Date(newSetPiece.timestamp * 1000).toISOString().substr(11, 8);
+    toast.success(`${newSetPiece.type} at ${timeStr} added.`);
+  };
+  const handleDeleteSetPiece = (id: string) => {
+    setSetPieces(prev => prev.filter(sp => sp.id !== id));
+    toast.success('Set piece deleted.');
+  };
+
+  const handleAddTacticalNote = (note: Omit<TacticalNote, 'id'>) => {
+    const newNote = { ...note, id: `tactical-${Date.now()}` };
+    setTacticalNotes(prev => [...prev, newNote].sort((a, b) => a.timestamp - b.timestamp));
+    toast.success(`Tactical note for ${newNote.category} added.`);
+  };
+  const handleDeleteTacticalNote = (id: string) => {
+    setTacticalNotes(prev => prev.filter(n => n.id !== id));
+    toast.success('Tactical note deleted.');
   };
 
   // Get video element reference when component mounts
@@ -255,21 +284,22 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
     }
   };
 
-  const handleSaveAnnotations = () => {
-    if (annotations.length === 0) {
-      toast.warning('No annotations to save');
-      return;
-    }
-    toast.success(`${annotations.length} annotations saved successfully!`);
-  };
-
   const handleExportData = () => {
     const data = {
-      annotations,
-      detectionResults,
-      analysisStats,
-      videoUrl,
-      exportTime: new Date().toISOString()
+      videoInfo: {
+        videoUrl,
+        exportTime: new Date().toISOString()
+      },
+      automatedAnalysis: {
+        detectionResults,
+        analysisStats,
+      },
+      manualAnalysis: {
+        matchPhases,
+        possessions,
+        setPieces,
+        tacticalNotes
+      }
     };
     
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -280,7 +310,18 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
     a.click();
     URL.revokeObjectURL(url);
     
-    toast.success('Analysis data exported!');
+    toast.success('Complete analysis data exported!');
+  };
+
+  const handleSaveAnalysis = () => {
+    // In a real application, this would save to a backend or local storage.
+    // For now, we'll just provide user feedback.
+    const totalEntries = matchPhases.length + possessions.length + setPieces.length + tacticalNotes.length;
+    if (totalEntries === 0) {
+      toast.warning('No manual analysis data to save.');
+      return;
+    }
+    toast.success(`Successfully saved ${totalEntries} manual analysis entries.`);
   };
 
   // Poll for job status
@@ -356,11 +397,6 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
             <Users className="w-3 h-3 mr-1" />
             {analysisStats.playerCount} Players
           </Badge>
-          {annotations.length > 0 && (
-            <Badge variant="outline" className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-              {annotations.length} Annotations
-            </Badge>
-          )}
         </div>
       </div>
 
@@ -407,12 +443,20 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
             onFullscreenToggle={handleFullscreenToggle}
           />
 
-          <ComprehensiveAnnotationSystem
+          <DetailedAnalysisTabs
             currentTime={currentTime}
-            annotations={annotations}
-            onAnnotationSave={handleAnnotationSave}
-            onAnnotationDelete={handleAnnotationDelete}
-            drawingMode={false}
+            phases={matchPhases}
+            possessions={possessions}
+            setPieces={setPieces}
+            tacticalNotes={tacticalNotes}
+            onAddPhase={handleAddPhase}
+            onDeletePhase={handleDeletePhase}
+            onAddPossession={handleAddPossession}
+            onDeletePossession={handleDeletePossession}
+            onAddSetPiece={handleAddSetPiece}
+            onDeleteSetPiece={handleDeleteSetPiece}
+            onAddTacticalNote={handleAddTacticalNote}
+            onDeleteTacticalNote={handleDeleteTacticalNote}
           />
         </TabsContent>
 
@@ -519,7 +563,7 @@ export const DirectAnalysisInterface: React.FC<DirectAnalysisInterfaceProps> = (
               playerCount={analysisStats.playerCount}
               avgConfidence={analysisStats.avgConfidence}
               onStartAnalysis={handleStartAnalysis}
-              onSaveAnnotations={handleSaveAnnotations}
+              onSaveAnalysis={handleSaveAnalysis}
               onExportData={handleExportData}
             />
             

@@ -7,16 +7,6 @@ import { Progress } from '@/components/ui/progress';
 import { Activity, Users, Target, TrendingUp, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-/**
- * @interface PlayerTrackingData
- * @description Represents the tracking data for a single player at a specific timestamp.
- * @property {string} playerId - The unique identifier for the player.
- * @property {number} timestamp - The video timestamp for this data point.
- * @property {{ x: number; y: number }} position - The player's coordinates on the field.
- * @property {number} velocity - The player's current velocity.
- * @property {'home' | 'away'} team - The team the player belongs to.
- * @property {number} [jerseyNumber] - The player's jersey number.
- */
 interface PlayerTrackingData {
   playerId: string;
   timestamp: number;
@@ -26,15 +16,6 @@ interface PlayerTrackingData {
   jerseyNumber?: number;
 }
 
-/**
- * @interface TrackingAnalysis
- * @description Represents the results of a higher-level analysis of the tracking data.
- * @property {number} averageSpeed - The average speed of all tracked players.
- * @property {number} distanceCovered - The total distance covered by a player or team.
- * @property {{ x: number; y: number; intensity: number }[]} heatmapData - Data points for generating a heatmap.
- * @property {number} formationCompactness - A metric for the team's formation compactness.
- * @property {string[]} tacticalViolations - A list of detected tactical violations.
- */
 interface TrackingAnalysis {
   averageSpeed: number;
   distanceCovered: number;
@@ -43,15 +24,6 @@ interface TrackingAnalysis {
   tacticalViolations: string[];
 }
 
-/**
- * @interface PlayerTrackingServiceProps
- * @description Props for the PlayerTrackingService component.
- * @property {string} videoUrl - The URL of the video being analyzed.
- * @property {number} currentTime - The current playback time of the video.
- * @property {boolean} isTracking - A flag to enable or disable the tracking simulation.
- * @property {(data: PlayerTrackingData[]) => void} onTrackingData - Callback to pass up the generated raw tracking data.
- * @property {(analysis: TrackingAnalysis) => void} onAnalysisUpdate - Callback to pass up the generated analysis results.
- */
 interface PlayerTrackingServiceProps {
   videoUrl: string;
   currentTime: number;
@@ -60,14 +32,6 @@ interface PlayerTrackingServiceProps {
   onAnalysisUpdate: (analysis: TrackingAnalysis) => void;
 }
 
-/**
- * @component PlayerTrackingService
- * @description A component that simulates a real-time AI player tracking service.
- * It generates mock player tracking data based on the video's current time and provides status updates.
- * This is useful for demonstrating and developing the UI for player tracking features without a live AI backend.
- * @param {PlayerTrackingServiceProps} props The props for the component.
- * @returns {JSX.Element} The rendered PlayerTrackingService component.
- */
 export const PlayerTrackingService: React.FC<PlayerTrackingServiceProps> = ({
   videoUrl,
   currentTime,

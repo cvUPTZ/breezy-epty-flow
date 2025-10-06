@@ -1,8 +1,4 @@
 
-/**
- * @constant VOICE_ROOM_TEMPLATES
- * @description Defines templates for creating standard voice chat rooms with predefined settings.
- */
 export const VOICE_ROOM_TEMPLATES = {
   main: {
     name: 'Main Commentary',
@@ -38,10 +34,6 @@ export const VOICE_ROOM_TEMPLATES = {
   }
 };
 
-/**
- * @constant VOICE_CONFIG
- * @description General configuration settings for the voice collaboration feature.
- */
 export const VOICE_CONFIG = {
   defaultRoom: 'main',
   maxRetries: 3,
@@ -55,11 +47,6 @@ export const VOICE_CONFIG = {
   }
 };
 
-/**
- * @constant PRODUCTION_VOICE_CONFIG
- * @description Production-specific WebRTC and audio settings for the voice collaboration feature.
- * Includes STUN server configurations and audio processing constraints.
- */
 export const PRODUCTION_VOICE_CONFIG = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },

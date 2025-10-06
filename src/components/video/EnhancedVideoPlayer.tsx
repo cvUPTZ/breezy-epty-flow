@@ -4,14 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, Volume2, VolumeX, Maximize, AlertCircle } from 'lucide-react';
 
-/**
- * @interface EnhancedVideoPlayerProps
- * @description Props for the EnhancedVideoPlayer component.
- * @property {string} src - The URL of the video source.
- * @property {(currentTime: number) => void} [onTimeUpdate] - Callback function that fires when the video's current time changes.
- * @property {(duration: number) => void} [onDurationChange] - Callback function that fires when the video's duration is available.
- * @property {string} [className] - Optional CSS class names to apply to the container card.
- */
 interface EnhancedVideoPlayerProps {
   src: string;
   onTimeUpdate?: (currentTime: number) => void;
@@ -19,15 +11,6 @@ interface EnhancedVideoPlayerProps {
   className?: string;
 }
 
-/**
- * @interface VideoPlayerRef
- * @description Defines the imperative handles exposed by the EnhancedVideoPlayer component's ref.
- * This allows parent components to control the video player directly.
- * @property {HTMLVideoElement | null} videoElement - A direct reference to the underlying HTML video element.
- * @property {() => Promise<void>} play - A function to programmatically play the video.
- * @property {() => void} pause - A function to programmatically pause the video.
- * @property {number} currentTime - A getter and setter for the video's current playback time.
- */
 export interface VideoPlayerRef {
   videoElement: HTMLVideoElement | null;
   play: () => Promise<void>;
@@ -35,15 +18,6 @@ export interface VideoPlayerRef {
   currentTime: number;
 }
 
-/**
- * @component EnhancedVideoPlayer
- * @description A custom video player component with basic controls and event handling.
- * It provides a simple overlay for play/pause, mute, and fullscreen controls.
- * It also exposes imperative handles via a ref for programmatic control from parent components.
- * @param {EnhancedVideoPlayerProps} props The props for the component.
- * @param {React.Ref<VideoPlayerRef>} ref The ref to expose imperative handles.
- * @returns {JSX.Element} The rendered EnhancedVideoPlayer component.
- */
 const EnhancedVideoPlayer = forwardRef<VideoPlayerRef, EnhancedVideoPlayerProps>(
   ({ src, onTimeUpdate, onDurationChange, className = '' }, ref) => {
     const videoRef = useRef<HTMLVideoElement>(null);

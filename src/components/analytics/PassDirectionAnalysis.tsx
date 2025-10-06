@@ -8,33 +8,22 @@ import {
 } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
 
-/**
- * @interface PassDirectionAnalysisProps
- * @description Props for the PassDirectionAnalysis component.
- * @property {TeamDetailedStats} teamStats - The detailed statistics for a single team.
- * @property {string} teamName - The name of the team.
- */
 interface PassDirectionAnalysisProps {
   teamStats: TeamDetailedStats;
   teamName: string;
 }
+
+// Removed SimpleBarForPasses
 
 const chartColors = {
   'Forward Passes': 'hsl(var(--chart-1))',
   'Backward Passes': 'hsl(var(--chart-2))',
   'Lateral Passes': 'hsl(var(--chart-3))',
   'Long Passes': 'hsl(var(--chart-4))',
-  'Support Passes': 'hsl(var(--chart-5))',
-  'Offensive Passes': 'hsl(var(--chart-1)/0.8)',
+  'Support Passes': 'hsl(var(--chart-5))', // Added for completeness if desired
+  'Offensive Passes': 'hsl(var(--chart-1)/0.8)', // Added for completeness
 };
 
-/**
- * @component PassDirectionAnalysis
- * @description A component that displays a bar chart breaking down the types of successful
- * passes made by a single team (e.g., forward, backward, long).
- * @param {PassDirectionAnalysisProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const PassDirectionAnalysis: React.FC<PassDirectionAnalysisProps> = ({
   teamStats,
   teamName,

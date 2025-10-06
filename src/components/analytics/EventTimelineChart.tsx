@@ -4,27 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter } from 'recharts';
 import { MatchEvent } from '@/types';
 
-/**
- * @interface EventTimelineChartProps
- * @description Props for the EventTimelineChart component.
- * @property {MatchEvent[]} events - An array of all events from the match.
- * @property {string} homeTeamName - The name of the home team.
- * @property {string} awayTeamName - The name of the away team.
- */
 interface EventTimelineChartProps {
   events: MatchEvent[];
   homeTeamName: string;
   awayTeamName: string;
 }
 
-/**
- * @component EventTimelineChart
- * @description A component that visualizes match events over time using a series of charts.
- * It displays line charts for general activity and shot/goal activity, and a scatter plot
- * for event distribution and intensity.
- * @param {EventTimelineChartProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const EventTimelineChart: React.FC<EventTimelineChartProps> = ({
   events,
   homeTeamName,

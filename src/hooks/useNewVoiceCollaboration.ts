@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import NewVoiceChatManager from '@/services/NewVoiceChatManager';
 import { Participant, ConnectionState } from 'livekit-client';
@@ -40,25 +39,16 @@ export const useNewVoiceCollaboration = (): UseNewVoiceCollaborationReturn => {
   const [error, setError] = useState<Error | null>(null);
   const [audioLevels, setAudioLevels] = useState<Map<string, number>>(new Map());
 
+  // Calculate isConnected early, before any callbacks that use it
+  const isConnected = connectionState === ConnectionState.Connected;
+
   useEffect(() => {
     manager.onParticipantsChanged = (newParticipants: Participant[]) => {
       console.log('[useNewVoiceCollaboration] Participants updated:', newParticipants.length);
-      // Always provide new object refs for participants
-      // Shallow copy each participant object
-      const cloned = newParticipants.map(p =>
-        Object.assign(
-          Object.create(Object.getPrototypeOf(p)),
-          p
-        )
-      );
-      setParticipants(cloned);
-      setLocalParticipant(manager.getLocalParticipant()
-        ? Object.assign(
-            Object.create(Object.getPrototypeOf(manager.getLocalParticipant()!)),
-            manager.getLocalParticipant()!
-          )
-        : null
-      );
+      // Use the participants directly without cloning to maintain stable references
+      // This prevents React reconciliation issues
+      setParticipants(newParticipants);
+      setLocalParticipant(manager.getLocalParticipant() || null);
     };
 
     manager.onConnectionStateChanged = (state: ConnectionState) => {
@@ -110,20 +100,31 @@ export const useNewVoiceCollaboration = (): UseNewVoiceCollaborationReturn => {
   }, [manager]);
 
   const joinRoom = useCallback(async (roomId: string, userId: string, userRole: string, userName: string) => {
+    // Check connection state directly from state instead of derived variable
+    const currentlyConnected = connectionState === ConnectionState.Connected;
+
+    // Prevent joining if already connected or in the process of connecting
+    if (isConnecting || currentlyConnected) {
+      console.warn('[useNewVoiceCollaboration] Attempted to join room while already connecting or connected.');
+      return;
+    }
+
     setIsConnecting(true);
     setError(null);
+
     try {
-      console.log('[useNewVoiceCollaboration] Joining room:', roomId);
-      // Mock implementation since we don't have the actual joinRoom method
+      console.log('[useNewVoiceCollaboration] Delegating join room call to manager for room:', roomId);
+      await manager.joinRoom(roomId, userId, userRole, userName);
+      // The manager will emit a ConnectionState.Connected event.
+      // The onConnectionStateChanged listener will handle the rest of the state updates.
+      // We can optimistically set the room ID here.
       setCurrentRoomId(roomId);
-      console.log('[useNewVoiceCollaboration] Successfully joined room');
     } catch (err) {
-      console.error('[useNewVoiceCollaboration] Error joining room:', err);
+      console.error('[useNewVoiceCollaboration] Error during join room attempt:', err);
       setError(err as Error);
-    } finally {
-      setIsConnecting(false);
+      setIsConnecting(false); // Reset on failure
     }
-  }, [manager]);
+  }, [manager, isConnecting, connectionState]);
 
   const leaveRoom = useCallback(async () => {
     console.log('[useNewVoiceCollaboration] Leaving room');
@@ -147,8 +148,6 @@ export const useNewVoiceCollaboration = (): UseNewVoiceCollaborationReturn => {
   const getAudioLevel = useCallback((participantId: string): number => {
     return manager.getAudioLevel(participantId);
   }, [manager]);
-
-  const isConnected = connectionState === ConnectionState.Connected;
 
   return {
     availableRooms,

@@ -6,28 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-/**
- * @typedef {'draft' | 'scheduled' | 'live' | 'completed'} MatchStatus
- * @description Defines the possible statuses for a match.
- */
 type MatchStatus = 'draft' | 'scheduled' | 'live' | 'completed';
 
-/**
- * @interface MatchBasicInfoProps
- * @description Props for the MatchBasicInfo component.
- * @property {object} formData - An object containing the current values of the form fields.
- * @property {string} formData.name - The name of the match.
- * @property {string} formData.description - A description of the match.
- * @property {string} formData.homeTeamName - The name of the home team.
- * @property {string} formData.awayTeamName - The name of the away team.
- * @property {string} formData.matchDate - The date and time of the match.
- * @property {string} formData.location - The location of the match.
- * @property {string} formData.competition - The competition the match is part of.
- * @property {string} formData.matchType - The type of the match (e.g., 'regular', 'friendly').
- * @property {MatchStatus} formData.status - The current status of the match.
- * @property {string} formData.notes - Internal notes about the match.
- * @property {(field: string, value: string) => void} onFormDataChange - Callback function to handle changes to form fields.
- */
 interface MatchBasicInfoProps {
   formData: {
     name: string;
@@ -44,14 +24,6 @@ interface MatchBasicInfoProps {
   onFormDataChange: (field: string, value: string) => void;
 }
 
-/**
- * @component MatchBasicInfo
- * @description A form section component for capturing the basic information of a football match.
- * It provides input fields for team names, date, location, and other metadata.
- * State is managed by a parent component through the `formData` and `onFormDataChange` props.
- * @param {MatchBasicInfoProps} props The props for the component.
- * @returns {JSX.Element} The rendered MatchBasicInfo form section.
- */
 const MatchBasicInfo: React.FC<MatchBasicInfoProps> = ({ formData, onFormDataChange }) => {
   return (
     <Card>

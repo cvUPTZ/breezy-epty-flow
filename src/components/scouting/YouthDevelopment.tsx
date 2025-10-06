@@ -13,20 +13,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 
-/**
- * @interface YouthProspect
- * @description Defines the structure for a youth prospect record.
- * @property {string} id - The unique identifier for the prospect.
- * @property {string} name - The name of the prospect.
- * @property {string | null} birth_date - The birth date of the prospect.
- * @property {string | null} position - The primary position of the prospect.
- * @property {string | null} academy_club - The academy or club the prospect belongs to.
- * @property {string | null} development_stage - The current development stage (e.g., 'youth', 'academy').
- * @property {number | null} potential_rating - A numerical rating of the prospect's potential.
- * @property {string | null} character_assessment - Notes on the prospect's character and attitude.
- * @property {string | null} recommended_pathway - The recommended development path for the prospect.
- * @property {string | null} created_at - The timestamp when the prospect was added.
- */
 interface YouthProspect {
   id: string;
   name: string;
@@ -40,13 +26,6 @@ interface YouthProspect {
   created_at: string | null;
 }
 
-/**
- * @component YouthDevelopment
- * @description A dashboard for managing and tracking youth development prospects.
- * It provides a comprehensive view of all prospects, allows for filtering and searching,
- * and includes a dialog form for adding new prospects to the database.
- * @returns {JSX.Element} The rendered YouthDevelopment component.
- */
 const YouthDevelopment: React.FC = () => {
   const [prospects, setProspects] = useState<YouthProspect[]>([]);
   const [loading, setLoading] = useState(true);

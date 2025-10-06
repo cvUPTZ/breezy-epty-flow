@@ -2,10 +2,6 @@ import React, { useRef, useEffect } from 'react';
 import * as d3 from 'd3';
 import { sankey, sankeyLinkHorizontal, SankeyNode, SankeyLink } from 'd3-sankey';
 
-/**
- * @interface SankeyChartNode
- * @description Represents a node in the Sankey chart (e.g., a player).
- */
 interface SankeyChartNode {
   id: string;
   name: string;
@@ -13,24 +9,12 @@ interface SankeyChartNode {
   value?: number;
 }
 
-/**
- * @interface SankeyChartLink
- * @description Represents a link between two nodes in the Sankey chart (e.g., passes between players).
- */
 interface SankeyChartLink {
   source: string;
   target: string;
   value: number;
 }
 
-/**
- * @interface D3SankeyChartProps
- * @description Props for the D3SankeyChart component.
- * @property {SankeyChartNode[]} nodes - An array of nodes for the chart.
- * @property {SankeyChartLink[]} links - An array of links representing the flow between nodes.
- * @property {number} [width=800] - The total width of the SVG container.
- * @property {number} [height=400] - The total height of the SVG container.
- */
 interface D3SankeyChartProps {
   nodes: SankeyChartNode[];
   links: SankeyChartLink[];
@@ -38,13 +22,6 @@ interface D3SankeyChartProps {
   height?: number;
 }
 
-/**
- * @component D3SankeyChart
- * @description A React component that uses the D3.js library to render a Sankey diagram.
- * It is designed to visualize flow data, such as passing networks between players in a match.
- * @param {D3SankeyChartProps} props - The props for the component.
- * @returns {React.FC} A React functional component that renders an SVG chart.
- */
 const D3SankeyChart: React.FC<D3SankeyChartProps> = ({
   nodes,
   links,

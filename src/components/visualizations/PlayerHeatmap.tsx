@@ -3,15 +3,6 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Player } from '@/types';
 
-/**
- * @interface PlayerHeatmapProps
- * @description Props for the PlayerHeatmap component.
- * @property {{ name: string; players: Player[]; }} homeTeam - The data for the home team.
- * @property {{ name: string; players: Player[]; }} awayTeam - The data for the away team.
- * @property {Record<string | number, { x: number; y: number }>} teamPositions - A map of player IDs to their coordinates.
- * @property {'home' | 'away'} selectedTeam - The currently selected team to display the heatmap for.
- * @property {(team: 'home' | 'away') => void} onSelectTeam - Callback to handle team selection changes.
- */
 interface PlayerHeatmapProps {
   homeTeam: {
     name: string;
@@ -26,14 +17,6 @@ interface PlayerHeatmapProps {
   onSelectTeam: (team: 'home' | 'away') => void;
 }
 
-/**
- * @component PlayerHeatmap
- * @description A component that visualizes player positional data as a heatmap on a simplified football pitch.
- * It aggregates player positions into a grid and colors the cells based on player density.
- * Users can switch between viewing the heatmap for the home and away teams.
- * @param {PlayerHeatmapProps} props The props for the component.
- * @returns {JSX.Element} The rendered PlayerHeatmap component.
- */
 const PlayerHeatmap: React.FC<PlayerHeatmapProps> = ({
   homeTeam,
   awayTeam,

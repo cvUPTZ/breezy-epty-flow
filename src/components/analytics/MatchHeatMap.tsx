@@ -4,26 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MatchEvent } from '@/types';
 import { SimpleTooltip } from "@/components/ui/simple-tooltip";
 
-/**
- * @interface MatchHeatMapProps
- * @description Props for the MatchHeatMap component.
- * @property {MatchEvent[]} events - An array of all events from the match.
- * @property {string} homeTeamName - The name of the home team.
- * @property {string} awayTeamName - The name of the away team.
- */
 interface MatchHeatMapProps {
   events: MatchEvent[];
   homeTeamName: string;
   awayTeamName: string;
 }
 
-/**
- * @component MatchHeatMap
- * @description A component that generates and displays heat maps of on-field activity for each team.
- * It visualizes where each team's events occurred most frequently on the pitch.
- * @param {MatchHeatMapProps} props - The props for the component.
- * @returns {React.FC} A React functional component.
- */
 const MatchHeatMap: React.FC<MatchHeatMapProps> = ({
   events,
   homeTeamName,

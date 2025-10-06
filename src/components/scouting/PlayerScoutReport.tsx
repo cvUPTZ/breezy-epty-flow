@@ -13,14 +13,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 
-/**
- * @interface Player
- * @description Represents a simplified view of a player for selection in the report form.
- * @property {string} id - The unique identifier for the player.
- * @property {string} name - The name of the player.
- * @property {string | null} position - The player's primary position.
- * @property {string | null} current_club - The player's current club.
- */
 interface Player {
   id: string;
   name: string;
@@ -28,21 +20,6 @@ interface Player {
   current_club: string | null;
 }
 
-/**
- * @interface ScoutReport
- * @description Defines the structure of a single scout report.
- * @property {string} id - The unique identifier for the report.
- * @property {string | null} player_id - The ID of the player being scouted.
- * @property {number | null} performance_rating - A numerical rating of the player's performance.
- * @property {string | null} recommendation - The final recommendation (e.g., 'sign', 'monitor').
- * @property {string | null} match_context - The context of the match where the player was scouted.
- * @property {string[] | null} strengths - A list of the player's observed strengths.
- * @property {string[] | null} weaknesses - A list of the player's observed weaknesses.
- * @property {string | null} detailed_notes - Detailed notes from the scout.
- * @property {string | null} report_date - The date the report was filed.
- * @property {string | null} [created_at] - The timestamp when the report was created.
- * @property {{ name: string; position: string | null; current_club: string | null; } | null} [scouted_players] - Joined data from the scouted players table.
- */
 interface ScoutReport {
   id: string;
   player_id: string | null;
@@ -61,23 +38,10 @@ interface ScoutReport {
   } | null;
 }
 
-/**
- * @interface PlayerScoutReportProps
- * @description Props for the PlayerScoutReport component.
- * @property {string} [playerId] - If provided, the component will only show reports for this specific player.
- */
 interface PlayerScoutReportProps {
   playerId?: string;
 }
 
-/**
- * @component PlayerScoutReport
- * @description A component for creating and displaying detailed scout reports for players.
- * It can be used in a general view to show all reports or in a specific view filtered by a player ID.
- * It features a dialog form for creating new reports and fetches all data from Supabase.
- * @param {PlayerScoutReportProps} props The props for the component.
- * @returns {JSX.Element} The rendered PlayerScoutReport component.
- */
 const PlayerScoutReport: React.FC<PlayerScoutReportProps> = ({ playerId }) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [reports, setReports] = useState<ScoutReport[]>([]);

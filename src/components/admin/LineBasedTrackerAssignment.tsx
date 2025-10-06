@@ -8,10 +8,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Users, Target, Shield, Zap, Globe } from 'lucide-react';
 
-/**
- * @interface Match
- * @description Represents a match with its basic details and player rosters.
- */
 interface Match {
   id: string;
   name?: string | null;
@@ -21,20 +17,12 @@ interface Match {
   away_team_players: any[];
 }
 
-/**
- * @interface Tracker
- * @description Represents a user with the 'tracker' role.
- */
 interface Tracker {
   id: string;
   full_name: string | null;
   email: string | null;
 }
 
-/**
- * @interface LineAssignment
- * @description Represents the data structure for a line-based assignment action.
- */
 interface LineAssignment {
   line: 'defense' | 'midfield' | 'attack' | 'all_events';
   team: 'home' | 'away' | 'both';
@@ -42,12 +30,6 @@ interface LineAssignment {
   match_id: string;
 }
 
-/**
- * @component LineBasedTrackerAssignment
- * @description An admin component for assigning trackers to entire tactical lines (defense, midfield, attack)
- * for a specific match. This provides a higher-level, faster alternative to individual player assignments.
- * @returns {React.FC} A React functional component.
- */
 const LineBasedTrackerAssignment: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [trackers, setTrackers] = useState<Tracker[]>([]);
