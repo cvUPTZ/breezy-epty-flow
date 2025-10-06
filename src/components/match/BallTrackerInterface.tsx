@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Activity, Target, AlertTriangle, Video, X, Maximize2, Minimize2, Wifi, WifiOff } from 'lucide-react';
+import { Activity, Target, AlertTriangle, Video, X, Maximize2, Minimize2, Wifi, WifiOff, Layers } from 'lucide-react';
 import { YouTubePlayer } from '@/components/video/YouTubePlayer';
 
 // Player type definition
@@ -62,9 +62,6 @@ const getHorizontalPosition = (position: string, index: number, totalPlayers: nu
   };
 };
 
-// Note: This component imports YouTubePlayer from the actual component library
-// The import statement at the top handles this: import { YouTubePlayer } from '@/components/video/YouTubePlayer';
-
 interface BallTrackerInterfaceProps {
   homeTeamPlayers?: Player[];
   awayTeamPlayers?: Player[];
@@ -96,6 +93,9 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  
+  // NEW: Overlay mode state
+  const [isOverlayMode, setIsOverlayMode] = useState(false);
 
   const allPlayers = useMemo(() => 
     [...homeTeamPlayers, ...awayTeamPlayers],
@@ -184,6 +184,18 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
     return null;
   }, [videoUrl]);
 
+  // NEW: Toggle overlay mode
+  const handleToggleOverlayMode = () => {
+    if (!isOverlayMode) {
+      // Entering overlay mode
+      setIsOverlayMode(true);
+      setShowVideo(false); // Hide floating video
+    } else {
+      // Exiting overlay mode
+      setIsOverlayMode(false);
+    }
+  };
+
   if (!hasPlayers) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -204,8 +216,8 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Video Player Overlay - Draggable & Resizable */}
-      {videoUrl && videoId && showVideo && (
+      {/* Video Player Overlay - Draggable & Resizable (Only in normal mode) */}
+      {videoUrl && videoId && showVideo && !isOverlayMode && (
         <div 
           className="fixed z-50 bg-black rounded-lg shadow-2xl overflow-hidden"
           style={{ 
@@ -303,14 +315,26 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
               <span className="text-sm font-medium">{isOnline ? 'Live' : 'Offline'}</span>
             </div>
 
-            {/* Video Toggle */}
+            {/* NEW: Overlay Mode Toggle */}
             {videoUrl && videoId && (
+              <Button
+                variant={isOverlayMode ? "default" : "outline"}
+                size="sm"
+                onClick={handleToggleOverlayMode}
+                className="gap-2"
+              >
+                <Layers className="h-4 w-4" />
+                {isOverlayMode ? 'Exit' : 'Video'} Overlay
+              </Button>
+            )}
+
+            {/* Video Toggle (Only show in normal mode) */}
+            {videoUrl && videoId && !isOverlayMode && (
               <Button
                 variant={showVideo ? "default" : "outline"}
                 size="sm"
                 onClick={() => {
                   setShowVideo(!showVideo);
-                  // Auto-show video on the left side when enabled
                   if (!showVideo) {
                     setShowVideo(true);
                   }
@@ -338,94 +362,136 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
             </div>
           </div>
         )}
+
+        {/* Overlay Mode Info Banner */}
+        {isOverlayMode && (
+          <div className="bg-purple-50 border-t border-purple-200 px-6 py-2">
+            <div className="flex items-center justify-between text-sm text-purple-800">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4" />
+                <span>Video Overlay Mode Active - Players positioned over match video</span>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleToggleOverlayMode}
+                className="text-purple-800 hover:text-purple-900 hover:bg-purple-100"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Exit Mode
+              </Button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Main Content */}
       <main className="p-6">
         <div className="max-w-[1800px] mx-auto grid grid-cols-12 gap-6">
-          {/* Left Sidebar - Team Stats */}
-          <aside className="col-span-2 space-y-4">
-            <Card>
-              <CardContent className="p-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">Teams</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-blue-50">
-                    <span className="text-sm font-medium text-blue-900">{homeTeamName}</span>
-                    <Badge variant="secondary" className="bg-blue-600 text-white">{stats.homePlayers}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-red-50">
-                    <span className="text-sm font-medium text-red-900">{awayTeamName}</span>
-                    <Badge variant="secondary" className="bg-red-600 text-white">{stats.awayPlayers}</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Current Possession */}
-            <Card>
-              <CardContent className="p-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">Possession</h3>
-                {currentBallHolder && isValidBallHolder ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white font-bold text-sm">
-                        {currentBallHolder.jersey_number}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">
-                          {currentBallHolder.player_name}
-                        </p>
-                        <p className="text-xs text-gray-500">{currentBallHolder.position || 'N/A'}</p>
-                      </div>
+          {/* Left Sidebar - Team Stats (Hide in overlay mode) */}
+          {!isOverlayMode && (
+            <aside className="col-span-2 space-y-4">
+              <Card>
+                <CardContent className="p-4">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">Teams</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-blue-50">
+                      <span className="text-sm font-medium text-blue-900">{homeTeamName}</span>
+                      <Badge variant="secondary" className="bg-blue-600 text-white">{stats.homePlayers}</Badge>
                     </div>
-                    <Badge className={currentBallHolder.team === 'home' ? 'bg-blue-600 w-full justify-center' : 'bg-red-600 w-full justify-center'}>
-                      {currentBallHolder.team === 'home' ? homeTeamName : awayTeamName}
-                    </Badge>
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-red-50">
+                      <span className="text-sm font-medium text-red-900">{awayTeamName}</span>
+                      <Badge variant="secondary" className="bg-red-600 text-white">{stats.awayPlayers}</Badge>
+                    </div>
                   </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <Target className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                    <p className="text-xs text-gray-500">Awaiting possession...</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Quick Guide */}
-            <Card className="bg-blue-50 border-blue-200">
-              <CardContent className="p-4">
-                <h3 className="text-xs font-semibold text-blue-900 uppercase mb-3">Quick Guide</h3>
-                <ul className="space-y-2 text-xs text-blue-800">
-                  <li className="flex gap-2">
-                    <span className="font-bold">→</span>
-                    <span>Click player on possession</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-bold">→</span>
-                    <span>Hover for player info</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-bold">→</span>
-                    <span>Auto-tracks passes & tackles</span>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-          </aside>
+              {/* Current Possession */}
+              <Card>
+                <CardContent className="p-4">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">Possession</h3>
+                  {currentBallHolder && isValidBallHolder ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white font-bold text-sm">
+                          {currentBallHolder.jersey_number}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">
+                            {currentBallHolder.player_name}
+                          </p>
+                          <p className="text-xs text-gray-500">{currentBallHolder.position || 'N/A'}</p>
+                        </div>
+                      </div>
+                      <Badge className={currentBallHolder.team === 'home' ? 'bg-blue-600 w-full justify-center' : 'bg-red-600 w-full justify-center'}>
+                        {currentBallHolder.team === 'home' ? homeTeamName : awayTeamName}
+                      </Badge>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <Target className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-xs text-gray-500">Awaiting possession...</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-          {/* Center - Horizontal Pitch */}
-          <div className="col-span-8">
+              {/* Quick Guide */}
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="p-4">
+                  <h3 className="text-xs font-semibold text-blue-900 uppercase mb-3">Quick Guide</h3>
+                  <ul className="space-y-2 text-xs text-blue-800">
+                    <li className="flex gap-2">
+                      <span className="font-bold">→</span>
+                      <span>Click player on possession</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="font-bold">→</span>
+                      <span>Hover for player info</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="font-bold">→</span>
+                      <span>Auto-tracks passes & tackles</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </aside>
+          )}
+
+          {/* Center - Pitch (Full width in overlay mode) */}
+          <div className={isOverlayMode ? "col-span-12" : "col-span-8"}>
             <Card className="overflow-hidden">
               <CardContent className="p-6">
                 <div className="relative w-full aspect-[16/9] bg-gradient-to-r from-green-600 via-green-500 to-green-600 rounded-lg overflow-hidden shadow-lg">
+                  {/* NEW: Video Background in Overlay Mode */}
+                  {isOverlayMode && videoUrl && videoId && (
+                    <>
+                      {/* Video as background */}
+                      <div className="absolute inset-0 z-0">
+                        <YouTubePlayer
+                          videoId={videoId}
+                          matchId=""
+                          isAdmin={false}
+                        />
+                      </div>
+                      
+                      {/* Semi-transparent pitch overlay */}
+                      <div className="absolute inset-0 bg-green-600 opacity-30 pointer-events-none z-10" />
+                    </>
+                  )}
+
                   {/* Pitch markings */}
-                  <div className="absolute inset-0 pointer-events-none">
-                    {/* Subtle grass pattern */}
-                    <div className="absolute inset-0 opacity-10">
-                      <div className="absolute inset-0" style={{
-                        backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 30px, rgba(0,0,0,0.1) 30px, rgba(0,0,0,0.1) 60px)'
-                      }}></div>
-                    </div>
+                  <div className={`absolute inset-0 pointer-events-none ${isOverlayMode ? 'z-20 opacity-40' : ''}`}>
+                    {/* Subtle grass pattern (only in normal mode) */}
+                    {!isOverlayMode && (
+                      <div className="absolute inset-0 opacity-10">
+                        <div className="absolute inset-0" style={{
+                          backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 30px, rgba(0,0,0,0.1) 30px, rgba(0,0,0,0.1) 60px)'
+                        }}></div>
+                      </div>
+                    )}
 
                     {/* Border */}
                     <div className="absolute inset-3 border-2 border-white/40 rounded"></div>
@@ -453,15 +519,15 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
                   </div>
 
                   {/* Team labels */}
-                  <div className="absolute top-4 left-8 z-30">
+                  <div className={`absolute top-4 left-8 ${isOverlayMode ? 'z-40' : 'z-30'}`}>
                     <Badge className="bg-blue-600 text-white shadow-md">{homeTeamName}</Badge>
                   </div>
-                  <div className="absolute top-4 right-8 z-30">
+                  <div className={`absolute top-4 right-8 ${isOverlayMode ? 'z-40' : 'z-30'}`}>
                     <Badge className="bg-red-600 text-white shadow-md">{awayTeamName}</Badge>
                   </div>
 
                   {/* Players */}
-                  <div className="absolute inset-0">
+                  <div className={`absolute inset-0 ${isOverlayMode ? 'z-30' : ''}`}>
                     {allPlayers.map((player, index) => {
                       const isHome = player.team === 'home';
                       const teamPlayers = isHome ? homeTeamPlayers : awayTeamPlayers;
@@ -491,7 +557,7 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
                               : isOnline
                                 ? `bg-${teamColor}-600 text-white hover:bg-${teamColor}-500 ring-2 ring-white`
                                 : `bg-${teamColor}-400 text-white ring-2 ring-white`
-                          }`}>
+                          } ${isOverlayMode ? 'ring-4' : ''}`}>
                             {player.jersey_number}
                             {isActive && (
                               <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full">
@@ -502,7 +568,7 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
                           
                           {/* Tooltip on hover */}
                           {(isHovered || isActive) && (
-                            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white px-3 py-1.5 rounded shadow-lg text-xs font-medium pointer-events-none">
+                            <div className={`absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white px-3 py-1.5 rounded shadow-lg text-xs font-medium pointer-events-none ${isOverlayMode ? 'z-50' : ''}`}>
                               <div className="text-center">
                                 <div className="font-bold">#{player.jersey_number} {player.player_name}</div>
                                 {player.position && <div className="text-gray-300 text-xs">{player.position}</div>}
@@ -514,66 +580,84 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
                       );
                     })}
                   </div>
+
+                  {/* NEW: Player Legend in Overlay Mode */}
+                  {isOverlayMode && (
+                    <div className="absolute bottom-4 left-4 z-40 bg-black bg-opacity-70 text-white p-3 rounded-lg">
+                      <div className="flex gap-4 text-sm">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 bg-blue-500 rounded-full border-2 border-white"></div>
+                          <span>{homeTeamName}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 bg-red-500 rounded-full border-2 border-white"></div>
+                          <span>{awayTeamName}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Right Sidebar - Analytics */}
-          <aside className="col-span-2 space-y-4">
-            <Card>
-              <CardContent className="p-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">Live Stats</h3>
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs text-gray-600">Possession</span>
-                      <span className="text-xs font-semibold">50/50</span>
+          {/* Right Sidebar - Analytics (Hide in overlay mode) */}
+          {!isOverlayMode && (
+            <aside className="col-span-2 space-y-4">
+              <Card>
+                <CardContent className="p-4">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">Live Stats</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs text-gray-600">Possession</span>
+                        <span className="text-xs font-semibold">50/50</span>
+                      </div>
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-600 w-1/2"></div>
+                      </div>
                     </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-600 w-1/2"></div>
+                    
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs text-gray-600">Passes</span>
+                        <span className="text-xs font-semibold">0</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-200 rounded-full"></div>
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs text-gray-600">Tackles</span>
+                        <span className="text-xs font-semibold">0</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-200 rounded-full"></div>
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs text-gray-600">Interceptions</span>
+                        <span className="text-xs font-semibold">0</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-200 rounded-full"></div>
                     </div>
                   </div>
-                  
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs text-gray-600">Passes</span>
-                      <span className="text-xs font-semibold">0</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-200 rounded-full"></div>
-                  </div>
-                  
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs text-gray-600">Tackles</span>
-                      <span className="text-xs font-semibold">0</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-200 rounded-full"></div>
-                  </div>
-                  
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs text-gray-600">Interceptions</span>
-                      <span className="text-xs font-semibold">0</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-200 rounded-full"></div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
-              <CardContent className="p-4">
-                <h3 className="text-xs font-semibold text-purple-900 uppercase mb-2">Pro Features</h3>
-                <ul className="space-y-1.5 text-xs text-purple-800">
-                  <li>✓ Real-time tracking</li>
-                  <li>✓ Auto event detection</li>
-                  <li>✓ Formation analysis</li>
-                  <li>✓ Heat maps (coming)</li>
-                </ul>
-              </CardContent>
-            </Card>
-          </aside>
+              <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
+                <CardContent className="p-4">
+                  <h3 className="text-xs font-semibold text-purple-900 uppercase mb-2">Pro Features</h3>
+                  <ul className="space-y-1.5 text-xs text-purple-800">
+                    <li>✓ Real-time tracking</li>
+                    <li>✓ Auto event detection</li>
+                    <li>✓ Formation analysis</li>
+                    <li>✓ Heat maps (coming)</li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </aside>
+          )}
         </div>
       </main>
     </div>
