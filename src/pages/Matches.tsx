@@ -148,7 +148,7 @@ const Matches: React.FC = () => {
                                     <span className="sr-only">View Match</span>
                                   </Button>
                                 </Link>
-                                <Link to={`/match/${match.id}/control-quality`}>
+                                <Link to={`/match/${match.id}/quality-control`}>
                                   <Button variant="outline" size="icon">
                                     <ClipboardCheck className="h-4 w-4" />
                                     <span className="sr-only">Quality Control</span>
