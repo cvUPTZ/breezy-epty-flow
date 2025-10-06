@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { AlertCircle, CheckCircle, Clock, Users, TrendingUp, Download, Search, RefreshCw, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Users, TrendingUp, Download, Search, RefreshCw, Loader2, BarChart3, Shield } from 'lucide-react';
+import MatchAnalysisSidebar from '@/components/MatchAnalysisSidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 // Type definitions
 interface QualityControl {
@@ -70,12 +72,30 @@ const QualityControlInterface: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEvent, setSelectedEvent] = useState<ProcessedEvent | null>(null);
 
+  // Sidebar menu items
+  const menuItems = [
+    {
+      value: 'analytics',
+      label: 'Analytics',
+      icon: BarChart3,
+      path: `/match/${matchId}/analytics`,
+      permission: 'viewAnalytics' as const
+    },
+    {
+      value: 'quality-control',
+      label: 'Quality Control',
+      icon: Shield,
+      path: `/match/${matchId}/quality-control`,
+      permission: 'viewQualityControl' as const
+    }
+  ];
+
   const fetchQualityData = useCallback(async () => {
     if (!matchId) return;
 
     setLoading(true);
     try {
-      // Fetch match events - Note: quality_control might need to be added as metadata or in event_data
+      // Fetch match events
       const { data: eventData, error: eventsError } = await supabase
         .from('match_events')
         .select(`
@@ -126,7 +146,6 @@ const QualityControlInterface: React.FC = () => {
         const eventDataObj = (e.event_data as EventData) || {};
         const metadata = (e.metadata as any) || {};
         
-        // Check if quality_control is stored in metadata or event_data
         const qualityControl = metadata.quality_control as QualityControl | null;
         
         const recordedAt = eventDataObj.recorded_at ? new Date(eventDataObj.recorded_at) : null;
@@ -208,7 +227,6 @@ const QualityControlInterface: React.FC = () => {
       validated_at: new Date().toISOString() 
     };
 
-    // Optimistically update UI
     const originalEvents = [...events];
     const updatedEvents = events.map(e =>
       e.id === eventId
@@ -219,7 +237,6 @@ const QualityControlInterface: React.FC = () => {
     calculateMetrics(updatedEvents);
 
     try {
-      // Store quality_control in metadata field
       const { error } = await supabase
         .from('match_events')
         .update({ 
@@ -236,7 +253,6 @@ const QualityControlInterface: React.FC = () => {
 
     } catch (error) {
       console.error("Error updating event validation:", error);
-      // Revert UI on failure
       setEvents(originalEvents);
       calculateMetrics(originalEvents);
       toast({
@@ -308,282 +324,291 @@ const QualityControlInterface: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Quality Control Dashboard</h1>
-            <p className="text-sm text-gray-500 mt-1">Match ID: {metrics.match_id} • Last updated: {new Date(metrics.last_updated).toLocaleString()}</p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={fetchQualityData}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Refresh
-            </button>
-            <button
-              onClick={exportReport}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              Export Report
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-white border-b border-gray-200 px-6">
-        <div className="flex gap-6">
-          {(['overview', 'events', 'trackers'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`py-4 px-2 border-b-2 font-medium transition-colors ${
-                activeTab === tab
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="p-6">
-        {activeTab === 'overview' && (
-          <div className="space-y-6">
-            {/* Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <MetricCard
-                icon={CheckCircle}
-                title="Total Events"
-                value={metrics.total_events}
-                subtitle={`${metrics.validated_events} validated`}
-                color="text-blue-600"
-              />
-              <MetricCard
-                icon={AlertCircle}
-                title="Pending Validation"
-                value={metrics.pending_validation}
-                subtitle={`${metrics.total_events > 0 ? Math.round((metrics.pending_validation/metrics.total_events)*100) : 0}% of total`}
-                color="text-yellow-600"
-              />
-              <MetricCard
-                icon={TrendingUp}
-                title="Data Completeness"
-                value={`${metrics.data_completeness}%`}
-                subtitle="Events with all fields"
-                color="text-green-600"
-              />
-              <MetricCard
-                icon={Clock}
-                title="Avg Response Time"
-                value={`${metrics.avg_response_time}s`}
-                subtitle="Entry delay"
-                color="text-purple-600"
-              />
-            </div>
-
-            {/* Issues Summary */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Quality Issues</h2>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <AlertCircle className="w-5 h-5 text-red-600" />
-                    <div>
-                      <p className="font-medium text-gray-900">Critical Issues</p>
-                      <p className="text-sm text-gray-600">Events with validation failures</p>
-                    </div>
-                  </div>
-                  <span className="text-2xl font-bold text-red-600">{metrics.critical_issues}</span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Clock className="w-5 h-5 text-yellow-600" />
-                    <div>
-                      <p className="font-medium text-gray-900">Delayed Entries</p>
-                      <p className="text-sm text-gray-600">Events with &gt;3s delay</p>
-                    </div>
-                  </div>
-                  <span className="text-2xl font-bold text-yellow-600">
-                    {events.filter(e => e.delay_seconds > 3).length}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Users className="w-5 h-5 text-blue-600" />
-                    <div>
-                      <p className="font-medium text-gray-900">Tracker Coverage</p>
-                      <p className="text-sm text-gray-600">Unique players tracked</p>
-                    </div>
-                  </div>
-                  <span className="text-2xl font-bold text-blue-600">{metrics.tracker_coverage}</span>
-                </div>
+    <SidebarProvider>
+      <div className="flex min-h-screen bg-gray-50">
+        <MatchAnalysisSidebar
+          menuItems={menuItems}
+          groupLabel="Match Tools"
+        />
+        
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <div className="bg-white border-b border-gray-200 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Quality Control Dashboard</h1>
+                <p className="text-sm text-gray-500 mt-1">Match ID: {metrics.match_id} • Last updated: {new Date(metrics.last_updated).toLocaleString()}</p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={fetchQualityData}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Refresh
+                </button>
+                <button
+                  onClick={exportReport}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Export Report
+                </button>
               </div>
             </div>
           </div>
-        )}
 
-        {activeTab === 'events' && (
-          <div className="space-y-4">
-            {/* Filters */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search events, players..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          {/* Tabs */}
+          <div className="bg-white border-b border-gray-200 px-6">
+            <div className="flex gap-6">
+              {(['overview', 'events', 'trackers'] as const).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`py-4 px-2 border-b-2 font-medium transition-colors ${
+                    activeTab === tab
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-6 overflow-y-auto">
+            {activeTab === 'overview' && (
+              <div className="space-y-6">
+                {/* Metrics Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <MetricCard
+                    icon={CheckCircle}
+                    title="Total Events"
+                    value={metrics.total_events}
+                    subtitle={`${metrics.validated_events} validated`}
+                    color="text-blue-600"
+                  />
+                  <MetricCard
+                    icon={AlertCircle}
+                    title="Pending Validation"
+                    value={metrics.pending_validation}
+                    subtitle={`${metrics.total_events > 0 ? Math.round((metrics.pending_validation/metrics.total_events)*100) : 0}% of total`}
+                    color="text-yellow-600"
+                  />
+                  <MetricCard
+                    icon={TrendingUp}
+                    title="Data Completeness"
+                    value={`${metrics.data_completeness}%`}
+                    subtitle="Events with all fields"
+                    color="text-green-600"
+                  />
+                  <MetricCard
+                    icon={Clock}
+                    title="Avg Response Time"
+                    value={`${metrics.avg_response_time}s`}
+                    subtitle="Entry delay"
+                    color="text-purple-600"
                   />
                 </div>
-                <div className="flex gap-2">
-                  {(['all', 'validated', 'issues', 'pending'] as const).map(status => (
-                    <button
-                      key={status}
-                      onClick={() => setFilterStatus(status)}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                        filterStatus === status
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
 
-            {/* Events Table */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Event</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Player</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tracker</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Delay</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {filteredEvents.map(event => (
-                      <tr key={event.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4">
-                          <div>
-                            <p className="font-medium text-gray-900">{event.event_type}</p>
-                            <p className="text-sm text-gray-500">{event.id}</p>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div>
-                            <p className="text-gray-900">{event.player_name}</p>
-                            <p className="text-sm text-gray-500">{event.team}</p>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {new Date(event.timestamp).toLocaleTimeString()}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {event.tracker.split('@')[0]}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                            event.delay_seconds < 2 ? 'bg-green-100 text-green-700' :
-                            event.delay_seconds < 3 ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
-                            {event.delay_seconds.toFixed(1)}s
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          {!event.validation ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                              Pending
-                            </span>
-                          ) : event.validation.is_valid ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-700">
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Valid
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700">
-                              <AlertCircle className="w-3 h-3 mr-1" />
-                              Issues
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          <button
-                            onClick={() => setSelectedEvent(event)}
-                            className="text-blue-600 hover:text-blue-700 font-medium text-sm"
-                          >
-                            Review
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'trackers' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...new Set(events.map(e => e.tracker))].map(tracker => {
-              const trackerEvents = events.filter(e => e.tracker === tracker);
-              if (trackerEvents.length === 0) return null;
-              const validatedEvents = trackerEvents.filter(e => e.validation?.is_valid).length;
-              const avgDelay = trackerEvents.reduce((sum, e) => sum + e.delay_seconds, 0) / trackerEvents.length;
-
-              return (
-                <div key={tracker} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4">{tracker.split('@')[0]}</h3>
+                {/* Issues Summary */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Quality Issues</h2>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Events Tracked</span>
-                      <span className="font-semibold text-gray-900">{trackerEvents.length}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Validation Rate</span>
-                      <span className="font-semibold text-gray-900">
-                        {Math.round((validatedEvents / trackerEvents.length) * 100)}%
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Avg Delay</span>
-                      <span className={`font-semibold ${avgDelay < 2 ? 'text-green-600' : avgDelay < 3 ? 'text-yellow-600' : 'text-red-600'}`}>
-                        {avgDelay.toFixed(1)}s
-                      </span>
-                    </div>
-                    <div className="pt-3 border-t border-gray-200">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full"
-                          style={{ width: `${(validatedEvents / trackerEvents.length) * 100}%` }}
-                        />
+                    <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <AlertCircle className="w-5 h-5 text-red-600" />
+                        <div>
+                          <p className="font-medium text-gray-900">Critical Issues</p>
+                          <p className="text-sm text-gray-600">Events with validation failures</p>
+                        </div>
                       </div>
+                      <span className="text-2xl font-bold text-red-600">{metrics.critical_issues}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Clock className="w-5 h-5 text-yellow-600" />
+                        <div>
+                          <p className="font-medium text-gray-900">Delayed Entries</p>
+                          <p className="text-sm text-gray-600">Events with &gt;3s delay</p>
+                        </div>
+                      </div>
+                      <span className="text-2xl font-bold text-yellow-600">
+                        {events.filter(e => e.delay_seconds > 3).length}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Users className="w-5 h-5 text-blue-600" />
+                        <div>
+                          <p className="font-medium text-gray-900">Tracker Coverage</p>
+                          <p className="text-sm text-gray-600">Unique players tracked</p>
+                        </div>
+                      </div>
+                      <span className="text-2xl font-bold text-blue-600">{metrics.tracker_coverage}</span>
                     </div>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            )}
+
+            {activeTab === 'events' && (
+              <div className="space-y-4">
+                {/* Filters */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search events, players..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      {(['all', 'validated', 'issues', 'pending'] as const).map(status => (
+                        <button
+                          key={status}
+                          onClick={() => setFilterStatus(status)}
+                          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                            filterStatus === status
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {status.charAt(0).toUpperCase() + status.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Events Table */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Event</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Player</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tracker</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Delay</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {filteredEvents.map(event => (
+                          <tr key={event.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4">
+                              <div>
+                                <p className="font-medium text-gray-900">{event.event_type}</p>
+                                <p className="text-sm text-gray-500">{event.id}</p>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div>
+                                <p className="text-gray-900">{event.player_name}</p>
+                                <p className="text-sm text-gray-500">{event.team}</p>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600">
+                              {new Date(event.timestamp).toLocaleTimeString()}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600">
+                              {event.tracker.split('@')[0]}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                                event.delay_seconds < 2 ? 'bg-green-100 text-green-700' :
+                                event.delay_seconds < 3 ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {event.delay_seconds.toFixed(1)}s
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              {!event.validation ? (
+                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                                  Pending
+                                </span>
+                              ) : event.validation.is_valid ? (
+                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-700">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Valid
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700">
+                                  <AlertCircle className="w-3 h-3 mr-1" />
+                                  Issues
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4">
+                              <button
+                                onClick={() => setSelectedEvent(event)}
+                                className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                              >
+                                Review
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'trackers' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...new Set(events.map(e => e.tracker))].map(tracker => {
+                  const trackerEvents = events.filter(e => e.tracker === tracker);
+                  if (trackerEvents.length === 0) return null;
+                  const validatedEvents = trackerEvents.filter(e => e.validation?.is_valid).length;
+                  const avgDelay = trackerEvents.reduce((sum, e) => sum + e.delay_seconds, 0) / trackerEvents.length;
+
+                  return (
+                    <div key={tracker} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                      <h3 className="font-semibold text-gray-900 mb-4">{tracker.split('@')[0]}</h3>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Events Tracked</span>
+                          <span className="font-semibold text-gray-900">{trackerEvents.length}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Validation Rate</span>
+                          <span className="font-semibold text-gray-900">
+                            {Math.round((validatedEvents / trackerEvents.length) * 100)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Avg Delay</span>
+                          <span className={`font-semibold ${avgDelay < 2 ? 'text-green-600' : avgDelay < 3 ? 'text-yellow-600' : 'text-red-600'}`}>
+                            {avgDelay.toFixed(1)}s
+                          </span>
+                        </div>
+                        <div className="pt-3 border-t border-gray-200">
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-blue-600 h-2 rounded-full"
+                              style={{ width: `${(validatedEvents / trackerEvents.length) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Validation Modal */}
@@ -669,7 +694,7 @@ const QualityControlInterface: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </SidebarProvider>
   );
 };
 
