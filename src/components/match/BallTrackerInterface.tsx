@@ -108,6 +108,11 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
   const [showVideo, setShowVideo] = useState(false);
   const [isVideoExpanded, setIsVideoExpanded] = useState(false);
   const [viewMode, setViewMode] = useState<'tracking' | 'analysis'>('tracking');
+  const [videoPosition, setVideoPosition] = useState({ x: 20, y: 100 });
+  const [videoSize, setVideoSize] = useState({ width: 480, height: 270 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const allPlayers = useMemo(() => 
     [...homeTeamPlayers, ...awayTeamPlayers],
@@ -139,6 +144,46 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
     
     setTimeout(() => setSelectedPlayerId(null), 300);
   };
+
+  // Video dragging handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.video-drag-handle')) {
+      setIsDragging(true);
+      setDragStart({
+        x: e.clientX - videoPosition.x,
+        y: e.clientY - videoPosition.y
+      });
+    }
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (isDragging) {
+      setVideoPosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    } else if (isResizing) {
+      const newWidth = Math.max(320, e.clientX - videoPosition.x);
+      const newHeight = Math.max(180, newWidth * (9/16));
+      setVideoSize({ width: newWidth, height: newHeight });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setIsResizing(false);
+  };
+
+  React.useEffect(() => {
+    if (isDragging || isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, isResizing, dragStart, videoPosition]);
 
   // Extract video ID from URL
   const videoId = useMemo(() => {
@@ -176,45 +221,58 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Video Player Overlay */}
+      {/* Video Player Overlay - Draggable & Resizable */}
       {videoUrl && videoId && showVideo && (
         <div 
-          className={`fixed z-50 transition-all duration-300 ${
-            isVideoExpanded 
-              ? 'inset-4' 
-              : 'bottom-4 right-4 w-96 h-64'
-          }`}
+          className="fixed z-50 bg-black rounded-lg shadow-2xl overflow-hidden"
           style={{ 
-            boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
-            borderRadius: '8px',
-            overflow: 'hidden'
+            left: `${videoPosition.x}px`,
+            top: `${videoPosition.y}px`,
+            width: `${videoSize.width}px`,
+            height: `${videoSize.height}px`,
+            cursor: isDragging ? 'grabbing' : 'default'
           }}
+          onMouseDown={handleMouseDown}
         >
-          <div className="relative w-full h-full bg-black">
+          {/* Drag Handle */}
+          <div className="video-drag-handle absolute top-0 left-0 right-0 h-10 bg-gradient-to-b from-black/80 to-transparent z-10 cursor-grab active:cursor-grabbing flex items-center justify-between px-3">
+            <div className="flex items-center gap-2 text-white text-sm font-medium">
+              <Video className="h-4 w-4" />
+              <span>Match Video</span>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="bg-white/10 hover:bg-white/20 text-white h-7 w-7 p-0 border-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowVideo(false);
+                }}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Video Content */}
+          <div className="relative w-full h-full">
             <YouTubePlayer
               videoId={videoId}
               matchId=""
               isAdmin={false}
             />
-            
-            <div className="absolute top-2 right-2 flex gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                className="bg-black/70 hover:bg-black/90 text-white h-8 w-8 p-0"
-                onClick={() => setIsVideoExpanded(!isVideoExpanded)}
-              >
-                {isVideoExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="bg-black/70 hover:bg-black/90 text-white h-8 w-8 p-0"
-                onClick={() => setShowVideo(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+          </div>
+
+          {/* Resize Handle */}
+          <div 
+            className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize group"
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              setIsResizing(true);
+            }}
+          >
+            <div className="absolute bottom-1 right-1 w-4 h-4 border-r-2 border-b-2 border-white/50 group-hover:border-white transition-colors"></div>
           </div>
         </div>
       )}
@@ -267,11 +325,17 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
               <Button
                 variant={showVideo ? "default" : "outline"}
                 size="sm"
-                onClick={() => setShowVideo(!showVideo)}
+                onClick={() => {
+                  setShowVideo(!showVideo);
+                  // Auto-show video on the left side when enabled
+                  if (!showVideo) {
+                    setShowVideo(true);
+                  }
+                }}
                 className="gap-2"
               >
                 <Video className="h-4 w-4" />
-                Video
+                {showVideo ? 'Hide' : 'Show'} Video
               </Button>
             )}
 
