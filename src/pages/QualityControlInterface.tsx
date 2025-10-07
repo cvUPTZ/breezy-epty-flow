@@ -22,6 +22,18 @@ interface Player {
   jersey_number?: string;
 }
 
+// Database row type for match_events (temporary until Supabase types are regenerated)
+interface MatchEventRow {
+  id: string;
+  event_type: string;
+  player_id: bigint | null;
+  team: string | null;
+  timestamp: bigint | null;
+  created_by: string;
+  event_data: any;
+  quality_control: any;
+}
+
 interface ProcessedEvent {
   id: string;
   event_type: string;
@@ -75,8 +87,8 @@ const QualityControlInterface: React.FC = () => {
 
     setLoading(true);
     try {
-      // Fetch match events - Note: quality_control might need to be added as metadata or in event_data
-      const { data: eventData, error: eventsError } = await supabase
+      // Fetch match events
+      const { data: rawEventData, error: eventsError } = await supabase
         .from('match_events')
         .select(`
           id,
@@ -89,9 +101,12 @@ const QualityControlInterface: React.FC = () => {
           quality_control
         `)
         .eq('match_id', matchId)
-        .order('timestamp', { ascending: false }) as any; // Type assertion until Supabase types are regenerated
+        .order('timestamp', { ascending: false });
 
       if (eventsError) throw eventsError;
+      
+      // Type assertion for the data
+      const eventData = rawEventData as unknown as MatchEventRow[];
 
       // Fetch match details to get player rosters
       const { data: matchData, error: matchError } = await supabase
@@ -109,11 +124,11 @@ const QualityControlInterface: React.FC = () => {
       const playerMap = new Map<string, Player>(allPlayers.map(p => [p.id, p]));
 
       // Fetch user profiles to map tracker IDs to names/emails
-      const trackerIds = [...new Set((eventData || []).map((e: any) => e.created_by).filter(Boolean))];
+      const trackerIds = [...new Set((eventData || []).map(e => e.created_by).filter(Boolean))];
       const { data: trackerData, error: trackersError } = await supabase
         .from('profiles')
         .select('id, email')
-        .in('id', trackerIds as string[]);
+        .in('id', trackerIds);
 
       if (trackersError) throw trackersError;
 
@@ -121,21 +136,21 @@ const QualityControlInterface: React.FC = () => {
         (trackerData || []).map(t => [t.id, t.email || 'Unknown'])
       );
 
-      const processedEvents: ProcessedEvent[] = ((eventData || []) as any[]).map((e: any) => {
-        const player = playerMap.get(e.player_id || '');
+      const processedEvents: ProcessedEvent[] = (eventData || []).map((e: MatchEventRow) => {
+        const player = playerMap.get(e.player_id?.toString() || '');
         const eventDataObj = (e.event_data as EventData) || {};
         
         // Get quality_control from the quality_control column
         const qualityControl = (e.quality_control as QualityControl) || null;
         
         const recordedAt = eventDataObj.recorded_at ? new Date(eventDataObj.recorded_at) : null;
-        const eventTimestamp = new Date((e.timestamp || 0) * 1000);
+        const eventTimestamp = new Date(Number(e.timestamp || 0) * 1000);
         const delay = recordedAt ? Math.abs((eventTimestamp.getTime() - recordedAt.getTime()) / 1000) : 0;
 
         return {
           id: e.id,
           event_type: e.event_type || 'Unknown',
-          player_id: e.player_id || '',
+          player_id: e.player_id?.toString() || '',
           player_name: player?.player_name || 'Unknown Player',
           team: e.team || 'Unknown',
           timestamp: eventTimestamp.toISOString(),
@@ -219,11 +234,14 @@ const QualityControlInterface: React.FC = () => {
 
     try {
       // Store quality_control in the quality_control column
+      // Using type assertion to bypass outdated Supabase type definitions
+      const updateData: Record<string, any> = { 
+        quality_control: newValidationState
+      };
+      
       const { error } = await supabase
         .from('match_events')
-        .update({ 
-          quality_control: newValidationState
-        } as any) // Type assertion until Supabase types are regenerated
+        .update(updateData)
         .eq('id', eventId);
 
       if (error) throw error;
