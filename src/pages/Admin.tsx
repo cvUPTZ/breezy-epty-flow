@@ -24,7 +24,8 @@ import {
   LogOut,
   Building2,
   Calculator,
-  Video
+  Video,
+  Keyboard,
 } from 'lucide-react';
 
 // Sidebar components
@@ -67,6 +68,7 @@ import BudgetTrackerConfig from '@/components/admin/BudgetTrackerConfig';
 import LineBasedTrackerAssignment from '@/components/admin/LineBasedTrackerAssignment';
 import UnifiedTrackerAssignment from '@/components/tracker/UnifiedTrackerAssignment';
 import { AssignmentLogsViewer } from '@/components/admin/AssignmentLogsViewer';
+import KeyboardManager from '@/components/admin/KeyboardManager';
 
 const sidebarItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -88,6 +90,7 @@ const sidebarItems = [
   { id: 'business', label: 'Business Plan', icon: Building2 },
   { id: 'budget', label: 'Budget Tracker', icon: Calculator },
   { id: 'video-analyzer', label: 'Video Analyzer', icon: Video },
+  { id: 'keyboard', label: 'Keyboard', icon: Keyboard },
 ];
 
 function AdminSidebar({ activeSection, setActiveSection }: { activeSection: string; setActiveSection: (section: string) => void }) {
@@ -574,6 +577,9 @@ const Admin: React.FC = () => {
 
       case 'budget':
         return <BudgetTrackerConfig />;
+
+      case 'keyboard':
+        return <KeyboardManager />;
 
       default:
         return <div>Section not found</div>;
