@@ -83,8 +83,8 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
   onSelectPlayer = () => {},
   videoUrl
 }) => {
-  const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
-  const [hoveredPlayerId, setHoveredPlayerId] = useState<number | null>(null);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [hoveredPlayerId, setHoveredPlayerId] = useState<string | null>(null);
   const [showVideo, setShowVideo] = useState(false);
   const [isVideoExpanded, setIsVideoExpanded] = useState(false);
   const [viewMode, setViewMode] = useState<'tracking' | 'analysis'>('tracking');
@@ -122,7 +122,9 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
   const handleSelectPlayer = (player: Player) => {
     if (!isOnline) return;
     
-    setSelectedPlayerId(player.id);
+    // Use composite key to avoid conflicts between teams
+    const playerKey = `${player.team}-${player.id}`;
+    setSelectedPlayerId(playerKey);
     onSelectPlayer(player);
     
     setTimeout(() => setSelectedPlayerId(null), 300);
@@ -533,9 +535,10 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
                       const teamPlayers = isHome ? homeTeamPlayers : awayTeamPlayers;
                       const teamIndex = teamPlayers.findIndex(p => p.id === player.id);
                       const pos = getHorizontalPosition(player.position || '', teamIndex, teamPlayers.length, isHome);
+                      const playerKey = `${player.team}-${player.id}`;
                       const isActive = isValidBallHolder && currentBallHolder?.id === player.id;
-                      const isSelected = selectedPlayerId === player.id;
-                      const isHovered = hoveredPlayerId === player.id;
+                      const isSelected = selectedPlayerId === playerKey;
+                      const isHovered = hoveredPlayerId === playerKey;
                       const teamColor = isHome ? 'blue' : 'red';
                       
                       return (
@@ -546,7 +549,7 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
                             e.preventDefault();
                             handleSelectPlayer(player);
                           }}
-                          onMouseEnter={() => setHoveredPlayerId(player.id)}
+                          onMouseEnter={() => setHoveredPlayerId(playerKey)}
                           onMouseLeave={() => setHoveredPlayerId(null)}
                           disabled={!isOnline}
                           style={{ 

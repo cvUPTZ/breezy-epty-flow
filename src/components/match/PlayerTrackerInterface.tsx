@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { User, Clock, AlertTriangle, Trash2, CheckCircle, Loader2, Keyboard, Video, X, Layers } from 'lucide-react';
+import { User, Clock, AlertTriangle, Trash2, CheckCircle, Loader2, Keyboard, Video, X, Layers, Upload } from 'lucide-react';
 import { Player, PendingEvent } from '@/hooks/useFourTrackerSystem';
 import { YouTubePlayer } from '@/components/video/YouTubePlayer';
 
@@ -293,9 +293,16 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
       <Card className={`bg-gradient-to-r from-blue-50 to-purple-50 border-blue-300 ${isOverlayMode ? 'fixed top-20 left-0 right-0 z-50 mx-4' : ''}`}>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <User className="h-5 w-5 text-blue-600" />
-              Interface de Suivi des Joueurs
+              <span>Interface de Suivi des Joueurs</span>
+              {/* Keyboard Icon Indicator */}
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-200">
+                <Keyboard className="h-4 w-4 text-blue-600" />
+                <span className="text-xs font-semibold text-blue-700">
+                  Raccourcis Actifs
+                </span>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               {videoUrl && videoId && (
@@ -323,6 +330,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                 </>
               )}
               <Badge variant="outline" className="text-lg px-4 py-1">
+                <Upload className="h-4 w-4 mr-1 inline" />
                 {pendingEvents.length} en attente
               </Badge>
             </div>
@@ -480,13 +488,16 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                               }`}
                               aria-label={`Enregistrer ${eventType} pour ${event.player.player_name}`}
                             >
-                              <div className="flex flex-col items-center justify-center">
-                                <Badge 
-                                  variant="secondary" 
-                                  className="mb-1 px-2 py-0.5 text-xs font-mono bg-white/90 text-gray-900"
-                                >
-                                  {shortcutKey}
-                                </Badge>
+                              <div className="flex flex-col items-center justify-center gap-1">
+                                <div className="flex items-center justify-center gap-1">
+                                  <Keyboard className="h-3 w-3 text-white/80" />
+                                  <Badge 
+                                    variant="secondary" 
+                                    className="px-2 py-0.5 text-xs font-mono font-bold bg-white/95 text-gray-900 shadow-sm"
+                                  >
+                                    {shortcutKey}
+                                  </Badge>
+                                </div>
                                 <span className="text-center leading-tight">{eventTypeDisplay(eventType)}</span>
                               </div>
                             </Button>
@@ -515,13 +526,16 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                                 }`}
                                 aria-label={`Enregistrer ${eventType} pour ${event.player.player_name}`}
                               >
-                                <div className="flex flex-col items-center justify-center">
-                                  <Badge 
-                                    variant="secondary" 
-                                    className="mb-1 px-2 py-0.5 text-xs font-mono bg-white/90 text-gray-900"
-                                  >
-                                    {shortcutKey}
-                                  </Badge>
+                                <div className="flex flex-col items-center justify-center gap-1">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Keyboard className="h-3 w-3 text-white/80" />
+                                    <Badge 
+                                      variant="secondary" 
+                                      className="px-2 py-0.5 text-xs font-mono font-bold bg-white/95 text-gray-900 shadow-sm"
+                                    >
+                                      {shortcutKey}
+                                    </Badge>
+                                  </div>
                                   <span className="text-center leading-tight">{eventTypeDisplay(eventType)}</span>
                                 </div>
                               </Button>
@@ -551,13 +565,16 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                                 }`}
                                 aria-label={`Enregistrer ${eventType} pour ${event.player.player_name}`}
                               >
-                                <div className="flex flex-col items-center justify-center">
-                                  <Badge 
-                                    variant="secondary" 
-                                    className="mb-1 px-2 py-0.5 text-xs font-mono bg-white/90 text-gray-900"
-                                  >
-                                    {shortcutKey}
-                                  </Badge>
+                                <div className="flex flex-col items-center justify-center gap-1">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Keyboard className="h-3 w-3 text-white/80" />
+                                    <Badge 
+                                      variant="secondary" 
+                                      className="px-2 py-0.5 text-xs font-mono font-bold bg-white/95 text-gray-900 shadow-sm"
+                                    >
+                                      {shortcutKey}
+                                    </Badge>
+                                  </div>
                                   <span className="text-center leading-tight">{eventTypeDisplay(eventType)}</span>
                                 </div>
                               </Button>
