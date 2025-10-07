@@ -1,6 +1,6 @@
 
 import { useMemo } from 'react';
-import { LayoutDashboard, Play, Calendar, BarChart3, TrendingUp, Target, Eye, Network, AlertTriangle, Briefcase, DollarSign } from 'lucide-react';
+import { LayoutDashboard, Play, Calendar, BarChart3, TrendingUp, Target, Eye, Network, AlertTriangle, Briefcase, DollarSign, ClipboardCheck, Keyboard } from 'lucide-react';
 import { usePermissionChecker } from './usePermissionChecker';
 import { type RolePermissions } from './useUserPermissions';
 
@@ -111,6 +111,20 @@ export const useMenuItems = () => {
     }
     
     if (isAdmin()) {
+      items.push({ 
+        value: 'quality-control', 
+        label: 'Quality Control', 
+        icon: ClipboardCheck, 
+        path: '/admin/quality-control'
+      });
+      
+      items.push({ 
+        value: 'keyboard-manager', 
+        label: 'Keyboard Manager', 
+        icon: Keyboard, 
+        path: '/admin/keyboard-manager'
+      });
+      
       items.push({ 
         value: 'gpu-network', 
         label: 'GPU Network', 
