@@ -479,7 +479,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                               key={eventType}
                               onClick={() => handleRecordEvent(event.id, eventType)}
                               disabled={!isOnline || isProcessing}
-                              className={`flex-1 h-20 text-xs font-semibold transition-all relative ${
+                              className={`flex-1 h-20 text-xs font-semibold transition-all relative overflow-hidden ${
                                 isProcessing
                                   ? 'bg-gray-400 cursor-not-allowed'
                                   : event.priority === 'urgent' 
@@ -490,22 +490,33 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                               }`}
                               aria-label={`Enregistrer ${eventType} pour ${event.player.player_name}`}
                             >
-                              <div className="flex flex-col items-center justify-center gap-1">
-                                <div className="flex items-center justify-center gap-1">
-                                  <Keyboard className="h-3 w-3 text-white/80" />
-                                  <Badge 
-                                    variant="secondary" 
-                                    className="px-2 py-0.5 text-xs font-mono font-bold bg-white/95 text-gray-900 shadow-sm"
-                                  >
-                                    {shortcutKey}
-                                  </Badge>
-                                </div>
-                                {iconUrl ? (
-                                  <img src={iconUrl} alt={eventTypeDisplay(eventType)} className="w-10 h-10 object-contain" />
-                                ) : (
+                              {iconUrl ? (
+                                <>
+                                  <img src={iconUrl} alt={eventTypeDisplay(eventType)} className="absolute inset-0 w-full h-full object-cover opacity-90 mix-blend-screen" />
+                                  <div className="absolute top-1 right-1 flex items-center gap-1 z-10">
+                                    <Keyboard className="h-3 w-3 text-white drop-shadow-lg" />
+                                    <Badge 
+                                      variant="secondary" 
+                                      className="px-2 py-0.5 text-xs font-mono font-bold bg-black/70 text-white shadow-lg border border-white/30"
+                                    >
+                                      {shortcutKey}
+                                    </Badge>
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="flex flex-col items-center justify-center gap-1">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Keyboard className="h-3 w-3 text-white/80" />
+                                    <Badge 
+                                      variant="secondary" 
+                                      className="px-2 py-0.5 text-xs font-mono font-bold bg-white/95 text-gray-900 shadow-sm"
+                                    >
+                                      {shortcutKey}
+                                    </Badge>
+                                  </div>
                                   <span className="text-center leading-tight">{eventTypeDisplay(eventType)}</span>
-                                )}
-                              </div>
+                                </div>
+                              )}
                             </Button>
                           );
                         })}
@@ -522,7 +533,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                                 key={eventType}
                                 onClick={() => handleRecordEvent(event.id, eventType)}
                                 disabled={!isOnline || isProcessing}
-                                className={`flex-1 h-20 text-xs font-semibold transition-all relative ${
+                                className={`flex-1 h-20 text-xs font-semibold transition-all relative overflow-hidden ${
                                   isProcessing
                                     ? 'bg-gray-400 cursor-not-allowed'
                                     : event.priority === 'urgent' 
@@ -533,22 +544,33 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                                 }`}
                                 aria-label={`Enregistrer ${eventType} pour ${event.player.player_name}`}
                               >
-                                <div className="flex flex-col items-center justify-center gap-1">
-                                  <div className="flex items-center justify-center gap-1">
-                                    <Keyboard className="h-3 w-3 text-white/80" />
-                                    <Badge 
-                                      variant="secondary" 
-                                      className="px-2 py-0.5 text-xs font-mono font-bold bg-white/95 text-gray-900 shadow-sm"
-                                    >
-                                      {shortcutKey}
-                                    </Badge>
-                                  </div>
-                                  {iconUrl ? (
-                                    <img src={iconUrl} alt={eventTypeDisplay(eventType)} className="w-10 h-10 object-contain" />
-                                  ) : (
+                                {iconUrl ? (
+                                  <>
+                                    <img src={iconUrl} alt={eventTypeDisplay(eventType)} className="absolute inset-0 w-full h-full object-cover opacity-90 mix-blend-screen" />
+                                    <div className="absolute top-1 right-1 flex items-center gap-1 z-10">
+                                      <Keyboard className="h-3 w-3 text-white drop-shadow-lg" />
+                                      <Badge 
+                                        variant="secondary" 
+                                        className="px-2 py-0.5 text-xs font-mono font-bold bg-black/70 text-white shadow-lg border border-white/30"
+                                      >
+                                        {shortcutKey}
+                                      </Badge>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <div className="flex flex-col items-center justify-center gap-1">
+                                    <div className="flex items-center justify-center gap-1">
+                                      <Keyboard className="h-3 w-3 text-white/80" />
+                                      <Badge 
+                                        variant="secondary" 
+                                        className="px-2 py-0.5 text-xs font-mono font-bold bg-white/95 text-gray-900 shadow-sm"
+                                      >
+                                        {shortcutKey}
+                                      </Badge>
+                                    </div>
                                     <span className="text-center leading-tight">{eventTypeDisplay(eventType)}</span>
-                                  )}
-                                </div>
+                                  </div>
+                                )}
                               </Button>
                             );
                           })}
@@ -566,7 +588,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                                 key={eventType}
                                 onClick={() => handleRecordEvent(event.id, eventType)}
                                 disabled={!isOnline || isProcessing}
-                                className={`flex-1 h-20 text-xs font-semibold transition-all relative ${
+                                className={`flex-1 h-20 text-xs font-semibold transition-all relative overflow-hidden ${
                                   isProcessing
                                     ? 'bg-gray-400 cursor-not-allowed'
                                     : event.priority === 'urgent' 
@@ -577,22 +599,33 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                                 }`}
                                 aria-label={`Enregistrer ${eventType} pour ${event.player.player_name}`}
                               >
-                                <div className="flex flex-col items-center justify-center gap-1">
-                                  <div className="flex items-center justify-center gap-1">
-                                    <Keyboard className="h-3 w-3 text-white/80" />
-                                    <Badge 
-                                      variant="secondary" 
-                                      className="px-2 py-0.5 text-xs font-mono font-bold bg-white/95 text-gray-900 shadow-sm"
-                                    >
-                                      {shortcutKey}
-                                    </Badge>
-                                  </div>
-                                  {iconUrl ? (
-                                    <img src={iconUrl} alt={eventTypeDisplay(eventType)} className="w-10 h-10 object-contain" />
-                                  ) : (
+                                {iconUrl ? (
+                                  <>
+                                    <img src={iconUrl} alt={eventTypeDisplay(eventType)} className="absolute inset-0 w-full h-full object-cover opacity-90 mix-blend-screen" />
+                                    <div className="absolute top-1 right-1 flex items-center gap-1 z-10">
+                                      <Keyboard className="h-3 w-3 text-white drop-shadow-lg" />
+                                      <Badge 
+                                        variant="secondary" 
+                                        className="px-2 py-0.5 text-xs font-mono font-bold bg-black/70 text-white shadow-lg border border-white/30"
+                                      >
+                                        {shortcutKey}
+                                      </Badge>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <div className="flex flex-col items-center justify-center gap-1">
+                                    <div className="flex items-center justify-center gap-1">
+                                      <Keyboard className="h-3 w-3 text-white/80" />
+                                      <Badge 
+                                        variant="secondary" 
+                                        className="px-2 py-0.5 text-xs font-mono font-bold bg-white/95 text-gray-900 shadow-sm"
+                                      >
+                                        {shortcutKey}
+                                      </Badge>
+                                    </div>
                                     <span className="text-center leading-tight">{eventTypeDisplay(eventType)}</span>
-                                  )}
-                                </div>
+                                  </div>
+                                )}
                               </Button>
                             );
                           })}
