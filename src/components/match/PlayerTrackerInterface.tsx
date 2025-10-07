@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { User, Clock, AlertTriangle, Trash2, CheckCircle, Loader2, Keyboard, Video, X, Layers, Upload } from 'lucide-react';
 import { Player, PendingEvent } from '@/hooks/useFourTrackerSystem';
 import { YouTubePlayer } from '@/components/video/YouTubePlayer';
+import keyboardManager from './KeyboardManager';
 
 // Hook useKeyboardShortcuts
 const useKeyboardShortcuts = (shortcutMap: Record<string, () => void>, isActive = true) => {
@@ -472,6 +473,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                       <div className="flex gap-2">
                         {assignedEventTypes.slice(0, 10).map((eventType: string, index: number) => {
                           const shortcutKey = shortcutKeys[index];
+                          const iconUrl = keyboardManager.getIconForEvent(eventType);
                           return (
                             <Button
                               key={eventType}
@@ -498,7 +500,11 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                                     {shortcutKey}
                                   </Badge>
                                 </div>
-                                <span className="text-center leading-tight">{eventTypeDisplay(eventType)}</span>
+                                {iconUrl ? (
+                                  <img src={iconUrl} alt={eventTypeDisplay(eventType)} className="w-10 h-10 object-contain" />
+                                ) : (
+                                  <span className="text-center leading-tight">{eventTypeDisplay(eventType)}</span>
+                                )}
                               </div>
                             </Button>
                           );
@@ -510,6 +516,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                         <div className="flex gap-2">
                           {assignedEventTypes.slice(10, 19).map((eventType: string, index: number) => {
                             const shortcutKey = shortcutKeys[index + 10];
+                            const iconUrl = keyboardManager.getIconForEvent(eventType);
                             return (
                               <Button
                                 key={eventType}
@@ -536,7 +543,11 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                                       {shortcutKey}
                                     </Badge>
                                   </div>
-                                  <span className="text-center leading-tight">{eventTypeDisplay(eventType)}</span>
+                                  {iconUrl ? (
+                                    <img src={iconUrl} alt={eventTypeDisplay(eventType)} className="w-10 h-10 object-contain" />
+                                  ) : (
+                                    <span className="text-center leading-tight">{eventTypeDisplay(eventType)}</span>
+                                  )}
                                 </div>
                               </Button>
                             );
@@ -549,6 +560,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                         <div className="flex gap-2">
                           {assignedEventTypes.slice(19, 26).map((eventType: string, index: number) => {
                             const shortcutKey = shortcutKeys[index + 19];
+                            const iconUrl = keyboardManager.getIconForEvent(eventType);
                             return (
                               <Button
                                 key={eventType}
@@ -575,7 +587,11 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                                       {shortcutKey}
                                     </Badge>
                                   </div>
-                                  <span className="text-center leading-tight">{eventTypeDisplay(eventType)}</span>
+                                  {iconUrl ? (
+                                    <img src={iconUrl} alt={eventTypeDisplay(eventType)} className="w-10 h-10 object-contain" />
+                                  ) : (
+                                    <span className="text-center leading-tight">{eventTypeDisplay(eventType)}</span>
+                                  )}
                                 </div>
                               </Button>
                             );
