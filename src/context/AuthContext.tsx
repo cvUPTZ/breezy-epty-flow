@@ -185,8 +185,61 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
-    setUserRole(null);
+    try {
+      setLoading(true);
+      
+      // Get current session before attempting logout
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // Log the logout attempt
+        try {
+          await supabase.from('security_audit_log').insert({
+            user_id: session.user.id,
+            action: 'sign_out',
+            resource_type: 'auth_session',
+            resource_id: session.user.id,
+            details: { 
+              timestamp: new Date().toISOString()
+            }
+          });
+        } catch (logError) {
+          console.error('Failed to log security event:', logError);
+        }
+      }
+      
+      // Attempt to sign out
+      const { error } = await supabase.auth.signOut();
+      
+      // Handle session_not_found error gracefully
+      if (error && error.message !== 'Session not found') {
+        console.error('Sign out error:', error);
+        toast.error('Error signing out: ' + error.message);
+      }
+      
+      // Clear local state regardless of API result
+      setUserRole(null);
+      setUser(null);
+      setSession(null);
+      
+      toast.success('Signed out successfully');
+    } catch (error: any) {
+      console.error('Sign out error:', error);
+      
+      // Clear state even if there's an error
+      setUserRole(null);
+      setUser(null);
+      setSession(null);
+      
+      // Only show error toast if it's not a "session not found" error
+      if (!error?.message?.includes('Session not found')) {
+        toast.error('Error during sign out');
+      } else {
+        toast.success('Signed out successfully');
+      }
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const switchUser = useCallback(async (email: string, password: string) => {

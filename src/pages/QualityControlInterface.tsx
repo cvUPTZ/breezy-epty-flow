@@ -86,10 +86,10 @@ const QualityControlInterface: React.FC = () => {
           timestamp,
           created_by,
           event_data,
-          metadata
+          quality_control
         `)
         .eq('match_id', matchId)
-        .order('timestamp', { ascending: false });
+        .order('timestamp', { ascending: false }) as any; // Type assertion until Supabase types are regenerated
 
       if (eventsError) throw eventsError;
 
@@ -109,11 +109,11 @@ const QualityControlInterface: React.FC = () => {
       const playerMap = new Map<string, Player>(allPlayers.map(p => [p.id, p]));
 
       // Fetch user profiles to map tracker IDs to names/emails
-      const trackerIds = [...new Set(eventData?.map(e => e.created_by).filter(Boolean) || [])];
+      const trackerIds = [...new Set((eventData || []).map((e: any) => e.created_by).filter(Boolean))];
       const { data: trackerData, error: trackersError } = await supabase
         .from('profiles')
         .select('id, email')
-        .in('id', trackerIds);
+        .in('id', trackerIds as string[]);
 
       if (trackersError) throw trackersError;
 
@@ -121,13 +121,12 @@ const QualityControlInterface: React.FC = () => {
         (trackerData || []).map(t => [t.id, t.email || 'Unknown'])
       );
 
-      const processedEvents: ProcessedEvent[] = (eventData || []).map(e => {
+      const processedEvents: ProcessedEvent[] = ((eventData || []) as any[]).map((e: any) => {
         const player = playerMap.get(e.player_id || '');
         const eventDataObj = (e.event_data as EventData) || {};
-        const metadata = (e.metadata as any) || {};
         
-        // Check if quality_control is stored in metadata or event_data
-        const qualityControl = metadata.quality_control as QualityControl | null;
+        // Get quality_control from the quality_control column
+        const qualityControl = (e.quality_control as QualityControl) || null;
         
         const recordedAt = eventDataObj.recorded_at ? new Date(eventDataObj.recorded_at) : null;
         const eventTimestamp = new Date((e.timestamp || 0) * 1000);
@@ -219,12 +218,12 @@ const QualityControlInterface: React.FC = () => {
     calculateMetrics(updatedEvents);
 
     try {
-      // Store quality_control in metadata field
+      // Store quality_control in the quality_control column
       const { error } = await supabase
         .from('match_events')
         .update({ 
-          metadata: { quality_control: newValidationState }
-        })
+          quality_control: newValidationState
+        } as any) // Type assertion until Supabase types are regenerated
         .eq('id', eventId);
 
       if (error) throw error;
