@@ -4,7 +4,7 @@ export class AudioLevelMonitor {
   private analyser: AnalyserNode | null = null;
   private sourceNode: MediaStreamAudioSourceNode | null = null;
   private animationFrame: number | null = null;
-  private dataArray: Uint8Array | null = null;
+  private dataArray: Uint8Array<ArrayBuffer> | null = null;
   
   private onAudioLevel?: (level: number) => void;
   private isMonitoring = false;

@@ -39,6 +39,8 @@ import ChromeExtensionBridge from './pages/ChromeExtensionBridge';
 import NotFound from './pages/NotFound';
 
 import VideoSetupPage from './pages/Admin/VideoSetupPage';
+import AdminQualityControl from './pages/Admin/AdminQualityControl';
+import KeyboardManager from './pages/Admin/KeyboardManager';
 import Scouting from './pages/Scouting';
 import ClubDetails from './components/scouting/ClubDetails';
 import MarketIntelligencePage from './pages/MarketIntelligencePage';
@@ -259,6 +261,18 @@ const AppContent = () => {
         <Route path="/admin/error-manager" element={
           <AdminOnly>
             <ErrorManagerPage />
+          </AdminOnly>
+        } />
+
+        <Route path="/admin/quality-control" element={
+          <AdminOnly>
+            <AdminQualityControl />
+          </AdminOnly>
+        } />
+
+        <Route path="/admin/keyboard-manager" element={
+          <AdminOnly>
+            <KeyboardManager />
           </AdminOnly>
         } />
 
