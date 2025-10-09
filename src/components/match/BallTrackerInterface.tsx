@@ -93,6 +93,9 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [timerStartTime, setTimerStartTime] = useState<number | null>(null);
+  const [elapsedTime, setElapsedTime] = useState<number | null>(null);
+  const [isTiming, setIsTiming] = useState(false);
   
   // NEW: Overlay mode state
   const [isOverlayMode, setIsOverlayMode] = useState(false);
@@ -128,6 +131,22 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
     onSelectPlayer(player);
     
     setTimeout(() => setSelectedPlayerId(null), 300);
+  };
+
+  const handleToggleTimer = () => {
+    if (isTiming) {
+      // Stop the timer
+      if (timerStartTime) {
+        setElapsedTime(Date.now() - timerStartTime);
+      }
+      setIsTiming(false);
+      setTimerStartTime(null);
+    } else {
+      // Start the timer
+      setIsTiming(true);
+      setTimerStartTime(Date.now());
+      setElapsedTime(null);
+    }
   };
 
   // Video dragging handlers
@@ -352,6 +371,20 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
             <Badge variant="outline" className="text-sm px-3 py-1">
               {stats.totalPlayers} Players
             </Badge>
+
+            {elapsedTime && (
+              <div className="text-sm font-semibold text-gray-700">
+                Last: <span className="text-blue-600">{(elapsedTime / 1000).toFixed(2)}s</span>
+              </div>
+            )}
+            <Button
+              variant={isTiming ? "destructive" : "default"}
+              size="sm"
+              onClick={handleToggleTimer}
+              className="gap-2"
+            >
+              {isTiming ? 'Stop Timer' : 'Start Timer'}
+            </Button>
           </div>
         </div>
 
