@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useFourTrackerSystem, Player } from '@/hooks/useFourTrackerSystem';
 import BallTrackerInterface from './BallTrackerInterface';
 import PlayerTrackerInterface from './PlayerTrackerInterface';
+import CombinedTrackerInterface from './CombinedTrackerInterface';
 import { supabase } from '@/integrations/supabase/client';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -78,7 +79,7 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
   const { matchId } = useParams<{ matchId: string }>();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [trackerType, setTrackerType] = useState<'ball' | 'player' | null>(null);
+  const [trackerType, setTrackerType] = useState<'ball' | 'player' | 'combined' | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -126,18 +127,19 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
         }
 
         if (!assignments || assignments.length === 0) {
-          throw new Error('No assignment was found for your user for this match. Please ask an admin to assign you.');
-        }
-
-        const dbAssignment: any = assignments[0];
-        const assignedType = dbAssignment.tracker_type as 'ball' | 'player';
+          setTrackerType('combined');
+          // throw new Error('No assignment was found for your user for this match. Please ask an admin to assign you.');
+        } else {
+          const dbAssignment: any = assignments[0];
+          const assignedType = dbAssignment.tracker_type as 'ball' | 'player' | 'combined';
         
-        // Validate tracker type
-        if (assignedType !== 'ball' && assignedType !== 'player') {
-          throw new Error(`Invalid tracker type: ${assignedType}`);
-        }
+          // Validate tracker type
+          if (assignedType !== 'ball' && assignedType !== 'player' && assignedType !== 'combined') {
+            throw new Error(`Invalid tracker type: ${assignedType}`);
+          }
         
-        setTrackerType(assignedType);
+          setTrackerType(assignedType);
+        }
       } catch (e: any) {
         setError(e.message);
         console.error('Assignment fetch error:', e);
@@ -228,7 +230,7 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
             onSelectPlayer={updateBallPossession}
             videoUrl={videoUrl}
           />
-        ) : (
+        ) : trackerType === 'player' ? (
           <PlayerTrackerInterface
             assignedPlayers={assignment?.assigned_players || []}
             pendingEvents={pendingEvents}
@@ -240,7 +242,25 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
             onMarkAllAsPass={markAllAsPass}
             videoUrl={videoUrl}
           />
-        )}
+        ) : trackerType === 'combined' ? (
+          <CombinedTrackerInterface
+            homeTeamPlayers={homeTeamPlayers}
+            awayTeamPlayers={awayTeamPlayers}
+            homeTeamName={homeTeamName}
+            awayTeamName={awayTeamName}
+            currentBallHolder={currentBallHolder}
+            isOnline={isOnline}
+            onSelectPlayer={updateBallPossession}
+            videoUrl={videoUrl}
+            assignedPlayers={assignment?.assigned_players || allPlayers}
+            pendingEvents={pendingEvents}
+            assignedEventTypes={assignment?.assigned_event_types || []}
+            onRecordEvent={recordEventForPending}
+            onClearEvent={clearPendingEvent}
+            onClearAll={clearAllPendingEvents}
+            onMarkAllAsPass={markAllAsPass}
+          />
+        ) : null}
       </div>
     </TrackerErrorBoundary>
   );

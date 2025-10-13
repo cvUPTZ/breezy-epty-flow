@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Activity, Target, AlertTriangle, Video, X, Maximize2, Minimize2, Wifi, WifiOff, Layers } from 'lucide-react';
+import { Activity, Target, AlertTriangle, Video, X, Maximize2, Minimize2, Wifi, WifiOff, Layers, EyeOff } from 'lucide-react';
 import { YouTubePlayer } from '@/components/video/YouTubePlayer';
 
 // Player type definition
@@ -96,13 +96,17 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
   const [timerStartTime, setTimerStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState<number | null>(null);
   const [isTiming, setIsTiming] = useState(false);
+  const [disabledTeam, setDisabledTeam] = useState<'home' | 'away' | null>(null);
   
   // NEW: Overlay mode state
   const [isOverlayMode, setIsOverlayMode] = useState(false);
 
+  const visibleHomeTeamPlayers = useMemo(() => disabledTeam === 'home' ? [] : homeTeamPlayers, [homeTeamPlayers, disabledTeam]);
+  const visibleAwayTeamPlayers = useMemo(() => disabledTeam === 'away' ? [] : awayTeamPlayers, [awayTeamPlayers, disabledTeam]);
+
   const allPlayers = useMemo(() => 
-    [...homeTeamPlayers, ...awayTeamPlayers],
-    [homeTeamPlayers, awayTeamPlayers]
+    [...visibleHomeTeamPlayers, ...visibleAwayTeamPlayers],
+    [visibleHomeTeamPlayers, visibleAwayTeamPlayers]
   );
 
   const hasPlayers = useMemo(() => 
@@ -425,18 +429,28 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
         <div className="max-w-[1800px] mx-auto grid grid-cols-12 gap-6">
           {/* Left Sidebar - Team Stats (Hide in overlay mode) */}
           {!isOverlayMode && (
-            <aside className="col-span-2 space-y-4">
+            <aside className="col-span-1 space-y-4">
               <Card>
                 <CardContent className="p-4">
                   <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">Teams</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-2 rounded-lg bg-blue-50">
-                      <span className="text-sm font-medium text-blue-900">{homeTeamName}</span>
-                      <Badge variant="secondary" className="bg-blue-600 text-white">{stats.homePlayers}</Badge>
+                  <div className="space-y-2">
+                    <div className={`flex items-center justify-between p-2 rounded-lg transition-all ${disabledTeam === 'home' ? 'bg-gray-100' : 'bg-blue-50'}`}>
+                      <span className={`text-sm font-medium ${disabledTeam === 'home' ? 'text-gray-500' : 'text-blue-900'}`}>{homeTeamName}</span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className={`${disabledTeam === 'home' ? 'bg-gray-400' : 'bg-blue-600'} text-white`}>{stats.homePlayers}</Badge>
+                        <Button size="xs" variant="ghost" onClick={() => setDisabledTeam(disabledTeam === 'home' ? null : 'home')}>
+                          <EyeOff className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between p-2 rounded-lg bg-red-50">
-                      <span className="text-sm font-medium text-red-900">{awayTeamName}</span>
-                      <Badge variant="secondary" className="bg-red-600 text-white">{stats.awayPlayers}</Badge>
+                    <div className={`flex items-center justify-between p-2 rounded-lg transition-all ${disabledTeam === 'away' ? 'bg-gray-100' : 'bg-red-50'}`}>
+                      <span className={`text-sm font-medium ${disabledTeam === 'away' ? 'text-gray-500' : 'text-red-900'}`}>{awayTeamName}</span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className={`${disabledTeam === 'away' ? 'bg-gray-400' : 'bg-red-600'} text-white`}>{stats.awayPlayers}</Badge>
+                        <Button size="xs" variant="ghost" onClick={() => setDisabledTeam(disabledTeam === 'away' ? null : 'away')}>
+                          <EyeOff className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -496,10 +510,10 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
           )}
 
           {/* Center - Pitch (Full width in overlay mode) */}
-          <div className={isOverlayMode ? "col-span-12" : "col-span-8"}>
+          <div className={isOverlayMode ? "col-span-12" : "col-span-10"}>
             <Card className="overflow-hidden">
               <CardContent className="p-6">
-                <div className="relative w-full aspect-[16/9] bg-gradient-to-r from-green-600 via-green-500 to-green-600 rounded-lg overflow-hidden shadow-lg">
+                <div className="relative w-full aspect-[20/9] bg-gradient-to-r from-green-600 via-green-500 to-green-600 rounded-lg overflow-hidden shadow-lg">
                   {/* NEW: Video Background in Overlay Mode */}
                   {isOverlayMode && videoUrl && videoId && (
                     <>
@@ -647,7 +661,7 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
 
           {/* Right Sidebar - Analytics (Hide in overlay mode) */}
           {!isOverlayMode && (
-            <aside className="col-span-2 space-y-4">
+            <aside className="col-span-1 space-y-4">
               <Card>
                 <CardContent className="p-4">
                   <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">Live Stats</h3>
