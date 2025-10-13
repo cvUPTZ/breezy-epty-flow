@@ -5,13 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, Target } from 'lucide-react';
-import { AIProcessingService } from '@/services/aiProcessingService';
-import { useToast } from '@/hooks/use-toast';
+import { Upload, Target, X, PlusCircle } from 'lucide-react';
+import { AIProcessingService } from '@/services/aiProcessingService'; // Adjust path
+import { useToast } from '@/hooks/use-toast'; // Adjust path
 
-type Formation = '4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '5-3-2' | '3-4-3';
+// --- TYPE DEFINITIONS (can be moved to a types.ts file) ---
+export type Formation = '4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '5-3-2' | '3-4-3';
 
-interface Player {
+export interface Player {
   id: number;
   name: string;
   number: number | null;
@@ -31,31 +32,34 @@ interface TeamSetupSectionProps {
   onFormDataChange: (field: string, value: string) => void;
   onPlayersChange: (team: 'home' | 'away', players: Player[]) => void;
   onFlagChange: (e: React.ChangeEvent<HTMLInputElement>, team: 'home' | 'away') => void;
+  onAddPlayer: (team: 'home' | 'away', isSubstitute: boolean) => void;
+  onRemovePlayer: (team: 'home' | 'away', playerId: number) => void;
 }
 
+// --- CONSTANTS ---
 const FORMATIONS: Formation[] = ['4-4-2', '4-3-3', '3-5-2', '4-2-3-1', '5-3-2', '3-4-3'];
 const STARTERS_COUNT = 11;
 
 const FOOTBALL_POSITIONS = {
-  Defense: ['GK', 'CB', 'LB', 'RB', 'LWB', 'RWB', 'SW'],
+  Goalkeeper: ['GK'],
+  Defense: ['CB', 'LB', 'RB', 'LWB', 'RWB', 'SW'],
   Midfield: ['DM', 'CM', 'AM', 'LM', 'RM', 'CDM', 'CAM'],
   Attack: ['CF', 'ST', 'LW', 'RW', 'LF', 'RF', 'SS']
 };
 
-// Position assignment based on formation and order
 const getPositionByFormationAndOrder = (formation: Formation, playerIndex: number): string => {
-  const positionMaps: Record<Formation, string[]> = {
-    '4-4-2': ['GK', 'RB', 'CB', 'CB', 'LB', 'RM', 'CM', 'CM', 'LM', 'ST', 'ST'],
-    '4-3-3': ['GK', 'RB', 'CB', 'CB', 'LB', 'CM', 'CM', 'CM', 'RW', 'ST', 'LW'],
-    '3-5-2': ['GK', 'CB', 'CB', 'CB', 'RWB', 'CM', 'CM', 'CM', 'LWB', 'ST', 'ST'],
-    '4-2-3-1': ['GK', 'RB', 'CB', 'CB', 'LB', 'CDM', 'CDM', 'CAM', 'CAM', 'CAM', 'ST'],
-    '5-3-2': ['GK', 'RB', 'CB', 'CB', 'CB', 'LB', 'CM', 'CM', 'CM', 'ST', 'ST'],
-    '3-4-3': ['GK', 'CB', 'CB', 'CB', 'RM', 'CM', 'CM', 'LM', 'RW', 'ST', 'LW']
-  };
-  
-  const positions = positionMaps[formation] || positionMaps['4-4-2'];
-  return positions[playerIndex] || (playerIndex === 0 ? 'GK' : 'SUB');
+    const positionMaps: Record<Formation, string[]> = {
+      '4-4-2': ['GK', 'RB', 'CB', 'CB', 'LB', 'RM', 'CM', 'CM', 'LM', 'ST', 'ST'],
+      '4-3-3': ['GK', 'RB', 'CB', 'CB', 'LB', 'CM', 'CM', 'CM', 'RW', 'ST', 'LW'],
+      '3-5-2': ['GK', 'CB', 'CB', 'CB', 'RWB', 'CM', 'CM', 'CM', 'LWB', 'ST', 'ST'],
+      '4-2-3-1': ['GK', 'RB', 'CB', 'CB', 'LB', 'CDM', 'CDM', 'CAM', 'CAM', 'CAM', 'ST'],
+      '5-3-2': ['GK', 'RB', 'CB', 'CB', 'CB', 'LB', 'CM', 'CM', 'CM', 'ST', 'ST'],
+      '3-4-3': ['GK', 'CB', 'CB', 'CB', 'RM', 'CM', 'CM', 'LM', 'RW', 'ST', 'LW']
+    };
+    const positions = positionMaps[formation] || [];
+    return positions[playerIndex] || (playerIndex < 11 ? 'FIELD' : 'SUB');
 };
+
 
 const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
   homeTeamPlayers,
@@ -64,28 +68,18 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
   onFormDataChange,
   onPlayersChange,
   onFlagChange,
+  onAddPlayer,
+  onRemovePlayer,
 }) => {
   const { toast } = useToast();
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [isProcessingImage, setIsProcessingImage] = useState<boolean>(false);
 
   const updatePlayer = (team: 'home' | 'away', playerId: number, field: keyof Player, value: any) => {
-    console.log('updatePlayer called:', { team, playerId, field, value });
-    
     const players = team === 'home' ? homeTeamPlayers : awayTeamPlayers;
-    console.log('Current players:', players);
-    
-    const updatedPlayers = players.map(player => {
-      console.log('Processing player:', player.id, 'target:', playerId);
-      if (player.id === playerId) {
-        const updatedPlayer = { ...player, [field]: value };
-        console.log('Updated player:', updatedPlayer);
-        return updatedPlayer;
-      }
-      return player;
-    });
-    
-    console.log('Final updated players:', updatedPlayers);
+    const updatedPlayers = players.map(player =>
+      player.id === playerId ? { ...player, [field]: value } : player
+    );
     onPlayersChange(team, updatedPlayers);
   };
 
@@ -108,175 +102,138 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
     reader.readAsDataURL(selectedImageFile);
     reader.onload = async () => {
       const base64Image = reader.result as string;
-      if (!base64Image) {
-        toast({ title: "File Reading Error", description: "Could not read the image file.", variant: "destructive" });
-        setIsProcessingImage(false);
-        return;
-      }
-      
       try {
         const aiResponse = await AIProcessingService.extractPlayersFromImage(base64Image);
-        if (!aiResponse || !aiResponse.players || aiResponse.players.length === 0) {
-          toast({ title: "No Players Found", description: `The AI could not identify any players in the image for the ${team} team.` });
-          setIsProcessingImage(false);
+        
+        const playersToProcess = (team === 'home' ? aiResponse.team_alpha_players : aiResponse.team_beta_players) || [];
+
+        if (playersToProcess.length === 0) {
+          toast({ title: "No Players Found", description: `The AI could not identify players for the ${team} team.` });
           return;
         }
 
         const currentPlayers = team === 'home' ? homeTeamPlayers : awayTeamPlayers;
         const formation = team === 'home' ? formData.homeTeamFormation : formData.awayTeamFormation;
-        const aiStarters = aiResponse.players.filter(p => !p.is_substitute);
-        const aiSubs = aiResponse.players.filter(p => p.is_substitute);
+        
+        const aiStarters = playersToProcess.filter(p => !p.is_substitute);
+        const aiSubs = playersToProcess.filter(p => p.is_substitute);
         
         const newPlayers = [...currentPlayers];
         
-        // Process starters with position guessing based on formation and order
         aiStarters.forEach((aiPlayer, index) => {
-          if (index < STARTERS_COUNT) {
-            const guessedPosition = getPositionByFormationAndOrder(formation, index);
-            newPlayers[index] = {
-              ...newPlayers[index],
-              name: aiPlayer.player_name || newPlayers[index].name,
-              number: aiPlayer.jersey_number !== null ? aiPlayer.jersey_number : newPlayers[index].number,
-              position: guessedPosition, // Use formation-based position guessing
-            };
+          if (index < newPlayers.filter(p => !p.isSubstitute).length) {
+            const playerToUpdate = newPlayers.filter(p => !p.isSubstitute)[index];
+            playerToUpdate.name = aiPlayer.name || playerToUpdate.name;
+            playerToUpdate.number = aiPlayer.number !== null ? aiPlayer.number : playerToUpdate.number;
+            playerToUpdate.position = getPositionByFormationAndOrder(formation, index);
           }
         });
         
-        // Process substitutes
         aiSubs.forEach((aiPlayer, index) => {
-          const playerIndex = STARTERS_COUNT + index;
-          if (playerIndex < newPlayers.length) {
-            newPlayers[playerIndex] = {
-              ...newPlayers[playerIndex],
-              name: aiPlayer.player_name || newPlayers[playerIndex].name,
-              number: aiPlayer.jersey_number !== null ? aiPlayer.jersey_number : newPlayers[playerIndex].number,
-              position: 'SUB', // Substitutes get 'SUB' position
-            };
+          const subsList = newPlayers.filter(p => p.isSubstitute);
+          if (index < subsList.length) {
+             const playerToUpdate = subsList[index];
+             playerToUpdate.name = aiPlayer.name || playerToUpdate.name;
+             playerToUpdate.number = aiPlayer.number !== null ? aiPlayer.number : playerToUpdate.number;
+             playerToUpdate.position = 'SUB';
           }
         });
 
         onPlayersChange(team, newPlayers);
-        toast({ title: "Processing Successful", description: `The ${team === 'home' ? 'Home' : 'Away'} Team player list has been populated with position assignments based on ${formation} formation.` });
+        toast({ title: "Processing Successful", description: `The ${team} Team player list has been updated.` });
       } catch (error: any) {
-        console.error("Error processing image:", error);
         toast({ title: "Processing Failed", description: error.message || "An unknown error occurred.", variant: "destructive" });
       } finally {
         setIsProcessingImage(false);
       }
     };
-    reader.onerror = (error) => {
-      console.error("FileReader error:", error);
-      toast({ title: "File Reading Error", description: "Could not read the selected image file.", variant: "destructive" });
+    reader.onerror = () => {
       setIsProcessingImage(false);
+      toast({ title: "File Reading Error", description: "Could not read the selected image file.", variant: "destructive" });
     };
   };
 
   const renderPlayerInputs = (players: Player[], team: 'home' | 'away') => (
     <div className="space-y-2">
-      <div className="grid grid-cols-5 gap-2 items-center text-sm font-medium px-2 text-muted-foreground">
-        <div className="col-span-1">Number</div>
-        <div className="col-span-2">Name</div>
-        <div className="col-span-2">Position</div>
+      <div className="grid grid-cols-12 gap-2 items-center text-sm font-medium px-2 text-muted-foreground">
+        <div className="col-span-2">Number</div>
+        <div className="col-span-5">Name</div>
+        <div className="col-span-4">Position</div>
+        <div className="col-span-1"></div>
       </div>
-      {players.map((player, index) => {
-        return (
-          <div key={`${team}-${player.id}-${index}`} className="grid grid-cols-5 gap-2 items-center text-sm">
-            <Input
-              type="number"
-              value={player.number ?? ''}
-              onChange={(e) => updatePlayer(team, player.id, 'number', e.target.value ? parseInt(e.target.value) : null)}
-              className="h-8 w-16"
-              min="1"
-              max="99"
-              placeholder="#"
-            />
-            <Input
-              value={player.name}
-              onChange={(e) => updatePlayer(team, player.id, 'name', e.target.value)}
-              placeholder="Player name"
-              className="h-8 col-span-2"
-            />
-            <Select
-              value={player.position || 'none'}
-              onValueChange={(value) => {
-                console.log(`Position change for player ${player.id}:`, value);
-                const newPosition = value === 'none' ? '' : value;
-                updatePlayer(team, player.id, 'position', newPosition);
-              }}
-            >
-              <SelectTrigger className="h-8 col-span-2">
-                <SelectValue placeholder={player.isSubstitute ? 'Substitute' : 'Select position'} />
-              </SelectTrigger>
-              <SelectContent>
+      {players.map((player) => (
+        <div key={player.id} className="grid grid-cols-12 gap-2 items-center text-sm">
+          <Input
+            type="number"
+            value={player.number ?? ''}
+            onChange={(e) => updatePlayer(team, player.id, 'number', e.target.value ? parseInt(e.target.value) : null)}
+            className="h-8 col-span-2"
+            placeholder="#"
+          />
+          <Input
+            value={player.name}
+            onChange={(e) => updatePlayer(team, player.id, 'name', e.target.value)}
+            placeholder="Player name"
+            className="h-8 col-span-5"
+          />
+          <Select
+            value={player.position || 'none'}
+            onValueChange={(value) => updatePlayer(team, player.id, 'position', value === 'none' ? '' : value)}
+          >
+            <SelectTrigger className="h-8 col-span-4">
+              <SelectValue placeholder={player.isSubstitute ? 'Substitute' : 'Select position'} />
+            </SelectTrigger>
+            <SelectContent>
                 <SelectItem value="none">No Position</SelectItem>
                 {player.isSubstitute ? (
                   <SelectItem value="SUB">Substitute</SelectItem>
                 ) : (
-                  Object.entries(FOOTBALL_POSITIONS).map(([line, positions]) => (
-                    <div key={`${line}-group`}>
-                      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground bg-muted">{line}</div>
-                      {positions.map(position => (
-                        <SelectItem key={position} value={position}>
-                          {position}
-                        </SelectItem>
-                      ))}
-                    </div>
+                  Object.entries(FOOTBALL_POSITIONS).map(([group, positions]) => (
+                    <React.Fragment key={group}>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted">{group}</div>
+                      {positions.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
+                    </React.Fragment>
                   ))
                 )}
-              </SelectContent>
-            </Select>
-          </div>
-        );
-      })}
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 col-span-1 text-muted-foreground hover:text-destructive"
+            onClick={() => onRemovePlayer(team, player.id)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ))}
     </div>
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5" />
-            AI Player Detection
+            <Target className="h-5 w-5" /> AI Player Detection
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <Label htmlFor="image-upload">Upload Team Sheet Image</Label>
-            <Input
-              id="image-upload"
-              type="file"
-              accept="image/*"
-              onChange={handleImageFileChange}
-              className="mt-2"
-            />
+            <Input id="image-upload" type="file" accept="image/*" onChange={handleImageFileChange} className="mt-2" />
           </div>
           {selectedImageFile && (
             <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleProcessImage('home')}
-                disabled={isProcessingImage}
-                className="flex-1"
-              >
+              <Button type="button" variant="outline" onClick={() => handleProcessImage('home')} disabled={isProcessingImage} className="flex-1">
                 {isProcessingImage ? 'Processing...' : 'Process for Home Team'}
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleProcessImage('away')}
-                disabled={isProcessingImage}
-                className="flex-1"
-              >
+              <Button type="button" variant="outline" onClick={() => handleProcessImage('away')} disabled={isProcessingImage} className="flex-1">
                 {isProcessingImage ? 'Processing...' : 'Process for Away Team'}
               </Button>
             </div>
           )}
-          <div className="text-sm text-muted-foreground">
-            <p>Positions will be automatically assigned based on team formation and player order.</p>
-            <p>You can modify any position after AI processing.</p>
-          </div>
         </CardContent>
       </Card>
 
@@ -285,39 +242,6 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
           <CardHeader>
             <CardTitle>Home Team</CardTitle>
             <div className="mt-4 space-y-4">
-              <div>
-                <Label htmlFor="home-team-flag-url">Team Flag</Label>
-                {formData.homeTeamFlagUrl && (
-                  <img 
-                    src={formData.homeTeamFlagUrl} 
-                    alt="Home team flag preview" 
-                    className="w-16 h-12 mt-2 object-contain rounded-md border bg-muted" 
-                  />
-                )}
-                <div className="flex items-center gap-2 mt-2">
-                  <Input
-                    id="home-team-flag-url"
-                    type="text"
-                    value={formData.homeTeamFlagUrl.startsWith('blob:') ? '' : formData.homeTeamFlagUrl}
-                    onChange={(e) => onFormDataChange('homeTeamFlagUrl', e.target.value)}
-                    placeholder="Paste image URL or upload"
-                    className="flex-grow"
-                  />
-                  <Button asChild variant="outline" className="shrink-0">
-                    <Label htmlFor="home-flag-upload" className="cursor-pointer">
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload
-                      <Input 
-                        id="home-flag-upload"
-                        type="file"
-                        className="hidden"
-                        accept="image/*"
-                        onChange={(e) => onFlagChange(e, 'home')}
-                      />
-                    </Label>
-                  </Button>
-                </div>
-              </div>
               <div>
                 <Label>Formation</Label>
                 <Select value={formData.homeTeamFormation} onValueChange={(value: Formation) => onFormDataChange('homeTeamFormation', value)}>
@@ -330,14 +254,20 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
           <CardContent>
             <Tabs defaultValue="starters" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="starters">Starters ({STARTERS_COUNT})</TabsTrigger>
-                <TabsTrigger value="subs">Substitutes ({homeTeamPlayers.length - STARTERS_COUNT})</TabsTrigger>
+                <TabsTrigger value="starters">Starters ({homeTeamPlayers.filter(p => !p.isSubstitute).length})</TabsTrigger>
+                <TabsTrigger value="subs">Substitutes ({homeTeamPlayers.filter(p => p.isSubstitute).length})</TabsTrigger>
               </TabsList>
-              <TabsContent value="starters" className="pt-4">
+              <TabsContent value="starters" className="pt-4 space-y-4">
                 {renderPlayerInputs(homeTeamPlayers.filter(p => !p.isSubstitute), 'home')}
+                <Button type="button" variant="outline" className="w-full" onClick={() => onAddPlayer('home', false)}>
+                  <PlusCircle className="h-4 w-4 mr-2" /> Add Starter
+                </Button>
               </TabsContent>
-              <TabsContent value="subs" className="pt-4">
+              <TabsContent value="subs" className="pt-4 space-y-4">
                 {renderPlayerInputs(homeTeamPlayers.filter(p => p.isSubstitute), 'home')}
+                <Button type="button" variant="outline" className="w-full" onClick={() => onAddPlayer('home', true)}>
+                  <PlusCircle className="h-4 w-4 mr-2" /> Add Substitute
+                </Button>
               </TabsContent>
             </Tabs>
           </CardContent>
@@ -346,60 +276,31 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
         <Card>
           <CardHeader>
             <CardTitle>Away Team</CardTitle>
-            <div className="mt-4 space-y-4">
-              <div>
-                <Label htmlFor="away-team-flag-url">Team Flag</Label>
-                {formData.awayTeamFlagUrl && (
-                  <img 
-                    src={formData.awayTeamFlagUrl} 
-                    alt="Away team flag preview" 
-                    className="w-16 h-12 mt-2 object-contain rounded-md border bg-muted" 
-                  />
-                )}
-                <div className="flex items-center gap-2 mt-2">
-                  <Input
-                    id="away-team-flag-url"
-                    type="text"
-                    value={formData.awayTeamFlagUrl.startsWith('blob:') ? '' : formData.awayTeamFlagUrl}
-                    onChange={(e) => onFormDataChange('awayTeamFlagUrl', e.target.value)}
-                    placeholder="Paste image URL or upload"
-                    className="flex-grow"
-                  />
-                  <Button asChild variant="outline" className="shrink-0">
-                    <Label htmlFor="away-flag-upload" className="cursor-pointer">
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload
-                      <Input 
-                        id="away-flag-upload"
-                        type="file"
-                        className="hidden"
-                        accept="image/*"
-                        onChange={(e) => onFlagChange(e, 'away')}
-                      />
-                    </Label>
-                  </Button>
-                </div>
-              </div>
-              <div>
+             <div className="mt-4 space-y-4">
                 <Label>Formation</Label>
                 <Select value={formData.awayTeamFormation} onValueChange={(value: Formation) => onFormDataChange('awayTeamFormation', value)}>
                   <SelectTrigger><SelectValue/></SelectTrigger>
                   <SelectContent>{FORMATIONS.map((f) => (<SelectItem key={f} value={f}>{f}</SelectItem>))}</SelectContent>
                 </Select>
               </div>
-            </div>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="starters" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="starters">Starters ({STARTERS_COUNT})</TabsTrigger>
-                <TabsTrigger value="subs">Substitutes ({awayTeamPlayers.length - STARTERS_COUNT})</TabsTrigger>
+                <TabsTrigger value="starters">Starters ({awayTeamPlayers.filter(p => !p.isSubstitute).length})</TabsTrigger>
+                <TabsTrigger value="subs">Substitutes ({awayTeamPlayers.filter(p => p.isSubstitute).length})</TabsTrigger>
               </TabsList>
-              <TabsContent value="starters" className="pt-4">
+              <TabsContent value="starters" className="pt-4 space-y-4">
                 {renderPlayerInputs(awayTeamPlayers.filter(p => !p.isSubstitute), 'away')}
+                <Button type="button" variant="outline" className="w-full" onClick={() => onAddPlayer('away', false)}>
+                  <PlusCircle className="h-4 w-4 mr-2" /> Add Starter
+                </Button>
               </TabsContent>
-              <TabsContent value="subs" className="pt-4">
+              <TabsContent value="subs" className="pt-4 space-y-4">
                 {renderPlayerInputs(awayTeamPlayers.filter(p => p.isSubstitute), 'away')}
+                <Button type="button" variant="outline" className="w-full" onClick={() => onAddPlayer('away', true)}>
+                  <PlusCircle className="h-4 w-4 mr-2" /> Add Substitute
+                </Button>
               </TabsContent>
             </Tabs>
           </CardContent>
