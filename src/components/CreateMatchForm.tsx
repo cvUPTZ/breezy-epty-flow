@@ -144,6 +144,29 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
     }
   };
 
+  const handleAddPlayer = (team: 'home' | 'away', isSubstitute: boolean) => {
+    const newPlayer: Player = {
+      id: Date.now(), // Simple unique ID generation
+      name: '',
+      number: null,
+      position: '',
+      isSubstitute,
+    };
+    if (team === 'home') {
+      setHomeTeamPlayers([...homeTeamPlayers, newPlayer]);
+    } else {
+      setAwayTeamPlayers([...awayTeamPlayers, newPlayer]);
+    }
+  };
+
+  const handleRemovePlayer = (team: 'home' | 'away', playerId: number) => {
+    if (team === 'home') {
+      setHomeTeamPlayers(homeTeamPlayers.filter(p => p.id !== playerId));
+    } else {
+      setAwayTeamPlayers(awayTeamPlayers.filter(p => p.id !== playerId));
+    }
+  };
+
   const handleFlagChange = (e: React.ChangeEvent<HTMLInputElement>, team: 'home' | 'away') => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -253,6 +276,8 @@ const CreateMatchForm: React.FC<CreateMatchFormProps> = ({ matchId, onMatchSubmi
         onFormDataChange={handleFormDataChange}
         onPlayersChange={handlePlayersChange}
         onFlagChange={handleFlagChange}
+        onAddPlayer={handleAddPlayer}
+        onRemovePlayer={handleRemovePlayer}
       />
       <VideoSetupSection videoUrl={videoUrl} onVideoUrlChange={handleVideoUrlChange} />
       <div>
