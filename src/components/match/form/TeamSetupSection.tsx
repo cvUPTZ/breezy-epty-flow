@@ -1,3 +1,5 @@
+// src/components/TeamSetupSection.tsx
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, Target, X, PlusCircle } from 'lucide-react';
-import { AIProcessingService } from '@/services/aiProcessingService'; // Adjust path
+import { AIProcessingService, AIPlayerInfo } from '@/services/aiProcessingService'; // Adjust path
 import { useToast } from '@/hooks/use-toast'; // Adjust path
 
 // --- TYPE DEFINITIONS (can be moved to a types.ts file) ---
@@ -105,10 +107,12 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
       try {
         const aiResponse = await AIProcessingService.extractPlayersFromImage(base64Image);
         
-        const playersToProcess = (team === 'home' ? aiResponse.team_alpha_players : aiResponse.team_beta_players) || [];
+        // The AI service returns a single 'players' array.
+        const playersToProcess: AIPlayerInfo[] = aiResponse.players || [];
 
         if (playersToProcess.length === 0) {
-          toast({ title: "No Players Found", description: `The AI could not identify players for the ${team} team.` });
+          toast({ title: "No Players Found", description: `The AI could not identify any players in the image.` });
+          setIsProcessingImage(false);
           return;
         }
 
@@ -123,8 +127,9 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
         aiStarters.forEach((aiPlayer, index) => {
           if (index < newPlayers.filter(p => !p.isSubstitute).length) {
             const playerToUpdate = newPlayers.filter(p => !p.isSubstitute)[index];
-            playerToUpdate.name = aiPlayer.name || playerToUpdate.name;
-            playerToUpdate.number = aiPlayer.number !== null ? aiPlayer.number : playerToUpdate.number;
+            // CORRECTED: Map AI response fields to component's Player type fields
+            playerToUpdate.name = aiPlayer.player_name || playerToUpdate.name;
+            playerToUpdate.number = aiPlayer.jersey_number !== null ? aiPlayer.jersey_number : playerToUpdate.number;
             playerToUpdate.position = getPositionByFormationAndOrder(formation, index);
           }
         });
@@ -133,8 +138,8 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
           const subsList = newPlayers.filter(p => p.isSubstitute);
           if (index < subsList.length) {
              const playerToUpdate = subsList[index];
-             playerToUpdate.name = aiPlayer.name || playerToUpdate.name;
-             playerToUpdate.number = aiPlayer.number !== null ? aiPlayer.number : playerToUpdate.number;
+             playerToUpdate.name = aiPlayer.player_name || playerToUpdate.name;
+             playerToUpdate.number = aiPlayer.jersey_number !== null ? aiPlayer.jersey_number : playerToUpdate.number;
              playerToUpdate.position = 'SUB';
           }
         });
