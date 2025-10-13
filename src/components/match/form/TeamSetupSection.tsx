@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, Target, X, PlusCircle } from 'lucide-react';
-import { AIProcessingService, AIPlayerInfo } from '@/services/aiProcessingService'; // Adjust path
-import { useToast } from '@/hooks/use-toast'; // Adjust path
+import { Upload, Target, X, PlusCircle, FileJson } from 'lucide-react'; // Added FileJson icon
+import { AIProcessingService, AIPlayerInfo } from '@/services/aiProcessingService';
+import { useToast } from '@/hooks/use-toast';
+import { Textarea } from '@/components/ui/textarea'; // Import Textarea component
 
-// --- TYPE DEFINITIONS (can be moved to a types.ts file) ---
+// --- TYPE DEFINITIONS (no changes) ---
 export type Formation = '4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '5-3-2' | '3-4-3';
 
 export interface Player {
@@ -38,7 +39,7 @@ interface TeamSetupSectionProps {
   onRemovePlayer: (team: 'home' | 'away', playerId: number) => void;
 }
 
-// --- CONSTANTS ---
+// --- CONSTANTS (no changes) ---
 const FORMATIONS: Formation[] = ['4-4-2', '4-3-3', '3-5-2', '4-2-3-1', '5-3-2', '3-4-3'];
 const STARTERS_COUNT = 11;
 
@@ -76,6 +77,8 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
   const { toast } = useToast();
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [isProcessingImage, setIsProcessingImage] = useState<boolean>(false);
+  // --- NEW: State for the JSON input from the user ---
+  const [jsonInput, setJsonInput] = useState<string>('');
 
   const updatePlayer = (team: 'home' | 'away', playerId: number, field: keyof Player, value: any) => {
     const players = team === 'home' ? homeTeamPlayers : awayTeamPlayers;
@@ -107,7 +110,6 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
       try {
         const aiResponse = await AIProcessingService.extractPlayersFromImage(base64Image);
         
-        // The AI service returns a single 'players' array.
         const playersToProcess: AIPlayerInfo[] = aiResponse.players || [];
 
         if (playersToProcess.length === 0) {
@@ -127,7 +129,6 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
         aiStarters.forEach((aiPlayer, index) => {
           if (index < newPlayers.filter(p => !p.isSubstitute).length) {
             const playerToUpdate = newPlayers.filter(p => !p.isSubstitute)[index];
-            // CORRECTED: Map AI response fields to component's Player type fields
             playerToUpdate.name = aiPlayer.player_name || playerToUpdate.name;
             playerToUpdate.number = aiPlayer.jersey_number !== null ? aiPlayer.jersey_number : playerToUpdate.number;
             playerToUpdate.position = getPositionByFormationAndOrder(formation, index);
@@ -157,6 +158,56 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
       toast({ title: "File Reading Error", description: "Could not read the selected image file.", variant: "destructive" });
     };
   };
+
+  // --- NEW: Handler to process the JSON data from the textarea ---
+  const handleProcessJson = (team: 'home' | 'away') => {
+    if (!jsonInput.trim()) {
+      toast({ title: "No JSON Data", description: "Please paste the JSON data into the text area.", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const jsonData = JSON.parse(jsonInput);
+
+      if (!jsonData.team || !Array.isArray(jsonData.lineup)) {
+        toast({ title: "Invalid JSON Format", description: "The JSON object is missing 'team' or 'lineup' properties.", variant: "destructive" });
+        return;
+      }
+
+      const formation = team === 'home' ? formData.homeTeamFormation : formData.awayTeamFormation;
+      
+      const newStarters: Player[] = jsonData.lineup.map((p: any, index: number) => ({
+        id: Date.now() + index, // Generate a simple unique ID
+        name: p.name || '',
+        number: typeof p.number === 'number' ? p.number : null,
+        position: p.position || getPositionByFormationAndOrder(formation, index),
+        isSubstitute: false,
+      }));
+
+      const currentPlayers = team === 'home' ? homeTeamPlayers : awayTeamPlayers;
+      const existingSubstitutes = currentPlayers.filter(p => p.isSubstitute);
+
+      const updatedPlayers = [...newStarters, ...existingSubstitutes];
+      onPlayersChange(team, updatedPlayers);
+
+      // Update other form fields from the JSON data
+      if (jsonData.team) {
+        onFormDataChange(team === 'home' ? 'homeTeamName' : 'awayTeamName', jsonData.team);
+      }
+      if (jsonData.tournament) {
+        onFormDataChange('competition', jsonData.tournament);
+      }
+      if (jsonData.location) {
+        onFormDataChange('location', jsonData.location);
+      }
+      
+      toast({ title: "JSON Processed Successfully", description: `The ${team} team's starters have been updated.` });
+
+    } catch (error: any) {
+      toast({ title: "JSON Parsing Error", description: "Could not parse the provided JSON data. Please check the format.", variant: "destructive" });
+    }
+  };
+
 
   const renderPlayerInputs = (players: Player[], team: 'home' | 'away') => (
     <div className="space-y-2">
@@ -239,6 +290,36 @@ const TeamSetupSection: React.FC<TeamSetupSectionProps> = ({
               </Button>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* --- NEW: JSON READER SECTION --- */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileJson className="h-5 w-5" /> JSON Object Reader
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="json-input">Paste Team Data JSON</Label>
+            <Textarea
+              id="json-input"
+              placeholder='Paste your team data JSON here...'
+              className="mt-2 font-mono"
+              rows={10}
+              value={jsonInput}
+              onChange={(e) => setJsonInput(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={() => handleProcessJson('home')} className="flex-1">
+              Load for Home Team
+            </Button>
+            <Button type="button" variant="outline" onClick={() => handleProcessJson('away')} className="flex-1">
+              Load for Away Team
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
