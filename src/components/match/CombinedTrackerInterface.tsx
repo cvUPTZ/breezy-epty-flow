@@ -22,17 +22,13 @@ interface CombinedTrackerInterfaceProps {
 }
 
 const CombinedTrackerInterface: React.FC<CombinedTrackerInterfaceProps> = (props) => {
-  const defaultEventTypes = [
-    'pass', 'shot', 'tackle', 'interception', 'dribble', 'foul', 'goal'
-  ];
-
   return (
     <div className="grid grid-cols-2 gap-4">
       <div>
         <PlayerTrackerInterface
           assignedPlayers={props.assignedPlayers}
           pendingEvents={props.pendingEvents}
-          assignedEventTypes={props.assignedEventTypes.length > 0 ? props.assignedEventTypes : defaultEventTypes}
+          assignedEventTypes={props.assignedEventTypes}
           isOnline={props.isOnline}
           onRecordEvent={props.onRecordEvent}
           onClearEvent={props.onClearEvent}
