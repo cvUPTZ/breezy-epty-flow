@@ -43,43 +43,53 @@ export const useNewVoiceCollaboration = (): UseNewVoiceCollaborationReturn => {
   const isConnected = connectionState === ConnectionState.Connected;
 
   useEffect(() => {
-    manager.onParticipantsChanged = (newParticipants: Participant[]) => {
-      console.log('[useNewVoiceCollaboration] Participants updated:', newParticipants.length);
-      // Use the participants directly without cloning to maintain stable references
-      // This prevents React reconciliation issues
-      setParticipants(newParticipants);
-      setLocalParticipant(manager.getLocalParticipant() || null);
+    const handleParticipantsChanged = () => {
+        const room = manager.getRoom();
+        if (room) {
+            const remoteParticipants = Array.from(room.remoteParticipants.values());
+            const allParticipants = [room.localParticipant, ...remoteParticipants];
+            // Filter out any null/undefined participants, just in case
+            const validParticipants = allParticipants.filter((p): p is Participant => !!p);
+            console.log('[useNewVoiceCollaboration] Participants updated:', validParticipants.length);
+            setParticipants(validParticipants);
+            setLocalParticipant(room.localParticipant);
+        }
     };
 
-    manager.onConnectionStateChanged = (state: ConnectionState) => {
+    manager.onPeerStatusChanged = (peerId, status, participant) => {
+        console.log('[useNewVoiceCollaboration] Peer status changed:', peerId, status);
+        handleParticipantsChanged();
+    };
+
+    manager.onConnectionStateChanged = (state: ConnectionState, error?: Error) => {
       console.log('[useNewVoiceCollaboration] Connection state changed:', state);
       setConnectionState(state);
       setIsConnecting(state === ConnectionState.Connecting);
       
-      if (state === ConnectionState.Disconnected) {
+      if (state === ConnectionState.Connected) {
+        handleParticipantsChanged();
+      } else if (state === ConnectionState.Disconnected) {
         setCurrentRoomId(null);
         setParticipants([]);
         setLocalParticipant(null);
         setAudioLevels(new Map());
+        if (error) {
+          setError(error);
+        }
       }
     };
 
-    manager.onError = (err: Error) => {
-      console.error('[useNewVoiceCollaboration] Error:', err);
-      setError(err);
-      setIsConnecting(false);
-    };
-
-    manager.onAudioLevelChanged = (participantId: string, level: number) => {
-      setAudioLevels(prev => {
-        const newMap = new Map(prev);
-        newMap.set(participantId, level);
-        return newMap;
-      });
+    manager.onIsSpeakingChanged = (peerId: string, isSpeaking: boolean) => {
+        setAudioLevels(prev => {
+            const newMap = new Map(prev);
+            // LiveKit gives a boolean, we can represent speaking with a level of 1, not speaking 0.
+            newMap.set(peerId, isSpeaking ? 1 : 0);
+            return newMap;
+        });
     };
 
     return () => {
-      manager.dispose();
+      manager.leaveRoom();
     };
   }, [manager]);
 
@@ -100,11 +110,7 @@ export const useNewVoiceCollaboration = (): UseNewVoiceCollaborationReturn => {
   }, [manager]);
 
   const joinRoom = useCallback(async (roomId: string, userId: string, userRole: string, userName: string) => {
-    // Check connection state directly from state instead of derived variable
-    const currentlyConnected = connectionState === ConnectionState.Connected;
-    
-    // Prevent joining if already connected or in the process of connecting
-    if (isConnecting || currentlyConnected) {
+    if (isConnecting || isConnected) {
       console.warn('[useNewVoiceCollaboration] Attempted to join room while already connecting or connected.');
       return;
     }
@@ -113,41 +119,42 @@ export const useNewVoiceCollaboration = (): UseNewVoiceCollaborationReturn => {
     setError(null);
     
     try {
-      console.log('[useNewVoiceCollaboration] Delegating join room call to manager for room:', roomId);
+      console.log('[useNewVoiceCollaboration] Initializing manager and joining room:', roomId);
+      manager.initialize(userId); // Initialize with user ID
       await manager.joinRoom(roomId, userId, userRole, userName);
-      // The manager will emit a ConnectionState.Connected event.
-      // The onConnectionStateChanged listener will handle the rest of the state updates.
-      // We can optimistically set the room ID here.
       setCurrentRoomId(roomId);
     } catch (err) {
       console.error('[useNewVoiceCollaboration] Error during join room attempt:', err);
       setError(err as Error);
-      setIsConnecting(false); // Reset on failure
+      setIsConnecting(false);
     }
-  }, [manager, isConnecting, connectionState]);
+  }, [manager, isConnecting, isConnected]);
 
   const leaveRoom = useCallback(async () => {
     console.log('[useNewVoiceCollaboration] Leaving room');
     await manager.leaveRoom();
-    setCurrentRoomId(null);
-    setParticipants([]);
-    setLocalParticipant(null);
-    setAudioLevels(new Map());
   }, [manager]);
 
   const toggleMuteSelf = useCallback(async () => {
-    console.log('[useNewVoiceCollaboration] Toggling mute');
-    return await manager.toggleMuteSelf();
-  }, [manager]);
+    if (localParticipant) {
+      const isMuted = localParticipant.isMicrophoneMuted;
+      await manager.setTrackEnabled(Track.Source.Microphone, isMuted);
+      return !isMuted;
+    }
+    return undefined;
+  }, [manager, localParticipant]);
 
   const moderateMuteParticipant = useCallback(async (targetIdentity: string, mute: boolean) => {
-    console.log('[useNewVoiceCollaboration] Moderating participant:', targetIdentity, 'mute:', mute);
-    return await manager.moderateMuteParticipant(targetIdentity, mute);
-  }, [manager]);
+    // This is a placeholder. A real implementation would require a backend call
+    // to a Supabase function that uses the LiveKit server SDK to moderate.
+    console.warn(`[useNewVoiceCollaboration] Moderation not fully implemented. Attempting to mute ${targetIdentity}: ${mute}`);
+    return false; // Indicate failure
+  }, []);
+
 
   const getAudioLevel = useCallback((participantId: string): number => {
-    return manager.getAudioLevel(participantId);
-  }, [manager]);
+    return audioLevels.get(participantId) || 0;
+  }, [audioLevels]);
 
   return {
     availableRooms,

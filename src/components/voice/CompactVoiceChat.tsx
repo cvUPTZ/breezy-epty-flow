@@ -82,19 +82,13 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
   };
 
   const isParticipantMuted = (participant: Participant | null): boolean => {
-    if (!participant) {
-      return true;
-    }
-    if (participant.isLocal) {
-      return !(participant as LocalParticipant).isMicrophoneEnabled;
-    }
-    const audioTrackPublications = Array.from(participant.audioTrackPublications.values());
-    return audioTrackPublications.length === 0 || audioTrackPublications.some(pub => pub.isMuted);
+    if (!participant) return true;
+    return participant.isMicrophoneMuted;
   };
 
   const isParticipantSpeaking = (participant: Participant): boolean => {
     const audioLevel = getAudioLevel(participant.identity);
-    return audioLevel > 0.1 && !isParticipantMuted(participant);
+    return audioLevel > 0 && !isParticipantMuted(participant);
   };
 
   const canModerate = userRole === 'admin' || userRole === 'coordinator';
@@ -102,9 +96,6 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
   const trackerParticipants = participants.filter(
     p => !p.isLocal && isTrackerParticipant(p)
   );
-
-  // FIX: Filter out duplicate participants to prevent React DOM errors.
-  const uniqueParticipants = Array.from(new Map(participants.map(p => [p.identity, p])).values());
 
   const handleToggleMuteSelf = async () => {
     const result = await toggleMuteSelf();
@@ -235,9 +226,9 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
 
       {/* Participants grid */}
       <div className="space-y-2">
-        <h4 className="font-medium text-white text-xs">Participants ({uniqueParticipants.length})</h4>
+        <h4 className="font-medium text-white text-xs">Participants ({participants.length})</h4>
         <div className="grid grid-cols-2 gap-2">
-          {uniqueParticipants.map(participant => {
+          {participants.map(participant => {
             const isMuted = isParticipantMuted(participant);
             const isSpeaking = isParticipantSpeaking(participant);
             
