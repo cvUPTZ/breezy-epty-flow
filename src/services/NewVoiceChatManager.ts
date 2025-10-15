@@ -16,7 +16,7 @@ import { AudioManager } from '@/utils/audioManager';
 
 import { supabase } from '@/integrations/supabase/client';
 
-export default class NewVoiceChatManager {
+export class NewVoiceChatManager {
   private static instance: NewVoiceChatManager;
   private room: Room | null = null;
   private localParticipant: LocalParticipant | null = null;
