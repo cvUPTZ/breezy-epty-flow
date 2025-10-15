@@ -1,4 +1,3 @@
-
 import {
   Room,
   RoomEvent,
@@ -13,8 +12,13 @@ import {
   Participant,
 } from 'livekit-client';
 import { AudioManager } from '@/utils/audioManager';
-
 import { supabase } from '@/integrations/supabase/client';
+
+interface VoiceRoomDetails {
+  id: string;
+  name: string;
+  max_participants?: number;
+}
 
 export class NewVoiceChatManager {
   private static instance: NewVoiceChatManager;
@@ -51,6 +55,35 @@ export class NewVoiceChatManager {
 
   public getRoom(): Room | null {
     return this.room;
+  }
+
+  /**
+   * Fetch available voice rooms for a specific match
+   * @param matchId - The ID of the match to fetch rooms for
+   * @returns Array of voice room details
+   */
+  public async getRoomsForMatch(matchId: string): Promise<VoiceRoomDetails[]> {
+    console.log('[NewVoiceChatManager] Fetching rooms for match:', matchId);
+    
+    try {
+      // Query your voice_rooms table in Supabase
+      const { data, error } = await supabase
+        .from('voice_rooms')
+        .select('id, name, max_participants')
+        .eq('match_id', matchId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('[NewVoiceChatManager] Error fetching rooms:', error);
+        throw new Error(`Failed to fetch voice rooms: ${error.message}`);
+      }
+
+      console.log('[NewVoiceChatManager] Successfully fetched rooms:', data?.length || 0);
+      return data || [];
+    } catch (error) {
+      console.error('[NewVoiceChatManager] Exception fetching rooms:', error);
+      throw error;
+    }
   }
 
   public async joinRoom(roomId: string, userId: string, userRole: string, userName: string): Promise<void> {
