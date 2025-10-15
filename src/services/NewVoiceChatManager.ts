@@ -349,20 +349,4 @@ export class NewVoiceChatManager {
       throw error;
     }
   }
-
-  public async getRoomsForMatch(matchId: string): Promise<{ id: string; name: string; max_participants?: number }[]> {
-    console.log(`[NewVoiceChatManager] Fetching rooms for match: ${matchId}`);
-    const { data, error } = await supabase
-      .from('voice_chat_rooms')
-      .select('id, name, max_participants')
-      .eq('match_id', matchId);
-
-    if (error) {
-      console.error('[NewVoiceChatManager] Error fetching rooms for match:', error);
-      throw error;
-    }
-
-    console.log(`[NewVoiceChatManager] Found ${data.length} rooms for match ${matchId}`);
-    return data;
-  }
 }

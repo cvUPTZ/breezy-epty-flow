@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { NewVoiceChatManager } from '@/services/NewVoiceChatManager';
-import { Participant, ConnectionState } from 'livekit-client';
+import { Participant, ConnectionState, Track } from 'livekit-client';
 
 interface VoiceRoomDetails {
   id: string;
