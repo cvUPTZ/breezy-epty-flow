@@ -16,7 +16,7 @@ import { AudioManager } from '@/utils/audioManager';
 
 import { supabase } from '@/integrations/supabase/client';
 
-export default class NewVoiceChatManager {
+export class NewVoiceChatManager {
   private static instance: NewVoiceChatManager;
   private room: Room | null = null;
   private localParticipant: LocalParticipant | null = null;
@@ -348,21 +348,5 @@ export default class NewVoiceChatManager {
       console.error('[NewVoiceChatManager] Error setting audio output device:', error);
       throw error;
     }
-  }
-
-  public async getRoomsForMatch(matchId: string): Promise<{ id: string; name: string; max_participants?: number }[]> {
-    console.log(`[NewVoiceChatManager] Fetching rooms for match: ${matchId}`);
-    const { data, error } = await supabase
-      .from('voice_chat_rooms')
-      .select('id, name, max_participants')
-      .eq('match_id', matchId);
-
-    if (error) {
-      console.error('[NewVoiceChatManager] Error fetching rooms for match:', error);
-      throw error;
-    }
-
-    console.log(`[NewVoiceChatManager] Found ${data.length} rooms for match ${matchId}`);
-    return data;
   }
 }
