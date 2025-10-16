@@ -11,7 +11,7 @@ import {
   RemoteTrackPublication,
   Participant,
 } from 'livekit-client';
-import { AudioManager } from '@/utils/audioManager';
+import { AudioManager } from '@/utils/audioManager.ts';
 import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceRoomDetails {
@@ -280,14 +280,14 @@ export class NewVoiceChatManager {
   private handleTrackSubscribed = (track: RemoteTrack, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
     console.log(`[NewVoiceChatManager] Track Subscribed: ${track.kind} from ${participant.identity}`, track);
     if (track.kind === Track.Kind.Audio && track.mediaStream) {
-      this.audioManager.playStream(participant.identity, track.mediaStream);
+      this.audioManager.playRemoteStream(participant.identity, track.mediaStream);
       this.onRemoteStreamSubscribed(participant.identity, track.mediaStream, participant);
     }
   }
 
   private handleTrackUnsubscribed = (track: RemoteTrack, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
     console.log(`[NewVoiceChatManager] Track Unsubscribed: ${track.kind} from ${participant.identity}`);
-    this.audioManager.removeStream(participant.identity);
+    this.audioManager.removeRemoteStream(participant.identity);
     this.onRemoteStreamUnsubscribed(participant.identity, participant);
   }
 
@@ -368,17 +368,8 @@ export class NewVoiceChatManager {
   public async setAudioOutputDevice(deviceId: string): Promise<void> {
     console.log(`[NewVoiceChatManager] Setting audio output device to: ${deviceId}`);
     try {
-      if (typeof HTMLAudioElement !== 'undefined' && 'setSinkId' in HTMLAudioElement.prototype) {
-        const audioElements = document.querySelectorAll('audio');
-        for (const audioElement of audioElements) {
-          if ('setSinkId' in audioElement) {
-            await (audioElement as any).setSinkId(deviceId);
-          }
-        }
-        console.log(`[NewVoiceChatManager] Audio output device set via setSinkId: ${deviceId}`);
-      } else {
-        console.warn('[NewVoiceChatManager] setSinkId not supported in this browser');
-      }
+      await this.audioManager.setAudioOutputDevice(deviceId);
+      console.log(`[NewVoiceChatManager] Audio output device set via AudioManager: ${deviceId}`);
     } catch (error) {
       console.error('[NewVoiceChatManager] Error setting audio output device:', error);
       throw error;

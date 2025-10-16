@@ -1,4 +1,3 @@
-
 interface AudioManagerOptions {
   onAudioLevel?: (level: number) => void;
   onError?: (error: Error) => void;
@@ -14,6 +13,7 @@ export class AudioManager {
   private onAudioLevel?: (level: number) => void;
   private onError?: (error: Error) => void;
   private isInitialized = false;
+  private audioElements: Map<string, HTMLAudioElement> = new Map();
 
   private constructor() {}
 
@@ -87,6 +87,37 @@ export class AudioManager {
       console.error('❌ Failed to get user media:', error);
       this.onError?.(error as Error);
       throw error;
+    }
+  }
+
+  public playRemoteStream(peerId: string, stream: MediaStream): void {
+    try {
+      console.log('[AudioManager] Playing remote stream for peer:', peerId);
+      const audioElement = new Audio();
+      audioElement.srcObject = stream;
+      audioElement.autoplay = true;
+      // Use type assertion for playsInline
+      (audioElement as any).playsInline = true;
+
+      if (peerId) {
+        this.audioElements.set(peerId, audioElement);
+      }
+
+      audioElement.play().catch(error => {
+        console.error('[AudioManager] Error playing remote stream:', error);
+      });
+    } catch (error) {
+      console.error('[AudioManager] Error setting up remote stream:', error);
+    }
+  }
+
+  public removeRemoteStream(peerId: string): void {
+    console.log('[AudioManager] Removing remote stream for peer:', peerId);
+    const audioElement = this.audioElements.get(peerId);
+    if (audioElement) {
+      audioElement.pause();
+      audioElement.srcObject = null;
+      this.audioElements.delete(peerId);
     }
   }
 
@@ -181,6 +212,19 @@ export class AudioManager {
     }
   }
 
+  public releaseMediaStream(): void {
+    console.log('[AudioManager] Releasing media stream');
+    if (this.currentStream) {
+      this.currentStream.getTracks().forEach(track => track.stop());
+      this.currentStream = null;
+    }
+
+    // Clean up all audio elements
+    this.audioElements.forEach((audioElement, peerId) => {
+      this.removeRemoteStream(peerId);
+    });
+  }
+
   public async setMuted(muted: boolean): Promise<void> {
     if (!this.currentStream) {
       console.warn('⚠️ No current stream to mute/unmute');
@@ -202,6 +246,7 @@ export class AudioManager {
     
     this.stopAudioLevelMonitoring();
     this.stopCurrentStream();
+    this.releaseMediaStream();
     
     if (this.sourceNode) {
       this.sourceNode.disconnect();
