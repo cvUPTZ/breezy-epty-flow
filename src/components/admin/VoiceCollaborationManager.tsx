@@ -6,7 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, MicOff, Users, Settings, Phone, PhoneOff, Loader2, AlertTriangle } from 'lucide-react';
+import { Mic, MicOff, Users, Settings, Phone, PhoneOff, Loader2, AlertTriangle, Volume2 } from 'lucide-react';
+import { NewVoiceChatManager } from '@/lib/NewVoiceChatManager';
+import { ConnectionState } from 'livekit-client';
 
 interface VoiceRoom {
   id: string;
@@ -22,18 +24,12 @@ interface VoiceRoom {
   updated_at?: string;
 }
 
-interface Participant {
-  id: string;
-  user_id: string;
-  room_id?: string;
-  user_role: string;
-  is_muted: boolean;
-  is_speaking: boolean;
-  connection_quality: string;
-  joined_at?: string;
-  last_activity?: string;
-  user_name?: string;
-  user_email?: string;
+interface LiveParticipant {
+  identity: string;
+  name: string;
+  isMuted: boolean;
+  isSpeaking: boolean;
+  isLocal: boolean;
 }
 
 interface Match {
@@ -47,20 +43,126 @@ interface Match {
 
 const VoiceCollaborationManager: React.FC = () => {
   const [voiceRooms, setVoiceRooms] = useState<VoiceRoom[]>([]);
-  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [liveParticipants, setLiveParticipants] = useState<LiveParticipant[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<string>('');
-  const [selectedRoomId, setSelectedRoomId] = useState<string>('');
+  const [currentRoomId, setCurrentRoomId] = useState<string>('');
   const [newRoomName, setNewRoomName] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetchingRooms, setFetchingRooms] = useState(true);
-  const [fetchingParticipants, setFetchingParticipants] = useState(false);
+  const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.Disconnected);
+  const [isLocalMuted, setIsLocalMuted] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string } | null>(null);
+  
   const { toast } = useToast();
+  const voiceChatManager = NewVoiceChatManager.getInstance();
 
   useEffect(() => {
+    initializeUser();
     fetchVoiceRooms();
     fetchMatches();
+    setupVoiceChatCallbacks();
+
+    return () => {
+      // Cleanup on unmount
+      if (currentRoomId) {
+        voiceChatManager.leaveRoom();
+      }
+    };
   }, []);
+
+  const initializeUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+        
+        const userName = profile?.full_name || user.email?.split('@')[0] || 'User';
+        setCurrentUser({ id: user.id, name: userName });
+        voiceChatManager.initialize(user.id);
+      }
+    } catch (error) {
+      console.error('Error initializing user:', error);
+    }
+  };
+
+  const setupVoiceChatCallbacks = () => {
+    voiceChatManager.onConnectionStateChanged = (state, error) => {
+      setConnectionState(state);
+      
+      if (state === ConnectionState.Connected) {
+        toast({
+          title: "Connected",
+          description: "Successfully joined the voice room",
+        });
+      } else if (state === ConnectionState.Disconnected && error) {
+        toast({
+          title: "Disconnected",
+          description: error.message,
+          variant: "destructive"
+        });
+        setCurrentRoomId('');
+        setLiveParticipants([]);
+      }
+    };
+
+    voiceChatManager.onPeerStatusChanged = (peerId, status) => {
+      if (status === 'connected') {
+        updateLiveParticipants();
+      } else if (status === 'disconnected') {
+        setLiveParticipants(prev => prev.filter(p => p.identity !== peerId));
+      }
+    };
+
+    voiceChatManager.onTrackMuteChanged = (peerId, source, isMuted) => {
+      setLiveParticipants(prev => 
+        prev.map(p => p.identity === peerId ? { ...p, isMuted } : p)
+      );
+    };
+
+    voiceChatManager.onIsSpeakingChanged = (peerId, isSpeaking) => {
+      setLiveParticipants(prev => 
+        prev.map(p => p.identity === peerId ? { ...p, isSpeaking } : p)
+      );
+    };
+  };
+
+  const updateLiveParticipants = () => {
+    const room = voiceChatManager.getRoom();
+    if (!room) return;
+
+    const participants: LiveParticipant[] = [];
+
+    // Add local participant
+    if (room.localParticipant) {
+      const audioTrack = Array.from(room.localParticipant.audioTrackPublications.values())[0];
+      participants.push({
+        identity: room.localParticipant.identity,
+        name: room.localParticipant.name || 'You',
+        isMuted: audioTrack?.isMuted ?? false,
+        isSpeaking: room.localParticipant.isSpeaking,
+        isLocal: true
+      });
+    }
+
+    // Add remote participants
+    room.remoteParticipants.forEach(participant => {
+      const audioTrack = Array.from(participant.audioTrackPublications.values())[0];
+      participants.push({
+        identity: participant.identity,
+        name: participant.name || participant.identity,
+        isMuted: audioTrack?.isMuted ?? false,
+        isSpeaking: participant.isSpeaking,
+        isLocal: false
+      });
+    });
+
+    setLiveParticipants(participants);
+  };
 
   const fetchVoiceRooms = async () => {
     setFetchingRooms(true);
@@ -104,78 +206,6 @@ const VoiceCollaborationManager: React.FC = () => {
     }
   };
 
-  const fetchParticipants = async (roomId: string) => {
-    setFetchingParticipants(true);
-    setSelectedRoomId(roomId);
-    
-    try {
-      // Fetch participants without nested join to avoid RLS recursion
-      const { data: participantsData, error: participantsError } = await supabase
-        .from('voice_room_participants')
-        .select('id, user_id, room_id, user_role, is_muted, is_speaking, connection_quality, joined_at, last_activity')
-        .eq('room_id', roomId);
-
-      if (participantsError) throw participantsError;
-
-      if (!participantsData || participantsData.length === 0) {
-        setParticipants([]);
-        toast({
-          title: "Info",
-          description: "No participants in this room",
-        });
-        return;
-      }
-
-      // Fetch profiles separately to avoid recursion issues
-      const userIds = participantsData.map(p => p.user_id).filter((id): id is string => id !== null);
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .in('id', userIds);
-
-      if (profilesError) {
-        console.warn('Error fetching profiles:', profilesError);
-      }
-
-      // Create a map of profiles for easy lookup
-      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
-
-      // Transform the data
-      const transformedData: Participant[] = participantsData
-        .filter(participant => participant.user_id && participant.room_id) // Filter out nulls
-        .map(participant => ({
-          id: participant.id,
-          user_id: participant.user_id!,
-          room_id: participant.room_id!,
-          user_role: participant.user_role || 'viewer',
-          is_muted: participant.is_muted ?? false,
-          is_speaking: participant.is_speaking ?? false,
-          connection_quality: participant.connection_quality || 'unknown',
-          joined_at: participant.joined_at ?? undefined,
-          last_activity: participant.last_activity ?? undefined,
-          user_name: profilesMap.get(participant.user_id!)?.full_name ?? undefined,
-          user_email: profilesMap.get(participant.user_id!)?.email ?? undefined,
-        }));
-
-      setParticipants(transformedData);
-      
-      toast({
-        title: "Success",
-        description: `Loaded ${transformedData.length} participant(s)`,
-      });
-    } catch (error: any) {
-      console.error('Error fetching participants:', error);
-      setParticipants([]);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to fetch participants",
-        variant: "destructive"
-      });
-    } finally {
-      setFetchingParticipants(false);
-    }
-  };
-
   const fetchMatches = async () => {
     try {
       const { data, error } = await supabase
@@ -205,6 +235,74 @@ const VoiceCollaborationManager: React.FC = () => {
       toast({
         title: "Error",
         description: error.message || "Failed to fetch matches",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const joinVoiceRoom = async (roomId: string) => {
+    if (!currentUser) {
+      toast({
+        title: "Error",
+        description: "User not authenticated",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await voiceChatManager.joinRoom(
+        roomId,
+        currentUser.id,
+        'tracker', // or get from user profile
+        currentUser.name
+      );
+      setCurrentRoomId(roomId);
+      updateLiveParticipants();
+    } catch (error: any) {
+      console.error('Error joining voice room:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to join voice room",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const leaveVoiceRoom = async () => {
+    setLoading(true);
+    try {
+      await voiceChatManager.leaveRoom();
+      setCurrentRoomId('');
+      setLiveParticipants([]);
+      toast({
+        title: "Success",
+        description: "Left voice room",
+      });
+    } catch (error: any) {
+      console.error('Error leaving voice room:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to leave voice room",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleMute = async () => {
+    try {
+      await voiceChatManager.setTrackEnabled(0, isLocalMuted); // 0 is Track.Source.Microphone
+      setIsLocalMuted(!isLocalMuted);
+    } catch (error: any) {
+      console.error('Error toggling mute:', error);
+      toast({
+        title: "Error",
+        description: "Failed to toggle mute",
         variant: "destructive"
       });
     }
@@ -278,9 +376,8 @@ const VoiceCollaborationManager: React.FC = () => {
         description: "Voice room deleted successfully"
       });
 
-      if (selectedRoomId === roomId) {
-        setParticipants([]);
-        setSelectedRoomId('');
+      if (currentRoomId === roomId) {
+        await leaveVoiceRoom();
       }
 
       fetchVoiceRooms();
@@ -330,6 +427,19 @@ const VoiceCollaborationManager: React.FC = () => {
     return match.name || `${match.home_team_name} vs ${match.away_team_name}`;
   };
 
+  const getConnectionBadge = () => {
+    switch (connectionState) {
+      case ConnectionState.Connected:
+        return <Badge className="bg-green-500">Connected</Badge>;
+      case ConnectionState.Connecting:
+        return <Badge className="bg-yellow-500">Connecting...</Badge>;
+      case ConnectionState.Reconnecting:
+        return <Badge className="bg-orange-500">Reconnecting...</Badge>;
+      default:
+        return <Badge variant="secondary">Disconnected</Badge>;
+    }
+  };
+
   if (fetchingRooms) {
     return (
       <Card>
@@ -345,20 +455,23 @@ const VoiceCollaborationManager: React.FC = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mic className="h-5 w-5" />
-            Voice Collaboration Manager
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Mic className="h-5 w-5" />
+              Voice Collaboration Manager
+            </CardTitle>
+            {getConnectionBadge()}
+          </div>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="rooms" className="w-full">
             <TabsList>
               <TabsTrigger value="rooms">Voice Rooms</TabsTrigger>
               <TabsTrigger value="participants">
-                Participants
-                {participants.length > 0 && (
+                Live Participants
+                {liveParticipants.length > 0 && (
                   <Badge variant="secondary" className="ml-2">
-                    {participants.length}
+                    {liveParticipants.length}
                   </Badge>
                 )}
               </TabsTrigger>
@@ -366,6 +479,41 @@ const VoiceCollaborationManager: React.FC = () => {
             </TabsList>
 
             <TabsContent value="rooms" className="space-y-4">
+              {/* Current Room Status */}
+              {currentRoomId && (
+                <Card className="border-blue-500 border-2">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <h3 className="font-semibold">Currently In Room</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {voiceRooms.find(r => r.id === currentRoomId)?.name}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={toggleMute}
+                          disabled={connectionState !== ConnectionState.Connected}
+                        >
+                          {isLocalMuted ? <MicOff className="h-4 w-4 text-red-500" /> : <Mic className="h-4 w-4 text-green-500" />}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={leaveVoiceRoom}
+                          disabled={loading}
+                        >
+                          <PhoneOff className="h-4 w-4 mr-2" />
+                          Leave
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Create New Room */}
               <Card>
                 <CardHeader>
@@ -417,7 +565,7 @@ const VoiceCollaborationManager: React.FC = () => {
                   </Card>
                 ) : (
                   voiceRooms.map((room) => (
-                    <Card key={room.id} className={selectedRoomId === room.id ? 'border-blue-500 border-2' : ''}>
+                    <Card key={room.id} className={currentRoomId === room.id ? 'border-blue-500 border-2' : ''}>
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="space-y-2 flex-1">
@@ -431,9 +579,9 @@ const VoiceCollaborationManager: React.FC = () => {
                                   Match: {getMatchDisplay(room.match_id)}
                                 </Badge>
                               )}
-                              {selectedRoomId === room.id && (
+                              {currentRoomId === room.id && (
                                 <Badge variant="outline" className="bg-blue-50">
-                                  Viewing Participants
+                                  You're Here
                                 </Badge>
                               )}
                             </div>
@@ -449,19 +597,27 @@ const VoiceCollaborationManager: React.FC = () => {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => fetchParticipants(room.id)}
-                              disabled={loading || fetchingParticipants}
-                              title="View participants"
-                            >
-                              {fetchingParticipants && selectedRoomId === room.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Users className="h-4 w-4" />
-                              )}
-                            </Button>
+                            {currentRoomId === room.id ? (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={leaveVoiceRoom}
+                                disabled={loading}
+                              >
+                                <PhoneOff className="h-4 w-4 mr-2" />
+                                Leave
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => joinVoiceRoom(room.id)}
+                                disabled={loading || !room.is_active || !!currentRoomId}
+                              >
+                                <Phone className="h-4 w-4 mr-2" />
+                                Join
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
@@ -493,49 +649,58 @@ const VoiceCollaborationManager: React.FC = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>
-                    {selectedRoomId ? (
+                    {currentRoomId ? (
                       <>
-                        Participants in {voiceRooms.find(r => r.id === selectedRoomId)?.name || 'Room'}
+                        Live Participants in {voiceRooms.find(r => r.id === currentRoomId)?.name || 'Room'}
                       </>
                     ) : (
-                      'Active Participants'
+                      'Live Participants'
                     )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {fetchingParticipants ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                      <span>Loading participants...</span>
-                    </div>
-                  ) : participants.length === 0 ? (
+                  {!currentRoomId ? (
                     <div className="text-center py-8">
                       <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
                       <p className="text-muted-foreground">
-                        {selectedRoomId ? 'No participants in this room' : 'Select a room to view participants'}
+                        Join a room to see live participants
+                      </p>
+                    </div>
+                  ) : liveParticipants.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Users className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-muted-foreground">
+                        No other participants in this room yet
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {participants.map((participant) => (
-                        <div key={participant.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      {liveParticipants.map((participant) => (
+                        <div 
+                          key={participant.identity} 
+                          className={`flex items-center justify-between p-3 border rounded-lg ${
+                            participant.isLocal ? 'bg-blue-50' : ''
+                          }`}
+                        >
                           <div className="space-y-1">
-                            <p className="font-medium">{participant.user_name || participant.user_email || 'Unknown User'}</p>
+                            <p className="font-medium">
+                              {participant.name}
+                              {participant.isLocal && ' (You)'}
+                            </p>
                             <div className="flex items-center gap-2">
-                              <Badge variant="outline">{participant.user_role}</Badge>
-                              <Badge variant={participant.connection_quality === 'good' ? 'default' : 'destructive'}>
-                                {participant.connection_quality}
-                              </Badge>
+                              {participant.isSpeaking && (
+                                <Badge className="bg-green-500 animate-pulse">
+                                  <Volume2 className="h-3 w-3 mr-1" />
+                                  Speaking
+                                </Badge>
+                              )}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            {participant.is_muted ? (
-                              <MicOff className="h-4 w-4 text-red-500" />
+                            {participant.isMuted ? (
+                              <MicOff className="h-5 w-5 text-red-500" />
                             ) : (
-                              <Mic className="h-4 w-4 text-green-500" />
-                            )}
-                            {participant.is_speaking && (
-                              <Badge className="bg-green-500">Speaking</Badge>
+                              <Mic className="h-5 w-5 text-green-500" />
                             )}
                           </div>
                         </div>
