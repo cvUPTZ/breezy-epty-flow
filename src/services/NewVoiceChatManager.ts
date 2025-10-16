@@ -80,136 +80,98 @@ export class NewVoiceChatManager {
     }
   }
 
-  public async joinRoom(roomId: string, userId: string, userRole: string, userName: string): Promise<void> {
-    if (this.room && this.room.state !== ConnectionState.Disconnected) {
-      console.warn('[NewVoiceChatManager] Already connected or connecting to a room. Disconnect first.');
-      await this.leaveRoom();
-    }
-
-    console.log('[NewVoiceChatManager] Requesting LiveKit token for room:', roomId);
-    console.log('[NewVoiceChatManager] Request params:', { roomId, userId, userName, userRole });
-
-    try {
-      // Try different parameter combinations based on common Edge Function implementations
-      const requestBody = {
-        // Try all common parameter name variations
-        roomName: roomId,
-        roomId: roomId,
-        room: roomId,
-        identity: userId,
-        participantIdentity: userId,
-        name: userName,
-        participantName: userName,
-        metadata: JSON.stringify({ role: userRole }),
-      };
-
-      console.log('[NewVoiceChatManager] Invoking Edge Function with body:', requestBody);
-
-      const { data, error } = await supabase.functions.invoke('generate-livekit-token', {
-        body: requestBody,
-      });
-
-      if (error) {
-        console.error('[NewVoiceChatManager] Edge Function error object:', error);
-        console.error('[NewVoiceChatManager] Error details:', {
-          message: error.message,
-          name: error.name,
-          context: error.context,
-        });
-
-        // Try to extract more details from the error
-        let errorMessage = 'Failed to get LiveKit token';
-        if (error.message) {
-          errorMessage += `: ${error.message}`;
-        }
-        if (error.context) {
-          console.error('[NewVoiceChatManager] Error context:', error.context);
-          errorMessage += ` (Context: ${JSON.stringify(error.context)})`;
-        }
-
-        throw new Error(errorMessage);
-      }
-
-      console.log('[NewVoiceChatManager] Edge Function response:', data);
-
-      if (!data) {
-        throw new Error('Edge Function returned no data');
-      }
-
-      if (!data.token) {
-        console.error('[NewVoiceChatManager] Missing token in response:', data);
-        throw new Error(`Invalid response from token endpoint: missing token. Response: ${JSON.stringify(data)}`);
-      }
-
-      if (!data.livekitUrl && !data.url && !data.wsUrl) {
-        console.error('[NewVoiceChatManager] Missing LiveKit URL in response:', data);
-        throw new Error(`Invalid response from token endpoint: missing LiveKit URL. Response: ${JSON.stringify(data)}`);
-      }
-
-      // Handle different possible response field names
-      const token = data.token;
-      const livekitUrl = data.livekitUrl || data.url || data.wsUrl;
-
-      console.log('[NewVoiceChatManager] Token received, LiveKit URL:', livekitUrl);
-
-      this.room = new Room({});
-
-      console.log(`[NewVoiceChatManager] Attempting to join LiveKit room: ${roomId} as ${userId}`);
-      this.onConnectionStateChanged(this.room.state);
-
-      this.room
-        .on(RoomEvent.ConnectionStateChanged, (state: ConnectionState) => {
-          console.log('[NewVoiceChatManager] Connection State Changed:', state);
-          this.onConnectionStateChanged(state);
-          if (state === ConnectionState.Connected) {
-            this.localParticipant = this.room!.localParticipant;
-            console.log('[NewVoiceChatManager] Successfully connected to LiveKit room. Local participant:', this.localParticipant.identity);
-            this.publishLocalAudio();
-            this.room!.remoteParticipants.forEach(participant => {
-              this.handleParticipantConnected(participant);
-            });
-          } else if (state === ConnectionState.Disconnected) {
-            console.log('[NewVoiceChatManager] Disconnected from LiveKit room. Cleaning up.');
-            this.cleanupRoom();
-            this.onConnectionStateChanged(state, new Error("Disconnected from LiveKit room."));
-          }
-        })
-        .on(RoomEvent.ParticipantConnected, this.handleParticipantConnected)
-        .on(RoomEvent.ParticipantDisconnected, this.handleParticipantDisconnected)
-        .on(RoomEvent.TrackSubscribed, this.handleTrackSubscribed)
-        .on(RoomEvent.TrackUnsubscribed, this.handleTrackUnsubscribed)
-        .on(RoomEvent.TrackMuted, (trackPub: TrackPublication, participant: Participant) => {
-          if (trackPub.kind === Track.Kind.Audio) {
-            this.onTrackMuteChanged(participant.identity, trackPub.source, true);
-          }
-        })
-        .on(RoomEvent.TrackUnmuted, (trackPub: TrackPublication, participant: Participant) => {
-          if (trackPub.kind === Track.Kind.Audio) {
-            this.onTrackMuteChanged(participant.identity, trackPub.source, false);
-          }
-        })
-        .on(RoomEvent.ActiveSpeakersChanged, (speakers: Participant[]) => {
-          this.room?.remoteParticipants.forEach(p => {
-            this.onIsSpeakingChanged(p.identity, false);
-          });
-          speakers.forEach(speaker => {
-            this.onIsSpeakingChanged(speaker.identity, true);
-          });
-        })
-        .on(RoomEvent.MediaDevicesError, (error: Error) => {
-          console.error('[NewVoiceChatManager] Media devices error:', error);
-          this.onConnectionStateChanged(ConnectionState.Disconnected, error);
-        });
-
-      await this.room.connect(livekitUrl, token);
-    } catch (error: any) {
-      console.error('[NewVoiceChatManager] Failed to connect to LiveKit room:', error);
-      console.error('[NewVoiceChatManager] Error stack:', error.stack);
-      this.onConnectionStateChanged(ConnectionState.Disconnected, error);
-      this.cleanupRoom();
-      throw error;
-    }
+public async joinRoom(roomId: string, userId: string, userRole: string, userName: string): Promise<void> {
+  if (this.room && this.room.state !== ConnectionState.Disconnected) {
+    console.warn('[NewVoiceChatManager] Already connected or connecting to a room. Disconnect first.');
+    await this.leaveRoom();
   }
+
+  console.log('[NewVoiceChatManager] Requesting LiveKit token for room:', roomId);
+
+  // FIX: Changed roomName to roomId to match Edge Function expectations
+  const { data, error } = await supabase.functions.invoke('generate-livekit-token', {
+    body: {
+      roomId: roomId,  // FIXED: was roomName
+      participantIdentity: userId,
+      participantName: userName,
+      // Note: participantMetadata is not handled by the current Edge Function
+      // If you need it, update the Edge Function to accept and use it
+    },
+  });
+
+  if (error) {
+    console.error('[NewVoiceChatManager] Error getting token:', error);
+    throw new Error(`Failed to get LiveKit token: ${error.message}`);
+  }
+
+  if (!data || !data.token || !data.livekitUrl) {
+    console.error('[NewVoiceChatManager] Invalid response from token endpoint:', data);
+    throw new Error('Invalid response from token endpoint: missing token or livekitUrl');
+  }
+
+  const { token, livekitUrl } = data;
+  console.log('[NewVoiceChatManager] Token received, LiveKit URL:', livekitUrl);
+
+  this.room = new Room({});
+
+  console.log(`[NewVoiceChatManager] Attempting to join LiveKit room: ${roomId} as ${this.myUserId}`);
+  this.onConnectionStateChanged(this.room.state);
+
+  this.room
+    .on(RoomEvent.ConnectionStateChanged, (state: ConnectionState) => {
+      console.log('[NewVoiceChatManager] Connection State Changed:', state);
+      this.onConnectionStateChanged(state);
+      if (state === ConnectionState.Connected) {
+        this.localParticipant = this.room!.localParticipant;
+        console.log('[NewVoiceChatManager] Successfully connected to LiveKit room. Local participant:', this.localParticipant.identity);
+        this.publishLocalAudio();
+        this.room!.remoteParticipants.forEach(participant => {
+          this.handleParticipantConnected(participant);
+        });
+      } else if (state === ConnectionState.Disconnected) {
+          console.log('[NewVoiceChatManager] Disconnected from LiveKit room. Cleaning up.');
+          this.cleanupRoom();
+          this.onConnectionStateChanged(state, new Error("Disconnected from LiveKit room."));
+      }
+    })
+    .on(RoomEvent.ParticipantConnected, this.handleParticipantConnected)
+    .on(RoomEvent.ParticipantDisconnected, this.handleParticipantDisconnected)
+    .on(RoomEvent.TrackSubscribed, this.handleTrackSubscribed)
+    .on(RoomEvent.TrackUnsubscribed, this.handleTrackUnsubscribed)
+    .on(RoomEvent.TrackMuted, (trackPub: TrackPublication, participant: Participant) => {
+      if (trackPub.kind === Track.Kind.Audio) {
+        this.onTrackMuteChanged(participant.identity, trackPub.source, true);
+      }
+    })
+    .on(RoomEvent.TrackUnmuted, (trackPub: TrackPublication, participant: Participant) => {
+      if (trackPub.kind === Track.Kind.Audio) {
+        this.onTrackMuteChanged(participant.identity, trackPub.source, false);
+      }
+    })
+    .on(RoomEvent.ActiveSpeakersChanged, (speakers: Participant[]) => {
+      // Reset all speaking states first
+      this.room?.remoteParticipants.forEach(p => {
+        this.onIsSpeakingChanged(p.identity, false);
+      });
+      // Set active speakers
+      speakers.forEach(speaker => {
+        this.onIsSpeakingChanged(speaker.identity, true);
+      });
+    })
+    .on(RoomEvent.MediaDevicesError, (error: Error) => {
+      console.error('[NewVoiceChatManager] Media devices error:', error);
+      this.onConnectionStateChanged(ConnectionState.Disconnected, error);
+    });
+
+  try {
+    await this.room.connect(livekitUrl, token);
+  } catch (error: any) {
+    console.error('[NewVoiceChatManager] Failed to connect to LiveKit room:', error);
+    this.onConnectionStateChanged(ConnectionState.Disconnected, error);
+    this.cleanupRoom();
+    throw error;
+  }
+}
 
   private publishLocalAudio = async () => {
     if (!this.room || this.room.state !== ConnectionState.Connected || !this.localParticipant) {
