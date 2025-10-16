@@ -10,7 +10,7 @@ interface VoiceRoomDetails {
 
 interface UseNewVoiceCollaborationProps {
   userId: string;
-  userName: string;
+  userName:string;
   userRole: string;
   matchId: string;
 }

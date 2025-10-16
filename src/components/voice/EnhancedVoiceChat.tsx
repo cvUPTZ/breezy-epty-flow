@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import { useNewVoiceCollaboration } from '@/hooks/useNewVoiceCollaboration';
-import { Participant, ConnectionState, LocalParticipant } from 'livekit-client';
+import { Participant, ConnectionState } from 'livekit-client';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -55,19 +55,13 @@ export const EnhancedVoiceChat: React.FC<EnhancedVoiceChatProps> = ({
     matchId,
   });
 
-  const lastShownErrorRef = useRef<string | null>(null);
-
-  useEffect(() => {
+  React.useEffect(() => {
     if (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage !== lastShownErrorRef.current) {
-        toast({
-          title: 'Voice Chat Error',
-          description: errorMessage,
-          variant: 'destructive',
-        });
-        lastShownErrorRef.current = errorMessage;
-      }
+      toast({
+        title: 'Voice Chat Error',
+        description: error.message,
+        variant: 'destructive',
+      });
     }
   }, [error]);
 
@@ -215,9 +209,9 @@ export const EnhancedVoiceChat: React.FC<EnhancedVoiceChatProps> = ({
 const ParticipantRow: React.FC<{
   participant: Participant;
   canModerate: boolean;
-  actions: any; // Simplified for brevity
+  actions: any;
 }> = ({ participant, canModerate, actions }) => {
-  const isMuted = participant.isMicrophoneMuted;
+  const isMuted = participant.isMuted;
   const isSpeaking = participant.isSpeaking;
 
   return (
