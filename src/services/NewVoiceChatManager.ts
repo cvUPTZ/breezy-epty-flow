@@ -280,12 +280,14 @@ export class NewVoiceChatManager {
   private handleTrackSubscribed = (track: RemoteTrack, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
     console.log(`[NewVoiceChatManager] Track Subscribed: ${track.kind} from ${participant.identity}`, track);
     if (track.kind === Track.Kind.Audio && track.mediaStream) {
+      this.audioManager.playStream(participant.identity, track.mediaStream);
       this.onRemoteStreamSubscribed(participant.identity, track.mediaStream, participant);
     }
   }
 
   private handleTrackUnsubscribed = (track: RemoteTrack, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
     console.log(`[NewVoiceChatManager] Track Unsubscribed: ${track.kind} from ${participant.identity}`);
+    this.audioManager.removeStream(participant.identity);
     this.onRemoteStreamUnsubscribed(participant.identity, participant);
   }
 
