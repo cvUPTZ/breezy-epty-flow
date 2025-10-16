@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Mic, MicOff, Users, Settings, Phone, PhoneOff, Loader2, AlertTriangle, Volume2 } from 'lucide-react';
-import { NewVoiceChatManager } from '@/lib/NewVoiceChatManager';
+import { NewVoiceChatManager } from '@/services/NewVoiceChatManager.ts';
 import { ConnectionState } from 'livekit-client';
 
 interface VoiceRoom {
@@ -767,3 +767,4 @@ const VoiceCollaborationManager: React.FC = () => {
 };
 
 export default VoiceCollaborationManager;
+
