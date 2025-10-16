@@ -1,321 +1,426 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useVoiceCollaborationContext } from '@/context/VoiceCollaborationContext'; // NEW
-import { Participant, ConnectionState, LocalParticipant } from 'livekit-client';
-import { toast } from '@/components/ui/sonner';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { VolumeX, Volume2, Shield, Users, Mic, PhoneOff, Wifi, WifiOff, Loader2, MicOff } from 'lucide-react';
+import {
+  Room,
+  RoomEvent,
+  ParticipantEvent,
+  RemoteParticipant,
+  Track,
+  TrackPublication,
+  ConnectionState,
+  LocalParticipant,
+  RemoteTrack,
+  RemoteTrackPublication,
+  Participant,
+} from 'livekit-client';
+import { AudioManager } from '@/utils/audioManager.ts';
+import { supabase } from '@/integrations/supabase/client';
 
-interface EnhancedVoiceChatProps {
-  matchId: string;
-  userId: string;
-  userRole: string;
-  userName: string;
-  voiceCollabCtx?: ReturnType<typeof useVoiceCollaborationContext>;
+interface VoiceRoomDetails {
+  id: string;
+  name: string;
+  max_participants?: number;
 }
 
-export const EnhancedVoiceChat: React.FC<EnhancedVoiceChatProps> = ({
-  matchId, 
-  userId, 
-  userRole, 
-  userName,
-  voiceCollabCtx
-}) => {
-  // Consume the context. If a prop (from VoiceCollaborationWithTest), use it; else useContext (fallback).
-  const ctx = voiceCollabCtx || useVoiceCollaborationContext();
+export class NewVoiceChatManager {
+  private static instance: NewVoiceChatManager;
+  private room: Room | null = null;
+  private localParticipant: LocalParticipant | null = null;
+  private remoteParticipants: Map<string, RemoteParticipant> = new Map();
 
-  const {
-    availableRooms,
-    currentRoomId,
-    participants,
-    localParticipant,
-    connectionState,
-    isConnecting,
-    isConnected,
-    isLoadingRooms,
-    error,
-    audioLevels,
-    joinRoom,
-    leaveRoom,
-    toggleMuteSelf,
-    fetchAvailableRooms,
-    moderateMuteParticipant,
-    getAudioLevel,
-  } = ctx;
+  private audioManager: AudioManager;
+  private myUserId: string | null = null;
 
-  const [allMuted, setAllMuted] = useState(false);
-  const lastShownErrorRef = useRef<Error | null>(null);
+  // Event callbacks
+  public onRemoteStreamSubscribed: (peerId: string, stream: MediaStream, participant: RemoteParticipant) => void = () => {};
+  public onRemoteStreamUnsubscribed: (peerId: string, participant: RemoteParticipant) => void = () => {};
+  public onPeerStatusChanged: (peerId: string, status: string, participant?: RemoteParticipant | LocalParticipant) => void = () => {};
+  public onConnectionStateChanged: (state: ConnectionState, error?: Error) => void = () => {};
+  public onTrackMuteChanged: (peerId: string, source: Track.Source, isMuted: boolean) => void = () => {};
+  public onIsSpeakingChanged: (peerId: string, isSpeaking: boolean) => void = () => {};
 
-  useEffect(() => {
-    if (error && error !== lastShownErrorRef.current) {
-      toast.error(error.message || 'An unknown error occurred.', {
-        id: error.message,
-      });
-      lastShownErrorRef.current = error;
-    }
-    if (!error && lastShownErrorRef.current) {
-        lastShownErrorRef.current = null;
-    }
-  }, [error]);
-
-  useEffect(() => {
-    if (matchId) {
-      fetchAvailableRooms(matchId);
-    }
-  }, [fetchAvailableRooms, matchId]);
-
-  // Helper: check if participant metadata implies tracker role
-  function isTrackerParticipant(participant: Participant): boolean {
-    const { metadata, name } = participant;
-    if (!metadata) return false;
-    if (metadata === 'tracker') return true;
-    try {
-      const parsed = JSON.parse(metadata);
-      if (parsed && typeof parsed === 'object' && parsed.role === 'tracker') {
-        return true;
-      }
-    } catch {}
-    if (name && name.toLowerCase().includes('tracker')) return true;
-    return false;
+  private constructor() {
+    this.audioManager = AudioManager.getInstance();
   }
 
-  const handleJoinRoom = async (roomId: string) => {
-    await joinRoom(roomId, userId, userRole, userName);
-  };
-
-  // Ensure correct mute check for local and remote
-  const isParticipantMuted = (participant: Participant | null): boolean => {
-    if (!participant) {
-      return true; // Default to muted if participant is null
+  public static getInstance(): NewVoiceChatManager {
+    if (!NewVoiceChatManager.instance) {
+      NewVoiceChatManager.instance = new NewVoiceChatManager();
     }
-    if (participant.isLocal) {
-      // Use new logic: some implementations use muted flag, but here isMicrophoneEnabled is best.
-      return !(participant as LocalParticipant).isMicrophoneEnabled;
+    return NewVoiceChatManager.instance;
+  }
+
+  public initialize(userId: string) {
+    this.myUserId = userId;
+    console.log('[NewVoiceChatManager] Initialized with userId:', userId);
+  }
+
+  public getRoom(): Room | null {
+    return this.room;
+  }
+
+  public async getRoomsForMatch(matchId: string): Promise<VoiceRoomDetails[]> {
+    console.log('[NewVoiceChatManager] Fetching rooms for match:', matchId);
+    
+    try {
+      const { data, error } = await supabase
+        .from('voice_rooms')
+        .select('id, name, max_participants')
+        .eq('match_id', matchId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('[NewVoiceChatManager] Error fetching rooms:', error);
+        throw new Error(`Failed to fetch voice rooms: ${error.message}`);
+      }
+
+      console.log('[NewVoiceChatManager] Successfully fetched rooms:', data?.length || 0);
+      return data || [];
+    } catch (error) {
+      console.error('[NewVoiceChatManager] Exception fetching rooms:', error);
+      throw error;
     }
-    // For remote, treat as muted if no audio tracks or any publication is muted
-    const audioTrackPublications = Array.from(participant.audioTrackPublications.values());
-    return audioTrackPublications.length === 0 || audioTrackPublications.some(pub => pub.isMuted);
-  };
+  }
 
-  const isParticipantSpeaking = (participant: Participant): boolean => {
-    const audioLevel = getAudioLevel(participant.identity);
-    return audioLevel > 0.1 && !isParticipantMuted(participant);
-  };
-
-  const canModerate = userRole === 'admin' || userRole === 'coordinator';
-
-  // Find all tracker participants (excluding self)
-  const trackerParticipants = participants.filter(
-    p => !p.isLocal && isTrackerParticipant(p)
-  );
-
-  // Fix: Mute self button works reliably
-  const handleToggleMuteSelf = async () => {
-    const result = await toggleMuteSelf();
-    if (typeof result === "undefined") {
-      toast.error("Failed to toggle mute.");
+  public async joinRoom(roomId: string, userId: string, userRole: string, userName: string): Promise<void> {
+    if (this.room && this.room.state !== ConnectionState.Disconnected) {
+      console.warn('[NewVoiceChatManager] Already connected or connecting to a room. Disconnect first.');
+      await this.leaveRoom();
     }
-    // else, the state will update on re-render
-  };
 
-  // Fix: Admin mute all only affects trackers
-  const handleMuteAll = async () => {
-    if (!canModerate) return;
-    const newMuteState = !allMuted;
-    setAllMuted(newMuteState);
+    console.log('[NewVoiceChatManager] Requesting LiveKit token for room:', roomId);
+    console.log('[NewVoiceChatManager] Request params:', { roomId, userId, userName, userRole });
 
-    let errors = 0;
-    for (const participant of participants) {
-      if (!participant.isLocal && isTrackerParticipant(participant)) {
-        const ok = await moderateMuteParticipant(participant.identity, newMuteState);
-        if (!ok) errors++;
+    try {
+      // Try different parameter combinations based on common Edge Function implementations
+      const requestBody = {
+        // Try all common parameter name variations
+        roomName: roomId,
+        roomId: roomId,
+        room: roomId,
+        identity: userId,
+        participantIdentity: userId,
+        name: userName,
+        participantName: userName,
+        metadata: JSON.stringify({ role: userRole }),
+      };
+
+      console.log('[NewVoiceChatManager] Invoking Edge Function with body:', requestBody);
+
+      const { data, error } = await supabase.functions.invoke('generate-livekit-token', {
+        body: requestBody,
+      });
+
+      if (error) {
+        console.error('[NewVoiceChatManager] Edge Function error object:', error);
+        console.error('[NewVoiceChatManager] Error details:', {
+          message: error.message,
+          name: error.name,
+          context: error.context,
+        });
+        
+        // Try to extract more details from the error
+        let errorMessage = 'Failed to get LiveKit token';
+        if (error.message) {
+          errorMessage += `: ${error.message}`;
+        }
+        if (error.context) {
+          console.error('[NewVoiceChatManager] Error context:', error.context);
+          errorMessage += ` (Context: ${JSON.stringify(error.context)})`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      console.log('[NewVoiceChatManager] Edge Function response:', data);
+
+      if (!data) {
+        throw new Error('Edge Function returned no data');
+      }
+
+      if (!data.token) {
+        console.error('[NewVoiceChatManager] Missing token in response:', data);
+        throw new Error(`Invalid response from token endpoint: missing token. Response: ${JSON.stringify(data)}`);
+      }
+
+      if (!data.livekitUrl && !data.url && !data.wsUrl) {
+        console.error('[NewVoiceChatManager] Missing LiveKit URL in response:', data);
+        throw new Error(`Invalid response from token endpoint: missing LiveKit URL. Response: ${JSON.stringify(data)}`);
+      }
+
+      // Handle different possible response field names
+      const token = data.token;
+      const livekitUrl = data.livekitUrl || data.url || data.wsUrl;
+
+      console.log('[NewVoiceChatManager] Token received, LiveKit URL:', livekitUrl);
+
+      this.room = new Room({});
+
+      console.log(`[NewVoiceChatManager] Attempting to join LiveKit room: ${roomId} as ${userId}`);
+      this.onConnectionStateChanged(this.room.state);
+
+      this.room
+        .on(RoomEvent.ConnectionStateChanged, (state: ConnectionState) => {
+          console.log('[NewVoiceChatManager] Connection State Changed:', state);
+          this.onConnectionStateChanged(state);
+          if (state === ConnectionState.Connected) {
+            this.localParticipant = this.room!.localParticipant;
+            console.log('[NewVoiceChatManager] Successfully connected to LiveKit room. Local participant:', this.localParticipant.identity);
+            this.publishLocalAudio();
+            this.room!.remoteParticipants.forEach(participant => {
+              this.handleParticipantConnected(participant);
+            });
+          } else if (state === ConnectionState.Disconnected) {
+            console.log('[NewVoiceChatManager] Disconnected from LiveKit room. Cleaning up.');
+            this.cleanupRoom();
+            this.onConnectionStateChanged(state, new Error("Disconnected from LiveKit room."));
+          }
+        })
+        .on(RoomEvent.ParticipantConnected, this.handleParticipantConnected)
+        .on(RoomEvent.ParticipantDisconnected, this.handleParticipantDisconnected)
+        .on(RoomEvent.TrackSubscribed, this.handleTrackSubscribed)
+        .on(RoomEvent.TrackUnsubscribed, this.handleTrackUnsubscribed)
+        .on(RoomEvent.TrackMuted, (trackPub: TrackPublication, participant: Participant) => {
+          if (trackPub.kind === Track.Kind.Audio) {
+            this.onTrackMuteChanged(participant.identity, trackPub.source, true);
+          }
+        })
+        .on(RoomEvent.TrackUnmuted, (trackPub: TrackPublication, participant: Participant) => {
+          if (trackPub.kind === Track.Kind.Audio) {
+            this.onTrackMuteChanged(participant.identity, trackPub.source, false);
+          }
+        })
+        .on(RoomEvent.ActiveSpeakersChanged, (speakers: Participant[]) => {
+          this.room?.remoteParticipants.forEach(p => {
+            this.onIsSpeakingChanged(p.identity, false);
+          });
+          speakers.forEach(speaker => {
+            this.onIsSpeakingChanged(speaker.identity, true);
+          });
+        })
+        .on(RoomEvent.MediaDevicesError, (error: Error) => {
+          console.error('[NewVoiceChatManager] Media devices error:', error);
+          this.onConnectionStateChanged(ConnectionState.Disconnected, error);
+        });
+
+      await this.room.connect(livekitUrl, token);
+    } catch (error: any) {
+      console.error('[NewVoiceChatManager] Failed to connect to LiveKit room:', error);
+      console.error('[NewVoiceChatManager] Error stack:', error.stack);
+      this.onConnectionStateChanged(ConnectionState.Disconnected, error);
+      this.cleanupRoom();
+      throw error;
+    }
+  }
+
+  private publishLocalAudio = async () => {
+    if (!this.room || this.room.state !== ConnectionState.Connected || !this.localParticipant) {
+      console.warn('[NewVoiceChatManager] Cannot publish audio, not connected or no local participant.');
+      return;
+    }
+
+    if (!this.audioManager.isStreamActive() || !this.audioManager.getCurrentStream()) {
+      console.warn('[NewVoiceChatManager] AudioManager does not have an active stream to publish.');
+      try {
+        if(!this.audioManager.getAudioContext() || this.audioManager.getAudioContext()?.state === 'closed'){
+            await this.audioManager.initialize({onError: (e: Error) => console.error("[NewVoiceChatManager] AudioManager init error during publish:", e) });
+        }
+        const stream = await this.audioManager.getUserMedia();
+        if (!stream) throw new Error("Failed to get stream from AudioManager");
+      } catch(error){
+        console.error('[NewVoiceChatManager] Failed to get/initialize local audio stream for publishing:', error);
+        this.onConnectionStateChanged(ConnectionState.Disconnected, new Error("Microphone access failed during publish."));
+        return;
       }
     }
-    if (errors) {
-      toast.error(`Some participants could not be ${newMuteState ? 'muted' : 'unmuted'}`);
+
+    const localStream = this.audioManager.getCurrentStream();
+    if (localStream && localStream.getAudioTracks().length > 0) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      try {
+        let isPublished = false;
+        this.localParticipant.audioTrackPublications.forEach(pub => {
+            if (pub.track?.mediaStreamTrack === audioTrack) {
+                isPublished = true;
+            }
+        });
+
+        if (!isPublished) {
+            console.log('[NewVoiceChatManager] Publishing local audio track.');
+            await this.localParticipant.publishTrack(audioTrack, {
+              name: 'microphone',
+              source: Track.Source.Microphone,
+            });
+        } else {
+              console.log('[NewVoiceChatManager] Local audio track already published.');
+        }
+      } catch (error) {
+        console.error('[NewVoiceChatManager] Error publishing local audio track:', error);
+      }
     } else {
-      toast.success(newMuteState ? 'All trackers muted' : 'All trackers unmuted');
+      console.warn('[NewVoiceChatManager] No audio track found in local stream to publish.');
     }
-  };
+  }
 
-  const renderConnectionStatus = () => {
-    if (isConnecting) return <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200"><Loader2 className="mr-1 h-3 w-3 animate-spin" />Connecting...</Badge>;
-    if (isConnected) return <Badge variant="default" className="bg-emerald-100 text-emerald-800 border-emerald-200"><Wifi className="mr-1 h-3 w-3" />Connected</Badge>;
-    if (connectionState === ConnectionState.Disconnected) return <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200"><WifiOff className="mr-1 h-3 w-3" />Disconnected</Badge>;
-    return <Badge variant="outline"><Loader2 className="mr-1 h-3 w-3 animate-spin" />Initializing...</Badge>;
-  };
+  public async setTrackEnabled(source: Track.Source, enabled: boolean) {
+    if (!this.room || this.room.state !== ConnectionState.Connected || !this.localParticipant) {
+        console.warn(`[NewVoiceChatManager] Cannot set track enabled state for ${source}, not connected.`);
+        return;
+    }
+    const publications = Array.from(this.localParticipant.audioTrackPublications.values()).filter(pub => pub.source === source);
+    if (publications.length === 0) {
+        console.warn(`[NewVoiceChatManager] No local track found for source ${source} to set enabled state.`);
+        return;
+    }
+    publications.forEach(pub => {
+        if (pub.track) {
+              console.log(`[NewVoiceChatManager] Setting track ${pub.trackSid} (${source}) enabled: ${enabled}`);
+              if (enabled) {
+                pub.unmute();
+              } else {
+                pub.mute();
+              }
+        } else {
+              console.warn(`[NewVoiceChatManager] Track for source ${source} (SID: ${pub.trackSid}) not yet published, cannot set enabled state directly.`);
+        }
+    });
+  }
 
-  const renderRoomSelection = () => (
-    <div className="p-6 space-y-4">
-      {isLoadingRooms && (
-        <div className="flex items-center justify-center p-8 text-slate-500">
-          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-          Loading voice rooms...
-        </div>
-      )}
-      {!isLoadingRooms && availableRooms.length === 0 && (
-        <div className="text-center py-8">
-            <MicOff className="h-10 w-10 mx-auto text-slate-400 mb-4" />
-            <p className="text-slate-600 font-semibold">No voice rooms available</p>
-            <p className="text-sm text-slate-500">There are no voice rooms for this match yet.</p>
-        </div>
-      )}
-      {!isLoadingRooms && availableRooms.length > 0 && (
-        <div className="space-y-3 animate-fade-in">
-          <h3 className="text-sm font-medium text-slate-500">Available Rooms</h3>
-          {availableRooms.map(room => (
-            <div key={room.id} className="flex items-center justify-between p-4 border border-slate-200/80 rounded-xl bg-white/50 hover:bg-slate-50/50 transition-colors">
-              <div>
-                <p className="font-semibold text-slate-800">{room.name}</p>
-                <p className="text-xs text-slate-500">Room ID: {room.id}</p>
-              </div>
-              <Button
-                onClick={() => handleJoinRoom(room.id)}
-                disabled={isConnecting}
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
-              >
-                <Mic className="mr-2 h-4 w-4" />
-                Join Room
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  private handleParticipantConnected = (participant: RemoteParticipant) => {
+    console.log('[NewVoiceChatManager] Participant Connected:', participant.identity, participant);
+    this.remoteParticipants.set(participant.identity, participant);
+    this.onPeerStatusChanged(participant.identity, 'connected', participant);
 
-  const renderActiveRoom = () => {
-    // FIX: Filter out duplicate participants to prevent React DOM errors.
-    // This can happen if a user is both a ball and player tracker.
-    const uniqueParticipants = Array.from(new Map(participants.map(p => [p.identity, p])).values());
+    participant.audioTrackPublications.forEach(pub => {
+      this.onTrackMuteChanged(participant.identity, pub.source, pub.isMuted);
+    });
 
-    return (
-      <div className="p-6 space-y-6">
-        {/* Control buttons */}
-        <div className="flex flex-wrap gap-3">
-          <Button
-            onClick={leaveRoom}
-            variant="destructive"
-            size="sm"
-            className="shadow-md hover:shadow-lg"
-          >
-            <PhoneOff className="h-4 w-4 mr-2" />
-            Leave Room
-          </Button>
-          <Button
-            onClick={handleToggleMuteSelf}
-            variant="outline"
-            size="sm"
-            disabled={!localParticipant}
-            className="shadow-sm hover:shadow-md"
-          >
-            {isParticipantMuted(localParticipant) ? (
-              <>
-                <VolumeX className="h-4 w-4 mr-2 text-red-500" />
-                Unmute Self
-              </>
-            ) : (
-              <>
-                <Volume2 className="h-4 w-4 mr-2 text-emerald-500" />
-                Mute Self
-              </>
-            )}
-          </Button>
+    participant
+      .on(ParticipantEvent.TrackMuted, (trackPub: TrackPublication) => {
+        if (trackPub.kind === Track.Kind.Audio) {
+          this.onTrackMuteChanged(participant.identity, trackPub.source, true);
+        }
+      })
+      .on(ParticipantEvent.TrackUnmuted, (trackPub: TrackPublication) => {
+        if (trackPub.kind === Track.Kind.Audio) {
+          this.onTrackMuteChanged(participant.identity, trackPub.source, false);
+        }
+      })
+      .on(ParticipantEvent.IsSpeakingChanged, (isSpeaking: boolean) => {
+        this.onIsSpeakingChanged(participant.identity, isSpeaking);
+      });
 
-          {canModerate && (
-            <Button
-              onClick={handleMuteAll}
-              variant="outline"
-              size="sm"
-              className="text-orange-600 hover:text-orange-700 border-orange-300 hover:bg-orange-50 shadow-sm hover:shadow-md"
-            >
-              <Shield className="h-4 w-4 mr-2" />
-              {allMuted ? 'Unmute All Trackers' : 'Mute All Trackers'}
-            </Button>
-          )}
-        </div>
+    this.onIsSpeakingChanged(participant.identity, participant.isSpeaking);
 
-        {/* Participants list */}
-        <div className="space-y-4">
-          <h4 className="font-semibold text-slate-700 text-base">Participants ({uniqueParticipants.length})</h4>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[28rem] overflow-y-auto p-1 -m-1">
-            {uniqueParticipants.map(participant => {
-              const isMuted = isParticipantMuted(participant);
-              const isSpeaking = isParticipantSpeaking(participant);
-              // FIX: Use a stable key that does not change on SID assignment.
-              // The participant's identity is unique and stable.
-              const stableKey = participant.identity;
+    participant.audioTrackPublications.forEach(publication => {
+        if (publication.isSubscribed && publication.track) {
+            this.handleTrackSubscribed(publication.track as RemoteTrack, publication as RemoteTrackPublication, participant);
+        }
+    });
+  }
 
-              return (
-                <div
-                  key={stableKey}
-                  className={`
-                  relative aspect-square flex flex-col items-center justify-center
-                  p-2 rounded-2xl text-center
-                  bg-white/60 backdrop-blur-sm border border-slate-200/60
-                  transition-all duration-300 transform hover:-translate-y-1
-                  ${isSpeaking ? 'ring-2 ring-offset-2 ring-offset-slate-50/80 ring-emerald-500 shadow-lg' : 'shadow-md'}
-                `}
-              >
-                <div className="relative mb-2">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-200 to-indigo-200 flex items-center justify-center text-blue-700 font-bold text-2xl shadow-inner">
-                    {participant.name?.charAt(0).toUpperCase() || 'A'}
-                  </div>
-                  <div className={`absolute bottom-0 -right-1 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white/80 ${isMuted ? 'bg-red-500' : 'bg-emerald-500'}`}>
-                    {isMuted ? (
-                      <MicOff size={14} className="text-white" />
-                    ) : (
-                      <Mic size={14} className="text-white"/>
-                    )}
-                  </div>
-                </div>
+  private handleParticipantDisconnected = (participant: RemoteParticipant) => {
+    console.log('[NewVoiceChatManager] Participant Disconnected:', participant.identity);
+    this.remoteParticipants.delete(participant.identity);
+    this.onPeerStatusChanged(participant.identity, 'disconnected', participant);
+    this.onIsSpeakingChanged(participant.identity, false);
+    this.onRemoteStreamUnsubscribed(participant.identity, participant);
+  }
 
-                <span className="text-sm font-semibold text-slate-800 w-full truncate" title={participant.name || participant.identity}>
-                  {participant.name || participant.identity}
-                </span>
-                {participant.isLocal && <Badge variant="secondary" className="mt-1 px-2 py-0.5 text-xs">You</Badge>}
+  private handleTrackSubscribed = (track: RemoteTrack, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
+    console.log(`[NewVoiceChatManager] Track Subscribed: ${track.kind} from ${participant.identity}`, track);
+    if (track.kind === Track.Kind.Audio && track.mediaStream) {
+      this.audioManager.playRemoteStream(participant.identity, track.mediaStream);
+      this.onRemoteStreamSubscribed(participant.identity, track.mediaStream, participant);
+    }
+  }
 
-                {/* Moderation for non-local tracker participants only */}
-                {canModerate && !participant.isLocal && isTrackerParticipant(participant) && (
-                  <Button
-                    onClick={() => moderateMuteParticipant(participant.identity, !isMuted)}
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-1 right-1 h-7 w-7 rounded-full bg-white/50 hover:bg-slate-200/50 text-slate-600"
-                  >
-                    {isMuted ? <Volume2 size={16}/> : <VolumeX size={16}/>}
-                    <span className="sr-only">{isMuted ? 'Unmute' : 'Mute'}</span>
-                  </Button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-  };
+  private handleTrackUnsubscribed = (track: RemoteTrack, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
+    console.log(`[NewVoiceChatManager] Track Unsubscribed: ${track.kind} from ${participant.identity}`);
+    this.audioManager.removeRemoteStream(participant.identity);
+    this.onRemoteStreamUnsubscribed(participant.identity, participant);
+  }
 
-  return (
-    <Card className="bg-white/60 backdrop-blur-lg border-slate-200/80 shadow-lg rounded-2xl transition-all">
-      <CardHeader className="border-b border-slate-200/80 bg-slate-50/30">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-3 text-slate-800">
-            <Users className="h-6 w-6 text-blue-600" />
-            {isConnected ? (
-              <>Voice Room: <span className="text-blue-700">{currentRoomId}</span></>
-            ) : (
-              "Voice Collaboration"
-            )}
-          </CardTitle>
-          {renderConnectionStatus()}
-        </div>
-      </CardHeader>
-      <CardContent>
-        {isConnected ? renderActiveRoom() : renderRoomSelection()}
-      </CardContent>
-    </Card>
-  );
-};
+  public async leaveRoom(): Promise<void> {
+    if (this.room) {
+      console.log('[NewVoiceChatManager] Leaving LiveKit room.');
+      if (this.localParticipant) {
+          this.localParticipant.audioTrackPublications.forEach(async (publication) => {
+              if (publication.track) {
+                  console.log(`[NewVoiceChatManager] Unpublishing local track: ${publication.track.sid}`);
+                  this.localParticipant?.unpublishTrack(publication.track);
+              }
+          });
+      }
+      await this.room.disconnect();
+    } else {
+      this.cleanupRoom();
+    }
+  }
+
+  private cleanupRoom(): void {
+    if (this.room) {
+        this.room.removeAllListeners();
+        this.room = null;
+    }
+    this.localParticipant = null;
+    this.remoteParticipants.clear();
+    console.log('[NewVoiceChatManager] Room resources cleaned up.');
+  }
+
+  public async updateLocalAudioStream() {
+    if (!this.room || !this.localParticipant || this.room.state !== ConnectionState.Connected) {
+        console.warn("[NewVoiceChatManager] Cannot update local stream, not connected.");
+        return;
+    }
+    if (!this.audioManager.isStreamActive() || !this.audioManager.getCurrentStream()) {
+        console.warn("[NewVoiceChatManager] AudioManager has no active stream for update.");
+        return;
+    }
+
+    const newStream = this.audioManager.getCurrentStream();
+    if (newStream && newStream.getAudioTracks().length > 0) {
+        const newAudioTrack = newStream.getAudioTracks()[0];
+
+        const existingAudioPublications = Array.from(this.localParticipant.audioTrackPublications.values());
+        let needsPublish = true;
+
+        for (const pub of existingAudioPublications) {
+            if (pub.track) {
+                if (pub.track.mediaStreamTrack.id === newAudioTrack.id) {
+                    console.log("[NewVoiceChatManager] New audio track is the same as an already published one. No update needed.");
+                    needsPublish = false;
+                    continue;
+                }
+                console.log("[NewVoiceChatManager] Unpublishing old audio track:", pub.trackSid);
+                this.localParticipant.unpublishTrack(pub.track, true);
+            }
+        }
+
+        if (needsPublish) {
+            console.log("[NewVoiceChatManager] Publishing new audio track after update.");
+            await this.localParticipant.publishTrack(newAudioTrack, {
+                name: 'microphone',
+                source: Track.Source.Microphone,
+            });
+        }
+    } else {
+        console.warn("[NewVoiceChatManager] No audio track in new stream to update. Unpublishing existing if any.");
+        const existingAudioPublications = Array.from(this.localParticipant.audioTrackPublications.values());
+        for (const pub of existingAudioPublications) {
+            if (pub.track) {
+                 this.localParticipant.unpublishTrack(pub.track, true);
+            }
+        }
+    }
+  }
+
+  public async setAudioOutputDevice(deviceId: string): Promise<void> {
+    console.log(`[NewVoiceChatManager] Setting audio output device to: ${deviceId}`);
+    try {
+      await this.audioManager.setAudioOutputDevice(deviceId);
+      console.log(`[NewVoiceChatManager] Audio output device set via AudioManager: ${deviceId}`);
+    } catch (error) {
+      console.error('[NewVoiceChatManager] Error setting audio output device:', error);
+      throw error;
+    }
+  }
+}
