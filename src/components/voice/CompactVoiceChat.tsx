@@ -34,12 +34,7 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
     isConnected,
     isLoadingRooms,
     error,
-    joinRoom,
-    leaveRoom,
-    toggleMuteSelf,
-    fetchAvailableRooms,
-    moderateMuteParticipant,
-    getAudioLevel,
+    actions,
   } = ctx;
 
   const [allMuted, setAllMuted] = useState(false);
@@ -59,9 +54,9 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
 
   useEffect(() => {
     if (matchId) {
-      fetchAvailableRooms(matchId);
+      actions.fetchAvailableRooms(matchId);
     }
-  }, [fetchAvailableRooms, matchId]);
+  }, [actions, matchId]);
 
   function isTrackerParticipant(participant: Participant): boolean {
     const { metadata, name } = participant;
@@ -78,7 +73,7 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
   }
 
   const handleJoinRoom = async (roomId: string) => {
-    await joinRoom(roomId, userId, userRole, userName);
+    await actions.joinRoom(roomId, userId, userRole, userName);
   };
 
   const isParticipantMuted = (participant: Participant | null): boolean => {
@@ -87,8 +82,7 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
   };
 
   const isParticipantSpeaking = (participant: Participant): boolean => {
-    const audioLevel = getAudioLevel(participant.identity);
-    return audioLevel > 0 && !isParticipantMuted(participant);
+    return participant.isSpeaking;
   };
 
   const canModerate = userRole === 'admin' || userRole === 'coordinator';
@@ -98,10 +92,7 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
   );
 
   const handleToggleMuteSelf = async () => {
-    const result = await toggleMuteSelf();
-    if (typeof result === "undefined") {
-      toast.error("Failed to toggle mute.");
-    }
+    actions.toggleMute();
   };
 
   const handleMuteAll = async () => {
@@ -109,18 +100,12 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
     const newMuteState = !allMuted;
     setAllMuted(newMuteState);
 
-    let errors = 0;
     for (const participant of participants) {
       if (!participant.isLocal && isTrackerParticipant(participant)) {
-        const ok = await moderateMuteParticipant(participant.identity, newMuteState);
-        if (!ok) errors++;
+        actions.moderateMute(participant.identity, newMuteState);
       }
     }
-    if (errors) {
-      toast.error(`Some participants could not be ${newMuteState ? 'muted' : 'unmuted'}`);
-    } else {
-      toast.success(newMuteState ? 'All trackers muted' : 'All trackers unmuted');
-    }
+    toast.success(newMuteState ? 'All trackers muted' : 'All trackers unmuted');
   };
 
   const renderConnectionStatus = () => {
@@ -183,7 +168,7 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
       {/* Control buttons */}
       <div className="flex gap-2">
         <Button
-          onClick={leaveRoom}
+          onClick={actions.leaveRoom}
           variant="destructive"
           size="sm"
           className="text-xs h-6 px-2"
@@ -265,7 +250,7 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
                 {/* Moderation for non-local tracker participants only */}
                 {canModerate && !participant.isLocal && isTrackerParticipant(participant) && (
                   <Button
-                    onClick={() => moderateMuteParticipant(participant.identity, !isMuted)}
+                    onClick={() => actions.moderateMute(participant.identity, !isMuted)}
                     variant="ghost"
                     size="sm"
                     className="absolute top-0 right-0 h-4 w-4 rounded-full bg-white/10 hover:bg-white/20 text-white/60 p-0"

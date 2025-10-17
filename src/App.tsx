@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { VoiceCollaborationProvider } from './context/VoiceCollaborationContext';
 import { RequireAuth, AdminOnly, ManagerAccess, TrackerAccess } from "./components/RequireAuth";
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -383,9 +384,11 @@ const AppContent = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <Toaster />
-      <Sonner />
-      <AppContent />
+      <VoiceCollaborationProvider>
+        <Toaster />
+        <Sonner />
+        <AppContent />
+      </VoiceCollaborationProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

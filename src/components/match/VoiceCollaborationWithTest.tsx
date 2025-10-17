@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { EnhancedVoiceChat } from '@/components/voice/EnhancedVoiceChat';
+import { CompactVoiceChat } from '@/components/voice/CompactVoiceChat';
 import VoiceAudioTest from '../VoiceAudioTest';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
@@ -53,7 +53,7 @@ const VoiceCollaborationWithTest: React.FC<VoiceCollaborationWithTestProps> = ({
       {/* Main Voice Collaboration
           Hand all context props to EnhancedVoiceChat here  
        */}
-      <EnhancedVoiceChat
+      <CompactVoiceChat
         matchId={matchId}
         userId={userId}
         userRole={userRole}
