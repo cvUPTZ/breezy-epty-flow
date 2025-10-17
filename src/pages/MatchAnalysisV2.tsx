@@ -237,9 +237,14 @@ const MatchAnalysisV2: React.FC = () => {
     if (!matchId || !user?.id || !fullMatchRoster) {
       console.log("Missing requirements for fetching tracker assignments:", {
         matchId: !!matchId,
-        userId: !!user?.id,
+        user: !!user,
         fullMatchRoster: !!fullMatchRoster
       });
+      return;
+    }
+
+    if (!user || !user.id) {
+      console.log("User not available for fetching tracker assignments.");
       return;
     }
 
@@ -415,7 +420,7 @@ const MatchAnalysisV2: React.FC = () => {
       return null;
     }
 
-    if (!user?.id) {
+    if (!user || !user.id) {
       console.error("User not authenticated");
       toast({
         title: 'Error',
@@ -627,10 +632,10 @@ const MatchAnalysisV2: React.FC = () => {
                       </>
                     )}
 
-                    {activeView === 'voice-collab' && canShowVoiceCollab && (
+                    {activeView === 'voice-collab' && canShowVoiceCollab && user?.id && (
                       <VoiceCollaborationWithTest
                         matchId={matchId}
-                        userId={user.id!}
+                        userId={user.id}
                       />
                     )}
 
