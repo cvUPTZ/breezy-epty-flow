@@ -57,10 +57,16 @@ export class NewVoiceChatManager {
     return this.room;
   }
 
+  /**
+   * Fetch available voice rooms for a specific match
+   * @param matchId - The ID of the match to fetch rooms for
+   * @returns Array of voice room details
+   */
   public async getRoomsForMatch(matchId: string): Promise<VoiceRoomDetails[]> {
     console.log('[NewVoiceChatManager] Fetching rooms for match:', matchId);
     
     try {
+      // Query your voice_rooms table in Supabase
       const { data, error } = await supabase
         .from('voice_rooms')
         .select('id, name, max_participants')
@@ -79,6 +85,8 @@ export class NewVoiceChatManager {
       throw error;
     }
   }
+
+  // Replace your joinRoom method with this fixed version:
 
 public async joinRoom(roomId: string, userId: string, userRole: string, userName: string): Promise<void> {
   if (this.room && this.room.state !== ConnectionState.Disconnected) {
@@ -172,7 +180,6 @@ public async joinRoom(roomId: string, userId: string, userRole: string, userName
     throw error;
   }
 }
-
   private publishLocalAudio = async () => {
     if (!this.room || this.room.state !== ConnectionState.Connected || !this.localParticipant) {
       console.warn('[NewVoiceChatManager] Cannot publish audio, not connected or no local participant.');

@@ -12,7 +12,6 @@ interface UseNewVoiceCollaborationProps {
   userId: string;
   userName:string;
   userRole: string;
-  matchId: string;
 }
 
 interface UseNewVoiceCollaborationReturn {
@@ -24,6 +23,7 @@ interface UseNewVoiceCollaborationReturn {
   isConnecting: boolean;
   error: Error | null;
   actions: {
+    fetchAvailableRooms: (matchId: string) => Promise<void>;
     joinRoom: (roomId: string) => Promise<void>;
     leaveRoom: () => Promise<void>;
     toggleMute: () => void;
@@ -35,7 +35,6 @@ export const useNewVoiceCollaboration = ({
   userId,
   userName,
   userRole,
-  matchId,
 }: UseNewVoiceCollaborationProps): UseNewVoiceCollaborationReturn => {
   const [manager] = useState(() => NewVoiceChatManager.getInstance());
   const [availableRooms, setAvailableRooms] = useState<VoiceRoomDetails[]>([]);
@@ -90,24 +89,18 @@ export const useNewVoiceCollaboration = ({
     };
   }, [manager, handleRoomUpdate]);
 
-  useEffect(() => {
-    const fetchRooms = async () => {
-      setIsConnecting(true);
-      setError(null);
-      try {
-        const rooms = await manager.getRoomsForMatch(matchId);
-        setAvailableRooms(rooms);
-      } catch (err) {
-        setError(err as Error);
-      } finally {
-        setIsConnecting(false);
-      }
-    };
-
-    if (matchId) {
-      fetchRooms();
+  const fetchAvailableRooms = useCallback(async (matchId: string) => {
+    setIsConnecting(true);
+    setError(null);
+    try {
+      const rooms = await manager.getRoomsForMatch(matchId);
+      setAvailableRooms(rooms);
+    } catch (err) {
+      setError(err as Error);
+    } finally {
+      setIsConnecting(false);
     }
-  }, [matchId, manager]);
+  }, [manager]);
 
   const joinRoom = useCallback(
     async (roomId: string) => {
@@ -145,12 +138,13 @@ export const useNewVoiceCollaboration = ({
 
   const actions = useMemo(
     () => ({
+      fetchAvailableRooms,
       joinRoom,
       leaveRoom,
       toggleMute,
       moderateMute,
     }),
-    [joinRoom, leaveRoom, toggleMute, moderateMute]
+    [fetchAvailableRooms, joinRoom, leaveRoom, toggleMute, moderateMute]
   );
 
   return {
