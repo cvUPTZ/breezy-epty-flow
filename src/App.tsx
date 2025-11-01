@@ -31,7 +31,7 @@ import GPUNetworkManagerPage from './pages/GPUNetworkManager';
 import ErrorManagerPage from './pages/ErrorManager';
 import TrackerInterface from './pages/TrackerInterface';
 import Matches from './pages/Matches';
-import Statistics from './pages/Statistics';
+import UnifiedAnalytics from './pages/UnifiedAnalytics';
 import Admin from './pages/Admin';
 import ProfileListPage from './pages/Admin/ProfileListPage';
 import QualityControlInterface from './pages/QualityControlInterface';
@@ -135,14 +135,6 @@ const AppContent = () => {
           </RequireAuth>
         } />
         
-        <Route path="/match/:matchId/analytics" element={
-          <RequireAuth 
-            requiredRoles={['admin', 'manager']}
-            requiredPermissions={['canViewAnalytics']}
-          >
-            <AnalyticsDashboard />
-          </RequireAuth>
-        } />
         
         <Route path="/match/:matchId/edit" element={
           <RequireAuth 
@@ -214,12 +206,12 @@ const AppContent = () => {
           </RequireAuth>
         } />
         
-        {/* Analytics & Statistics */}
+        {/* Unified Analytics & Statistics */}
         <Route path="/statistics" element={
           <RequireAuth 
             requiredPermissions={['canViewStatistics']}
           >
-            <Statistics />
+            <UnifiedAnalytics />
           </RequireAuth>
         } />
         
@@ -228,7 +220,16 @@ const AppContent = () => {
             requiredRoles={['admin', 'manager','tracker']}
             requiredPermissions={['canViewAnalytics']}
           >
-            <AnalyticsDashboard />
+            <UnifiedAnalytics />
+          </RequireAuth>
+        } />
+        
+        <Route path="/match/:matchId/analytics" element={
+          <RequireAuth 
+            requiredRoles={['admin', 'manager']}
+            requiredPermissions={['canViewAnalytics']}
+          >
+            <UnifiedAnalytics />
           </RequireAuth>
         } />
         
