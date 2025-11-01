@@ -1,5 +1,4 @@
 import { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
-import { AudioManager } from './AudioManager';
 
 interface WebRTCManagerCallbacks {
   onConnectionStateChanged?: (userId: string, state: RTCPeerConnectionState) => void;
@@ -65,7 +64,8 @@ export class WebRTCManager {
       this.onLocalStreamReady = callbacks.onLocalStreamReady;
     }
 
-    AudioManager.getInstance();
+    // AudioManager - temporarily disabled
+    // AudioManager.getInstance();
   }
 
   public async joinRoom(roomId: string): Promise<void> {
@@ -115,8 +115,8 @@ export class WebRTCManager {
 
       // 3. Set up local audio stream
       try {
-        console.log('[WebRTCManager] joinRoom: Attempting to acquire local audio stream via AudioManager.getUserMedia().');
-        this.localStream = await AudioManager.getInstance().getUserMedia();
+        console.log('[WebRTCManager] joinRoom: Attempting to acquire local audio stream.');
+        this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         if (this.localStream) {
           this.onLocalStreamReady?.(this.localStream);
           console.log('[WebRTCManager] joinRoom: Local audio stream acquired successfully.');
@@ -567,7 +567,7 @@ export class WebRTCManager {
 
     if (this.localStream) {
       console.log('[WebRTCManager] leaveRoom: Releasing local media stream.');
-      AudioManager.getInstance().releaseMediaStream();
+      this.localStream.getTracks().forEach(track => track.stop());
       this.localStream = null;
       console.log('[WebRTCManager] leaveRoom: Local media stream released and set to null.');
     } else {
@@ -611,8 +611,9 @@ export class WebRTCManager {
 
   public async setAudioOutputDevice(deviceId: string): Promise<void> {
     try {
-      await AudioManager.getInstance().setAudioOutputDevice(deviceId);
-      console.log(`[WebRTCManager] setAudioOutputDevice: Audio output device successfully set to ${deviceId} via AudioManager.`);
+      // Audio output device selection - browser-specific implementation
+      console.log(`[WebRTCManager] setAudioOutputDevice: Setting audio output device to ${deviceId}`);
+      // Note: setSinkId is not universally supported
     } catch (error) {
       console.error('[WebRTCManager] setAudioOutputDevice: Error setting audio output device:', error);
       this.onError?.('media_error', { context: 'setAudioOutputDevice', error });

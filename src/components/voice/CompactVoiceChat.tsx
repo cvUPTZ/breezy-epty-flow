@@ -73,12 +73,13 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
   }
 
   const handleJoinRoom = async (roomId: string) => {
-    await actions.joinRoom(roomId, userId, userRole, userName);
+    await actions.joinRoom(roomId);
   };
 
   const isParticipantMuted = (participant: Participant | null): boolean => {
     if (!participant) return true;
-    return participant.isMicrophoneMuted;
+    const audioTrack = participant.audioTrackPublications.values().next().value;
+    return audioTrack?.isMuted ?? true;
   };
 
   const isParticipantSpeaking = (participant: Participant): boolean => {

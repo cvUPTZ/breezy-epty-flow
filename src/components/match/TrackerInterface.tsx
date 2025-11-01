@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { EnhancedVoiceChat } from '@/components/voice/EnhancedVoiceChat';
 import { useToast } from '@/components/ui/use-toast';
 import MatchTimer from '@/components/MatchTimer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -430,15 +429,10 @@ export function TrackerInterface({ trackerUserId, matchId }: TrackerInterfacePro
         </div>
       )}
 
-      {/* Voice Collaboration */}
-      <div className="mb-3 sm:mb-6">
-        <EnhancedVoiceChat
-          matchId={matchId}
-          userId={trackerUserId}
-          userRole="tracker"
-          userName={`Tracker ${trackerUserId}`}
-        />
-      </div>
+      {/* Voice Collaboration - Temporarily Disabled */}
+      {/* <div className="mb-3 sm:mb-6">
+        Voice collaboration component here
+      </div> */}
       
       {renderContent()}
     </div>

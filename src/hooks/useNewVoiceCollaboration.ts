@@ -17,10 +17,13 @@ interface UseNewVoiceCollaborationProps {
 interface UseNewVoiceCollaborationReturn {
   availableRooms: VoiceRoomDetails[];
   currentRoom: Room | null;
+  currentRoomId: string | null;
   participants: Participant[];
   localParticipant: Participant | null;
   connectionState: ConnectionState;
   isConnecting: boolean;
+  isConnected: boolean;
+  isLoadingRooms: boolean;
   error: Error | null;
   actions: {
     fetchAvailableRooms: (matchId: string) => Promise<void>;
@@ -43,6 +46,7 @@ export const useNewVoiceCollaboration = ({
   const [localParticipant, setLocalParticipant] = useState<Participant | null>(null);
   const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.Disconnected);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
@@ -55,7 +59,7 @@ export const useNewVoiceCollaboration = ({
     if (room) {
       const remoteParticipants = Array.from(room.remoteParticipants.values());
       const allParticipants = [room.localParticipant, ...remoteParticipants];
-      setParticipants(allParticipants.filter((p): p is Participant => !!p));
+      setParticipants(allParticipants.filter((p) => !!p) as Participant[]);
       setLocalParticipant(room.localParticipant);
     } else {
       setParticipants([]);
@@ -90,7 +94,7 @@ export const useNewVoiceCollaboration = ({
   }, [manager, handleRoomUpdate]);
 
   const fetchAvailableRooms = useCallback(async (matchId: string) => {
-    setIsConnecting(true);
+    setIsLoadingRooms(true);
     setError(null);
     try {
       const rooms = await manager.getRoomsForMatch(matchId);
@@ -98,7 +102,7 @@ export const useNewVoiceCollaboration = ({
     } catch (err) {
       setError(err as Error);
     } finally {
-      setIsConnecting(false);
+      setIsLoadingRooms(false);
     }
   }, [manager]);
 
@@ -123,7 +127,8 @@ export const useNewVoiceCollaboration = ({
 
   const toggleMute = useCallback(() => {
     if (localParticipant) {
-      const isMuted = localParticipant.isMicrophoneMuted;
+      const audioTrack = localParticipant.audioTrackPublications.values().next().value;
+      const isMuted = audioTrack?.isMuted ?? false;
       manager.setTrackEnabled(Track.Source.Microphone, isMuted);
     }
   }, [manager, localParticipant]);
@@ -150,10 +155,13 @@ export const useNewVoiceCollaboration = ({
   return {
     availableRooms,
     currentRoom,
+    currentRoomId: currentRoom?.name ?? null,
     participants,
     localParticipant,
     connectionState,
     isConnecting,
+    isConnected: connectionState === ConnectionState.Connected,
+    isLoadingRooms,
     error,
     actions,
   };

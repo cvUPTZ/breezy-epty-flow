@@ -73,7 +73,10 @@ export class NewVoiceChatManager {
       }
 
       console.log('[NewVoiceChatManager] Successfully fetched rooms:', data?.length || 0);
-      return data || [];
+      return (data || []).map(room => ({
+        ...room,
+        max_participants: room.max_participants ?? undefined
+      }));
     } catch (error) {
       console.error('[NewVoiceChatManager] Exception fetching rooms:', error);
       throw error;

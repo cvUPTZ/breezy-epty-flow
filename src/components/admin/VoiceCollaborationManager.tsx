@@ -296,7 +296,7 @@ const VoiceCollaborationManager: React.FC = () => {
 
   const toggleMute = async () => {
     try {
-      await voiceChatManager.setTrackEnabled(0, isLocalMuted); // 0 is Track.Source.Microphone
+      await voiceChatManager.setTrackEnabled('microphone' as any, isLocalMuted);
       setIsLocalMuted(!isLocalMuted);
     } catch (error: any) {
       console.error('Error toggling mute:', error);

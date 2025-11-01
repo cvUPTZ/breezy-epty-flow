@@ -438,7 +438,7 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
                       <span className={`text-sm font-medium ${disabledTeam === 'home' ? 'text-gray-500' : 'text-blue-900'}`}>{homeTeamName}</span>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" className={`${disabledTeam === 'home' ? 'bg-gray-400' : 'bg-blue-600'} text-white`}>{stats.homePlayers}</Badge>
-                        <Button size="xs" variant="ghost" onClick={() => setDisabledTeam(disabledTeam === 'home' ? null : 'home')}>
+                        <Button size="sm" variant="ghost" onClick={() => setDisabledTeam(disabledTeam === 'home' ? null : 'home')}>
                           <EyeOff className="h-4 w-4" />
                         </Button>
                       </div>
@@ -447,7 +447,7 @@ const BallTrackerInterface: React.FC<BallTrackerInterfaceProps> = ({
                       <span className={`text-sm font-medium ${disabledTeam === 'away' ? 'text-gray-500' : 'text-red-900'}`}>{awayTeamName}</span>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" className={`${disabledTeam === 'away' ? 'bg-gray-400' : 'bg-red-600'} text-white`}>{stats.awayPlayers}</Badge>
-                        <Button size="xs" variant="ghost" onClick={() => setDisabledTeam(disabledTeam === 'away' ? null : 'away')}>
+                        <Button size="sm" variant="ghost" onClick={() => setDisabledTeam(disabledTeam === 'away' ? null : 'away')}>
                           <EyeOff className="h-4 w-4" />
                         </Button>
                       </div>

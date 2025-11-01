@@ -99,7 +99,7 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
   } = useFourTrackerSystem({
     matchId: matchId!,
     trackerId: user?.id!,
-    trackerType: trackerType || 'player',
+    trackerType: (trackerType === 'combined' ? 'player' : trackerType) || 'player',
     allPlayers,
     supabase: supabase,
     toast: toast,
