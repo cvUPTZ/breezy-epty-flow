@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, FileText, Users, TrendingUp, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { Eye, FileText, Users, TrendingUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { StatCard } from './shared/StatCard';
+import { ReportCard } from './shared/ReportCard';
 
 interface DashboardStats {
   totalPlayers: number;
@@ -16,7 +16,7 @@ interface DashboardStats {
   recommendations: any[];
 }
 
-const ScoutingDashboard: React.FC = () => {
+export const ScoutingDashboard = () => {
   const [stats, setStats] = useState<DashboardStats>({
     totalPlayers: 0,
     activeReports: 0,
@@ -41,7 +41,6 @@ const ScoutingDashboard: React.FC = () => {
         supabase.from('opposition_analysis').select('id', { count: 'exact' })
       ]);
 
-      // Fetch recent activity
       const { data: recentReports } = await supabase
         .from('scout_reports')
         .select(`
@@ -49,10 +48,15 @@ const ScoutingDashboard: React.FC = () => {
           performance_rating,
           recommendation,
           report_date,
-          scouted_players(name, position)
+          match_context,
+          strengths,
+          weaknesses,
+          detailed_notes,
+          player_id,
+          scouted_players(name, position, current_club)
         `)
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(6);
 
       setStats({
         totalPlayers: playersResult.count || 0,
@@ -60,7 +64,7 @@ const ScoutingDashboard: React.FC = () => {
         youthProspects: youthResult.count || 0,
         oppositionAnalyses: oppositionResult.count || 0,
         recentActivity: recentReports || [],
-        recommendations: recentReports?.filter(r => r.recommendation === 'sign') || []
+        recommendations: recentReports?.filter(r => r.recommendation === 'sign').slice(0, 3) || []
       });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -71,24 +75,6 @@ const ScoutingDashboard: React.FC = () => {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getRecommendationColor = (recommendation: string) => {
-    switch (recommendation) {
-      case 'sign': return 'bg-green-500';
-      case 'monitor': return 'bg-yellow-500';
-      case 'reject': return 'bg-red-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
-  const getRecommendationIcon = (recommendation: string) => {
-    switch (recommendation) {
-      case 'sign': return CheckCircle;
-      case 'monitor': return Clock;
-      case 'reject': return AlertCircle;
-      default: return AlertCircle;
     }
   };
 
@@ -110,150 +96,109 @@ const ScoutingDashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-fade-in">
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Scouted Players</CardTitle>
-            <Eye className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalPlayers}</div>
-            <p className="text-xs text-muted-foreground">
-              Total players in database
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Scout Reports</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.activeReports}</div>
-            <p className="text-xs text-muted-foreground">
-              Reports completed
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Youth Prospects</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.youthProspects}</div>
-            <p className="text-xs text-muted-foreground">
-              Young players tracked
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Opposition Analysis</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.oppositionAnalyses}</div>
-            <p className="text-xs text-muted-foreground">
-              Teams analyzed
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          title="Scouted Players"
+          value={stats.totalPlayers}
+          description="Total players in database"
+          icon={Eye}
+        />
+        <StatCard
+          title="Scout Reports"
+          value={stats.activeReports}
+          description="Reports completed"
+          icon={FileText}
+        />
+        <StatCard
+          title="Youth Prospects"
+          value={stats.youthProspects}
+          description="Young players tracked"
+          icon={Users}
+        />
+        <StatCard
+          title="Opposition Analysis"
+          value={stats.oppositionAnalyses}
+          description="Teams analyzed"
+          icon={TrendingUp}
+        />
       </div>
 
-      {/* Recent Activity & Recommendations */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Scout Reports</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      {/* Recent Reports & Recommendations */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Activity */}
+        <div className="lg:col-span-2 space-y-4">
+          <h2 className="text-2xl font-bold text-foreground">Recent Scout Reports</h2>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {stats.recentActivity.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No recent reports</p>
+              <Card className="col-span-full">
+                <CardContent className="py-8 text-center">
+                  <p className="text-muted-foreground">No recent reports</p>
+                </CardContent>
+              </Card>
             ) : (
-              stats.recentActivity.map((report) => {
-                const Icon = getRecommendationIcon(report.recommendation);
-                return (
-                  <div key={report.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Icon className={`h-4 w-4 text-white p-1 rounded-full ${getRecommendationColor(report.recommendation)}`} />
+              stats.recentActivity.map((report) => (
+                <ReportCard key={report.id} report={report} />
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Recommendations Sidebar */}
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-foreground">Top Recommendations</h2>
+          <div className="space-y-4">
+            {stats.recommendations.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <p className="text-muted-foreground text-sm">No current recommendations</p>
+                </CardContent>
+              </Card>
+            ) : (
+              stats.recommendations.map((rec) => (
+                <Card key={rec.id} className="border-success/50 bg-success/5">
+                  <CardContent className="p-4 space-y-2">
+                    <div className="flex items-start justify-between">
                       <div>
-                        <p className="font-medium text-sm">
-                          {report.scouted_players?.name || 'Unknown Player'}
+                        <p className="font-semibold text-foreground">
+                          {rec.scouted_players?.name || 'Unknown'}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {report.scouted_players?.position} • Rating: {report.performance_rating}/10
+                        <p className="text-sm text-muted-foreground">
+                          {rec.scouted_players?.position}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xl font-bold text-success">
+                          {rec.performance_rating}/10
                         </p>
                       </div>
                     </div>
-                    <Badge variant="outline" className="capitalize">
-                      {report.recommendation}
-                    </Badge>
-                  </div>
-                );
-              })
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Recommended Signings</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {stats.recommendations.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No current recommendations</p>
-            ) : (
-              stats.recommendations.map((recommendation) => (
-                <div key={recommendation.id} className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <div>
-                      <p className="font-medium text-sm">
-                        {recommendation.scouted_players?.name || 'Unknown Player'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {recommendation.scouted_players?.position} • Rating: {recommendation.performance_rating}/10
-                      </p>
-                    </div>
-                  </div>
-                  <Badge className="bg-green-500 hover:bg-green-600">
-                    Sign
-                  </Badge>
-                </div>
+                  </CardContent>
+                </Card>
               ))
             )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Scouting Coverage Map Placeholder */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Global Scouting Coverage</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {['Europe', 'South America', 'Africa'].map((region) => (
-              <div key={region} className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>{region}</span>
-                  <span>75%</span>
-                </div>
-                <Progress value={75} className="h-2" />
-                <p className="text-xs text-muted-foreground">Coverage rating</p>
-              </div>
-            ))}
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Coverage Map */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Scouting Coverage</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {['Europe', 'South America', 'Africa'].map((region) => (
+                <div key={region} className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-foreground">{region}</span>
+                    <span className="text-muted-foreground">75%</span>
+                  </div>
+                  <Progress value={75} className="h-2" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };
-
-export default ScoutingDashboard;
