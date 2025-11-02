@@ -26,7 +26,7 @@ export function parsePlayerIds(value: unknown): number[] {
  * @param value - The value to parse, expected to be a string.
  * @returns An array of objects, or an empty array if parsing fails.
  */
-export function safeParseJson(value: unknown): any[] {
+export const safeParseJson = (value: unknown): any[] => {
   if (typeof value !== 'string' || !value.trim()) {
     return [];
   }
@@ -79,4 +79,4 @@ export function safeParseJson(value: unknown): any[] {
     // If no parsing strategy works, return an empty array.
     return [];
   }
-}
+};
