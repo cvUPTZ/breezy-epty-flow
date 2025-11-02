@@ -69,6 +69,7 @@ import LineBasedTrackerAssignment from '@/components/admin/LineBasedTrackerAssig
 import UnifiedTrackerAssignment from '@/components/tracker/UnifiedTrackerAssignment';
 import { AssignmentLogsViewer } from '@/components/admin/AssignmentLogsViewer';
 import KeyboardManager from '@/components/admin/KeyboardManager';
+import BusinessDocumentManager from './Admin/BusinessDocumentManager';
 
 const sidebarItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -88,6 +89,7 @@ const sidebarItems = [
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'simulation', label: 'Business Simulation', icon: Building2 },
   { id: 'business', label: 'Business Plan', icon: Building2 },
+  { id: 'business-documents', label: 'Business Documents', icon: FileText },
   { id: 'budget', label: 'Budget Tracker', icon: Calculator },
   { id: 'video-analyzer', label: 'Video Analyzer', icon: Video },
   { id: 'keyboard', label: 'Keyboard', icon: Keyboard },
@@ -574,6 +576,9 @@ const Admin: React.FC = () => {
 
       case 'business':
         return <BusinessPlanManagement />;
+
+      case 'business-documents':
+        return <BusinessDocumentManager />;
 
       case 'budget':
         return <BudgetTrackerConfig />;

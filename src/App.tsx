@@ -42,6 +42,7 @@ import NotFound from './pages/NotFound';
 import VideoSetupPage from './pages/Admin/VideoSetupPage';
 import AdminQualityControl from './pages/Admin/AdminQualityControl';
 import KeyboardManager from './pages/Admin/KeyboardManager';
+import BusinessDocumentManager from './pages/Admin/BusinessDocumentManager';
 import Scouting from './pages/Scouting';
 import ClubDetails from './components/scouting/ClubDetails';
 import MarketIntelligencePage from './pages/MarketIntelligencePage';
@@ -275,6 +276,12 @@ const AppContent = () => {
         <Route path="/admin/keyboard-manager" element={
           <AdminOnly>
             <KeyboardManager />
+          </AdminOnly>
+        } />
+
+        <Route path="/admin/business-documents" element={
+          <AdminOnly>
+            <BusinessDocumentManager />
           </AdminOnly>
         } />
 

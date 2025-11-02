@@ -25,7 +25,7 @@ export type Database = {
           assignment_type: string
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           match_id: string | null
           player_id: number | null
           player_team_id: string | null
@@ -43,7 +43,7 @@ export type Database = {
           assignment_type: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           match_id?: string | null
           player_id?: number | null
           player_team_id?: string | null
@@ -61,7 +61,7 @@ export type Database = {
           assignment_type?: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           match_id?: string | null
           player_id?: number | null
           player_team_id?: string | null
@@ -92,6 +92,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      business_documents: {
+        Row: {
+          completed_at: string | null
+          content: Json
+          created_at: string
+          document_type: string
+          id: string
+          metadata: Json | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          content?: Json
+          created_at?: string
+          document_type: string
+          id?: string
+          metadata?: Json | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          content?: Json
+          created_at?: string
+          document_type?: string
+          id?: string
+          metadata?: Json | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       code_analysis_jobs: {
         Row: {
@@ -290,6 +329,7 @@ export type Database = {
           id: string
           match_id: string
           player_id: number | null
+          quality_control: Json | null
           team: string | null
           timestamp: number | null
           updated_at: string | null
@@ -304,6 +344,7 @@ export type Database = {
           id?: string
           match_id: string
           player_id?: number | null
+          quality_control?: Json | null
           team?: string | null
           timestamp?: number | null
           updated_at?: string | null
@@ -318,6 +359,7 @@ export type Database = {
           id?: string
           match_id?: string
           player_id?: number | null
+          quality_control?: Json | null
           team?: string | null
           timestamp?: number | null
           updated_at?: string | null
@@ -1055,7 +1097,7 @@ export type Database = {
           created_at: string | null
           details: Json | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           resource_id: string | null
           resource_type: string | null
           user_agent: string | null
@@ -1066,7 +1108,7 @@ export type Database = {
           created_at?: string | null
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           resource_id?: string | null
           resource_type?: string | null
           user_agent?: string | null
@@ -1077,7 +1119,7 @@ export type Database = {
           created_at?: string | null
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           resource_id?: string | null
           resource_type?: string | null
           user_agent?: string | null
@@ -1732,10 +1774,7 @@ export type Database = {
         Args: { p_job_id: string; p_user_id: string }
         Returns: boolean
       }
-      check_tracker_activity: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      check_tracker_activity: { Args: never; Returns: undefined }
       create_ml_job: {
         Args: {
           p_config?: Json
@@ -1764,7 +1803,7 @@ export type Database = {
         }[]
       }
       get_all_users_with_metadata: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           created_at: string
           email: string
@@ -1772,10 +1811,7 @@ export type Database = {
           raw_user_meta_data: Json
         }[]
       }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_current_user_role: { Args: never; Returns: string }
       get_ml_job: {
         Args: { p_job_id: string }
         Returns: {
@@ -1799,7 +1835,7 @@ export type Database = {
         Returns: number
       }
       get_tracker_profiles: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           email: string
           full_name: string
@@ -1807,7 +1843,7 @@ export type Database = {
         }[]
       }
       get_tracker_users: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           email: string
           full_name: string
@@ -1815,7 +1851,7 @@ export type Database = {
         }[]
       }
       get_trackers_with_email: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           created_at: string
           email: string
@@ -1846,14 +1882,8 @@ export type Database = {
           video_url: string
         }[]
       }
-      get_user_permissions: {
-        Args: { user_id: string }
-        Returns: Json
-      }
-      get_user_role: {
-        Args: { user_id_param: string }
-        Returns: string
-      }
+      get_user_permissions: { Args: { user_id: string }; Returns: Json }
+      get_user_role: { Args: { user_id_param: string }; Returns: string }
       get_user_role_from_auth: {
         Args: { user_id_param: string }
         Returns: string
@@ -1870,14 +1900,8 @@ export type Database = {
         }
         Returns: undefined
       }
-      has_elevated_access: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      has_role: {
-        Args: { _role: string; _user_id: string }
-        Returns: boolean
-      }
+      has_elevated_access: { Args: never; Returns: boolean }
+      has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
       insert_notification: {
         Args: {
           p_data?: Json
@@ -1889,22 +1913,15 @@ export type Database = {
         }
         Returns: undefined
       }
-      is_admin: {
-        Args: Record<PropertyKey, never> | { p_user_id: string }
-        Returns: boolean
-      }
+      is_admin:
+        | { Args: { p_user_id: string }; Returns: boolean }
+        | { Args: never; Returns: boolean }
       is_room_participant: {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
       }
-      is_tracker: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_user: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_tracker: { Args: never; Returns: boolean }
+      is_user: { Args: never; Returns: boolean }
       log_assignment: {
         Args: {
           p_assignee_id: string
@@ -1959,23 +1976,23 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
-      schedule_match_reminders: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      schedule_match_reminders: { Args: never; Returns: undefined }
       update_user_metadata: {
         Args: { metadata_updates: Json; user_id: string }
         Returns: undefined
       }
-      user_has_role: {
-        Args:
-          | {
+      user_has_role:
+        | {
+            Args: {
               check_role: Database["public"]["Enums"]["user_role"]
               target_user_id: string
             }
-          | { role_name: Database["public"]["Enums"]["user_role"] }
-        Returns: boolean
-      }
+            Returns: boolean
+          }
+        | {
+            Args: { role_name: Database["public"]["Enums"]["user_role"] }
+            Returns: boolean
+          }
     }
     Enums: {
       code_analysis_status: "pending" | "processing" | "completed" | "failed"
