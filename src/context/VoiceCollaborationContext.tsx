@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import { useNewVoiceCollaboration } from '@/hooks/useNewVoiceCollaboration';
 import { useAuth } from './AuthContext';
 

@@ -1,13 +1,16 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
-import { BrowserRouter } from 'react-router-dom'
-import { AuthProvider } from './context/AuthContext.tsx'
-import { VoiceCollaborationProvider } from './context/VoiceCollaborationContext.tsx'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App.tsx';
+import './index.css';
+import { AuthProvider } from './context/AuthContext';
+import { VoiceCollaborationProvider } from './context/VoiceCollaborationContext';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+const rootElement = document.getElementById('root');
+if (!rootElement) throw new Error('Failed to find the root element');
+
+createRoot(rootElement).render(
+  <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <VoiceCollaborationProvider>
@@ -15,5 +18,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         </VoiceCollaborationProvider>
       </AuthProvider>
     </BrowserRouter>
-  </React.StrictMode>,
-)
+  </StrictMode>
+);
