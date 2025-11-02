@@ -11,7 +11,7 @@ import {
   RemoteTrackPublication,
   Participant,
 } from 'livekit-client';
-import { AudioManager } from '@/utils/audioManager.ts';
+import { AudioManager } from '@/utils/audioManager';
 import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceRoomDetails {
