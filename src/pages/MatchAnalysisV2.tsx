@@ -16,7 +16,7 @@ import { TrackerVoiceInput } from '@/components/TrackerVoiceInput';
 import { EventType as LocalEventType } from '@/types/matchForm';
 import { PlayerForPianoInput, AssignedPlayers } from '@/components/match/types';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { safeParseJson } from '@/utils/parsing.ts';
+import { safeParseJson } from '@/utils/parsing';
 import { Activity, Piano, Users, Settings, Mic, Zap, LayoutDashboard, Video, Loader2 } from 'lucide-react';
 import { VoiceCollaborationProvider } from '@/context/VoiceCollaborationContext';
 import VoiceCollaborationOverlay from "@/components/match/VoiceCollaborationOverlay";
