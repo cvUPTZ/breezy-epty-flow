@@ -187,7 +187,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
   }, [videoUrl]);
 
   return (
-    <div className="relative space-y-4">
+    <div className="relative space-y-6">
       {/* Video Player Overlay - Draggable & Resizable */}
       {videoUrl && videoId && showVideo && !isOverlayMode && (
         <div 
@@ -292,8 +292,8 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
 
       {/* Carte d'état de l'en-tête */}
       <Card className={`bg-gradient-to-r from-blue-50 to-purple-50 border-blue-300 ${isOverlayMode ? 'fixed top-20 left-0 right-0 z-50 mx-4' : ''}`}>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center justify-between">
+        <CardHeader className="pb-4 pt-6">
+          <CardTitle className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <User className="h-5 w-5 text-blue-600" />
               <span>Interface de Suivi des Joueurs</span>
@@ -337,11 +337,11 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
             </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-5">
           {/* Joueurs assignés */}
           <div>
-            <span className="text-sm font-medium">Vos joueurs assignés :</span>
-            <div className="flex flex-wrap gap-2 mt-2">
+            <span className="text-sm font-medium mb-3 block">Vos joueurs assignés :</span>
+            <div className="flex flex-wrap gap-2.5">
               {assignedPlayers.map((player: Player) => {
                 const hasPending = pendingEvents.some((e: PendingEvent) => e.player.id === player.id);
                 return (
@@ -359,7 +359,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
           </div>
 
           {/* Résumé de la file d'attente */}
-          <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+          <div className="flex items-center justify-between p-4 bg-white rounded-lg border shadow-sm">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-blue-600" />
               <span className="text-sm font-medium">
@@ -407,33 +407,33 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
 
       {/* File d'attente des événements */}
       <Card className={isOverlayMode ? 'fixed top-80 left-4 right-4 z-50 max-h-[calc(100vh-22rem)] overflow-y-auto' : ''}>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
+        <CardHeader className="pb-4 pt-6">
+          <CardTitle className="text-lg flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-orange-600" />
             File d'attente (Cliquez pour enregistrer)
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           {pendingEvents.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-500" />
-              <p className="font-medium">Tout est en ordre !</p>
+            <div className="text-center py-12 text-gray-500">
+              <CheckCircle className="h-16 w-16 mx-auto mb-4 text-green-500" />
+              <p className="font-medium text-lg mb-2">Tout est en ordre !</p>
               <p className="text-sm">Aucun événement en attente. Attendez que vos joueurs aient le ballon.</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {pendingEvents.map((event: PendingEvent) => {
                 const isProcessing = isEventProcessing(event.id);
                 
                 return (
                   <div
                     key={event.id}
-                    className={`border-2 rounded-lg p-4 transition-all ${getPriorityColor(event.priority)} ${
+                    className={`border-2 rounded-xl p-5 transition-all shadow-md ${getPriorityColor(event.priority)} ${
                       isProcessing ? 'opacity-50' : ''
                     }`}
                   >
                     {/* En-tête de l'événement */}
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="text-2xl font-bold text-gray-700">
                           #{event.player.jersey_number}
@@ -468,9 +468,9 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                     </div>
 
                     {/* Disposition clavier - 3 rangées */}
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {/* Rangée 1: Q W E R T Y U I O P */}
-                      <div className="flex gap-2">
+                      <div className="flex gap-2.5">
                         {assignedEventTypes.slice(0, 10).map((eventType: string, index: number) => {
                           const shortcutKey = shortcutKeys[index];
                           const iconUrl = keyboardManager.getIconForEvent(eventType);
@@ -522,7 +522,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                       
                       {/* Rangée 2: A S D F G H J K L */}
                       {assignedEventTypes.length > 10 && (
-                        <div className="flex gap-2">
+                        <div className="flex gap-2.5">
                           {assignedEventTypes.slice(10, 19).map((eventType: string, index: number) => {
                             const shortcutKey = shortcutKeys[index + 10];
                             const iconUrl = keyboardManager.getIconForEvent(eventType);
@@ -575,7 +575,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                       
                       {/* Rangée 3: Z X C V B N M */}
                       {assignedEventTypes.length > 19 && (
-                        <div className="flex gap-2">
+                        <div className="flex gap-2.5">
                           {assignedEventTypes.slice(19, 26).map((eventType: string, index: number) => {
                             const shortcutKey = shortcutKeys[index + 19];
                             const iconUrl = keyboardManager.getIconForEvent(eventType);
@@ -628,7 +628,7 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
                     </div>
 
                     {/* Info Timestamp */}
-                    <div className="mt-2 text-xs text-gray-500 text-right">
+                    <div className="mt-4 pt-3 border-t border-gray-300 text-xs text-gray-600 text-right font-medium">
                       Possession à : {new Date(event.timestamp).toLocaleTimeString()}
                     </div>
                   </div>
@@ -643,12 +643,12 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
       {!isOverlayMode && (
         <>
           <Card className="bg-muted/50">
-            <CardContent className="p-4">
-              <h4 className="font-medium mb-2 flex items-center gap-2">
+            <CardContent className="p-6">
+              <h4 className="font-medium mb-4 text-base flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" />
                 Fonctionnement de la file d'attente :
               </h4>
-              <ul className="text-sm space-y-1 text-muted-foreground">
+              <ul className="text-sm space-y-2.5 text-muted-foreground leading-relaxed">
                 <li>🔴 <strong>ROUGE (Urgent):</strong> Événements de moins de 5s - à enregistrer immédiatement !</li>
                 <li>🟡 <strong>JAUNE (Normal):</strong> Événements de 5-15s - à enregistrer dès que possible.</li>
                 <li>⚪ <strong>GRIS (Ancien):</strong> Événements de plus de 15s - peuvent s'effacer automatiquement après 30s.</li>
@@ -661,8 +661,8 @@ const PlayerTrackerInterface: React.FC<PlayerTrackerInterfaceProps> = ({
           </Card>
 
           <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="p-4">
-              <h4 className="font-medium mb-2 flex items-center gap-2 text-blue-900">
+            <CardContent className="p-6">
+              <h4 className="font-medium mb-3 text-base flex items-center gap-2 text-blue-900">
                 <Keyboard className="h-5 w-5" />
                 Raccourcis Clavier Activés
               </h4>

@@ -579,8 +579,8 @@ const MatchAnalysisV2: React.FC = () => {
         />
         <SidebarInset>
           <VoiceCollaborationProvider>
-            <div className="container mx-auto p-4 lg:p-6 max-w-7xl">
-              <div className="flex items-center gap-4 mb-8">
+            <div className="container mx-auto p-6 lg:p-8 max-w-7xl">
+              <div className="flex items-center gap-4 mb-10">
                 <SidebarTrigger />
                 <div className="flex-grow">
                   <MatchHeader
@@ -594,9 +594,9 @@ const MatchAnalysisV2: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-6 animate-fade-in">
+              <div className="space-y-8 animate-fade-in">
                 <Card className="border-0 shadow-xl bg-white/95 backdrop-blur-sm rounded-2xl overflow-hidden min-h-[60vh]">
-                  <CardContent className="p-6">
+                  <CardContent className="p-8">
                     {currentViewDetails && (
                       <div className="flex items-center gap-3 mb-6">
                         <div className={`w-10 h-10 bg-gradient-to-r ${currentViewDetails.color} rounded-xl flex items-center justify-center`}>

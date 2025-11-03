@@ -218,7 +218,7 @@ const FourTrackerSystem: React.FC<FourTrackerSystemProps> = ({
   // Render appropriate tracker interface with error boundary
   return (
     <TrackerErrorBoundary>
-      <div className="space-y-4">
+      <div className="space-y-6">
         {trackerType === 'ball' ? (
           <BallTrackerInterface
             homeTeamPlayers={homeTeamPlayers}
