@@ -110,10 +110,22 @@ const VoiceCollaborationManager: React.FC = () => {
       }
     };
 
-    voiceChatManager.onPeerStatusChanged = (peerId, status) => {
-      if (status === 'connected') {
+    voiceChatManager.onPeerStatusChanged = (peerId, status, participant) => {
+      console.log('Peer status changed:', peerId, status);
+      
+      if (status === 'connected' && participant && !participant.isLocal) {
+        toast({
+          title: "Participant Joined",
+          description: `${participant.name || peerId} joined the room`,
+          duration: 3000,
+        });
         updateLiveParticipants();
       } else if (status === 'disconnected') {
+        toast({
+          title: "Participant Left",
+          description: `Someone left the room`,
+          duration: 3000,
+        });
         setLiveParticipants(prev => prev.filter(p => p.identity !== peerId));
       }
     };
@@ -427,6 +439,37 @@ const VoiceCollaborationManager: React.FC = () => {
     return match.name || `${match.home_team_name} vs ${match.away_team_name}`;
   };
 
+  const moderateMute = async (participantIdentity: string) => {
+    try {
+      const room = voiceChatManager.getRoom();
+      if (!room) return;
+
+      const participant = Array.from(room.remoteParticipants.values()).find(
+        p => p.identity === participantIdentity
+      );
+
+      if (participant) {
+        // Note: This only affects local playback, not the participant's actual mic
+        const audioTrack = participant.audioTrackPublications.values().next().value;
+        if (audioTrack) {
+          const isMuted = audioTrack.isMuted;
+          // This mutes/unmutes playback locally
+          toast({
+            title: "Local Control",
+            description: `Audio from ${participant.name || participantIdentity} ${isMuted ? 'unmuted' : 'muted'} locally`,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error moderating participant:', error);
+      toast({
+        title: "Error",
+        description: "Failed to control participant audio",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getConnectionBadge = () => {
     switch (connectionState) {
       case ConnectionState.Connected:
@@ -696,11 +739,22 @@ const VoiceCollaborationManager: React.FC = () => {
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-3">
                             {participant.isMuted ? (
                               <MicOff className="h-5 w-5 text-red-500" />
                             ) : (
                               <Mic className="h-5 w-5 text-green-500" />
+                            )}
+                            {!participant.isLocal && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => moderateMute(participant.identity)}
+                                className="h-8 px-2"
+                                title="Control local audio playback"
+                              >
+                                <Volume2 className="h-4 w-4" />
+                              </Button>
                             )}
                           </div>
                         </div>

@@ -39,6 +39,8 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
 
   const [allMuted, setAllMuted] = useState(false);
   const lastShownErrorRef = useRef<Error | null>(null);
+  const lastParticipantCountRef = useRef<number>(0);
+  const participantIdentitiesRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (error && error !== lastShownErrorRef.current) {
@@ -57,6 +59,42 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
       actions.fetchAvailableRooms(matchId);
     }
   }, [actions, matchId]);
+
+  // Track participant joins and leaves
+  useEffect(() => {
+    if (!isConnected || participants.length === 0) {
+      participantIdentitiesRef.current.clear();
+      lastParticipantCountRef.current = 0;
+      return;
+    }
+
+    const currentIdentities = new Set(participants.map(p => p.identity));
+    const previousIdentities = participantIdentitiesRef.current;
+
+    // Find who joined
+    currentIdentities.forEach(identity => {
+      if (!previousIdentities.has(identity) && previousIdentities.size > 0) {
+        const participant = participants.find(p => p.identity === identity);
+        if (participant && !participant.isLocal) {
+          toast.success(`${participant.name || identity} joined the room`, {
+            duration: 3000,
+          });
+        }
+      }
+    });
+
+    // Find who left
+    previousIdentities.forEach(identity => {
+      if (!currentIdentities.has(identity)) {
+        toast.info(`Someone left the room`, {
+          duration: 3000,
+        });
+      }
+    });
+
+    participantIdentitiesRef.current = currentIdentities;
+    lastParticipantCountRef.current = participants.length;
+  }, [participants, isConnected]);
 
   function isTrackerParticipant(participant: Participant): boolean {
     const { metadata, name } = participant;

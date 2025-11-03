@@ -3,10 +3,11 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, Gamepad2 } from 'lucide-react';
+import { X, Gamepad2, Wifi, WifiOff, Users } from 'lucide-react';
 import EventTypeSvg from '@/components/match/EventTypeSvg';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useVoiceCollaborationContext } from '@/context/VoiceCollaborationContext';
 
 interface SimplePianoOverlayProps {
   onRecordEvent: (eventType: string) => Promise<void>;
@@ -48,6 +49,7 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
   lastTriggeredEvent
 }) => {
   const { user } = useAuth();
+  const voiceCtx = useVoiceCollaborationContext();
   const [assignments, setAssignments] = useState<PlayerAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [matchData, setMatchData] = useState<any>(null);
@@ -245,12 +247,26 @@ const SimplePianoOverlay: React.FC<SimplePianoOverlayProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <CardTitle className="text-xl font-bold text-slate-800">Line-Based Event Tracker</CardTitle>
-              {gamepadConnected && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <Gamepad2 className="h-3 w-3" />
-                  Gamepad Connected
-                </Badge>
-              )}
+              <div className="flex items-center gap-2">
+                {gamepadConnected && (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    <Gamepad2 className="h-3 w-3" />
+                    Gamepad
+                  </Badge>
+                )}
+                {voiceCtx.isConnected ? (
+                  <Badge variant="default" className="flex items-center gap-1 bg-emerald-500">
+                    <Wifi className="h-3 w-3" />
+                    <Users className="h-3 w-3" />
+                    {voiceCtx.participants.length}
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="flex items-center gap-1 bg-slate-400">
+                    <WifiOff className="h-3 w-3" />
+                    Voice Off
+                  </Badge>
+                )}
+              </div>
             </div>
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X className="h-4 w-4" />
