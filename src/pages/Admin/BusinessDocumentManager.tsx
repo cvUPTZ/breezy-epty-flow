@@ -4,12 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, PlusCircle, Trash2, Eye, Edit, Download } from 'lucide-react';
+import { FileText, PlusCircle, Trash2, Eye, Edit, Download, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { BusinessPlanBuilder } from '@/components/business/BusinessPlanBuilder';
 import { BusinessModelCanvasBuilder } from '@/components/business/BusinessModelCanvasBuilder';
 import { MarketStudyBuilder } from '@/components/business/MarketStudyBuilder';
 import { Badge } from '@/components/ui/badge';
+import { DocumentUploadDialog } from '@/components/business/DocumentUploadDialog';
+import { DocumentAnalysisView } from '@/components/business/DocumentAnalysisView';
 
 type DocumentType = 'business_plan' | 'business_model_canvas' | 'market_study';
 
@@ -27,6 +29,8 @@ export default function BusinessDocumentManager() {
   const [activeTab, setActiveTab] = useState<DocumentType>('business_plan');
   const [selectedDocument, setSelectedDocument] = useState<BusinessDocument | null>(null);
   const [isBuilding, setIsBuilding] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [viewingAnalysis, setViewingAnalysis] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -84,11 +88,38 @@ export default function BusinessDocumentManager() {
     setIsBuilding(true);
   };
 
+  const handleViewAnalysis = (doc: BusinessDocument) => {
+    setSelectedDocument(doc);
+    setViewingAnalysis(true);
+  };
+
   const handleCloseBuilder = () => {
     setIsBuilding(false);
     setSelectedDocument(null);
     queryClient.invalidateQueries({ queryKey: ['business-documents'] });
   };
+
+  const handleCloseAnalysis = () => {
+    setViewingAnalysis(false);
+    setSelectedDocument(null);
+  };
+
+  if (viewingAnalysis && selectedDocument?.content?.analysis) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="mb-6">
+          <Button variant="outline" onClick={handleCloseAnalysis}>
+            ← Retour à la liste
+          </Button>
+        </div>
+        <div className="mb-4">
+          <h2 className="text-2xl font-bold">{selectedDocument.title}</h2>
+          <p className="text-muted-foreground">Analyse IA du document</p>
+        </div>
+        <DocumentAnalysisView analysis={selectedDocument.content.analysis} />
+      </div>
+    );
+  }
 
   if (isBuilding) {
     return (
@@ -127,11 +158,17 @@ export default function BusinessDocumentManager() {
             <TabsTrigger value="market_study">Market Studies</TabsTrigger>
           </TabsList>
           
-          <Button onClick={handleNewDocument} className="gap-2">
-            <PlusCircle className="h-4 w-4" />
-            New {activeTab === 'business_plan' ? 'Business Plan' : 
-                 activeTab === 'business_model_canvas' ? 'Canvas' : 'Market Study'}
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setUploadDialogOpen(true)} variant="outline" className="gap-2">
+              <Upload className="h-4 w-4" />
+              Upload & Analyser
+            </Button>
+            <Button onClick={handleNewDocument} className="gap-2">
+              <PlusCircle className="h-4 w-4" />
+              New {activeTab === 'business_plan' ? 'Business Plan' : 
+                   activeTab === 'business_model_canvas' ? 'Canvas' : 'Market Study'}
+            </Button>
+          </div>
         </div>
 
         <TabsContent value={activeTab} className="space-y-4">
@@ -174,6 +211,17 @@ export default function BusinessDocumentManager() {
                     </div>
 
                     <div className="flex gap-2">
+                      {doc.content?.analysis && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => handleViewAnalysis(doc)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Analyse
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"
@@ -198,6 +246,13 @@ export default function BusinessDocumentManager() {
           )}
         </TabsContent>
       </Tabs>
+
+      <DocumentUploadDialog
+        open={uploadDialogOpen}
+        onOpenChange={setUploadDialogOpen}
+        documentType={activeTab}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['business-documents'] })}
+      />
     </div>
   );
 }
