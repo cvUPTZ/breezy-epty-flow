@@ -1,1 +1,7 @@
 project_id = "itwnghrwolvydupxmnqw"
+
+[functions.analyze-business-document]
+verify_jwt = false
+
+[functions.analyze-all-documents]
+verify_jwt = true

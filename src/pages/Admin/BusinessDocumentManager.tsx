@@ -12,6 +12,7 @@ import { MarketStudyBuilder } from '@/components/business/MarketStudyBuilder';
 import { Badge } from '@/components/ui/badge';
 import { DocumentUploadDialog } from '@/components/business/DocumentUploadDialog';
 import { DocumentAnalysisView } from '@/components/business/DocumentAnalysisView';
+import { GlobalAnalysisView } from '@/components/business/GlobalAnalysisView';
 
 type DocumentType = 'business_plan' | 'business_model_canvas' | 'market_study';
 
@@ -31,6 +32,9 @@ export default function BusinessDocumentManager() {
   const [isBuilding, setIsBuilding] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [viewingAnalysis, setViewingAnalysis] = useState(false);
+  const [viewingGlobalAnalysis, setViewingGlobalAnalysis] = useState(false);
+  const [globalAnalysisData, setGlobalAnalysisData] = useState<any>(null);
+  const [isLoadingGlobalAnalysis, setIsLoadingGlobalAnalysis] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -104,6 +108,56 @@ export default function BusinessDocumentManager() {
     setSelectedDocument(null);
   };
 
+  const handleGlobalAnalysis = async () => {
+    setIsLoadingGlobalAnalysis(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-all-documents');
+      
+      if (error) throw error;
+      
+      if (data.success) {
+        setGlobalAnalysisData(data);
+        setViewingGlobalAnalysis(true);
+        toast({
+          title: 'Analyse globale terminée',
+          description: `${data.documentsAnalyzed} documents analysés avec succès`,
+        });
+      } else {
+        throw new Error(data.error || 'Erreur lors de l\'analyse');
+      }
+    } catch (error) {
+      console.error('Global analysis error:', error);
+      toast({
+        title: 'Erreur',
+        description: error instanceof Error ? error.message : 'Échec de l\'analyse globale',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingGlobalAnalysis(false);
+    }
+  };
+
+  const handleCloseGlobalAnalysis = () => {
+    setViewingGlobalAnalysis(false);
+    setGlobalAnalysisData(null);
+  };
+
+  if (viewingGlobalAnalysis && globalAnalysisData) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="mb-6">
+          <Button variant="outline" onClick={handleCloseGlobalAnalysis}>
+            ← Retour à la liste
+          </Button>
+        </div>
+        <GlobalAnalysisView 
+          analysis={globalAnalysisData.analysis} 
+          documentsCount={globalAnalysisData.documentsAnalyzed}
+        />
+      </div>
+    );
+  }
+
   if (viewingAnalysis && selectedDocument?.content?.analysis) {
     return (
       <div className="container mx-auto p-6">
@@ -159,6 +213,15 @@ export default function BusinessDocumentManager() {
           </TabsList>
           
           <div className="flex gap-2">
+            <Button 
+              onClick={handleGlobalAnalysis} 
+              variant="secondary" 
+              className="gap-2"
+              disabled={isLoadingGlobalAnalysis || !documents || documents.length === 0}
+            >
+              <FileText className="h-4 w-4" />
+              {isLoadingGlobalAnalysis ? 'Analyse en cours...' : 'Analyse Globale'}
+            </Button>
             <Button onClick={() => setUploadDialogOpen(true)} variant="outline" className="gap-2">
               <Upload className="h-4 w-4" />
               Upload & Analyser
