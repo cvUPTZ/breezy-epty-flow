@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { DocumentUploadDialog } from '@/components/business/DocumentUploadDialog';
 import { DocumentAnalysisView } from '@/components/business/DocumentAnalysisView';
 import { GlobalAnalysisView } from '@/components/business/GlobalAnalysisView';
+import { SupportDocumentUploadDialog } from '@/components/business/SupportDocumentUploadDialog';
 
 type DocumentType = 'business_plan' | 'business_model_canvas' | 'market_study';
 
@@ -31,6 +32,7 @@ export default function BusinessDocumentManager() {
   const [selectedDocument, setSelectedDocument] = useState<BusinessDocument | null>(null);
   const [isBuilding, setIsBuilding] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [supportDocsDialogOpen, setSupportDocsDialogOpen] = useState(false);
   const [viewingAnalysis, setViewingAnalysis] = useState(false);
   const [viewingGlobalAnalysis, setViewingGlobalAnalysis] = useState(false);
   const [globalAnalysisData, setGlobalAnalysisData] = useState<any>(null);
@@ -44,10 +46,25 @@ export default function BusinessDocumentManager() {
       const { data, error } = await supabase
         .from('business_documents')
         .select('*')
+        .eq('is_supporting_document', false)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data as BusinessDocument[];
+    },
+  });
+
+  const { data: supportDocuments } = useQuery({
+    queryKey: ['support-documents'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('business_documents')
+        .select('*')
+        .eq('is_supporting_document', true)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
     },
   });
 
@@ -222,6 +239,14 @@ export default function BusinessDocumentManager() {
               <FileText className="h-4 w-4" />
               {isLoadingGlobalAnalysis ? 'Analyse en cours...' : 'Analyse Globale'}
             </Button>
+            <Button 
+              onClick={() => setSupportDocsDialogOpen(true)} 
+              variant="outline" 
+              className="gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              Knowledge Base ({supportDocuments?.length || 0})
+            </Button>
             <Button onClick={() => setUploadDialogOpen(true)} variant="outline" className="gap-2">
               <Upload className="h-4 w-4" />
               Upload & Analyser
@@ -315,6 +340,12 @@ export default function BusinessDocumentManager() {
         onOpenChange={setUploadDialogOpen}
         documentType={activeTab}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ['business-documents'] })}
+      />
+
+      <SupportDocumentUploadDialog
+        open={supportDocsDialogOpen}
+        onOpenChange={setSupportDocsDialogOpen}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['support-documents'] })}
       />
     </div>
   );

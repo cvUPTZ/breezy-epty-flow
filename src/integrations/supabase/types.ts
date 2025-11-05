@@ -100,6 +100,7 @@ export type Database = {
           created_at: string
           document_type: string
           id: string
+          is_supporting_document: boolean | null
           metadata: Json | null
           status: string
           title: string
@@ -112,6 +113,7 @@ export type Database = {
           created_at?: string
           document_type: string
           id?: string
+          is_supporting_document?: boolean | null
           metadata?: Json | null
           status?: string
           title: string
@@ -124,6 +126,7 @@ export type Database = {
           created_at?: string
           document_type?: string
           id?: string
+          is_supporting_document?: boolean | null
           metadata?: Json | null
           status?: string
           title?: string
