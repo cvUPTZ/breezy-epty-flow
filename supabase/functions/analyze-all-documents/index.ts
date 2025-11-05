@@ -80,11 +80,14 @@ pour identifier:
 1. Les forces communes et les opportunités
 2. Les faiblesses récurrentes et problèmes systémiques
 3. Les synergies possibles entre les documents
-4. Les contradictions et incohérences entre les documents
-5. Une vision globale de la qualité stratégique
+4. **INCOHÉRENCES CRITIQUES**: Détecte toutes les contradictions de données entre documents (chiffres, dates, stratégies, hypothèses)
+5. **DONNÉES CONFLICTUELLES**: Identifie les valeurs numériques qui ne correspondent pas d'un document à l'autre
+6. **HYPOTHÈSES CONTRADICTOIRES**: Signale les hypothèses business incompatibles entre documents
+7. Une vision globale de la qualité stratégique et cohérence du portefeuille
 
 IMPORTANT: Tu dois répondre UNIQUEMENT avec un objet JSON valide, sans texte additionnel avant ou après.
-Assure-toi que toutes les chaînes de caractères sont correctement échappées et que le JSON est complet et valide.`;
+Assure-toi que toutes les chaînes de caractères sont correctement échappées et que le JSON est complet et valide.
+FOCUS PRINCIPAL: Identifier et détailler TOUTES les incohérences de données entre les documents.`;
 
     const analysisPrompt = `
 Nombre de documents à analyser: ${documents.length}
