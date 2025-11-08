@@ -12,7 +12,6 @@ interface CompactVoiceChatProps {
   userId: string;
   userRole: string;
   userName: string;
-  voiceCollabCtx?: ReturnType<typeof useVoiceCollaborationContext>;
 }
 
 export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
@@ -20,9 +19,9 @@ export const CompactVoiceChat: React.FC<CompactVoiceChatProps> = ({
   userId, 
   userRole, 
   userName,
-  voiceCollabCtx
 }) => {
-  const ctx = voiceCollabCtx || useVoiceCollaborationContext();
+  // Always use context directly - no prop drilling
+  const ctx = useVoiceCollaborationContext();
 
   const {
     availableRooms,

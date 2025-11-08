@@ -32,7 +32,6 @@ interface PlayerControlEvent {
 const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVideoId, matchId }) => {
   const { user, userRole } = useAuth();
   const { toast } = useToast();
-  const voiceCollabCtx = useVoiceCollaborationContext();
   const playerRef = useRef<YouTubePlayerInstance | null>(null);
   const [currentVideoId, setCurrentVideoId] = useState(initialVideoId);
   const [isAdminView, setIsAdminView] = useState(false);
@@ -527,7 +526,6 @@ const TrackerVideoContent: React.FC<TrackerVideoInterfaceProps> = ({ initialVide
             userId={user.id}
             userRole={userRole}
             userName={user.email || user.id}
-            voiceCollabCtx={voiceCollabCtx}
           />
         </div>
       </div>

@@ -16,7 +16,7 @@ const devOrigins = [
 const allowedOrigins = [...new Set([...baseAllowedOrigins, ...devOrigins])];
 
 
-export const getCorsHeaders = (requestOrigin: string | null) => {
+export function getCorsHeaders(requestOrigin: string | null): Record<string, string> {
   let origin = '';
 
   if (allowedOrigins.includes('*')) {
@@ -30,7 +30,7 @@ export const getCorsHeaders = (requestOrigin: string | null) => {
   // If there's no match, the 'Access-Control-Allow-Origin' header will not be sent,
   // which is the correct behavior for denying a CORS request.
 
-  const headers = {
+  const headers: Record<string, string> = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Vary': 'Origin', // Tells caches that the response depends on the Origin header
@@ -41,4 +41,4 @@ export const getCorsHeaders = (requestOrigin: string | null) => {
   }
 
   return headers;
-};
+}
