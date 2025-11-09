@@ -450,51 +450,56 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
   }, [homeTeamPlayers, awayTeamPlayers]);
 
   const saveAssignmentToDB = useCallback(async (
-    assignment: Omit<Assignment, 'id' | 'tracker_name' | 'tracker_email'>,
-    teamId: 'home' | 'away'
-  ) => {
-    if (!matchId) return null;
-    
-    // Delete existing assignments for this tracker
-    const { data: existingAssignments } = await supabase
+  assignment: Omit<Assignment, 'id' | 'tracker_name' | 'tracker_email'>,
+  teamId: 'home' | 'away'
+) => {
+  if (!matchId) return null;
+  
+  // Delete existing assignments for this tracker
+  const { data: existingAssignments } = await supabase
+    .from('match_tracker_assignments')
+    .select('id')
+    .eq('match_id', matchId)
+    .eq('tracker_user_id', assignment.tracker_user_id);
+
+  if (existingAssignments && existingAssignments.length > 0) {
+    await supabase
       .from('match_tracker_assignments')
-      .select('id')
+      .delete()
       .eq('match_id', matchId)
       .eq('tracker_user_id', assignment.tracker_user_id);
-
-    if (existingAssignments && existingAssignments.length > 0) {
-      await supabase
-        .from('match_tracker_assignments')
-        .delete()
-        .eq('match_id', matchId)
-        .eq('tracker_user_id', assignment.tracker_user_id);
-    }
-    
-    const recordToInsert = {
-      match_id: matchId,
-      tracker_user_id: assignment.tracker_user_id,
-      tracker_type: assignment.tracker_type,
-      assigned_player_ids: assignment.player_ids,
-      assigned_event_types: assignment.assigned_event_types,
-      player_team_id: teamId
-    };
-    
-    const { data, error } = await supabase
-      .from('match_tracker_assignments')
-      .insert([recordToInsert])
-      .select('id');
-    
-    if (error) {
-      console.error('Insert error:', error);
-      throw error;
-    }
-    
-    if (!data || data.length === 0) {
-      throw new Error('No data returned from insert');
-    }
-    
-    return data[0].id;
-  }, [matchId]);
+  }
+  
+  // ✅ Mapper 'voiceover' vers 'player' pour la base de données
+  const dbTrackerType = assignment.tracker_type === 'voiceover' 
+    ? 'player' 
+    : assignment.tracker_type;
+  
+  const recordToInsert = {
+    match_id: matchId,
+    tracker_user_id: assignment.tracker_user_id,
+    tracker_type: dbTrackerType, // ✅ Utiliser la valeur mappée
+    assigned_player_ids: assignment.player_ids,
+    assigned_event_types: assignment.assigned_event_types,
+    player_team_id: teamId
+  };
+  
+  const { data, error } = await supabase
+    .from('match_tracker_assignments')
+    .insert([recordToInsert])
+    .select('id');
+  
+  if (error) {
+    console.error('Insert error:', error);
+    throw error;
+  }
+  
+  if (!data || data.length === 0) {
+    throw new Error('No data returned from insert');
+  }
+  
+  return data[0].id;
+}, [matchId]);
 
   const sendNotificationToTracker = useCallback(async (trackerId: string, matchId: string, videoUrl?: string) => {
     try {
