@@ -20,7 +20,7 @@ export interface PendingEvent {
 export interface TrackerAssignment {
   tracker_id: string;
   tracker_name: string;
-  tracker_type: 'ball' | 'player';
+  tracker_type: 'ball' | 'player' | 'voiceover';
   assigned_players: Player[];
   assigned_event_types: string[];
 }
@@ -35,7 +35,7 @@ export interface BallPossessionEvent {
 interface UseFourTrackerSystemEnhancedProps {
   matchId: string;
   trackerId: string;
-  trackerType: 'ball' | 'player';
+  trackerType: 'ball' | 'player' | 'voiceover';
   allPlayers: Player[];
   supabase: any;
   toast: any;
@@ -194,7 +194,7 @@ export const useFourTrackerSystem = ({
         setAssignment({
           tracker_id: trackerId,
           tracker_name: 'Unknown Tracker',
-          tracker_type: (assignmentData.tracker_type || 'player') as 'ball' | 'player',
+          tracker_type: (assignmentData.tracker_type || 'player') as 'ball' | 'player' | 'voiceover',
           assigned_players: assignedPlayers,
           assigned_event_types: assignedEventTypes,
         });
