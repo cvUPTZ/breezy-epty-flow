@@ -110,6 +110,16 @@ async function main() {
 
     console.log('Seeding a test match...');
     const testMatchId = '123e4567-e89b-12d3-a456-426614174000';
+    const dummyHomePlayers = JSON.stringify([
+      { id: 1, player_name: 'Home Player 1', jersey_number: 10, position: 'FW' },
+      { id: 2, player_name: 'Home Player 2', jersey_number: 7, position: 'MF' },
+    ]);
+
+    const dummyAwayPlayers = JSON.stringify([
+      { id: 3, player_name: 'Away Player 1', jersey_number: 9, position: 'FW' },
+      { id: 4, player_name: 'Away Player 2', jersey_number: 5, position: 'DF' },
+    ]);
+
     const { data: matchData, error: matchError } = await supabase
       .from('matches')
       .upsert({
@@ -117,6 +127,8 @@ async function main() {
         name: 'Test Match for Verification',
         home_team_name: 'Team A',
         away_team_name: 'Team B',
+        home_team_players: dummyHomePlayers,
+        away_team_players: dummyAwayPlayers,
         status: 'published',
         match_date: new Date().toISOString(),
       }, { onConflict: 'id' });
