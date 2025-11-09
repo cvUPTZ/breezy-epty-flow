@@ -59,7 +59,7 @@ interface TrackerAssignmentState {
   selectedPlayers: number[];
   selectedEventTypes: string[];
   selectedTrackerType: TrackerType;
-  assignmentRole: 'player' | 'ball';
+  assignmentRole: 'player' | 'ball' | 'voiceover';
   selectedTeam: 'home' | 'away';
   expandedCategories: Set<string>;
   assignmentVideoUrl: string;
@@ -79,7 +79,7 @@ type AssignmentAction =
   | { type: 'SET_SELECTED_PLAYERS'; payload: number[] }
   | { type: 'SET_SELECTED_EVENT_TYPES'; payload: string[] }
   | { type: 'SET_TRACKER_TYPE'; payload: TrackerType }
-  | { type: 'SET_ASSIGNMENT_ROLE'; payload: 'player' | 'ball' }
+  | { type: 'SET_ASSIGNMENT_ROLE'; payload: 'player' | 'ball' | 'voiceover' }
   | { type: 'SET_TEAM'; payload: 'home' | 'away' }
   | { type: 'TOGGLE_CATEGORY'; payload: string }
   | { type: 'SET_VIDEO_URL'; payload: string }
@@ -677,7 +677,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
     let playerIds: number[] | null = null;
     let teamId: 'home' | 'away' = state.selectedTeam;
     
-    if (state.assignmentRole === 'ball') {
+    if (state.assignmentRole === 'ball' || state.assignmentRole === 'voiceover') {
       playerIds = (state.selectedTeam === 'home' ? homeTeamPlayers : awayTeamPlayers).map(p => p.id);
       teamId = state.selectedTeam;
     } else if (state.assignmentRole === 'player') {
@@ -976,8 +976,8 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                         <span className="font-medium text-lg">{assignment.tracker_name}</span>
                         <div className="text-sm text-gray-600">{assignment.tracker_email}</div>
                         <div className="flex items-center gap-2 mt-1">
-                          <Badge variant={assignment.tracker_type === 'ball' ? 'destructive' : 'default'}>
-                            {assignment.tracker_type === 'ball' ? 'Ball Tracker' : 'Player Tracker'}
+                          <Badge variant={assignment.tracker_type === 'ball' ? 'destructive' : assignment.tracker_type === 'voiceover' ? 'secondary' : 'default'}>
+                            {assignment.tracker_type === 'ball' ? 'Ball Tracker' : assignment.tracker_type === 'voiceover' ? 'Voiceover' : 'Player Tracker'}
                           </Badge>
                           <Badge variant="outline" className="capitalize">
                             {assignment.team_id} Team
@@ -1284,7 +1284,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   <label className="text-sm font-medium">Assignment Role</label>
                   <Select
                     value={state.assignmentRole}
-                    onValueChange={(value: 'player' | 'ball') => dispatch({ type: 'SET_ASSIGNMENT_ROLE', payload: value })}
+                    onValueChange={(value: 'player' | 'ball' | 'voiceover') => dispatch({ type: 'SET_ASSIGNMENT_ROLE', payload: value })}
                   >
                     <SelectTrigger aria-label="Select assignment role">
                       <SelectValue />
@@ -1292,6 +1292,7 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                     <SelectContent>
                       <SelectItem value="player">Player Tracker</SelectItem>
                       <SelectItem value="ball">Ball Tracker</SelectItem>
+                      <SelectItem value="voiceover">Voiceover</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1331,11 +1332,11 @@ const UnifiedTrackerAssignment: React.FC<UnifiedTrackerAssignmentProps> = ({
                   </div>
                 </>
               )}
-              {state.assignmentRole === 'ball' && (
+              {(state.assignmentRole === 'ball' || state.assignmentRole === 'voiceover') && (
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
                   <p className="text-sm text-amber-800">
-                    <strong>Ball Tracker Mode:</strong> This tracker will monitor all {state.selectedTeam === 'home' ? homeTeamPlayers.length : awayTeamPlayers.length} players from the {state.selectedTeam} team. 
-                    Click the player with the ball to trigger events.
+                    <strong>{state.assignmentRole === 'ball' ? 'Ball Tracker' : 'Voiceover'} Mode:</strong> This tracker will monitor all {state.selectedTeam === 'home' ? homeTeamPlayers.length : awayTeamPlayers.length} players from the {state.selectedTeam} team.
+                    {state.assignmentRole === 'ball' && ' Click the player with the ball to trigger events.'}
                   </p>
                 </div>
               )}
