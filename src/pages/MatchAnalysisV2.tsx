@@ -12,7 +12,6 @@ import MatchPlanningNetwork from '@/components/match/MatchPlanningNetwork';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import MatchAnalysisSidebar from '@/components/match/MatchAnalysisSidebar';
 import FourTrackerSystem from '@/components/match/FourTrackerSystem';
-import { TrackerVoiceInput } from '@/components/TrackerVoiceInput';
 import { EventType as LocalEventType } from '@/types/matchForm';
 import { PlayerForPianoInput, AssignedPlayers } from '@/components/match/types';
 import { useIsMobile } from '@/hooks/use-mobile';
