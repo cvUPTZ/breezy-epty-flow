@@ -22,7 +22,7 @@ import VoiceCollaborationOverlay from "@/components/match/VoiceCollaborationOver
 import VideoSetupSection from '@/components/match/form/VideoSetupSection';
 import TrackerVideoInterface from '@/components/video/TrackerVideoInterface';
 import { YouTubeService } from '@/services/youtubeService';
-import TrackerVoiceInput from '@/components/TrackerVoiceInput';
+import { TrackerVoiceInput } from '@/components/TrackerVoiceInput';
 
 interface VoiceInputPlayer {
   id: number;
@@ -87,6 +87,7 @@ const MatchAnalysisV2: React.FC = () => {
   const [mode, setMode] = useState<'piano' | 'tracking'>('piano');
   const [homeTeam, setHomeTeam] = useState({ name: 'Home Team', formation: '4-4-2' });
   const [awayTeam, setAwayTeam] = useState({ name: 'Away Team', formation: '4-3-3' });
+  const [matchName, setMatchName] = useState<string>();
   const [isTracking, setIsTracking] = useState(false);
   const [assignedEventTypes, setAssignedEventTypes] = useState<LocalEventType[] | null>(null);
   const [assignedPlayers, setAssignedPlayers] = useState<AssignedPlayers | null>(null);
@@ -172,7 +173,7 @@ const MatchAnalysisV2: React.FC = () => {
       
       const { data: matchData, error: matchError } = await supabase
         .from('matches')
-        .select('home_team_name, away_team_name, home_team_formation, away_team_formation, home_team_players, away_team_players')
+        .select('name, home_team_name, away_team_name, home_team_formation, away_team_formation, home_team_players, away_team_players')
         .eq('id', matchId)
         .maybeSingle();
 
@@ -208,6 +209,8 @@ const MatchAnalysisV2: React.FC = () => {
         name: matchData.away_team_name || 'Away Team',
         formation: matchData.away_team_formation || '4-3-3'
       });
+
+      setMatchName(matchData.name ?? undefined);
 
       const homePlayers = parsePlayerData(matchData.home_team_players, 'home');
       const awayPlayers = parsePlayerData(matchData.away_team_players, 'away');
@@ -588,6 +591,7 @@ const MatchAnalysisV2: React.FC = () => {
                     setMode={setMode}
                     homeTeam={homeTeam}
                     awayTeam={awayTeam}
+                    name={matchName}
                     handleToggleTracking={handleToggleTracking}
                     handleSave={handleSave}
                   />
