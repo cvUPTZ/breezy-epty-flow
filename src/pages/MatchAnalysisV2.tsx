@@ -22,6 +22,7 @@ import VoiceCollaborationOverlay from "@/components/match/VoiceCollaborationOver
 import VideoSetupSection from '@/components/match/form/VideoSetupSection';
 import TrackerVideoInterface from '@/components/video/TrackerVideoInterface';
 import { YouTubeService } from '@/services/youtubeService';
+imoort TrackerVoiceInput from '@/components/TrackerVoiceInput';
 
 interface VoiceInputPlayer {
   id: number;
