@@ -91,6 +91,10 @@ export const useGeminiVoiceRecorder = (
   // Process audio with Gemini STT and RAG
   const processAudioWithGemini = useCallback(async (audioBase64: string) => {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('يجب تسجيل الدخول لتسجيل الأحداث')
+
       // Step 1: Transcribe audio using Gemini STT
       const { data: transcriptData, error: transcriptError } = await supabase.functions.invoke(
         'gemini-transcribe',
@@ -142,6 +146,7 @@ export const useGeminiVoiceRecorder = (
         player_id: parsedCommand.player?.id,
         team: parsedCommand.teamContext || null,
         timestamp: Date.now(), // Use timestamp as bigint (milliseconds since epoch)
+        created_by: user.id, // ✅ Add created_by for RLS policy
         details: {
           recorded_via: 'voice_gemini', // ✅ Moved source to details to match schema
           player_name: parsedCommand.player?.name,
