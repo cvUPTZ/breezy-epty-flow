@@ -22,7 +22,7 @@ import VoiceCollaborationOverlay from "@/components/match/VoiceCollaborationOver
 import VideoSetupSection from '@/components/match/form/VideoSetupSection';
 import TrackerVideoInterface from '@/components/video/TrackerVideoInterface';
 import { YouTubeService } from '@/services/youtubeService';
-import { TrackerVoiceInput } from '@/components/TrackerVoiceInput';
+import { CommentatorPanel } from '@/components/CommentatorPanel';
 
 interface VoiceInputPlayer {
   id: number;
@@ -651,7 +651,7 @@ const MatchAnalysisV2: React.FC = () => {
                             <span className="text-gray-600">Loading assignments...</span>
                           </div>
                         ) : canShowVoiceInput && assignedPlayers && assignedEventTypes ? (
-                          <TrackerVoiceInput
+                          <CommentatorPanel
                             assignedPlayers={convertPlayersForVoiceInput(assignedPlayers)}
                             assignedEventTypes={assignedEventTypes}
                             onRecordEvent={handleRecordEvent}
