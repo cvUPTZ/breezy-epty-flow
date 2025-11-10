@@ -141,16 +141,16 @@ export const useGeminiVoiceRecorder = (
         event_type: parsedCommand.eventType.key,
         player_id: parsedCommand.player?.id,
         team: parsedCommand.teamContext || null,
+        timestamp: Date.now(), // Use timestamp as bigint (milliseconds since epoch)
         details: {
+          recorded_via: 'voice_gemini', // ✅ Moved source to details to match schema
           player_name: parsedCommand.player?.name,
           target_player: parsedCommand.targetPlayer?.name,
           transcript,
           confidence: parsedCommand.confidence,
-          recorded_via: 'gemini_stt',
           reasoning: parsedCommand.reasoning,
         },
-        timestamp: new Date().toISOString(),
-        source: 'voice_commentator',
+        // ❌ Removed source field - it doesn't exist in the schema
       }
 
       const { data: insertedEvent, error: insertError } = await supabase
