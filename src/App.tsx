@@ -21,6 +21,7 @@ import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import Index from './pages/Index';
+import SpeedyGonzales from './pages/SpeedyGonzales';
 import MatchAnalysisV2 from './pages/MatchAnalysisV2';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import CreateMatch from './pages/CreateMatch';
@@ -108,6 +109,12 @@ const AppContent = () => {
         <Route path="/dashboard" element={
           <RequireAuth>
             <Dashboard />
+          </RequireAuth>
+        } />
+
+        <Route path="/speedy" element={
+          <RequireAuth>
+            <SpeedyGonzales />
           </RequireAuth>
         } />
         
