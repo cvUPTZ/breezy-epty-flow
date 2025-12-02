@@ -166,8 +166,17 @@ export const useGeminiVoiceRecorder = (
 
       if (insertError) throw new Error(insertError.message)
 
-      // Step 5: Update local state
-      setEvents(prev => [insertedEvent, ...prev])
+      // Step 5: Update local state - transform to VoiceEvent format
+      const voiceEvent: VoiceEvent = {
+        id: insertedEvent.id,
+        timestamp: insertedEvent.created_at,
+        player_id: insertedEvent.player_id ?? undefined,
+        team: insertedEvent.team ?? undefined,
+        event_type: insertedEvent.event_type,
+        details: typeof insertedEvent.details === 'object' ? insertedEvent.details as VoiceEvent['details'] : undefined,
+        match_id: insertedEvent.match_id || matchId
+      }
+      setEvents(prev => [voiceEvent, ...prev])
       playSuccessSound()
 
       return {
