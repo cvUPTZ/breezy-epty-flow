@@ -27,7 +27,7 @@ import { CommentatorPanel } from '@/components/CommentatorPanel';
 interface VoiceInputPlayer {
   id: number;
   name: string;
-  jersey_number: number | null;
+  jersey_number?: number;
 }
 
 interface VoiceInputAssignedPlayers {
@@ -149,12 +149,12 @@ const MatchAnalysisV2: React.FC = () => {
       home: players.home.map(player => ({
         id: Number(player.id),
         name: player.player_name,
-        jersey_number: player.jersey_number
+        jersey_number: player.jersey_number ?? undefined
       })),
       away: players.away.map(player => ({
         id: Number(player.id),
         name: player.player_name,
-        jersey_number: player.jersey_number
+        jersey_number: player.jersey_number ?? undefined
       }))
     };
   }, []);
@@ -652,9 +652,9 @@ const MatchAnalysisV2: React.FC = () => {
                           </div>
                         ) : canShowVoiceInput && assignedPlayers && assignedEventTypes ? (
                           <CommentatorPanel
+                            matchId={matchId}
                             assignedPlayers={convertPlayersForVoiceInput(assignedPlayers)}
                             assignedEventTypes={assignedEventTypes}
-                            onRecordEvent={handleRecordEvent}
                           />
                         ) : (
                           <div className="text-center py-12">

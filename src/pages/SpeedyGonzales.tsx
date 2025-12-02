@@ -44,8 +44,10 @@ const SpeedyGonzales: React.FC = () => {
       }
 
       if (data) {
-        const homePlayers = (data.home_team_players || []).map((p: any) => ({ ...p, team: 'home' }));
-        const awayPlayers = (data.away_team_players || []).map((p: any) => ({ ...p, team: 'away' }));
+        const homePlayersData = Array.isArray(data.home_team_players) ? data.home_team_players : [];
+        const awayPlayersData = Array.isArray(data.away_team_players) ? data.away_team_players : [];
+        const homePlayers = homePlayersData.map((p: any) => ({ ...p, team: 'home' }));
+        const awayPlayers = awayPlayersData.map((p: any) => ({ ...p, team: 'away' }));
         setAllPlayers([...homePlayers, ...awayPlayers]);
       }
     };

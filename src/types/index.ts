@@ -281,7 +281,7 @@ export interface TimeSegmentStatistics {
 
 export interface MatchEvent {
   id: string;
-  match_id: string;
+  match_id: string | null;
   timestamp: number;
   event_data?: MatchSpecificEventData | null;
   created_at?: string;

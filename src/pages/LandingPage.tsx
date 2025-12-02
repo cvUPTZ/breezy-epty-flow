@@ -15,15 +15,16 @@ import {
   PlayCircle,
   UserCheck,
   Database,
-  Smartphone,
-  Globe,
   Check,
   Crown,
   Star,
   Share2,
   Lightbulb,
   Building,
-  School
+  School,
+  ChevronRight,
+  Activity,
+  LineChart
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -32,140 +33,126 @@ const LandingPage: React.FC = () => {
 
   const features = [
     {
-      icon: <Target className="h-8 w-8 text-primary" />,
-      title: "Enregistrement d'Événements en Direct et Précis",
-      description: "Saisissez méticuleusement chaque événement de match en temps réel (buts, passes décisives, fautes, remplacements) avec notre interface 'piano' spécialisée. Suivez la position du ballon et des joueurs sur un terrain virtuel, et permettez à plusieurs opérateurs de collaborer sur le même match avec une synchronisation parfaite.",
-      gradient: "from-primary/10 to-accent/10",
+      icon: <Target className="h-7 w-7" />,
+      title: "Analyse de Match & Performance",
+      description: "Enregistrement précis des événements en temps réel avec interface intuitive et synchronisation multi-opérateurs.",
     },
     {
-      icon: <Video className="h-8 w-8 text-primary" />,
-      title: "Analyse Vidéo Intégrée et Synchronisée",
-      description: "Liez les événements enregistrés aux horodatages vidéo de multiples sources (y compris YouTube) pour une analyse post-match complète. Visualisez les actions dans leur contexte pour des revues tactiques approfondies.",
-      gradient: "from-accent/10 to-secondary/10",
+      icon: <Video className="h-7 w-7" />,
+      title: "Analyse Vidéo Intégrée",
+      description: "Liez les événements aux séquences vidéo pour des revues tactiques approfondies et contextualisées.",
     },
     {
-      icon: <Users className="h-8 w-8 text-primary" />,
-      title: "Gestion Complète des Équipes et Joueurs",
-      description: "Administrez vos effectifs, les profils détaillés des joueurs et les schémas tactiques. Assignez les rôles et les positions avec des outils de gestion de formation avancés pour une préparation de match optimale.",
-      gradient: "from-secondary/10 to-muted/20",
+      icon: <Users className="h-7 w-7" />,
+      title: "Gestion d'Équipes",
+      description: "Administrez effectifs, profils joueurs et schémas tactiques avec des outils de formation avancés.",
     },
     {
-      icon: <BarChart3 className="h-8 w-8 text-primary" />,
-      title: "Analyses et Visualisations Puissantes",
-      description: "Accédez à des tableaux de bord interactifs avec des indicateurs de performance clés. Générez des cartes de chaleur, des graphiques radar, des chronologies d'événements et des tables statistiques complètes pour analyser les performances individuelles et collectives.",
-      gradient: "from-accent/10 to-primary/10",
+      icon: <BarChart3 className="h-7 w-7" />,
+      title: "Statistiques & Visualisations",
+      description: "Tableaux de bord interactifs, cartes de chaleur, graphiques radar et analyses complètes.",
     },
     {
-      icon: <Share2 className="h-8 w-8 text-primary" />,
-      title: "Collaboration d'Équipe Optimisée",
-      description: "Facilitez le travail simultané de plusieurs analystes sur un même match. Assignez des types d'événements spécifiques à chaque opérateur et utilisez la communication vocale intégrée pour une coordination parfaite.",
-      gradient: "from-muted/20 to-accent/10",
+      icon: <Share2 className="h-7 w-7" />,
+      title: "Collaboration d'Équipe",
+      description: "Travail simultané multi-analystes avec communication vocale intégrée.",
     },
     {
-      icon: <Shield className="h-8 w-8 text-primary" />,
-      title: "Administration et Contrôle Avancés",
-      description: "Gérez les accès avec des rôles d'utilisateurs définis (Admin, Manager, Tracker). Surveillez l'état des dispositifs des trackers (batterie, connexion), gérez les absences et consultez les journaux d'audit pour une sécurité et un contrôle total.",
-      gradient: "from-primary/10 to-secondary/10",
+      icon: <Shield className="h-7 w-7" />,
+      title: "Scouting & Détection",
+      description: "Outils de détection de talents et rapports de scouting professionnels.",
     }
   ];
 
   const benefits = [
     {
-      icon: <TrendingUp className="h-6 w-6 text-primary" />,
+      icon: <TrendingUp className="h-6 w-6" />,
       title: "Performance Améliorée",
-      description: "Identifiez les points forts, faibles, et tendances pour optimiser les stratégies et performances de l'équipe.",
+      description: "Identifiez les tendances pour optimiser les stratégies de l'équipe.",
     },
     {
-      icon: <Timer className="h-6 w-6 text-primary" />,
-      title: "Analyse en Temps Réel & Collaborative",
-      description: "Suivez et enregistrez les événements en direct avec plusieurs analystes, recevez des notifications et communiquez efficacement.",
+      icon: <Timer className="h-6 w-6" />,
+      title: "Analyse Temps Réel",
+      description: "Suivi et enregistrement des événements en direct avec collaboration.",
     },
     {
-      icon: <Zap className="h-6 w-6 text-primary" />,
+      icon: <Zap className="h-6 w-6" />,
       title: "Efficacité Opérationnelle",
-      description: "Optimisez les workflows d'analyse grâce aux outils administratifs, assignations spécialisées et gestion des trackers.",
+      description: "Workflows optimisés et outils administratifs avancés.",
     },
     {
-      icon: <Lightbulb className="h-6 w-6 text-primary" />,
-      title: "Prise de Décision Éclairée",
-      description: "Basez vos décisions tactiques et de développement sur des données précises, des analyses vidéo et des rapports complets.",
+      icon: <Lightbulb className="h-6 w-6" />,
+      title: "Décisions Éclairées",
+      description: "Basez vos décisions tactiques sur des données précises.",
     }
   ];
 
   const pricingPlans = [
     {
-      name: "Basique Algérie",
-      price: "15,000 DZD",
+      name: "Starter",
+      price: "---",
       period: "/mois",
-      description: "Idéal pour les clubs amateurs et les académies en développement.",
-      icon: <Star className="h-6 w-6 text-primary" />,
+      description: "Pour les clubs amateurs et académies en développement.",
+      icon: <Star className="h-6 w-6" />,
       features: [
         "Jusqu'à 5 matchs par mois",
         "2 analystes",
-        "Suivi des événements et statistiques de base",
-        "Synchronisation vidéo limitée",
-        "Gestion d'équipe",
+        "Statistiques de base",
         "Support par email",
       ],
       popular: false,
-      cardStyle: "bg-card/60 backdrop-blur-lg border-border hover:border-primary/30 hover:shadow-xl rounded-2xl",
-      buttonStyle: "bg-primary hover:bg-primary/90 text-primary-foreground"
     },
     {
-      name: "Performance Algérie",
-      price: "45,000 DZD",
+      name: "Pro",
+      price: "---",
       period: "/mois",
-      description: "Pour les clubs de Ligue 2, les grands clubs amateurs et les académies.",
-      icon: <Crown className="h-6 w-6 text-primary" />,
+      description: "Pour les clubs professionnels et grandes académies.",
+      icon: <Crown className="h-6 w-6" />,
       features: [
-        "Jusqu'à 15 matchs par mois",
-        "Jusqu'à 8 analystes",
-        "Statistiques avancées (cartes de chaleur, radar)",
+        "Matchs illimités",
+        "Jusqu'à 10 analystes",
+        "Statistiques avancées",
         "Analyse vidéo complète",
-        "Gestion des formations tactiques",
-        "Collaboration multi-utilisateurs",
         "Support prioritaire",
       ],
       popular: true,
-      cardStyle: "bg-card border-primary shadow-2xl scale-105 relative rounded-2xl",
-      buttonStyle: "bg-primary hover:bg-primary/90 text-primary-foreground"
     },
     {
-      name: "Élite Algérie",
+      name: "Enterprise",
       price: "Sur devis",
       period: "",
-      description: "Solution complète pour les clubs de Ligue 1 et la Fédération (FAF).",
-      icon: <Shield className="h-6 w-8 text-primary" />,
+      description: "Solution personnalisée pour fédérations et ligues.",
+      icon: <Shield className="h-6 w-6" />,
       features: [
-        "Tout du plan Performance",
-        "Matchs et analystes illimités",
-        "Collaboration vocale intégrée",
-        "Outils d'administration avancés",
-        "Accès API",
-        "Support et formation personnalisés",
+        "Tout du plan Pro",
+        "API Access",
+        "Formation dédiée",
+        "Support 24/7",
       ],
       popular: false,
-      cardStyle: "bg-card/60 backdrop-blur-lg border-border hover:border-primary/30 hover:shadow-xl rounded-2xl",
-      buttonStyle: "bg-primary hover:bg-primary/90 text-primary-foreground"
     }
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-secondary">
       {/* Header */}
-      <header className="bg-card/80 backdrop-blur-sm shadow-sm border-b border-border sticky top-0 z-50">
+      <header className="bg-secondary/95 backdrop-blur-md border-b border-secondary-foreground/10 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg">
-              <BarChart3 className="h-6 w-6 text-primary-foreground" />
+            {/* Logo Placeholder */}
+            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+              <Activity className="h-6 w-6 text-primary-foreground" />
             </div>
-            <h1 className="text-xl font-bold text-foreground">
-              Sports Data Analytics SDA
-            </h1>
+            <div>
+              <h1 className="text-xl font-bold text-secondary-foreground tracking-tight">
+                Tacta
+              </h1>
+              <p className="text-xs text-secondary-foreground/60">Sports Analytics</p>
+            </div>
           </div>
           <Button 
             onClick={() => navigate('/auth')} 
-            className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300"
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
             Se Connecter
           </Button>
@@ -173,179 +160,110 @@ const LandingPage: React.FC = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="py-24 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-accent/10"></div>
-        <div className="container mx-auto text-center max-w-5xl relative">
-          <Badge className="mb-6 bg-secondary text-secondary-foreground border-border px-6 py-2 text-sm font-medium">
-            Plateforme d'Analyse et Gestion pour le Sport Algérien
-          </Badge>
-          <h1 className="text-5xl md:text-6xl font-bold mb-8 leading-tight">
-            <span className="text-foreground">
-              Révolutionnez l'Analyse Sportive
-            </span>
-            <br />
-            <span className="text-primary">
-              en Algérie
-            </span>
-          </h1>
-          <p className="text-xl text-muted-foreground mb-10 leading-relaxed max-w-3xl mx-auto">
-            Une plateforme tout-en-un conçue pour les réalités du sport algérien. De l'enregistrement détaillé à l'analyse vidéo, transformez vos données en avantage concurrentiel.
-          </p>
-          <div className="flex gap-6 justify-center flex-wrap">
-            <Button 
-              size="lg" 
-              onClick={() => navigate('/auth')}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 text-lg px-10 py-4 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-            >
-              <PlayCircle className="mr-3 h-6 w-6" />
-              Commencer Maintenant
-            </Button>
-            <Button 
-              variant="outline" 
-              size="lg"
-              className="text-lg px-10 py-4 border-border hover:bg-accent shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <Eye className="mr-3 h-6 w-6" />
-              Voir la Démo
-            </Button>
-          </div>
+      <section className="relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-secondary">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
         </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-20 px-4 bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto max-w-7xl">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-6 text-foreground">
-                Nos Fonctionnalités Clés Professionnelles
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Découvrez comment notre plateforme transforme l'analyse et la gestion sportive avec des outils de pointe.
+        
+        <div className="container mx-auto px-4 py-24 md:py-32 relative">
+          <div className="max-w-4xl mx-auto text-center">
+            <Badge className="mb-6 bg-primary/20 text-primary border-primary/30 px-4 py-1.5 text-sm font-medium">
+              Football Performance & Data Analysis
+            </Badge>
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-secondary-foreground">
+              Au Service de la
+              <span className="text-primary block mt-2">Performance Sportive</span>
+            </h1>
+            <p className="text-lg md:text-xl text-secondary-foreground/70 mb-10 max-w-2xl mx-auto leading-relaxed">
+              Plateforme complète d'analyse et de gestion pour le football. 
+              Scouting, analyse de match et visualisation de données.
             </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-            <Card key={index} className={`border border-border hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 bg-card/60 backdrop-blur-lg rounded-2xl overflow-hidden`}>
-              <CardHeader className="text-center pb-4 pt-8">
-                <div className={`mx-auto mb-6 p-4 bg-gradient-to-br ${feature.gradient} rounded-xl w-fit shadow-lg`}>
-                  {feature.icon}
-                </div>
-                <CardTitle className="text-xl text-foreground leading-tight">{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="px-8 pb-8">
-                <p className="text-muted-foreground text-center leading-relaxed">
-                  {feature.description}
-                </p>
-              </CardContent>
-            </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section className="py-20 px-4 bg-secondary/30">
-        <div className="container mx-auto max-w-7xl">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-6 text-foreground">
-                Des Tarifs Adaptés au Marché Algérien
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Des solutions conçues pour les clubs, académies et fédérations en Algérie.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {pricingPlans.map((plan, index) => (
-              <Card key={index} className={`${plan.cardStyle} transition-all duration-300 transform hover:-translate-y-2 overflow-hidden`}>
-                {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <Badge className="bg-primary text-primary-foreground px-6 py-2 shadow-lg">
-                    Le Plus Populaire
-                  </Badge>
-                  </div>
-                )}
-                <CardHeader className="text-center pt-8">
-                  <div className="mx-auto mb-4 p-4 bg-card/80 backdrop-blur-sm rounded-xl w-fit shadow-lg">
-                    {plan.icon}
-                  </div>
-                  <CardTitle className="text-2xl text-foreground mb-3">{plan.name}</CardTitle>
-                  <div className="mb-3">
-                    <span className="text-5xl font-bold text-foreground">
-                      {plan.price}
-                    </span>
-                    <span className="text-muted-foreground text-lg">{plan.period}</span>
-                  </div>
-                  <p className="text-muted-foreground leading-relaxed px-4">{plan.description}</p>
-                </CardHeader>
-                <CardContent className="px-8 pb-8">
-                  <ul className="space-y-4 mb-8">
-                    {plan.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-start gap-3">
-                        <Check className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-card-foreground leading-relaxed">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button 
-                    className={`w-full ${plan.buttonStyle} shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 py-3`}
-                    onClick={() => navigate('/auth')}
-                  >
-                    {plan.price === "Sur devis" ? "Nous Contacter" : "Commencer"}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          
-          <div className="mt-16 text-center">
-            <h3 className="text-3xl font-bold mb-8 text-foreground">
-                Pourquoi Choisir Notre Modèle ?
-            </h3>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {[
-                { icon: Shield, title: "Sans Engagement", desc: "Résiliez à tout moment sans frais cachés", color: "blue" },
-                { icon: Users, title: "Support Inclus", desc: "Formation et assistance technique comprise", color: "emerald" },
-                { icon: Zap, title: "Mises à Jour", desc: "Nouvelles fonctionnalités automatiques", color: "purple" },
-                { icon: Database, title: "Vos Données", desc: "Export libre de toutes vos analyses", color: "amber" }
-              ].map((item, index) => (
-                <div key={index} className="text-center group">
-                  <div className={`w-16 h-16 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:shadow-xl transition-all duration-300 transform group-hover:scale-110`}>
-                    <item.icon className={`h-8 w-8 text-primary`} />
-                  </div>
-                  <h4 className="font-semibold text-foreground mb-2 text-lg">{item.title}</h4>
-                  <p className="text-muted-foreground leading-relaxed">{item.desc}</p>
-                </div>
-              ))}
+            <div className="flex gap-4 justify-center flex-wrap">
+              <Button 
+                size="lg" 
+                onClick={() => navigate('/auth')}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 text-lg px-8 py-6 shadow-lg shadow-primary/25"
+              >
+                <PlayCircle className="mr-2 h-5 w-5" />
+                Commencer
+                <ChevronRight className="ml-2 h-5 w-5" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="text-lg px-8 py-6 border-secondary-foreground/20 text-secondary-foreground hover:bg-secondary-foreground/10"
+              >
+                <Eye className="mr-2 h-5 w-5" />
+                Voir la Démo
+              </Button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Benefits Section */}
-      <section className="py-20 px-4 bg-card/50 backdrop-blur-sm">
+      {/* Features Section */}
+      <section className="py-20 px-4 bg-background">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-6 text-foreground">
-                Les Avantages Stratégiques de Notre Plateforme
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
+              Nos Solutions
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Découvrez les bénéfices concrets qui font la différence pour votre équipe et votre organisation.
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Des outils professionnels pour transformer votre approche de l'analyse sportive.
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((feature, index) => (
+              <Card 
+                key={index} 
+                className="border border-border bg-card hover:shadow-lg transition-all duration-300 hover:border-primary/30 group"
+              >
+                <CardHeader className="pb-3">
+                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                    <span className="text-primary">{feature.icon}</span>
+                  </div>
+                  <CardTitle className="text-lg text-card-foreground">{feature.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    {feature.description}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="py-20 px-4 bg-secondary">
+        <div className="container mx-auto max-w-5xl">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-secondary-foreground">
+              Avantages Stratégiques
+            </h2>
+            <p className="text-lg text-secondary-foreground/70 max-w-2xl mx-auto">
+              Les bénéfices concrets qui font la différence pour votre équipe.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-6">
             {benefits.map((benefit, index) => (
-              <div key={index} className={`flex gap-6 p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border backdrop-blur-sm bg-card/60 border-border`}>
-                <div className="flex-shrink-0 p-3 bg-card/80 backdrop-blur-sm rounded-xl shadow-md">
-                  {benefit.icon}
+              <div 
+                key={index} 
+                className="flex gap-4 p-6 rounded-xl bg-secondary-foreground/5 border border-secondary-foreground/10 hover:bg-secondary-foreground/10 transition-colors"
+              >
+                <div className="flex-shrink-0 w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
+                  <span className="text-primary">{benefit.icon}</span>
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-foreground mb-3 leading-tight">
+                  <h3 className="text-lg font-semibold text-secondary-foreground mb-2">
                     {benefit.title}
                   </h3>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p className="text-secondary-foreground/70 text-sm">
                     {benefit.description}
                   </p>
                 </div>
@@ -355,59 +273,100 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Target Audience Section */}
-      <section className="py-20 px-4 bg-gradient-to-br from-slate-50 to-indigo-50/50">
-        <div className="container mx-auto max-w-6xl text-center">
-          <h2 className="text-4xl font-bold mb-16">
-            <span className="bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-              Une Solution Conçue pour le Football Algérien
-            </span>
-          </h2>
+      {/* Pricing Section - Placeholder */}
+      <section className="py-20 px-4 bg-background">
+        <div className="container mx-auto max-w-5xl">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
+              Tarification
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Des forfaits adaptés à vos besoins. Contactez-nous pour plus de détails.
+            </p>
+          </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { icon: Users, title: "Clubs Professionnels (Ligue 1 & 2)", desc: "Gagnez un avantage concurrentiel, améliorez le développement des joueurs et professionnalisez vos opérations d'analyse.", color: "blue" },
-              { icon: School, title: "Clubs Amateurs & Académies", desc: "Accédez à des outils d'analyse de niveau professionnel à un coût abordable pour développer les talents locaux.", color: "emerald" },
-              { icon: Building, title: "Fédérations & DTN (FAF)", desc: "Standardisez la collecte de données, supervisez les talents et supportez les équipes nationales avec des analyses poussées.", color: "purple" },
-              { icon: BarChart3, title: "Analystes & Médias", desc: "Exploitez des données riches et des outils pointus pour générer des rapports approfondis et du contenu de qualité.", color: "amber" }
-            ].map((item, index) => (
-              <div key={index} className="p-8 bg-card/60 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-border">
-                <div className={`w-20 h-20 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg`}>
-                  <item.icon className={`h-10 w-10 text-primary`} />
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-4 leading-tight">{item.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  {item.desc}
-                </p>
-              </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {pricingPlans.map((plan, index) => (
+              <Card 
+                key={index} 
+                className={`relative border transition-all duration-300 ${
+                  plan.popular 
+                    ? 'border-primary shadow-lg shadow-primary/10 scale-105' 
+                    : 'border-border hover:border-primary/30'
+                }`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <Badge className="bg-primary text-primary-foreground px-3 py-1">
+                      Populaire
+                    </Badge>
+                  </div>
+                )}
+                <CardHeader className="text-center pt-8">
+                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <span className="text-primary">{plan.icon}</span>
+                  </div>
+                  <CardTitle className="text-xl text-card-foreground mb-2">{plan.name}</CardTitle>
+                  <div className="mb-2">
+                    <span className="text-3xl font-bold text-card-foreground">
+                      {plan.price}
+                    </span>
+                    <span className="text-muted-foreground text-sm">{plan.period}</span>
+                  </div>
+                  <p className="text-muted-foreground text-sm">{plan.description}</p>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <ul className="space-y-3 mb-6">
+                    {plan.features.map((feature, featureIndex) => (
+                      <li key={featureIndex} className="flex items-start gap-2 text-sm">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                        <span className="text-card-foreground">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button 
+                    className={`w-full ${
+                      plan.popular 
+                        ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                    }`}
+                    onClick={() => navigate('/auth')}
+                  >
+                    {plan.price === "Sur devis" ? "Nous Contacter" : "Commencer"}
+                  </Button>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Technology Stack */}
-      <section className="py-20 px-4 bg-card/50 backdrop-blur-sm">
+      {/* Target Audience */}
+      <section className="py-20 px-4 bg-secondary">
         <div className="container mx-auto max-w-5xl text-center">
-          <h2 className="text-4xl font-bold mb-8 text-foreground">
-              Technologies de Pointe
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-secondary-foreground">
+            Pour Qui ?
           </h2>
-          <p className="text-xl text-muted-foreground mb-16 max-w-3xl mx-auto leading-relaxed">
-            Notre plateforme utilise les dernières technologies web pour offrir une expérience utilisateur exceptionnelle, robuste et sécurisée.
+          <p className="text-lg text-secondary-foreground/70 mb-12 max-w-2xl mx-auto">
+            Une solution adaptée à tous les acteurs du football.
           </p>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { name: "React", description: "Interface dynamique", color: "blue" },
-              { name: "TypeScript", description: "Code fiable", color: "indigo" },
-              { name: "Supabase", description: "Backend & BDD scalable", color: "emerald" },
-              { name: "Tailwind CSS", description: "Design moderne", color: "purple" }
-            ].map((tech, index) => (
-              <div key={index} className="p-6 bg-card/60 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-border">
-                <div className={`w-16 h-16 bg-accent rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md`}>
-                  <Zap className={`h-8 w-8 text-primary`} />
+              { icon: Users, title: "Coachs", desc: "Analystes tactiques" },
+              { icon: School, title: "Académies", desc: "Formation des jeunes" },
+              { icon: Building, title: "Clubs Pro", desc: "Performance d'équipe" },
+              { icon: LineChart, title: "Analystes", desc: "Data & statistiques" }
+            ].map((item, index) => (
+              <div 
+                key={index} 
+                className="p-6 bg-secondary-foreground/5 border border-secondary-foreground/10 rounded-xl hover:bg-secondary-foreground/10 transition-colors"
+              >
+                <div className="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <item.icon className="h-7 w-7 text-primary" />
                 </div>
-                <h4 className="font-semibold text-foreground mb-2 text-lg">{tech.name}</h4>
-                <p className="text-muted-foreground">{tech.description}</p>
+                <h3 className="font-semibold text-secondary-foreground mb-1">{item.title}</h3>
+                <p className="text-secondary-foreground/60 text-sm">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -415,83 +374,73 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 px-4 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
-        <div className="container mx-auto max-w-5xl text-center relative">
-          <h2 className="text-5xl font-bold text-white mb-8 leading-tight">
-            Prêt à Transformer Votre Analyse et Gestion de Match ?
+      <section className="py-20 px-4 bg-primary relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary/80" />
+        <div className="container mx-auto max-w-3xl text-center relative">
+          <h2 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-6">
+            Prêt à Transformer Votre Analyse ?
           </h2>
-          <p className="text-xl text-blue-100 mb-12 max-w-3xl mx-auto leading-relaxed">
-            Rejoignez les entraîneurs, analystes et clubs qui optimisent leurs performances avec notre plateforme.
+          <p className="text-lg text-primary-foreground/80 mb-8 max-w-xl mx-auto">
+            Rejoignez les clubs qui optimisent leurs performances avec notre plateforme.
           </p>
-          <div className="flex gap-6 justify-center flex-wrap">
+          <div className="flex gap-4 justify-center flex-wrap">
             <Button 
               size="lg" 
               onClick={() => navigate('/auth')}
-              className="bg-white text-blue-600 hover:bg-blue-50 text-lg px-10 py-4 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+              className="bg-white text-primary hover:bg-white/90 text-lg px-8 py-6"
             >
-              <UserCheck className="mr-3 h-6 w-6" />
+              <UserCheck className="mr-2 h-5 w-5" />
               Créer un Compte
-            </Button>
-            <Button 
-              variant="outline" 
-              size="lg"
-              className="text-white border-white/30 hover:bg-white/10 hover:border-white text-lg px-10 py-4 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300"
-            >
-              Nous Contacter
             </Button>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-card text-card-foreground py-16 px-4 border-t border-border">
-        <div className="container mx-auto max-w-6xl">
+      <footer className="bg-secondary text-secondary-foreground py-12 px-4 border-t border-secondary-foreground/10">
+        <div className="container mx-auto max-w-5xl">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg">
-                  <BarChart3 className="h-6 w-6 text-primary-foreground" />
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                  <Activity className="h-5 w-5 text-primary-foreground" />
                 </div>
-                <h3 className="text-xl font-bold">Sports Data Analytics SDA</h3>
+                <span className="font-bold">Tacta</span>
               </div>
-              <p className="text-muted-foreground leading-relaxed">
-                La plateforme de référence pour l'analyse et la gestion professionnelle sportive.
+              <p className="text-secondary-foreground/60 text-sm">
+                Au Service de la Performance Sportive
               </p>
             </div>
             
             <div>
-              <h4 className="font-semibold mb-6 text-lg">Services Clés</h4>
-              <ul className="space-y-3 text-muted-foreground">
-                <li className="hover:text-primary transition-colors cursor-pointer">Analyse Vidéo & Données</li>
-                <li className="hover:text-primary transition-colors cursor-pointer">Collaboration en Temps Réel</li>
-                <li className="hover:text-primary transition-colors cursor-pointer">Gestion d'Équipes & Joueurs</li>
-                <li className="hover:text-primary transition-colors cursor-pointer">Outils Administratifs</li>
+              <h4 className="font-semibold mb-4 text-sm">Services</h4>
+              <ul className="space-y-2 text-secondary-foreground/60 text-sm">
+                <li className="hover:text-primary transition-colors cursor-pointer">Analyse Vidéo</li>
+                <li className="hover:text-primary transition-colors cursor-pointer">Statistiques</li>
+                <li className="hover:text-primary transition-colors cursor-pointer">Scouting</li>
               </ul>
             </div>
             
             <div>
-              <h4 className="font-semibold mb-6 text-lg">Support</h4>
-              <ul className="space-y-3 text-muted-foreground">
+              <h4 className="font-semibold mb-4 text-sm">Support</h4>
+              <ul className="space-y-2 text-secondary-foreground/60 text-sm">
                 <li className="hover:text-primary transition-colors cursor-pointer">Documentation</li>
-                <li className="hover:text-primary transition-colors cursor-pointer">Tutoriels Vidéo</li>
-                <li className="hover:text-primary transition-colors cursor-pointer">Support Client Réactif</li>
-                <li className="hover:text-primary transition-colors cursor-pointer">Formations Personnalisées</li>
+                <li className="hover:text-primary transition-colors cursor-pointer">Contact</li>
               </ul>
             </div>
             
             <div>
-              <h4 className="font-semibold mb-6 text-lg">Contact</h4>
-              <ul className="space-y-3 text-muted-foreground">
-                <li className="hover:text-primary transition-colors">contact@sportsdata.pro</li>
-                <li className="hover:text-primary transition-colors">+213 XX XX XX XX</li>
-                <li className="hover:text-primary transition-colors">Alger, Algérie</li>
+              <h4 className="font-semibold mb-4 text-sm">Contact</h4>
+              <ul className="space-y-2 text-secondary-foreground/60 text-sm">
+                <li>tactasports@gmail.com</li>
+                <li>0796 63 89 70</li>
+                <li>Algérie</li>
               </ul>
             </div>
           </div>
           
-          <div className="border-t border-border mt-12 pt-8 text-center text-muted-foreground">
-            <p>© {new Date().getFullYear()} Sports Data Analytics SDA. Tous droits réservés.</p>
+          <div className="border-t border-secondary-foreground/10 mt-8 pt-8 text-center text-secondary-foreground/50 text-sm">
+            <p>© {new Date().getFullYear()} Tacta Sports. Tous droits réservés.</p>
           </div>
         </div>
       </footer>
