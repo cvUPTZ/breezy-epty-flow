@@ -330,9 +330,10 @@ export type Database = {
           event_data: Json | null
           event_type: string
           id: string
-          match_id: string
+          match_id: string | null
           player_id: number | null
           quality_control: Json | null
+          source: string | null
           team: string | null
           timestamp: number | null
           updated_at: string | null
@@ -345,9 +346,10 @@ export type Database = {
           event_data?: Json | null
           event_type: string
           id?: string
-          match_id: string
+          match_id?: string | null
           player_id?: number | null
           quality_control?: Json | null
+          source?: string | null
           team?: string | null
           timestamp?: number | null
           updated_at?: string | null
@@ -360,9 +362,10 @@ export type Database = {
           event_data?: Json | null
           event_type?: string
           id?: string
-          match_id?: string
+          match_id?: string | null
           player_id?: number | null
           quality_control?: Json | null
+          source?: string | null
           team?: string | null
           timestamp?: number | null
           updated_at?: string | null

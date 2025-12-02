@@ -32,7 +32,7 @@ interface Assignment {
   tracker_user_id: string;
   tracker_name: string;
   tracker_email: string;
-  tracker_type: 'player' | 'ball';
+  tracker_type: 'player' | 'ball' | 'voiceover';
   player_ids: number[] | null;
   assigned_event_types: string[];
   team_id: 'home' | 'away';

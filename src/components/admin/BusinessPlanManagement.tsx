@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import StartupPitchPresentation from './StartupPitchPresentation';
+import PricingStrategySimulator from '../business/PricingStrategySimulator';
 
 // --- TYPE DEFINITIONS ---
 interface BusinessGoal {
@@ -252,9 +253,10 @@ const BusinessPlanManagement: React.FC = () => {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="pitch">Pitch Deck</TabsTrigger>
+          <TabsTrigger value="pricing">Simulation Prix</TabsTrigger>
           <TabsTrigger value="goals">Objectifs</TabsTrigger>
           <TabsTrigger value="revenue">Modèle Économique</TabsTrigger>
           <TabsTrigger value="team">Équipe & Capital</TabsTrigger>
@@ -264,6 +266,10 @@ const BusinessPlanManagement: React.FC = () => {
 
         <TabsContent value="pitch" className="space-y-6">
           <StartupPitchPresentation />
+        </TabsContent>
+
+        <TabsContent value="pricing" className="space-y-6">
+          <PricingStrategySimulator />
         </TabsContent>
 
         <TabsContent value="overview" className="space-y-6">
