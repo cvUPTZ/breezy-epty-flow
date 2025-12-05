@@ -21,6 +21,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { DocumentRenderer } from './DocumentRenderer';
 
 interface AnalysisIssue {
   category: string;
@@ -454,31 +455,33 @@ export function DocumentFinalizer({ document, onClose, onSuccess }: DocumentFina
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ScrollArea className="h-96 border rounded-lg p-4">
-                    <pre className="text-sm whitespace-pre-wrap">
-                      {JSON.stringify(generatedContent, null, 2)}
-                    </pre>
+                  <ScrollArea className="h-[600px] border rounded-lg">
+                    <DocumentRenderer 
+                      documentType={document.document_type}
+                      content={generatedContent}
+                      title={document.title}
+                    />
                   </ScrollArea>
                 </CardContent>
               </Card>
 
-              {generatedContent.appliedChanges && (
+              {generatedContent.coherenceScore && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Modifications Appliquées</CardTitle>
+                    <CardTitle>Score de Cohérence</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ul className="space-y-2">
-                      {generatedContent.appliedChanges.map((change: string, index: number) => (
-                        <li key={index} className="flex items-start gap-2 text-sm">
-                          <CheckCircle className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
-                          <span>{change}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="flex items-center gap-4">
+                      <Progress value={generatedContent.coherenceScore} className="flex-1" />
+                      <span className="text-lg font-bold">{generatedContent.coherenceScore}/100</span>
+                    </div>
+                    {generatedContent.finalizationSummary && (
+                      <p className="text-sm text-muted-foreground mt-3">{generatedContent.finalizationSummary}</p>
+                    )}
                   </CardContent>
                 </Card>
               )}
+
 
               <div className="flex justify-between">
                 <div className="flex gap-2">
