@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, PlusCircle, Trash2, Eye, Edit, Download, Upload } from 'lucide-react';
+import { FileText, PlusCircle, Trash2, Eye, Edit, Download, Upload, Wand2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { BusinessPlanBuilder } from '@/components/business/BusinessPlanBuilder';
 import { BusinessModelCanvasBuilder } from '@/components/business/BusinessModelCanvasBuilder';
@@ -14,6 +14,7 @@ import { DocumentUploadDialog } from '@/components/business/DocumentUploadDialog
 import { DocumentAnalysisView } from '@/components/business/DocumentAnalysisView';
 import { GlobalAnalysisView } from '@/components/business/GlobalAnalysisView';
 import { SupportDocumentUploadDialog } from '@/components/business/SupportDocumentUploadDialog';
+import { DocumentFinalizer } from '@/components/business/DocumentFinalizer';
 
 type DocumentType = 'business_plan' | 'business_model_canvas' | 'market_study';
 
@@ -35,6 +36,7 @@ export default function BusinessDocumentManager() {
   const [supportDocsDialogOpen, setSupportDocsDialogOpen] = useState(false);
   const [viewingAnalysis, setViewingAnalysis] = useState(false);
   const [viewingGlobalAnalysis, setViewingGlobalAnalysis] = useState(false);
+  const [finalizingDocument, setFinalizingDocument] = useState(false);
   const [globalAnalysisData, setGlobalAnalysisData] = useState<any>(null);
   const [isLoadingGlobalAnalysis, setIsLoadingGlobalAnalysis] = useState(false);
   const { toast } = useToast();
@@ -125,6 +127,20 @@ export default function BusinessDocumentManager() {
     setSelectedDocument(null);
   };
 
+  const handleFinalizeDocument = (doc: BusinessDocument) => {
+    setSelectedDocument(doc);
+    setFinalizingDocument(true);
+  };
+
+  const handleCloseFinalizer = () => {
+    setFinalizingDocument(false);
+    setSelectedDocument(null);
+  };
+
+  const handleFinalizerSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['business-documents'] });
+  };
+
   const handleGlobalAnalysis = async () => {
     setIsLoadingGlobalAnalysis(true);
     try {
@@ -188,6 +204,18 @@ export default function BusinessDocumentManager() {
           <p className="text-muted-foreground">Analyse IA du document</p>
         </div>
         <DocumentAnalysisView analysis={selectedDocument.content.analysis} />
+      </div>
+    );
+  }
+
+  if (finalizingDocument && selectedDocument) {
+    return (
+      <div className="container mx-auto p-6">
+        <DocumentFinalizer 
+          document={selectedDocument}
+          onClose={handleCloseFinalizer}
+          onSuccess={handleFinalizerSuccess}
+        />
       </div>
     );
   }
@@ -298,22 +326,31 @@ export default function BusinessDocumentManager() {
                       <p>Updated: {new Date(doc.updated_at).toLocaleDateString()}</p>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {doc.content?.analysis && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => handleViewAnalysis(doc)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          Analyse
-                        </Button>
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewAnalysis(doc)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Analyse
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleFinalizeDocument(doc)}
+                            className="bg-primary"
+                          >
+                            <Wand2 className="h-4 w-4 mr-1" />
+                            Finaliser
+                          </Button>
+                        </>
                       )}
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1"
                         onClick={() => handleEditDocument(doc)}
                       >
                         <Edit className="h-4 w-4 mr-1" />
