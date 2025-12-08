@@ -173,22 +173,33 @@ export function DocumentFinalizer({ document, onClose, onSuccess }: DocumentFina
     if (!generatedContent) return;
 
     try {
+      // Remove old analysis so re-analysis uses the new content
+      const { analysis: oldAnalysis, ...contentWithoutAnalysis } = document.content;
+      const { analysis: newAnalysis, ...generatedWithoutAnalysis } = generatedContent;
+
+      const updatedContent = {
+        ...contentWithoutAnalysis,
+        ...generatedWithoutAnalysis,
+        // Clear the analysis so user can re-analyze the finalized document
+        analysis: null,
+        previousVersions: [
+          ...(document.content.previousVersions || []),
+          { 
+            content: document.content, 
+            savedAt: new Date().toISOString(),
+            version: (document.content.previousVersions?.length || 0) + 1
+          }
+        ],
+        finalizedAt: new Date().toISOString(),
+        lastAppliedChanges: generatedContent.appliedChanges || [],
+        lastCoherenceScore: generatedContent.coherenceScore || 0,
+        lastFinalizationSummary: generatedContent.finalizationSummary || '',
+      };
+
       const { error } = await supabase
         .from('business_documents')
         .update({
-          content: {
-            ...document.content,
-            ...generatedContent,
-            previousVersions: [
-              ...(document.content.previousVersions || []),
-              { 
-                content: document.content, 
-                savedAt: new Date().toISOString(),
-                version: (document.content.previousVersions?.length || 0) + 1
-              }
-            ],
-            finalizedAt: new Date().toISOString(),
-          },
+          content: updatedContent,
           status: 'completed',
           updated_at: new Date().toISOString(),
         })
@@ -198,7 +209,7 @@ export function DocumentFinalizer({ document, onClose, onSuccess }: DocumentFina
 
       toast({
         title: 'Document finalisé',
-        description: 'Le document a été mis à jour avec les corrections appliquées.',
+        description: 'Le document a été mis à jour. Relancez une analyse pour vérifier les améliorations.',
       });
       onSuccess();
       onClose();
