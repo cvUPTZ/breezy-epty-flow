@@ -39,13 +39,17 @@ serve(async (req) => {
       additionalContext 
     } = body;
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY not configured");
+    console.log(`Processing document: ${documentId}, type: ${documentType}`);
+    console.log(`Recommendations: ${selectedRecommendations.length}, Issues: ${selectedIssues.length}`);
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY not configured");
     }
 
     // Build the prompt for document finalization
-    const prompt = buildFinalizationPrompt(
+    const systemPrompt = buildSystemPrompt(documentType);
+    const userPrompt = buildUserPrompt(
       documentType,
       currentContent,
       selectedRecommendations,
@@ -53,39 +57,120 @@ serve(async (req) => {
       additionalContext
     );
 
-    // Call Gemini API
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 8192,
-          },
-        }),
-      }
-    );
+    console.log("Calling Lovable AI Gateway...");
+
+    // Call Lovable AI Gateway with tool calling for structured output
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "finalize_document",
+              description: "Finalize a business document by applying recommendations and fixes",
+              parameters: {
+                type: "object",
+                properties: {
+                  updatedContent: {
+                    type: "object",
+                    description: "The updated document content with all fixes applied"
+                  },
+                  appliedChanges: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "List of changes that were applied"
+                  },
+                  coherenceScore: {
+                    type: "number",
+                    description: "Coherence score from 0 to 100"
+                  },
+                  summary: {
+                    type: "string",
+                    description: "Summary of all modifications made"
+                  }
+                },
+                required: ["updatedContent", "appliedChanges", "coherenceScore", "summary"],
+                additionalProperties: false
+              }
+            }
+          }
+        ],
+        tool_choice: { type: "function", function: { name: "finalize_document" } }
+      }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Gemini API error:", errorText);
-      throw new Error(`Gemini API error: ${response.status}`);
+      console.error("Lovable AI Gateway error:", response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Rate limit exceeded. Please try again in a few moments.",
+            retryAfter: 30
+          }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "AI credits exhausted. Please add funds to your Lovable workspace.",
+          }),
+          {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      throw new Error(`AI Gateway error: ${response.status}`);
     }
 
     const result = await response.json();
-    const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    console.log("AI Gateway response received");
 
-    if (!generatedText) {
-      throw new Error("No response from Gemini");
+    // Extract tool call result
+    const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall || toolCall.function.name !== "finalize_document") {
+      console.error("No valid tool call in response:", JSON.stringify(result));
+      throw new Error("Invalid response from AI - no tool call");
     }
 
-    // Parse the generated content
-    const finalDocument = parseGeneratedDocument(generatedText, documentType, currentContent);
+    let parsedArgs;
+    try {
+      parsedArgs = JSON.parse(toolCall.function.arguments);
+    } catch (parseError) {
+      console.error("Failed to parse tool arguments:", toolCall.function.arguments);
+      throw new Error("Failed to parse AI response");
+    }
+
+    const finalDocument = {
+      ...currentContent,
+      ...parsedArgs.updatedContent,
+      appliedChanges: parsedArgs.appliedChanges || [],
+      coherenceScore: parsedArgs.coherenceScore || 0,
+      finalizationSummary: parsedArgs.summary || "",
+      lastFinalized: new Date().toISOString(),
+    };
+
+    console.log(`Document finalized with coherence score: ${parsedArgs.coherenceScore}`);
 
     return new Response(
       JSON.stringify({
@@ -113,13 +198,7 @@ serve(async (req) => {
   }
 });
 
-function buildFinalizationPrompt(
-  documentType: string,
-  currentContent: any,
-  recommendations: string[],
-  issues: AnalysisIssue[],
-  additionalContext: string
-): string {
+function buildSystemPrompt(documentType: string): string {
   const documentTypeLabels: Record<string, string> = {
     business_plan: "Business Plan",
     business_model_canvas: "Business Model Canvas",
@@ -128,85 +207,48 @@ function buildFinalizationPrompt(
 
   const typeLabel = documentTypeLabels[documentType] || documentType;
 
-  return `Tu es un expert en stratégie d'entreprise et en rédaction de documents business. 
+  return `Tu es un expert en stratégie d'entreprise et en rédaction de documents business professionnels.
 Ta mission est de finaliser un ${typeLabel} en appliquant les recommandations et corrections sélectionnées.
 
-## DOCUMENT ACTUEL
+Tu dois:
+1. Analyser le document actuel et les modifications demandées
+2. Appliquer chaque recommandation de manière cohérente
+3. Corriger chaque problème identifié
+4. Intégrer le contexte additionnel si pertinent
+5. Assurer la cohérence globale du document
+6. Maintenir le format et la structure du document original
+7. Produire un document professionnel et bien structuré`;
+}
+
+function buildUserPrompt(
+  documentType: string,
+  currentContent: any,
+  recommendations: string[],
+  issues: AnalysisIssue[],
+  additionalContext: string
+): string {
+  const issuesText = issues.length > 0 
+    ? issues.map((issue, i) => `${i + 1}. **${issue.title}** (${issue.severity})
+   - Description: ${issue.description}
+   - Localisation: ${issue.location}
+   - Correction suggérée: ${issue.recommendation}`).join("\n")
+    : "Aucun problème à corriger.";
+
+  const recommendationsText = recommendations.length > 0
+    ? recommendations.map((r, i) => `${i + 1}. ${r}`).join("\n")
+    : "Aucune recommandation spécifique.";
+
+  return `## DOCUMENT ACTUEL
 ${JSON.stringify(currentContent, null, 2)}
 
 ## RECOMMANDATIONS À APPLIQUER
-${recommendations.map((r, i) => `${i + 1}. ${r}`).join("\n")}
+${recommendationsText}
 
 ## PROBLÈMES À CORRIGER
-${issues.map((issue, i) => `
-${i + 1}. **${issue.title}** (${issue.severity})
-   - Description: ${issue.description}
-   - Localisation: ${issue.location}
-   - Correction suggérée: ${issue.recommendation}
-`).join("\n")}
+${issuesText}
 
 ## CONTEXTE ADDITIONNEL
 ${additionalContext || "Aucun contexte additionnel fourni."}
 
-## INSTRUCTIONS
-1. Analyse le document actuel et les modifications demandées
-2. Applique chaque recommandation de manière cohérente
-3. Corrige chaque problème identifié
-4. Intègre le contexte additionnel si pertinent
-5. Assure la cohérence globale du document
-6. Maintiens le format et la structure du document original
-
-## FORMAT DE RÉPONSE
-Retourne un JSON valide avec la structure suivante:
-{
-  "updatedContent": {
-    // Le contenu mis à jour du document, avec la même structure que l'original
-  },
-  "appliedChanges": [
-    // Liste des modifications appliquées (description textuelle)
-  ],
-  "coherenceScore": number, // Score de cohérence de 0 à 100
-  "summary": "Résumé des modifications apportées"
-}
-
-Assure-toi que le JSON est valide et complet.`;
-}
-
-function parseGeneratedDocument(
-  generatedText: string,
-  documentType: string,
-  currentContent: any
-): any {
-  try {
-    // Try to extract JSON from the response
-    const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      return {
-        ...currentContent,
-        ...parsed.updatedContent,
-        appliedChanges: parsed.appliedChanges || [],
-        coherenceScore: parsed.coherenceScore || 0,
-        finalizationSummary: parsed.summary || "",
-        lastFinalized: new Date().toISOString(),
-      };
-    }
-
-    // If JSON parsing fails, return a structured response with the text
-    return {
-      ...currentContent,
-      appliedChanges: ["Document mis à jour avec les recommandations"],
-      generatedNarrative: generatedText,
-      lastFinalized: new Date().toISOString(),
-    };
-  } catch (error) {
-    console.error("Error parsing generated document:", error);
-    return {
-      ...currentContent,
-      appliedChanges: ["Document traité - vérification manuelle recommandée"],
-      rawGeneration: generatedText,
-      parseError: true,
-      lastFinalized: new Date().toISOString(),
-    };
-  }
+Utilise la fonction finalize_document pour retourner le document mis à jour avec toutes les corrections appliquées.`;
 }
