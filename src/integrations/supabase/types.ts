@@ -168,6 +168,81 @@ export type Database = {
         }
         Relationships: []
       }
+      data_reconciliation_issues: {
+        Row: {
+          created_at: string
+          description: string | null
+          document_id: string | null
+          document_location: string | null
+          expected_value: string | null
+          found_value: string | null
+          id: string
+          issue_type: string
+          key_name: string
+          reference_id: string | null
+          resolution_notes: string | null
+          resolution_status: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          document_id?: string | null
+          document_location?: string | null
+          expected_value?: string | null
+          found_value?: string | null
+          id?: string
+          issue_type: string
+          key_name: string
+          reference_id?: string | null
+          resolution_notes?: string | null
+          resolution_status?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          document_id?: string | null
+          document_location?: string | null
+          expected_value?: string | null
+          found_value?: string | null
+          id?: string
+          issue_type?: string
+          key_name?: string
+          reference_id?: string | null
+          resolution_notes?: string | null
+          resolution_status?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_reconciliation_issues_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "business_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "data_reconciliation_issues_reference_id_fkey"
+            columns: ["reference_id"]
+            isOneToOne: false
+            referencedRelation: "master_reference_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       error_logs: {
         Row: {
           component_name: string | null
@@ -276,6 +351,63 @@ export type Database = {
         }
         Relationships: []
       }
+      expansion_plans: {
+        Row: {
+          created_at: string
+          dependencies: string[] | null
+          id: string
+          key_objectives: Json | null
+          notes: string | null
+          phase: number
+          phase_name: string
+          region: string
+          required_resources: Json | null
+          risks: Json | null
+          start_date: string | null
+          status: string | null
+          success_metrics: Json | null
+          target_end_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dependencies?: string[] | null
+          id?: string
+          key_objectives?: Json | null
+          notes?: string | null
+          phase?: number
+          phase_name: string
+          region: string
+          required_resources?: Json | null
+          risks?: Json | null
+          start_date?: string | null
+          status?: string | null
+          success_metrics?: Json | null
+          target_end_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dependencies?: string[] | null
+          id?: string
+          key_objectives?: Json | null
+          notes?: string | null
+          phase?: number
+          phase_name?: string
+          region?: string
+          required_resources?: Json | null
+          risks?: Json | null
+          start_date?: string | null
+          status?: string | null
+          success_metrics?: Json | null
+          target_end_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       gpu_nodes: {
         Row: {
           capabilities: Json | null
@@ -318,6 +450,60 @@ export type Database = {
           performance?: Json | null
           priority?: number | null
           status?: string | null
+        }
+        Relationships: []
+      }
+      master_reference_data: {
+        Row: {
+          calculation_method: string | null
+          category: string
+          created_at: string
+          data_source: string | null
+          id: string
+          is_active: boolean | null
+          justification: string | null
+          key_name: string
+          unit: string | null
+          updated_at: string
+          user_id: string
+          valid_from: string | null
+          valid_to: string | null
+          value: number | null
+          value_text: string | null
+        }
+        Insert: {
+          calculation_method?: string | null
+          category: string
+          created_at?: string
+          data_source?: string | null
+          id?: string
+          is_active?: boolean | null
+          justification?: string | null
+          key_name: string
+          unit?: string | null
+          updated_at?: string
+          user_id: string
+          valid_from?: string | null
+          valid_to?: string | null
+          value?: number | null
+          value_text?: string | null
+        }
+        Update: {
+          calculation_method?: string | null
+          category?: string
+          created_at?: string
+          data_source?: string | null
+          id?: string
+          is_active?: boolean | null
+          justification?: string | null
+          key_name?: string
+          unit?: string | null
+          updated_at?: string
+          user_id?: string
+          valid_from?: string | null
+          valid_to?: string | null
+          value?: number | null
+          value_text?: string | null
         }
         Relationships: []
       }
@@ -897,6 +1083,56 @@ export type Database = {
           },
         ]
       }
+      reference_data_history: {
+        Row: {
+          change_reason: string
+          change_type: string
+          created_at: string
+          id: string
+          new_value: number | null
+          new_value_text: string | null
+          previous_value: number | null
+          previous_value_text: string | null
+          reference_id: string
+          supporting_document_id: string | null
+          user_id: string
+        }
+        Insert: {
+          change_reason: string
+          change_type: string
+          created_at?: string
+          id?: string
+          new_value?: number | null
+          new_value_text?: string | null
+          previous_value?: number | null
+          previous_value_text?: string | null
+          reference_id: string
+          supporting_document_id?: string | null
+          user_id: string
+        }
+        Update: {
+          change_reason?: string
+          change_type?: string
+          created_at?: string
+          id?: string
+          new_value?: number | null
+          new_value_text?: string | null
+          previous_value?: number | null
+          previous_value_text?: string | null
+          reference_id?: string
+          supporting_document_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_data_history_reference_id_fkey"
+            columns: ["reference_id"]
+            isOneToOne: false
+            referencedRelation: "master_reference_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       references: {
         Row: {
           citation_style: string | null
@@ -1130,6 +1366,54 @@ export type Database = {
           resource_type?: string | null
           user_agent?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      strategic_hypotheses: {
+        Row: {
+          assumption_basis: string | null
+          category: string
+          confidence_level: string | null
+          created_at: string
+          hypothesis_description: string
+          hypothesis_name: string
+          id: string
+          impact_if_wrong: string | null
+          is_active: boolean | null
+          related_documents: string[] | null
+          updated_at: string
+          user_id: string
+          validation_status: string | null
+        }
+        Insert: {
+          assumption_basis?: string | null
+          category: string
+          confidence_level?: string | null
+          created_at?: string
+          hypothesis_description: string
+          hypothesis_name: string
+          id?: string
+          impact_if_wrong?: string | null
+          is_active?: boolean | null
+          related_documents?: string[] | null
+          updated_at?: string
+          user_id: string
+          validation_status?: string | null
+        }
+        Update: {
+          assumption_basis?: string | null
+          category?: string
+          confidence_level?: string | null
+          created_at?: string
+          hypothesis_description?: string
+          hypothesis_name?: string
+          id?: string
+          impact_if_wrong?: string | null
+          is_active?: boolean | null
+          related_documents?: string[] | null
+          updated_at?: string
+          user_id?: string
+          validation_status?: string | null
         }
         Relationships: []
       }
