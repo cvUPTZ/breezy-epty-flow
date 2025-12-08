@@ -11,8 +11,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ToastAction } from "@/components/ui/toast";
-// import { useNetworkStatus } from './hooks/useNetworkStatus';
-// import { usePermissionChecker } from './hooks/usePermissionChecker';
 
 // Import all the page components
 import Header from './components/Header';
@@ -57,8 +55,13 @@ import BusinessModelCanvasDocument from './components/documents/BusinessModelCan
 import BusinessPlanDocument from './components/documents/BusinessPlanDocument';
 import MarketStudyDocument from './components/documents/MarketStudyDocument';
 
-const queryClient = new QueryClient();
+// Import Data Governance Hub components
+import { DataGovernanceHub } from './components/governance/DataGovernanceHub';
+import { MasterReferenceManager } from './components/governance/MasterReferenceManager';
+import { ReconciliationDashboard } from './components/governance/ReconciliationDashboard';
+import { StrategicHypothesesManager } from './components/governance/StrategicHypothesesManager';
 
+const queryClient = new QueryClient();
 
 interface MatchPayload {
   id: string;
@@ -94,7 +97,6 @@ const AppContent = () => {
       }
     }
   }, []); 
-
 
   return (
     <>
@@ -142,7 +144,6 @@ const AppContent = () => {
             <MatchAnalysisV2 />
           </RequireAuth>
         } />
-        
         
         <Route path="/match/:matchId/edit" element={
           <RequireAuth 
@@ -256,6 +257,7 @@ const AppContent = () => {
             <ProfileListPage />
           </RequireAuth>
         } />
+        
         <Route path="/admin/video-setup" element={
           <AdminOnly>
             <VideoSetupPage />
@@ -291,7 +293,6 @@ const AppContent = () => {
             <BusinessDocumentManager />
           </AdminOnly>
         } />
-
         
         {/* Scouting Routes */}
         <Route path="/scouting" element={
@@ -301,12 +302,13 @@ const AppContent = () => {
             <Scouting />
           </RequireAuth>
         } />
+        
         <Route path="/scouting/club/:clubId" element={
-            <RequireAuth
-                requiredRoles={['admin', 'manager']}
-            >
-                <ClubDetails />
-            </RequireAuth>
+          <RequireAuth
+            requiredRoles={['admin', 'manager']}
+          >
+            <ClubDetails />
+          </RequireAuth>
         } />
 
         {/* Business Routes */}
@@ -315,24 +317,59 @@ const AppContent = () => {
             <MarketIntelligencePage />
           </RequireAuth>
         } />
+        
         <Route path="/business/plan" element={
           <RequireAuth requiredRoles={['admin', 'manager']}>
             <BusinessPlanPage />
           </RequireAuth>
         } />
+        
         <Route path="/business/pitch" element={
           <RequireAuth requiredRoles={['admin', 'manager']}>
             <StartupPitchPage />
           </RequireAuth>
         } />
+        
         <Route path="/business/canvas" element={
           <RequireAuth requiredRoles={['admin', 'manager']}>
             <BusinessModelCanvasPage />
           </RequireAuth>
         } />
+        
         <Route path="/business/service-offer" element={
           <RequireAuth requiredRoles={['admin', 'manager']}>
             <ServiceOfferPage />
+          </RequireAuth>
+        } />
+
+        {/* Data Governance Routes */}
+        <Route path="/governance" element={
+          <RequireAuth requiredRoles={['admin', 'manager']}>
+            <DataGovernanceHub />
+          </RequireAuth>
+        } />
+        
+        <Route path="/governance/reference-data" element={
+          <RequireAuth requiredRoles={['admin', 'manager']}>
+            <div className="container mx-auto p-6">
+              <MasterReferenceManager />
+            </div>
+          </RequireAuth>
+        } />
+        
+        <Route path="/governance/reconciliation" element={
+          <RequireAuth requiredRoles={['admin', 'manager']}>
+            <div className="container mx-auto p-6">
+              <ReconciliationDashboard />
+            </div>
+          </RequireAuth>
+        } />
+        
+        <Route path="/governance/hypotheses" element={
+          <RequireAuth requiredRoles={['admin', 'manager']}>
+            <div className="container mx-auto p-6">
+              <StrategicHypothesesManager />
+            </div>
           </RequireAuth>
         } />
 
@@ -342,11 +379,13 @@ const AppContent = () => {
             <BusinessModelCanvasDocument />
           </RequireAuth>
         } />
+        
         <Route path="/documents/business-plan" element={
           <RequireAuth requiredRoles={['admin', 'manager']}>
             <BusinessPlanDocument />
           </RequireAuth>
         } />
+        
         <Route path="/documents/market-study" element={
           <RequireAuth requiredRoles={['admin', 'manager']}>
             <MarketStudyDocument />
