@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, PlusCircle, Trash2, Eye, Edit, Download, Upload, Wand2 } from 'lucide-react';
+import { FileText, PlusCircle, Trash2, Eye, Edit, Download, Upload, Wand2, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { BusinessPlanBuilder } from '@/components/business/BusinessPlanBuilder';
 import { BusinessModelCanvasBuilder } from '@/components/business/BusinessModelCanvasBuilder';
@@ -15,6 +15,7 @@ import { DocumentAnalysisView } from '@/components/business/DocumentAnalysisView
 import { GlobalAnalysisView } from '@/components/business/GlobalAnalysisView';
 import { SupportDocumentUploadDialog } from '@/components/business/SupportDocumentUploadDialog';
 import { DocumentFinalizer } from '@/components/business/DocumentFinalizer';
+import { DataGovernanceHub } from '@/components/business/DataGovernance';
 
 type DocumentType = 'business_plan' | 'business_model_canvas' | 'market_study';
 
