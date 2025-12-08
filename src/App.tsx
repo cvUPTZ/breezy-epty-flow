@@ -55,11 +55,11 @@ import BusinessModelCanvasDocument from './components/documents/BusinessModelCan
 import BusinessPlanDocument from './components/documents/BusinessPlanDocument';
 import MarketStudyDocument from './components/documents/MarketStudyDocument';
 
-// Import Data Governance Hub components
-import { DataGovernanceHub } from './components/governance/DataGovernanceHub';
-import { MasterReferenceManager } from './components/governance/MasterReferenceManager';
-import { ReconciliationDashboard } from './components/governance/ReconciliationDashboard';
-import { StrategicHypothesesManager } from './components/governance/StrategicHypothesesManager';
+// Import Data Governance Hub components src/components/business/DataGovernance
+import { DataGovernanceHub } from './components/business/DataGovernance/DataGovernanceHub';
+import { MasterReferenceManager } from './components/business/DataGovernance/MasterReferenceManager';
+import { ReconciliationDashboard } from './components/business/DataGovernance/ReconciliationDashboard';
+import { StrategicHypothesesManager } from './components/business/DataGovernance/StrategicHypothesesManager';
 
 const queryClient = new QueryClient();
 
