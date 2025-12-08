@@ -2,11 +2,6 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { getCorsHeaders } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
 interface GlobalAnalysisResult {
   summary: string;
   overallQuality: number;
@@ -49,6 +44,7 @@ serve(async (req: Request) => {
     const { data: documents, error: fetchError } = await supabaseClient
       .from('business_documents')
       .select('*')
+      .eq('is_supporting_document', false)
       .order('created_at', { ascending: false });
 
     if (fetchError) {
@@ -59,9 +55,9 @@ serve(async (req: Request) => {
       throw new Error('No documents found to analyze');
     }
 
-    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!geminiApiKey) {
-      throw new Error('GEMINI_API_KEY not configured');
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
 
     console.log(`Analyzing ${documents.length} documents globally`);
@@ -71,7 +67,9 @@ serve(async (req: Request) => {
       id: doc.id,
       title: doc.title,
       type: doc.document_type,
-      content: doc.content?.data || JSON.stringify(doc.content),
+      content: typeof doc.content === 'string' 
+        ? doc.content.substring(0, 2000)
+        : JSON.stringify(doc.content).substring(0, 2000),
     }));
 
     const systemPrompt = `Tu es un expert en analyse stratégique et business. 
@@ -85,11 +83,9 @@ pour identifier:
 6. **HYPOTHÈSES CONTRADICTOIRES**: Signale les hypothèses business incompatibles entre documents
 7. Une vision globale de la qualité stratégique et cohérence du portefeuille
 
-IMPORTANT: Tu dois répondre UNIQUEMENT avec un objet JSON valide, sans texte additionnel avant ou après.
-Assure-toi que toutes les chaînes de caractères sont correctement échappées et que le JSON est complet et valide.
 FOCUS PRINCIPAL: Identifier et détailler TOUTES les incohérences de données entre les documents.`;
 
-    const analysisPrompt = `
+    const userPrompt = `
 Nombre de documents à analyser: ${documents.length}
 
 Documents:
@@ -97,162 +93,155 @@ ${documentSummaries.map((doc, idx) => `
 Document ${idx + 1}:
 Type: ${doc.type}
 Titre: ${doc.title}
-Contenu: ${doc.content.substring(0, 2500)}...
+Contenu: ${doc.content}...
 `).join('\n\n')}
 
-Réponds UNIQUEMENT avec cet objet JSON (pas de texte avant ou après):
-{
-  "summary": "Résumé global en 2-3 paragraphes maximum",
-  "overallQuality": 75,
-  "commonIssues": [
-    "Problème 1",
-    "Problème 2",
-    "Problème 3"
-  ],
-  "strengths": [
-    "Force 1",
-    "Force 2",
-    "Force 3"
-  ],
-  "recommendations": [
-    "Recommandation 1",
-    "Recommandation 2",
-    "Recommandation 3"
-  ],
-  "documentComparison": [
-    {
-      "documentId": "${documentSummaries[0]?.id || ''}",
-      "documentTitle": "Titre du document",
-      "documentType": "type",
-      "score": 75,
-      "mainFindings": ["Constat 1", "Constat 2"]
-    }
-  ],
-  "synergies": [
-    "Synergie 1",
-    "Synergie 2"
-  ],
-  "contradictions": [
-    "Contradiction 1"
-  ]
-}
-`;
+Utilise la fonction analyze_documents pour fournir une analyse globale complète.`;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `${systemPrompt}\n\n${analysisPrompt}`
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.4,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 8192,
-          },
-          safetySettings: [
-            {
-              "category": "HARM_CATEGORY_HARASSMENT",
-              "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              "category": "HARM_CATEGORY_HATE_SPEECH",
-              "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+    console.log("Calling Lovable AI Gateway...");
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "analyze_documents",
+              description: "Provide a comprehensive analysis of all business documents",
+              parameters: {
+                type: "object",
+                properties: {
+                  summary: {
+                    type: "string",
+                    description: "Global summary in 2-3 paragraphs"
+                  },
+                  overallQuality: {
+                    type: "number",
+                    description: "Overall quality score from 0 to 100"
+                  },
+                  commonIssues: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "List of common issues found across documents"
+                  },
+                  strengths: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "List of strengths found across documents"
+                  },
+                  recommendations: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "List of recommendations for improvement"
+                  },
+                  documentComparison: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        documentId: { type: "string" },
+                        documentTitle: { type: "string" },
+                        documentType: { type: "string" },
+                        score: { type: "number" },
+                        mainFindings: { type: "array", items: { type: "string" } }
+                      },
+                      required: ["documentId", "documentTitle", "documentType", "score", "mainFindings"]
+                    },
+                    description: "Comparison of each document"
+                  },
+                  synergies: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Synergies found between documents"
+                  },
+                  contradictions: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Contradictions and inconsistencies found between documents"
+                  }
+                },
+                required: ["summary", "overallQuality", "commonIssues", "strengths", "recommendations", "documentComparison", "synergies", "contradictions"],
+                additionalProperties: false
+              }
             }
-          ]
-        }),
-      }
-    );
+          }
+        ],
+        tool_choice: { type: "function", function: { name: "analyze_documents" } }
+      }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Gemini API error:', errorText);
-      throw new Error(`Gemini API error: ${response.status}`);
+      console.error("Lovable AI Gateway error:", response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Rate limit exceeded. Please try again in a few moments.",
+            retryAfter: 30
+          }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "AI credits exhausted. Please add funds to your Lovable workspace.",
+          }),
+          {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      throw new Error(`AI Gateway error: ${response.status}`);
     }
 
-    const geminiData = await response.json();
-    console.log("Gemini response received");
+    const result = await response.json();
+    console.log("AI Gateway response received");
 
-    if (!geminiData.candidates || !geminiData.candidates[0]) {
-      throw new Error('No content generated by Gemini');
+    // Extract tool call result
+    const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall || toolCall.function.name !== "analyze_documents") {
+      console.error("No valid tool call in response:", JSON.stringify(result));
+      throw new Error("Invalid response from AI - no tool call");
     }
 
-    let generatedText = geminiData.candidates[0].content.parts[0].text;
-    console.log("Raw response length:", generatedText.length);
-    
     let analysisResult: GlobalAnalysisResult;
     try {
-      // Remove markdown code blocks if present
-      generatedText = generatedText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+      analysisResult = JSON.parse(toolCall.function.arguments);
       
-      // Extract JSON object more carefully
-      const jsonStart = generatedText.indexOf('{');
-      const jsonEnd = generatedText.lastIndexOf('}');
-      
-      if (jsonStart === -1 || jsonEnd === -1) {
-        throw new Error('No JSON object found in response');
-      }
-      
-      let jsonText = generatedText.substring(jsonStart, jsonEnd + 1);
-      
-      // Try to parse
-      try {
-        analysisResult = JSON.parse(jsonText);
-      } catch (parseError) {
-        console.error("Initial parse failed, attempting repair...");
-        
-        // Basic JSON repair: ensure arrays are properly closed
-        const openBrackets = (jsonText.match(/\[/g) || []).length;
-        const closeBrackets = (jsonText.match(/\]/g) || []).length;
-        if (openBrackets > closeBrackets) {
-          jsonText += ']'.repeat(openBrackets - closeBrackets);
-        }
-        
-        // Ensure object is properly closed
-        const openBraces = (jsonText.match(/\{/g) || []).length;
-        const closeBraces = (jsonText.match(/\}/g) || []).length;
-        if (openBraces > closeBraces) {
-          jsonText += '}'.repeat(openBraces - closeBraces);
-        }
-        
-        analysisResult = JSON.parse(jsonText);
-      }
-      
-      // Validate required fields
-      if (!analysisResult.summary || !analysisResult.documentComparison) {
-        throw new Error('Missing required fields in analysis result');
+      // Ensure documentComparison has correct IDs
+      if (analysisResult.documentComparison) {
+        analysisResult.documentComparison = analysisResult.documentComparison.map((comp, idx) => ({
+          ...comp,
+          documentId: documentSummaries[idx]?.id || comp.documentId,
+          documentTitle: documentSummaries[idx]?.title || comp.documentTitle,
+          documentType: documentSummaries[idx]?.type || comp.documentType,
+        }));
       }
       
       console.log("✓ Successfully parsed analysis result");
-      
     } catch (parseError) {
-      console.error("Failed to parse JSON, creating fallback analysis");
-      console.error("Parse error details:", parseError);
-      console.error("Text sample:", generatedText.substring(0, 500));
-      
-      analysisResult = {
-        summary: "L'analyse complète n'a pas pu être générée correctement. Veuillez réessayer.",
-        overallQuality: 70,
-        commonIssues: ["Erreur lors de l'analyse automatique"],
-        strengths: ["Analyse manuelle recommandée"],
-        recommendations: ["Réessayer l'analyse globale"],
-        documentComparison: documents.map(doc => ({
-          documentId: doc.id,
-          documentTitle: doc.title,
-          documentType: doc.document_type,
-          score: 70,
-          mainFindings: ["Analyse individuelle disponible"]
-        })),
-        synergies: [],
-        contradictions: []
-      };
+      console.error("Failed to parse tool arguments:", toolCall.function.arguments);
+      throw new Error("Failed to parse AI response");
     }
 
     return new Response(
