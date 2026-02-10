@@ -24,7 +24,7 @@ export default function SubAppViewer() {
       const { data, error } = await supabase
         .from('sub_apps')
         .select('*')
-        .eq('slug', slug)
+        .eq('slug', slug!)
         .eq('status', 'active')
         .single();
       if (error) throw error;
