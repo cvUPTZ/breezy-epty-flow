@@ -37,6 +37,8 @@ import QualityControlInterface from './pages/QualityControlInterface';
 import NewVoiceChatPage from './pages/NewVoiceChatPage';
 import ChromeExtensionBridge from './pages/ChromeExtensionBridge';
 import NotFound from './pages/NotFound';
+import SubAppManager from './pages/SubAppManager';
+import SubAppViewer from './pages/SubAppViewer';
 
 import VideoSetupPage from './pages/Admin/VideoSetupPage';
 import AdminQualityControl from './pages/Admin/AdminQualityControl';
