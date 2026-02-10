@@ -37,6 +37,8 @@ import QualityControlInterface from './pages/QualityControlInterface';
 import NewVoiceChatPage from './pages/NewVoiceChatPage';
 import ChromeExtensionBridge from './pages/ChromeExtensionBridge';
 import NotFound from './pages/NotFound';
+import SubAppManager from './pages/SubAppManager';
+import SubAppViewer from './pages/SubAppViewer';
 
 import VideoSetupPage from './pages/Admin/VideoSetupPage';
 import AdminQualityControl from './pages/Admin/AdminQualityControl';
@@ -288,6 +290,18 @@ const AppContent = () => {
           <AdminOnly>
             <KeyboardManager />
           </AdminOnly>
+        } />
+
+        <Route path="/admin/sub-apps" element={
+          <AdminOnly>
+            <SubAppManager />
+          </AdminOnly>
+        } />
+        
+        <Route path="/apps/:slug" element={
+          <RequireAuth>
+            <SubAppViewer />
+          </RequireAuth>
         } />
 
         <Route path="/admin/business-documents" element={

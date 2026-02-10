@@ -1,6 +1,6 @@
 
 import { useMemo } from 'react';
-import { LayoutDashboard, Play, Calendar, BarChart3, TrendingUp, Target, Eye, Network, AlertTriangle, Briefcase, DollarSign, ClipboardCheck, Keyboard } from 'lucide-react';
+import { LayoutDashboard, Play, Calendar, BarChart3, TrendingUp, Target, Eye, Network, AlertTriangle, Briefcase, DollarSign, ClipboardCheck, Keyboard, AppWindow } from 'lucide-react';
 import { usePermissionChecker } from './usePermissionChecker';
 import { type RolePermissions } from './useUserPermissions';
 
@@ -137,6 +137,13 @@ export const useMenuItems = () => {
         label: 'Error Manager', 
         icon: AlertTriangle, 
         path: '/admin/error-manager'
+      });
+
+      items.push({
+        value: 'sub-apps',
+        label: 'Sub-Applications',
+        icon: AppWindow,
+        path: '/admin/sub-apps'
       });
       
       items.push({ 

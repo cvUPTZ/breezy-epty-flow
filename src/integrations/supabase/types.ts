@@ -1417,6 +1417,48 @@ export type Database = {
         }
         Relationships: []
       }
+      sub_apps: {
+        Row: {
+          created_at: string
+          description: string | null
+          entry_path: string
+          icon_name: string | null
+          id: string
+          name: string
+          slug: string
+          status: string
+          storage_path: string
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          entry_path?: string
+          icon_name?: string | null
+          id?: string
+          name: string
+          slug: string
+          status?: string
+          storage_path: string
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          entry_path?: string
+          icon_name?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          status?: string
+          storage_path?: string
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
       tagged_events: {
         Row: {
           annotations: Json | null
