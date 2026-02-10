@@ -292,6 +292,18 @@ const AppContent = () => {
           </AdminOnly>
         } />
 
+        <Route path="/admin/sub-apps" element={
+          <AdminOnly>
+            <SubAppManager />
+          </AdminOnly>
+        } />
+        
+        <Route path="/apps/:slug" element={
+          <RequireAuth>
+            <SubAppViewer />
+          </RequireAuth>
+        } />
+
         <Route path="/admin/business-documents" element={
           <AdminOnly>
             <BusinessDocumentManager />

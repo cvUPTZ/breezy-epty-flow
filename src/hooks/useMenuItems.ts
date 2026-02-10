@@ -138,6 +138,13 @@ export const useMenuItems = () => {
         icon: AlertTriangle, 
         path: '/admin/error-manager'
       });
+
+      items.push({
+        value: 'sub-apps',
+        label: 'Sub-Applications',
+        icon: AppWindow,
+        path: '/admin/sub-apps'
+      });
       
       items.push({ 
         value: 'admin', 
