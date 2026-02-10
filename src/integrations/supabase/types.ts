@@ -2204,8 +2204,8 @@ export type Database = {
         Returns: undefined
       }
       is_admin:
-        | { Args: { p_user_id: string }; Returns: boolean }
         | { Args: never; Returns: boolean }
+        | { Args: { p_user_id: string }; Returns: boolean }
       is_room_participant: {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
@@ -2273,14 +2273,14 @@ export type Database = {
       }
       user_has_role:
         | {
+            Args: { role_name: Database["public"]["Enums"]["user_role"] }
+            Returns: boolean
+          }
+        | {
             Args: {
               check_role: Database["public"]["Enums"]["user_role"]
               target_user_id: string
             }
-            Returns: boolean
-          }
-        | {
-            Args: { role_name: Database["public"]["Enums"]["user_role"] }
             Returns: boolean
           }
     }
