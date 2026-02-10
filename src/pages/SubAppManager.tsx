@@ -54,7 +54,7 @@ export default function SubAppManager() {
       const { data: files } = await supabase.storage
         .from('sub-apps')
         .list(app.storage_path);
-      
+
       if (files && files.length > 0) {
         const paths = files.map(f => `${app.storage_path}/${f.name}`);
         await supabase.storage.from('sub-apps').remove(paths);
@@ -96,16 +96,42 @@ export default function SubAppManager() {
       const storagePath = `apps/${form.slug}`;
       const files = Object.entries(zip.files).filter(([, f]) => !f.dir);
 
+      // MIME type helper
+      const getContentType = (filename: string) => {
+        const ext = filename.split('.').pop()?.toLowerCase();
+        const mimeTypes: Record<string, string> = {
+          'html': 'text/html',
+          'css': 'text/css',
+          'js': 'application/javascript',
+          'json': 'application/json',
+          'png': 'image/png',
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'gif': 'image/gif',
+          'svg': 'image/svg+xml',
+          'ico': 'image/x-icon',
+          'txt': 'text/plain',
+          'xml': 'text/xml',
+          'pdf': 'application/pdf',
+          'zip': 'application/zip',
+        };
+        return mimeTypes[ext || ''] || 'application/octet-stream';
+      };
+
       // Upload each file from the zip
       let uploadCount = 0;
       for (const [path, zipFile] of files) {
         const content = await zipFile.async('blob');
         const filePath = `${storagePath}/${path}`;
-        
+        const contentType = getContentType(path);
+
         const { error } = await supabase.storage
           .from('sub-apps')
-          .upload(filePath, content, { upsert: true });
-        
+          .upload(filePath, content, {
+            upsert: true,
+            contentType: contentType
+          });
+
         if (error) {
           console.error(`Failed to upload ${path}:`, error);
         } else {
@@ -200,7 +226,7 @@ export default function SubAppManager() {
                     <Label>Fichier ZIP (build React)</Label>
                     <Input ref={fileInputRef} type="file" accept=".zip" />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Uploadez le dossier build/dist de votre app React en ZIP
+                      Upload le dossier dist/ buildé de soccer-controller-log-main en ZIP
                     </p>
                   </div>
                   <Button onClick={handleUpload} disabled={isUploading} className="w-full gap-2">
