@@ -1,6 +1,6 @@
 
 import { useMemo } from 'react';
-import { LayoutDashboard, Play, Calendar, BarChart3, TrendingUp, Target, Eye, Network, AlertTriangle, Briefcase, DollarSign, ClipboardCheck, Keyboard } from 'lucide-react';
+import { LayoutDashboard, Play, Calendar, BarChart3, TrendingUp, Target, Eye, Network, AlertTriangle, Briefcase, DollarSign, ClipboardCheck, Keyboard, AppWindow } from 'lucide-react';
 import { usePermissionChecker } from './usePermissionChecker';
 import { type RolePermissions } from './useUserPermissions';
 
