@@ -453,13 +453,9 @@ const AppContent = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <VoiceCollaborationProvider>
-        <Toaster />
-        <Sonner />
-        <AppContent />
-      </VoiceCollaborationProvider>
-    </AuthProvider>
+    <Toaster />
+    <Sonner />
+    <AppContent />
   </QueryClientProvider>
 );
 
